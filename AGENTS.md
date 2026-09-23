@@ -26,6 +26,7 @@
 | 文書 | 対象 |
 | --- | --- |
 | [Confidential UTXOのPRD](docs/PRD.md) | 本体の要求、初期検証の範囲、標準化の目的 |
+| [Confidential UTXOの要件定義](docs/requirements.md) | 本体の機能、安全性、機密性、形式証明、評価と再現性の受入条件 |
 | [Uniswap接続のPRD](docs/integration/uniswap/PRD.md) | Confidential UTXOから公開交換へ接続する際の要求と対象範囲 |
 
 ## 規約
