@@ -1,9 +1,5 @@
 # Uniswap接続のPRD（要求定義）
 
-- 状態: 要求定義。未解決の論点は「後続で具体化する事項とリスク」に記載する。
-- 最終更新: 2026-09-22
-- 対象: [Issue #1](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/1)
-- 文書の役割: [文書管理ルール](../../../.agents/rules/documentation.md)
 - 利用する基盤: [Confidential UTXOのPRD](../../PRD.md)
 
 ## 目的
@@ -39,7 +35,7 @@ Confidential UTXO単体の技術的な背景、機能、評価の要求は、[�
 | U-03 | ハッカソンで接続の追加価値を検証する | 会期中に追加した動く接続機能を示し、Uniswap FoundationのContinuity賞への提出条件を満たす |
 
 U-01とU-02の具体的な保証は後続の要件定義で扱う。
-出金と交換を一つのトランザクションとして扱い、交換失敗時にはUTXOの消費と資産移動を取り消す方針は合意済みである。
+出金と交換を一つのトランザクションとして扱い、交換失敗時にはUTXOの消費と資産移動を取り消す。
 ガス代は取り消しの対象に含めない。
 U-03の応募資格と提出条件は[公式賞金ページ](https://ethglobal.com/events/tokyo2026/prizes/uniswap-foundation)を参照する。
 
@@ -60,7 +56,7 @@ Confidential UTXO内部の対象資産を増やすことも求めない。
 
 ## 制約と開発の区切り
 
-| 項目 | 合意済みの方針 |
+| 項目 | 制約 |
 | --- | --- |
 | 基盤との関係 | ETHを対象とするConfidential UTXOを利用する。基盤と接続側の要求、要件、仕様、設計を分ける |
 | 応募対象 | ETHGlobal Tokyo 2026のUniswap Foundation「Best Uniswap Stack Contribution」のContinuity枠 |
