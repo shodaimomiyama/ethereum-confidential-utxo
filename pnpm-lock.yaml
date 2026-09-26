@@ -29,6 +29,16 @@ importers:
       '@confidential-utxo/uniswap':
         specifier: workspace:*
         version: link:../../packages/uniswap
+      '@hpke/dhkem-x25519':
+        specifier: 1.8.0
+        version: 1.8.0
+      viem:
+        specifier: 2.56.9
+        version: 2.56.9(typescript@6.0.3)
+    devDependencies:
+      '@hpke/core':
+        specifier: 1.9.0
+        version: 1.9.0
 
   packages/cli:
     dependencies:
