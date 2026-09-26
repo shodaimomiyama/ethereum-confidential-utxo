@@ -77,7 +77,7 @@ test('recipient information has its own EIP-712 type and digest', () => {
   }));
 });
 
-test('generator writes seven operation shapes and signature cases to a separate directory', () => {
+test('generator writes operation shapes and signature cases to a separate directory', () => {
   const output = mkdtempSync(join(tmpdir(), 'ecu-abi-vectors-'));
   try {
     const run = spawnSync(process.execPath,
@@ -90,7 +90,7 @@ test('generator writes seven operation shapes and signature cases to a separate 
     assert.deepEqual(operations.map(item => item.id), [
       'VEC-01-DEPOSIT', 'VEC-01-TRANSFER-ONE', 'VEC-01-TRANSFER-CHANGE',
       'VEC-01-TRANSFER-MERGE', 'VEC-01-TRANSFER-SELF',
-      'VEC-01-WITHDRAW-FULL', 'VEC-01-WITHDRAW-PARTIAL',
+      'VEC-01-WITHDRAW-FULL', 'VEC-01-WITHDRAW-PARTIAL', 'VEC-01-WITHDRAW-SELF',
     ]);
     assert.equal(operations[0].expected.operationId,
       ethersKeccak(operations[0].expected.operationPreimage));
@@ -99,6 +99,7 @@ test('generator writes seven operation shapes and signature cases to a separate 
     assert.deepEqual(rejected.map(item => item.mutatedField), [
       'inputIds.order', 'inputIds.duplicate', 'kind', 'outputs[0].receiptFormat',
       'outputs[0].packet.length', 'w', 'd', 'destination',
+      'outputs[0].owner', 'destination',
     ]);
     assert.ok(authorizations.some(item => item.id === 'VEC-02-HIGH-S'));
     assert.ok(authorizations.some(item => item.id === 'VEC-02-CHAIN-CHANGED'));

@@ -65,7 +65,7 @@ export function validateOperationShape(request: OperationRequest): void {
       requireInput(request.w >= 1n && request.w <= 2n * M, "withdraw.amount");
     }
   }
-  requireInput(request.kind === 2 || request.destination === zeroAddress, "destination");
+  requireInput(request.kind === 2 ? request.destination !== zeroAddress : request.destination === zeroAddress, "destination");
 }
 
 /** Computes receipt context before packet encryption; packet bytes are deliberately unused. */
