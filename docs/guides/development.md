@@ -47,6 +47,21 @@ Anvilの初期アカウントと鍵はローカルテスト専用。実鍵、RPC
 
 ## Issue #60: Sepolia公開RPCの読取検査
 
+Issue #60のローカル資産単体環境は、Node 24.21.0、pnpm 10.34.5、Foundry 1.8.3で追試する。`pnpm install --frozen-lockfile` 後、`pnpm artifact:uniswap`、`pnpm check:uniswap`、`pnpm build`、`pnpm test`、`pnpm check`、`node --test tests/environment/uniswap-*.test.mjs` を実行する。Uniswapのソースは `vendor/uniswap-v2/source-lock.json` のcommit/hash、生成ABIとbytecodeは `packages/ethereum/generated/uniswap-v2.json` に固定する。
+
+別端末で `anvil --host 127.0.0.1 --port 8545 --chain-id 31337` を起動し、この一時チェーンの管理アカウントを `--holder` と `--lp-recipient` に指定する。以下の `LOCAL_HOLDER` はAnvil上の公開アドレスのみであり、秘密鍵をファイルやコマンドに渡さない。`LOCAL_MANIFEST` と `LOCAL_SNAPSHOT` は新しい一時ファイルのパスにする。
+
+```sh
+pnpm uniswap:local:deploy -- --rpc-url http://127.0.0.1:8545 --chain-id 31337 --manifest "$LOCAL_MANIFEST" --generation local-demo --holder "$LOCAL_HOLDER" --lp-recipient "$LOCAL_HOLDER"
+pnpm uniswap:local:verify -- --rpc-url http://127.0.0.1:8545 --chain-id 31337 --manifest "$LOCAL_MANIFEST"
+pnpm uniswap:local:snapshot -- --rpc-url http://127.0.0.1:8545 --chain-id 31337 --manifest "$LOCAL_MANIFEST" --snapshot "$LOCAL_SNAPSHOT"
+pnpm uniswap:local:reset -- --rpc-url http://127.0.0.1:8545 --chain-id 31337 --manifest "$LOCAL_MANIFEST" --snapshot "$LOCAL_SNAPSHOT"
+```
+
+deployはdUSD、WETH、Uniswap v2 Factory/Router/Pairと初期流動性を作り、manifestを照合する。同じmanifestでの再deployは新しい流動性を投入せず照合に切り替わる。送信結果が不明な場合は `.attempt.json` を残して自動再送を拒否するため、nonce、receipt、code、Pair reserveを調べてから復旧する。snapshot/resetは資産単体に限り、reset後にはsnapshot IDが更新される。正式Pool/Adapter、配布サービス、サイトを含む環境のresetは、それぞれの成果物とDO停止・世代管理が揃ってから有効化する。
+
+`.github/workflows/uniswap-environment.yml` はmacOS 15 arm64上で同じ固定版、ソース/Artifact照合、build/test/check、Anvilへの資産単体配置・再照合・snapshot/resetを実行する。公開RPC、Secrets、実資金は使わない。2026-09-27時点ではGitHub Actionsの実runは未実施であり、ローカルmacOS 26.5 arm64での成功とは別に判定する。
+
 2026-09-27に [Uniswap公式のv2配置一覧](https://developers.uniswap.org/docs/protocols/v2/deployments) のSepolia Factory `0xF62c03E08ada871A0bEb309762E260a7a6a880E6` とRouter02 `0xeE567Fe1712Faf6149d80dA1E6934E354124CfE3` を確認した。Routerの `WETH()` を実チェーンで読み、`0xfff9976782d46cc05630d1f6ebab18b2324d6b14` を得た。[PublicNode](https://ethereum.publicnode.com/)を候補にし、`https://ethereum-sepolia-rpc.publicnode.com` のread-only検査を実行した。これは実行時点の観測結果であり、公開配置時にも再検査する。
 
 ```sh

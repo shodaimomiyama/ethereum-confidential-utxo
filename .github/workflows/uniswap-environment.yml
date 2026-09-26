@@ -1,0 +1,59 @@
+name: Uniswap environment
+
+on:
+  push:
+    branches: [feature/uniswap-dusd-deployment]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  local-environment:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.21.0
+          cache: pnpm
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.8.3
+      - name: Check tool profile
+        run: node scripts/check-tools.mjs --profile github-macos-arm64
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build and verify pinned Uniswap contracts
+        run: |
+          pnpm artifact:uniswap
+          pnpm check:uniswap
+      - name: Build, test, and check
+        run: |
+          pnpm build
+          pnpm test
+          pnpm check
+          node --test tests/environment/uniswap-*.test.mjs
+      - name: Deploy and verify local assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          anvil --host 127.0.0.1 --port 8545 --chain-id 31337 > "$RUNNER_TEMP/uniswap-anvil.log" 2>&1 &
+          anvil_pid=$!
+          trap 'kill "$anvil_pid"' EXIT
+          for attempt in {1..30}; do
+            if cast chain-id --rpc-url http://127.0.0.1:8545 >/dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          cast chain-id --rpc-url http://127.0.0.1:8545
+          pnpm uniswap:local:deploy -- --rpc-url http://127.0.0.1:8545 --chain-id 31337 --manifest "$RUNNER_TEMP/uniswap-local.json" --generation ci-local --holder 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 --lp-recipient 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+          pnpm uniswap:local:verify -- --rpc-url http://127.0.0.1:8545 --chain-id 31337 --manifest "$RUNNER_TEMP/uniswap-local.json"
+          pnpm uniswap:local:snapshot -- --rpc-url http://127.0.0.1:8545 --chain-id 31337 --manifest "$RUNNER_TEMP/uniswap-local.json" --snapshot "$RUNNER_TEMP/uniswap-snapshot.json"
+          pnpm uniswap:local:reset -- --rpc-url http://127.0.0.1:8545 --chain-id 31337 --manifest "$RUNNER_TEMP/uniswap-local.json" --snapshot "$RUNNER_TEMP/uniswap-snapshot.json"
