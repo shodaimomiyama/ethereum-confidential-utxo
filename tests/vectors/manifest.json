@@ -34,6 +34,83 @@
         "viem": "2.56.9",
         "ethers": "6.13.4"
       }
+    },
+    {
+      "path": "cases/group.json",
+      "sha256": "e89a924b2fdda1a45d42ac6e8ed7e84ea025f8db875531c621fa04b19340b14b",
+      "source": "EXP-07A vectors.json and EXP-08 java-result.json at baseline commit",
+      "generator": "tools/oracle_v3.py",
+      "independentCheck": "EXP-08 Java and EVM verifiers plus Python full-prefix replay",
+      "dependencies": {
+        "pycryptodome": "3.23.0"
+      },
+      "sourceFiles": [
+        {
+          "path": "experiments/design/crypto-profile-v2/vectors.json",
+          "sha256": "8f8eda0da4a0ee2be1dc081f22f4f41ef1331cdab991403510aae36017408601"
+        },
+        {
+          "path": "experiments/design/crypto-profile-v3/exp08/profile.json",
+          "sha256": "8d78e9d4ba05e62e0cb1f97df0873f57690223aa92e6a1544d1a5500aabd4836"
+        },
+        {
+          "path": "experiments/design/crypto-profile-v3/exp08/parameters.json",
+          "sha256": "884f531df7b30698d9a3d798ade2d26c5e985425d657d7c0f54bdec6a64d3755"
+        },
+        {
+          "path": "experiments/design/crypto-profile-v3/exp08/java-result.json",
+          "sha256": "1aedc650490a85430b4310821b146205943c9fb28d195965e0f7e89aa44d3bd8"
+        }
+      ]
+    },
+    {
+      "path": "cases/range-v3.json",
+      "sha256": "4759ad1cf0b5e7f3bdcec104a2addcb8662de1557438b5ae96af46e10095ecd6",
+      "source": "EXP-07A vectors.json and EXP-08 java-result.json at baseline commit",
+      "generator": "tools/oracle_v3.py",
+      "independentCheck": "EXP-08 Java and EVM verifiers plus Python full-prefix replay",
+      "dependencies": {
+        "pycryptodome": "3.23.0"
+      },
+      "sourceFiles": [
+        {
+          "path": "experiments/design/crypto-profile-v2/vectors.json",
+          "sha256": "8f8eda0da4a0ee2be1dc081f22f4f41ef1331cdab991403510aae36017408601"
+        },
+        {
+          "path": "experiments/design/crypto-profile-v3/exp08/profile.json",
+          "sha256": "8d78e9d4ba05e62e0cb1f97df0873f57690223aa92e6a1544d1a5500aabd4836"
+        },
+        {
+          "path": "experiments/design/crypto-profile-v3/exp08/parameters.json",
+          "sha256": "884f531df7b30698d9a3d798ade2d26c5e985425d657d7c0f54bdec6a64d3755"
+        },
+        {
+          "path": "experiments/design/crypto-profile-v3/exp08/java-result.json",
+          "sha256": "1aedc650490a85430b4310821b146205943c9fb28d195965e0f7e89aa44d3bd8"
+        }
+      ]
+    },
+    {
+      "path": "cases/abi-observation.json",
+      "source": "docs/design.md at baseline commit",
+      "generator": "tools/oracle-abi.mjs",
+      "independentCheck": "tools/test-oracle-events.mjs",
+      "dependencies": {
+        "viem": "2.56.9",
+        "ethers": "6.13.4"
+      },
+      "sha256": "3140f37253e1176d73d09dd18dcf29864bdbc812e8f8e41bd9cf990ea537d784"
+    },
+    {
+      "path": "cases/storage.json",
+      "sha256": "eee52dd8edc54d5f60cb18f93c44a4d35276214426eb5396208de980afdfda33",
+      "source": "docs/design.md#保存profile-v1 and RFC 7914",
+      "generator": "tools/oracle-storage.mjs",
+      "independentCheck": "tools/test-oracle-storage.mjs and Python hashlib.scrypt/PyCryptodome AES-GCM",
+      "dependencies": {
+        "node": "24.21.0"
+      }
     }
   ]
 }
