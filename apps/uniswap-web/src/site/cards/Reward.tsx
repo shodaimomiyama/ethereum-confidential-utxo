@@ -7,7 +7,7 @@ export function Reward({ view, controller }: { readonly view: ViewState; readonl
   const card = view.cards.reward;
   return <div className="card-form">
     <h2>Demo reward</h2>
-    <p>Request a small private test ETH reward. Distribution and private receipt are separate steps.</p>
+    <p>Request a private test ETH reward. It lets you try a partial payment without first making a public deposit whose amount may reveal the remainder. The distributor still knows the amount it sends. Distribution and private receipt are separate steps.</p>
     <label htmlFor="reward-amount">Demo reward amount in ETH</label>
     <input id="reward-amount" type="text" inputMode="decimal" autoComplete="off" value={card.input.amount ?? ''}
       disabled={!allowedFor(view, { type: 'edit', card: 'reward', field: 'amount', value: '' })}

@@ -16,7 +16,7 @@ export function Withdraw({ view, controller }: { readonly view: ViewState; reado
       <option value="">Select a private UTXO</option>
       {view.utxos.filter((item) => item.available).map((item) => <option value={item.id} key={item.id}>{formatEth(item.amountWei)} ETH — {item.id}</option>)}
     </select>
-    {selected && <p className="conditions">The full {formatEth(selected.amountWei)} ETH UTXO will be withdrawn. The destination and withdrawn amount become publicly visible. No private change is returned.</p>}
+    {selected && <p className="conditions">The full {formatEth(selected.amountWei)} ETH UTXO will be withdrawn. The destination and withdrawn amount become publicly visible. This can also reveal earlier amounts in the payment history. No private change is returned.</p>}
     <CardFeedback card={card} blockedReason={view.reasons['start:withdraw']} />
     <button type="button" className="button primary" disabled={!allowedFor(view, { type: 'start', card: 'withdraw' })}
       onClick={() => void controller.dispatch({ type: 'start', card: 'withdraw' })}>Withdraw full UTXO</button>
