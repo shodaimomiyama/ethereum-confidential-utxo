@@ -18,7 +18,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove Pool storage and ETH balance implement U/S/H/B/A/E and derive A from unspent UTXOs.",
+        "#34": "Prove concrete verifier enforces positive bounded values and integer conservation used by this abstract transition."
+      }
     },
     {
       "id": "MODEL-01-initial-deposit",
@@ -37,7 +41,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove Pool storage and ETH balance implement U/S/H/B/A/E and derive A from unspent UTXOs.",
+        "#34": "Prove concrete verifier enforces positive bounded values and integer conservation used by this abstract transition."
+      }
     },
     {
       "id": "MODEL-01-backed-receive",
@@ -56,7 +64,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove Pool storage and ETH balance implement U/S/H/B/A/E and derive A from unspent UTXOs.",
+        "#34": "Prove concrete verifier enforces positive bounded values and integer conservation used by this abstract transition."
+      }
     },
     {
       "id": "MODEL-01-initial-receive",
@@ -75,7 +87,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove Pool storage and ETH balance implement U/S/H/B/A/E and derive A from unspent UTXOs.",
+        "#34": "Prove concrete verifier enforces positive bounded values and integer conservation used by this abstract transition."
+      }
     },
     {
       "id": "MODEL-01-backed-transfer-one-input",
@@ -94,7 +110,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove Pool storage and ETH balance implement U/S/H/B/A/E and derive A from unspent UTXOs.",
+        "#34": "Prove concrete verifier enforces positive bounded values and integer conservation used by this abstract transition."
+      }
     },
     {
       "id": "MODEL-01-backed-withdraw-one-input",
@@ -113,7 +133,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove Pool storage and ETH balance implement U/S/H/B/A/E and derive A from unspent UTXOs.",
+        "#34": "Prove concrete verifier enforces positive bounded values and integer conservation used by this abstract transition."
+      }
     },
     {
       "id": "MODEL-01-liability-partial-transfer-one-input",
@@ -132,7 +156,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove Pool storage and ETH balance implement U/S/H/B/A/E and derive A from unspent UTXOs.",
+        "#34": "Prove concrete verifier enforces positive bounded values and integer conservation used by this abstract transition."
+      }
     },
     {
       "id": "MODEL-01-liability-full-transfer-one-input",
@@ -151,7 +179,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove Pool storage and ETH balance implement U/S/H/B/A/E and derive A from unspent UTXOs.",
+        "#34": "Prove concrete verifier enforces positive bounded values and integer conservation used by this abstract transition."
+      }
     },
     {
       "id": "MODEL-01-liability-partial-withdraw-one-input",
@@ -170,7 +202,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove Pool storage and ETH balance implement U/S/H/B/A/E and derive A from unspent UTXOs.",
+        "#34": "Prove concrete verifier enforces positive bounded values and integer conservation used by this abstract transition."
+      }
     },
     {
       "id": "MODEL-01-liability-full-withdraw-one-input",
@@ -189,7 +225,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove Pool storage and ETH balance implement U/S/H/B/A/E and derive A from unspent UTXOs.",
+        "#34": "Prove concrete verifier enforces positive bounded values and integer conservation used by this abstract transition."
+      }
     },
     {
       "id": "MODEL-01-backed-transfer-two-input",
@@ -208,7 +248,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove Pool storage and ETH balance implement U/S/H/B/A/E and derive A from unspent UTXOs.",
+        "#34": "Prove concrete verifier enforces positive bounded values and integer conservation used by this abstract transition."
+      }
     },
     {
       "id": "MODEL-01-backed-withdraw-two-input",
@@ -227,7 +271,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove Pool storage and ETH balance implement U/S/H/B/A/E and derive A from unspent UTXOs.",
+        "#34": "Prove concrete verifier enforces positive bounded values and integer conservation used by this abstract transition."
+      }
     },
     {
       "id": "MODEL-01-liability-partial-transfer-two-input",
@@ -246,7 +294,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove Pool storage and ETH balance implement U/S/H/B/A/E and derive A from unspent UTXOs.",
+        "#34": "Prove concrete verifier enforces positive bounded values and integer conservation used by this abstract transition."
+      }
     },
     {
       "id": "MODEL-01-liability-full-transfer-two-input",
@@ -265,7 +317,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove Pool storage and ETH balance implement U/S/H/B/A/E and derive A from unspent UTXOs.",
+        "#34": "Prove concrete verifier enforces positive bounded values and integer conservation used by this abstract transition."
+      }
     },
     {
       "id": "MODEL-01-liability-partial-withdraw-two-input",
@@ -284,7 +340,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove Pool storage and ETH balance implement U/S/H/B/A/E and derive A from unspent UTXOs.",
+        "#34": "Prove concrete verifier enforces positive bounded values and integer conservation used by this abstract transition."
+      }
     },
     {
       "id": "MODEL-01-liability-full-withdraw-two-input",
@@ -303,7 +363,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove Pool storage and ETH balance implement U/S/H/B/A/E and derive A from unspent UTXOs.",
+        "#34": "Prove concrete verifier enforces positive bounded values and integer conservation used by this abstract transition."
+      }
     },
     {
       "id": "MODEL-02-owner-mismatch-deposit",
@@ -323,7 +387,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove authorization parsing, trusted verifier or certificate provenance, and owner/domain/recipient/output binding.",
+        "#34": "Prove verifier public inputs bind the same amount and operation fields as AuthIntent."
+      }
     },
     {
       "id": "MODEL-02-deposit-amount-tamper",
@@ -343,7 +411,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove authorization parsing, trusted verifier or certificate provenance, and owner/domain/recipient/output binding.",
+        "#34": "Prove verifier public inputs bind the same amount and operation fields as AuthIntent."
+      }
     },
     {
       "id": "MODEL-02-transfer-recipient-tamper",
@@ -363,7 +435,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove authorization parsing, trusted verifier or certificate provenance, and owner/domain/recipient/output binding.",
+        "#34": "Prove verifier public inputs bind the same amount and operation fields as AuthIntent."
+      }
     },
     {
       "id": "MODEL-02-withdraw-destination-tamper",
@@ -383,7 +459,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove authorization parsing, trusted verifier or certificate provenance, and owner/domain/recipient/output binding.",
+        "#34": "Prove verifier public inputs bind the same amount and operation fields as AuthIntent."
+      }
     },
     {
       "id": "MODEL-02-untrusted-certificate",
@@ -403,7 +483,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove authorization parsing, trusted verifier or certificate provenance, and owner/domain/recipient/output binding.",
+        "#34": "Prove verifier public inputs bind the same amount and operation fields as AuthIntent."
+      }
     },
     {
       "id": "MODEL-02-cross-chain-rejected",
@@ -423,7 +507,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove authorization parsing, trusted verifier or certificate provenance, and owner/domain/recipient/output binding.",
+        "#34": "Prove verifier public inputs bind the same amount and operation fields as AuthIntent."
+      }
     },
     {
       "id": "MODEL-02-expired-certificate",
@@ -443,7 +531,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove authorization parsing, trusted verifier or certificate provenance, and owner/domain/recipient/output binding.",
+        "#34": "Prove verifier public inputs bind the same amount and operation fields as AuthIntent."
+      }
     },
     {
       "id": "MODEL-02-forged-certificate-reusing-seal",
@@ -463,7 +555,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove authorization parsing, trusted verifier or certificate provenance, and owner/domain/recipient/output binding.",
+        "#34": "Prove verifier public inputs bind the same amount and operation fields as AuthIntent."
+      }
     },
     {
       "id": "MODEL-03-duplicate-input",
@@ -482,7 +578,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove input existence, spent flags, immutable records and collision-free output ID updates.",
+        "#34": "Prove concrete range checks enforce the model value and input-count bounds."
+      }
     },
     {
       "id": "MODEL-03-output-collision",
@@ -501,7 +601,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove input existence, spent flags, immutable records and collision-free output ID updates.",
+        "#34": "Prove concrete range checks enforce the model value and input-count bounds."
+      }
     },
     {
       "id": "MODEL-03-spent-transfer-input",
@@ -520,7 +624,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove input existence, spent flags, immutable records and collision-free output ID updates.",
+        "#34": "Prove concrete range checks enforce the model value and input-count bounds."
+      }
     },
     {
       "id": "MODEL-03-spent-withdraw-input",
@@ -539,7 +647,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove input existence, spent flags, immutable records and collision-free output ID updates.",
+        "#34": "Prove concrete range checks enforce the model value and input-count bounds."
+      }
     },
     {
       "id": "MODEL-03-duplicate-withdraw-input",
@@ -558,7 +670,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove input existence, spent flags, immutable records and collision-free output ID updates.",
+        "#34": "Prove concrete range checks enforce the model value and input-count bounds."
+      }
     },
     {
       "id": "MODEL-03-existing-records-immutable-partial",
@@ -577,7 +693,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove input existence, spent flags, immutable records and collision-free output ID updates.",
+        "#34": "Prove concrete range checks enforce the model value and input-count bounds."
+      }
     },
     {
       "id": "MODEL-03-existing-records-immutable-full",
@@ -596,7 +716,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove input existence, spent flags, immutable records and collision-free output ID updates.",
+        "#34": "Prove concrete range checks enforce the model value and input-count bounds."
+      }
     },
     {
       "id": "MODEL-03-two-input-existing-records-immutable",
@@ -615,7 +739,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove input existence, spent flags, immutable records and collision-free output ID updates.",
+        "#34": "Prove concrete range checks enforce the model value and input-count bounds."
+      }
     },
     {
       "id": "MODEL-04-deposit-replay",
@@ -634,7 +762,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove stable operation ID storage, replay rejection and current-state checks across relayers and paths.",
+        "#34": "Prove proof transcript binds the stable operation ID and generated output identifiers."
+      }
     },
     {
       "id": "MODEL-04-transfer-replay",
@@ -653,7 +785,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove stable operation ID storage, replay rejection and current-state checks across relayers and paths.",
+        "#34": "Prove proof transcript binds the stable operation ID and generated output identifiers."
+      }
     },
     {
       "id": "MODEL-04-withdraw-replay",
@@ -672,7 +808,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove stable operation ID storage, replay rejection and current-state checks across relayers and paths.",
+        "#34": "Prove proof transcript binds the stable operation ID and generated output identifiers."
+      }
     },
     {
       "id": "MODEL-04-independent-deposit-order-a",
@@ -691,7 +831,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove stable operation ID storage, replay rejection and current-state checks across relayers and paths.",
+        "#34": "Prove proof transcript binds the stable operation ID and generated output identifiers."
+      }
     },
     {
       "id": "MODEL-04-independent-deposit-order-b",
@@ -710,7 +854,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove stable operation ID storage, replay rejection and current-state checks across relayers and paths.",
+        "#34": "Prove proof transcript binds the stable operation ID and generated output identifiers."
+      }
     },
     {
       "id": "MODEL-05-caught-reentry-outer-commits",
@@ -729,7 +877,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove recipient ETH call, reentry guard, event ordering and EVM revert implement frame commit/rollback.",
+        "#34": "Prove verifier calls cannot commit asset state outside the protected transaction frame."
+      }
     },
     {
       "id": "MODEL-05-propagated-reentry-rolls-back",
@@ -748,7 +900,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove recipient ETH call, reentry guard, event ordering and EVM revert implement frame commit/rollback.",
+        "#34": "Prove verifier calls cannot commit asset state outside the protected transaction frame."
+      }
     },
     {
       "id": "MODEL-05-return-eth-is-unaccounted",
@@ -767,7 +923,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove recipient ETH call, reentry guard, event ordering and EVM revert implement frame commit/rollback.",
+        "#34": "Prove verifier calls cannot commit asset state outside the protected transaction frame."
+      }
     },
     {
       "id": "MODEL-05-symbolic-propagation-rollback",
@@ -786,7 +946,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove recipient ETH call, reentry guard, event ordering and EVM revert implement frame commit/rollback.",
+        "#34": "Prove verifier calls cannot commit asset state outside the protected transaction frame."
+      }
     },
     {
       "id": "MODEL-05-symbolic-receiver-rejection-rollback",
@@ -805,7 +969,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove recipient ETH call, reentry guard, event ordering and EVM revert implement frame commit/rollback.",
+        "#34": "Prove verifier calls cannot commit asset state outside the protected transaction frame."
+      }
     },
     {
       "id": "MODEL-05-symbolic-outer-frame-rollback",
@@ -824,7 +992,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove recipient ETH call, reentry guard, event ordering and EVM revert implement frame commit/rollback.",
+        "#34": "Prove verifier calls cannot commit asset state outside the protected transaction frame."
+      }
     },
     {
       "id": "MODEL-05-symbolic-reentry-rejected",
@@ -843,7 +1015,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove recipient ETH call, reentry guard, event ordering and EVM revert implement frame commit/rollback.",
+        "#34": "Prove verifier calls cannot commit asset state outside the protected transaction frame."
+      }
     },
     {
       "id": "MODEL-05-p-entry-locked",
@@ -862,7 +1038,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove recipient ETH call, reentry guard, event ordering and EVM revert implement frame commit/rollback.",
+        "#34": "Prove verifier calls cannot commit asset state outside the protected transaction frame."
+      }
     },
     {
       "id": "MODEL-05-q-entry-locked",
@@ -881,7 +1061,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove recipient ETH call, reentry guard, event ordering and EVM revert implement frame commit/rollback.",
+        "#34": "Prove verifier calls cannot commit asset state outside the protected transaction frame."
+      }
     },
     {
       "id": "MODEL-05-symbolic-return-preserves-accounting",
@@ -900,7 +1084,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove recipient ETH call, reentry guard, event ordering and EVM revert implement frame commit/rollback.",
+        "#34": "Prove verifier calls cannot commit asset state outside the protected transaction frame."
+      }
     },
     {
       "id": "MODEL-05-return-undone-by-outer-revert",
@@ -919,7 +1107,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove recipient ETH call, reentry guard, event ordering and EVM revert implement frame commit/rollback.",
+        "#34": "Prove verifier calls cannot commit asset state outside the protected transaction frame."
+      }
     },
     {
       "id": "MODEL-05-caught-reentry-preserves-accounting",
@@ -938,7 +1130,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove recipient ETH call, reentry guard, event ordering and EVM revert implement frame commit/rollback.",
+        "#34": "Prove verifier calls cannot commit asset state outside the protected transaction frame."
+      }
     },
     {
       "id": "MODEL-05-public-p-entry-locked",
@@ -957,7 +1153,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove recipient ETH call, reentry guard, event ordering and EVM revert implement frame commit/rollback.",
+        "#34": "Prove verifier calls cannot commit asset state outside the protected transaction frame."
+      }
     },
     {
       "id": "MODEL-05-public-q-entry-locked",
@@ -976,7 +1176,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove recipient ETH call, reentry guard, event ordering and EVM revert implement frame commit/rollback.",
+        "#34": "Prove verifier calls cannot commit asset state outside the protected transaction frame."
+      }
     },
     {
       "id": "MODEL-06-transfer-one-input-reachable",
@@ -998,7 +1202,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove concrete interfaces expose deposit, transfer, merge and withdrawal paths represented by the model.",
+        "#34": "Provide valid witnesses for concrete positive/range/balance relations on normal operations."
+      }
     },
     {
       "id": "MODEL-06-withdraw-one-input-reachable",
@@ -1020,7 +1228,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove concrete interfaces expose deposit, transfer, merge and withdrawal paths represented by the model.",
+        "#34": "Provide valid witnesses for concrete positive/range/balance relations on normal operations."
+      }
     },
     {
       "id": "MODEL-06-transfer-two-input-reachable",
@@ -1042,7 +1254,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove concrete interfaces expose deposit, transfer, merge and withdrawal paths represented by the model.",
+        "#34": "Provide valid witnesses for concrete positive/range/balance relations on normal operations."
+      }
     },
     {
       "id": "MODEL-06-withdraw-two-input-reachable",
@@ -1064,7 +1280,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove concrete interfaces expose deposit, transfer, merge and withdrawal paths represented by the model.",
+        "#34": "Provide valid witnesses for concrete positive/range/balance relations on normal operations."
+      }
     },
     {
       "id": "MODEL-07-p-normalizes-to-kernel",
@@ -1083,7 +1303,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove live P verifier results and prior Q certificates have trusted provenance, field binding and current-state rechecks.",
+        "#34": "Prove P/Q verifier results imply the same checked amount relation and Pool public-input binding."
+      }
     },
     {
       "id": "MODEL-07-q-normalizes-to-kernel",
@@ -1102,7 +1326,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove live P verifier results and prior Q certificates have trusted provenance, field binding and current-state rechecks.",
+        "#34": "Prove P/Q verifier results imply the same checked amount relation and Pool public-input binding."
+      }
     },
     {
       "id": "MODEL-07-p-invalid-authorization",
@@ -1121,7 +1349,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove live P verifier results and prior Q certificates have trusted provenance, field binding and current-state rechecks.",
+        "#34": "Prove P/Q verifier results imply the same checked amount relation and Pool public-input binding."
+      }
     },
     {
       "id": "MODEL-07-q-untrusted-certificate",
@@ -1140,7 +1372,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove live P verifier results and prior Q certificates have trusted provenance, field binding and current-state rechecks.",
+        "#34": "Prove P/Q verifier results imply the same checked amount relation and Pool public-input binding."
+      }
     },
     {
       "id": "MODEL-07-q-rechecks-spent-input",
@@ -1159,7 +1395,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove live P verifier results and prior Q certificates have trusted provenance, field binding and current-state rechecks.",
+        "#34": "Prove P/Q verifier results imply the same checked amount relation and Pool public-input binding."
+      }
     },
     {
       "id": "MODEL-07-p-rechecks-deposit-history",
@@ -1178,7 +1418,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove live P verifier results and prior Q certificates have trusted provenance, field binding and current-state rechecks.",
+        "#34": "Prove P/Q verifier results imply the same checked amount relation and Pool public-input binding."
+      }
     },
     {
       "id": "MODEL-07-p-full-settlement-normalizes",
@@ -1197,7 +1441,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove live P verifier results and prior Q certificates have trusted provenance, field binding and current-state rechecks.",
+        "#34": "Prove P/Q verifier results imply the same checked amount relation and Pool public-input binding."
+      }
     },
     {
       "id": "MODEL-07-q-full-settlement-normalizes",
@@ -1216,7 +1464,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove live P verifier results and prior Q certificates have trusted provenance, field binding and current-state rechecks.",
+        "#34": "Prove P/Q verifier results imply the same checked amount relation and Pool public-input binding."
+      }
     },
     {
       "id": "MODEL-08-envelope-separate-from-assets",
@@ -1235,7 +1487,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove gas payer and nonce accounting stays outside U/S/H/B/A/E except ETH actually received by Pool.",
+        "#34": "Prove amount/public-input decoding matches the mathematical integer used in the model."
+      }
     },
     {
       "id": "MODEL-08-simple-receive-under-lock",
@@ -1254,7 +1510,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove gas payer and nonce accounting stays outside U/S/H/B/A/E except ETH actually received by Pool.",
+        "#34": "Prove amount/public-input decoding matches the mathematical integer used in the model."
+      }
     },
     {
       "id": "MODEL-08-deposit-does-not-use-prior-excess",
@@ -1273,7 +1533,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove gas payer and nonce accounting stays outside U/S/H/B/A/E except ETH actually received by Pool.",
+        "#34": "Prove amount/public-input decoding matches the mathematical integer used in the model."
+      }
     },
     {
       "id": "MODEL-08-nonowner-submitter-authorized",
@@ -1292,7 +1556,11 @@
       "bridges": [
         "#33",
         "#34"
-      ]
+      ],
+      "bridge_details": {
+        "#33": "Prove gas payer and nonce accounting stays outside U/S/H/B/A/E except ETH actually received by Pool.",
+        "#34": "Prove amount/public-input decoding matches the mathematical integer used in the model."
+      }
     }
   ],
   "open_obligations": [
@@ -1302,5 +1570,6 @@
     "MODEL-05 public-path frame composition over arbitrary valid states",
     "MODEL-07 general asset-view equivalence over arbitrary valid operations",
     "MODEL-08 complete envelope separation for failed asset operations"
-  ]
+  ],
+  "bytecode_hash": null
 }

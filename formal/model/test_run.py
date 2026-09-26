@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from formal.model.run import validate_build, validate_manifest, validate_results
+from formal.model.run import validate_build, validate_document, validate_manifest, validate_results
 
 
 class EvidenceValidationTest(unittest.TestCase):
@@ -21,7 +21,8 @@ class EvidenceValidationTest(unittest.TestCase):
              "source": str(self.source if i == 1 else self.root / f"claim-{i}.k"),
              "module": f"UTXO-MODEL-{i:02d}",
              "requirements": ["FV-01"], "specification": "docs/specification.md#state",
-             "assumptions": ["abstract authorization"], "bridges": ["#33", "#34"]}
+             "assumptions": ["abstract authorization"], "bridges": ["#33", "#34"],
+             "bridge_details": {"#33": "storage bridge", "#34": "verifier bridge"}}
             for i in range(1, 9)
         ]
         import hashlib
@@ -80,7 +81,8 @@ class EvidenceValidationTest(unittest.TestCase):
                 validate_results(self.claims, [first] + self.results[1:], self.lock)
 
     def test_missing_traceability_rejected(self):
-        for field in ("requirements", "specification", "assumptions", "bridges"):
+        for field in ("requirements", "specification", "assumptions", "bridges",
+                      "bridge_details"):
             first = dict(self.claims[0])
             first[field] = [] if field != "specification" else ""
             with self.assertRaises(ValueError):
@@ -91,10 +93,21 @@ class EvidenceValidationTest(unittest.TestCase):
             validate_results(self.claims, self.results, self.lock,
                              ["arbitrary-map conservation"])
 
+    def test_corrupt_log_reported_before_open_obligations(self):
+        self.log.write_text("proof omitted\n")
+        with self.assertRaisesRegex(ValueError, "prover did not emit"):
+            validate_results(self.claims, self.results, self.lock,
+                             ["arbitrary-map conservation"])
+
     def test_stale_build_rejected(self):
         with self.assertRaisesRegex(ValueError, "stale K sources"):
             validate_build({"tool_lock": self.lock, "backend": "haskell",
                             "sources": {}}, self.lock)
+
+    def test_bytecode_hash_cannot_be_claimed_by_abstract_model(self):
+        with self.assertRaisesRegex(ValueError, "bytecode hash"):
+            validate_document({"claims": self.claims, "open_obligations": [],
+                               "bytecode_hash": "0x" + "a" * 64})
 
 
 if __name__ == "__main__":

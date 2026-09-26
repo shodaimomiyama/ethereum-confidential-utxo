@@ -53,6 +53,11 @@ def validate_manifest(claims):
                 raise ValueError(f"{item['id']}: missing {field}")
         if not {"#33", "#34"}.issubset(item["bridges"]):
             raise ValueError(f"{item['id']}: missing implementation bridges")
+        details = item.get("bridge_details", {})
+        if not isinstance(details, dict) or any(
+               not isinstance(details.get(issue), str) or not details[issue].strip()
+               for issue in ("#33", "#34")):
+            raise ValueError(f"{item['id']}: missing bridge details")
         if not resolve(item["source"]).is_file():
             raise ValueError(f"{item['id']}: missing source")
         by_source.setdefault(str(resolve(item["source"])), set()).add(item["id"])
@@ -62,10 +67,16 @@ def validate_manifest(claims):
             raise ValueError(f"{source}: source labels differ from manifest")
 
 
+def validate_document(manifest):
+    if manifest.get("bytecode_hash") is not None:
+        raise ValueError("#32 has no verified bytecode hash")
+    validate_manifest(manifest.get("claims"))
+    if not isinstance(manifest.get("open_obligations"), list):
+        raise ValueError("missing open-obligation register")
+
+
 def validate_results(claims, results, lock, open_obligations=(), build=None):
     validate_manifest(claims)
-    if open_obligations:
-        raise ValueError(f"undischarged model obligations: {open_obligations}")
     if not isinstance(lock, dict) or not re.fullmatch(r"[^\s]*sha256:[0-9a-f]{64}",
                                                       lock.get("image", "")):
         raise ValueError("tool image is not digest pinned")
@@ -97,6 +108,8 @@ def validate_results(claims, results, lock, open_obligations=(), build=None):
             raise ValueError(f"{row['id']}: prover did not emit clean #Top")
         if row.get("duration_seconds", -1) < 0:
             raise ValueError(f"{row['id']}: invalid duration")
+    if open_obligations:
+        raise ValueError(f"undischarged model obligations: {open_obligations}")
 
 
 def read_json(path):
@@ -162,8 +175,8 @@ def main():
     parser.add_argument("--lock", type=Path, default=ROOT / "formal" / "toolchain.lock.json")
     args = parser.parse_args()
     manifest = read_json(MODEL / "obligations.json")
+    validate_document(manifest)
     claims = manifest["claims"]
-    validate_manifest(claims)
     if args.command == "check-results":
         lock = read_json(args.lock)
         build = read_json(EVIDENCE / "build.json")
