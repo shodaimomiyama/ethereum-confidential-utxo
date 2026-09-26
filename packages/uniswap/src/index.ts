@@ -1,4 +1,7 @@
 export const contractVersion = '1' as const;
+export { automaticMinimum, parseEthAmount } from './amount.js';
+export { selectPayInput } from './selection.js';
+export type { PayInput } from './selection.js';
 export type {
   Address,
   AttemptId,
