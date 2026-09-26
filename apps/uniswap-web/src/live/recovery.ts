@@ -68,7 +68,9 @@ export class Recovery {
           chainId: this.deps.chainId, pool: this.deps.pool, owner: scope.owner,
           recordId: saved.record.recordId, revision: saved.revision }, saved.record.encryptedBundle);
         if (plaintext.operationId.toLowerCase() !== saved.record.operationId.toLowerCase()
-          || (saved.record.kind === 'pay' && plaintext.paymentId?.toLowerCase() !== saved.record.paymentId.toLowerCase())) {
+          || (saved.record.kind === 'pay'
+            ? plaintext.paymentId?.toLowerCase() !== saved.record.paymentId.toLowerCase()
+            : plaintext.paymentId !== undefined)) {
           throw new Error('RECORD_INDEX_MISMATCH');
         }
         records.push({ saved, plaintext });
@@ -76,10 +78,13 @@ export class Recovery {
       const finalized = deduplicate(await this.deps.chain.readFinalized(scope));
       // Cache writes are hints only. Failure cannot turn verified server/chain state into failure.
       for (const { saved } of records) {
-        try { await this.deps.cache?.write(scope, saved.record.recordId, {
-          recordId: saved.record.recordId, revision: saved.revision,
-          encryptedBundle: saved.record.encryptedBundle, updatedAt: Date.now(),
-        }); } catch { /* Optional cache. */ }
+        const cache = this.deps.cache;
+        if (cache) {
+          void Promise.resolve().then(() => cache.write(scope, saved.record.recordId, {
+            recordId: saved.record.recordId, revision: saved.revision,
+            encryptedBundle: saved.record.encryptedBundle, updatedAt: Date.now(),
+          })).catch(() => { /* Optional cache. */ });
+        }
       }
       return { records, finalized, availability: 'healthy', allowedActions: ['new-authorization-eligible'] };
     } catch { return blocked('unknown'); }

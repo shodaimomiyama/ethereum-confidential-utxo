@@ -12,9 +12,9 @@ const secret = () => crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 },
 const plain = { version: 1 as const, creationInputs: { input: id('2') }, operationId: id('3'),
   intendedAuthorization: { input: id('2') }, attempts: [], recoveryMarkers: { phase: 'reserved' } };
 
-async function fixture(revision = 1) {
+async function fixture(revision = 1, plaintext: typeof plain | (typeof plain & { paymentId: Bytes32 }) = plain) {
   const key = await secret();
-  const encryptedBundle = await sealRecord(key, { ...scope, chainId: 11155111n, pool, recordId: id('4'), revision }, plain);
+  const encryptedBundle = await sealRecord(key, { ...scope, chainId: 11155111n, pool, recordId: id('4'), revision }, plaintext);
   const record: OperationRecord = { kind: 'withdraw', scope, recordId: id('4'), inputId: id('2') as unknown as InputId,
     operationId: id('3') as unknown as OperationId, contentHash: id('5'), encryptedBundle, signatureStarted: false, attemptIds: [] };
   return { key, saved: { scope, record, revision } as SavedOperation & { scope: Scope } };
@@ -94,4 +94,23 @@ it('reports chain failure as unknown even with a healthy server', async () => {
   const result = await deps(saved, { chain: new Error('RPC_FAILED') }).load(scope, key);
   expect(result.availability).toBe('unknown');
   expect(result.allowedActions).toEqual([]);
+});
+
+it('rejects a withdraw record whose authenticated plaintext contains a payment ID', async () => {
+  const { key, saved } = await fixture(1, { ...plain, paymentId: id('a') });
+  const result = await deps(saved).load(scope, key);
+  expect(result.availability).toBe('unknown');
+  expect(result.allowedActions).toEqual([]);
+});
+
+it('returns verified recovery while an optional cache write never settles', async () => {
+  const { key, saved } = await fixture();
+  const cache: CipherCache = { read: async () => undefined,
+    write: async () => new Promise<void>(() => {}) };
+  const outcome = await Promise.race([
+    deps(saved, { cache }).load(scope, key),
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error('CACHE_BLOCKED_RECOVERY')), 100)),
+  ]);
+  expect(outcome.availability).toBe('healthy');
+  expect(outcome.records).toHaveLength(1);
 });
