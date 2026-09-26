@@ -117,13 +117,23 @@ export function readSession(
   scope: Scope,
   nowMs: number,
 ): Scope | undefined {
+  const identity = readSessionIdentity(storage, cookie, nowMs);
+  if (identity === undefined || identity.deploymentId !== scope.deploymentId
+    || identity.owner.toLowerCase() !== normalizedOwner(scope)) return undefined;
+  return scope;
+}
+
+export function readSessionIdentity(
+  storage: DurableObjectStorage,
+  cookie: string | null,
+  nowMs: number,
+): Scope | undefined {
   const token = new RegExp(`(?:^|;\\s*)${COOKIE_NAME}=(0x[0-9a-fA-F]{64})(?:;|$)`).exec(cookie ?? '')?.[1];
   if (token === undefined) return undefined;
   const session = storage.sql.exec<SessionRow>(
     'SELECT deployment_id, owner, expires_at_ms FROM sessions WHERE session_hash = ?',
     sha256(token as Hex),
   ).toArray()[0];
-  if (session === undefined || nowMs >= session.expires_at_ms
-    || session.deployment_id !== scope.deploymentId || session.owner !== normalizedOwner(scope)) return undefined;
-  return scope;
+  if (session === undefined || nowMs >= session.expires_at_ms) return undefined;
+  return { deploymentId: session.deployment_id, owner: session.owner } as Scope;
 }

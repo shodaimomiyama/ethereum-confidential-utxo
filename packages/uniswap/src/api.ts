@@ -48,6 +48,7 @@ export type ErrorCode =
   | 'PENDING_REQUEST'
   | 'INSUFFICIENT_FUNDS'
   | 'NOT_FOUND'
+  | 'PAYLOAD_TOO_LARGE'
   | 'SERVICE_UNAVAILABLE';
 
 export interface ApiError {
@@ -317,6 +318,7 @@ const ERROR_CODES: readonly ErrorCode[] = [
   'SCOPE_MISMATCH', 'REVISION_CONFLICT', 'RESERVATION_CONFLICT',
   'REQUEST_CONFLICT', 'PENDING_REQUEST', 'INSUFFICIENT_FUNDS',
   'NOT_FOUND', 'SERVICE_UNAVAILABLE',
+  'PAYLOAD_TOO_LARGE',
 ];
 
 const ERROR_STATUS: Readonly<Record<ErrorCode, number>> = {
@@ -331,6 +333,7 @@ const ERROR_STATUS: Readonly<Record<ErrorCode, number>> = {
   PENDING_REQUEST: 409,
   INSUFFICIENT_FUNDS: 422,
   NOT_FOUND: 404,
+  PAYLOAD_TOO_LARGE: 413,
   SERVICE_UNAVAILABLE: 503,
 };
 
