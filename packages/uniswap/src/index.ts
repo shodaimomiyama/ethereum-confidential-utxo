@@ -9,8 +9,8 @@ export { inspectOperation } from './recovery.js';
 export type { AttemptEvidence, CurrentInput, RecoveryDecision, RecoveryEvidence } from './recovery.js';
 export { coreReceiptResult, reconcilePayment } from './reconcile.js';
 export type { CoreReceiptResult, FinalizedHistory, ReconciledPayment } from './reconcile.js';
-export { assertWithdrawalBinding, paymentDigest } from './payment.js';
-export type { PaymentDeployment, PaymentTerms, WithdrawalBindingInput } from './payment.js';
+export { assertWithdrawalBinding, decodeAdapterError, encodePayCall, paymentDigest } from './payment.js';
+export type { AdapterError, PaymentDeployment, PaymentTerms, WithdrawalBindingInput } from './payment.js';
 export { createPaymentClient, PaymentProcessError } from './process.js';
 export type { AuthorizationSignatures, PaymentClient, PaymentPorts, PreparedFullWithdraw, PreparedPay, ReconciliationPorts, RecoveryPorts, SubmissionOutcome } from './process.js';
 export type {

@@ -1,6 +1,8 @@
-import { hashTypedData, isAddress } from 'viem';
+import { decodeErrorResult, encodeFunctionData, hashTypedData, isAddress } from 'viem';
+import type { Hex } from 'viem';
 import { operationId as coreOperationId, validateOperationShape } from '@confidential-utxo/core';
 import type { LocalDraft } from '@confidential-utxo/core';
+import { adapterAbi } from './generated/adapter-abi.js';
 import type { Address, OperationId, PaymentId } from './domain.js';
 import { SchemaError } from './schema.js';
 
@@ -103,5 +105,45 @@ export function assertWithdrawalBinding(
     || computedId.toLowerCase() !== withdrawal.operationId.toLowerCase()
     || computedId.toLowerCase() !== terms.operationId.toLowerCase()) {
     throw new SchemaError('INVALID_FIELD', 'withdrawalBinding');
+  }
+}
+
+export function encodePayCall(
+  draft: LocalDraft,
+  terms: PaymentTerms,
+  deployment: PaymentDeployment,
+  poolSignature: Hex,
+  paymentSignature: Hex,
+): Hex {
+  assertWithdrawalBinding(draft, terms, deployment);
+  if (!/^0x[0-9a-fA-F]{130}$/.test(poolSignature)
+    || !/^0x[0-9a-fA-F]{130}$/.test(paymentSignature)) {
+    throw new SchemaError('INVALID_FIELD', 'paymentSignatures');
+  }
+  const withdrawal = {
+    ...draft.request,
+    outputs: draft.request.outputs.map((output) => ({
+      owner: output.owner, Cx: output.commitment.x, Cy: output.commitment.y,
+      receiptFormat: output.receiptFormat, packet: output.packet,
+    })),
+  };
+  return encodeFunctionData({
+    abi: adapterAbi,
+    functionName: 'pay',
+    args: [withdrawal, draft.balanceProof, draft.rangeProofs, poolSignature, terms, paymentSignature] as never,
+  });
+}
+
+export type AdapterError =
+  | { readonly kind: 'adapter'; readonly name: Extract<(typeof adapterAbi)[number], { readonly type: 'error' }>['name'] }
+  | { readonly kind: 'unknown' };
+
+export function decodeAdapterError(data: Hex, provenance: 'verified-adapter' | 'unverified'): AdapterError {
+  if (provenance !== 'verified-adapter') return { kind: 'unknown' };
+  try {
+    const decoded = decodeErrorResult({ abi: adapterAbi, data });
+    return { kind: 'adapter', name: decoded.errorName };
+  } catch {
+    return { kind: 'unknown' };
   }
 }
