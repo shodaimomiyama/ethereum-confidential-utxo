@@ -277,3 +277,27 @@ it('persists exactly one retry attempt before submitting when two callers race',
   expect(recoverySubmits).toBe(1);
   expect((await fixture.reservations.get(scope, record.recordId))?.record.attemptIds).toHaveLength(2);
 });
+
+it('reconciles only against the current scope and a healthy saved operation', async () => {
+  const fixture = setup();
+  const ref = await createPaymentClient(fixture.ports).authorizePay(fixture.prepared, fixture.prepared.record.contentHash);
+  const changeOutputId = `0x${'99'.repeat(32)}` as never;
+  fixture.ports.reconciliation = {
+    expectedChainId: 31337n,
+    readFinalized: async () => ({
+      history: {
+        chainId: 31337n, deploymentId: scope.deploymentId, blockHash: blockHash as never,
+        finalized: true, canonical: true, rpcConsistent: true,
+        adapter: { blockHash, paymentId: record.paymentId, operationId: record.operationId, owner: scope.owner, amountOut: 99n },
+        pool: { blockHash, operationId: record.operationId, inputId: record.inputId, changeOutputId },
+        input: { blockHash, inputId: record.inputId, consumed: true },
+        change: { blockHash, outputId: changeOutputId, owner: scope.owner },
+      } as never,
+      receipt: { state: 'confirmed', outputId: changeOutputId, currentlyUnspent: true },
+    }),
+  };
+  const client = createPaymentClient(fixture.ports);
+  expect((await client.reconcile(recordId as never, ref)).operation.chainOutcome).toBe('finalized-success');
+  fixture.reservations.control.simulateRollback();
+  await expect(client.reconcile(recordId as never, ref)).rejects.toMatchObject({ code: 'RECOVERY_BLOCKED' });
+});

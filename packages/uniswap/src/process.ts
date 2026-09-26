@@ -5,6 +5,8 @@ import type { MonotonicClock, PayQuote } from './quote.js';
 import { isQuoteFresh } from './quote.js';
 import { inspectOperation } from './recovery.js';
 import type { CurrentInput, RecoveryEvidence } from './recovery.js';
+import { reconcilePayment } from './reconcile.js';
+import type { CoreReceiptResult, FinalizedHistory, ReconciledPayment } from './reconcile.js';
 
 export class PaymentProcessError extends Error {
   constructor(readonly code: 'TERMS_CHANGED' | 'SCOPE_CHANGED' | 'QUOTE_STALE' | 'TERMS_EXPIRED' | 'INPUT_RESERVED' | 'INPUT_INVALID' | 'RECOVERY_BLOCKED' | 'RECOVERY_UNAVAILABLE') {
@@ -44,9 +46,18 @@ export interface RecoveryPorts {
   releaseAndPrepareChangedTerms(saved: SavedReservation, evidence: RecoveryEvidence, input: unknown): Promise<PreparedPay>;
 }
 
+export interface ReconciliationPorts {
+  readonly expectedChainId: bigint;
+  readFinalized(ref: OperationRef, saved: SavedReservation): Promise<{
+    readonly history: FinalizedHistory;
+    readonly receipt: CoreReceiptResult;
+  }>;
+}
+
 export interface PaymentPorts {
   reservations: ReservationPort;
   recovery?: RecoveryPorts;
+  reconciliation?: ReconciliationPorts;
   preparePay(input: unknown): Promise<PreparedPay>;
   prepareFullWithdraw(input: unknown): Promise<PreparedFullWithdraw>;
   refreshPay(prepared: PreparedPay): Promise<PreparedPay>;
@@ -70,6 +81,7 @@ export interface PaymentClient {
   resumeOriginal(recordId: Bytes32): Promise<SubmissionOutcome>;
   retryAttempt(recordId: Bytes32): Promise<SubmissionOutcome>;
   prepareChangedTerms(recordId: Bytes32, input: unknown): Promise<PreparedPay>;
+  reconcile(recordId: Bytes32, ref: OperationRef): Promise<ReconciledPayment>;
 }
 
 function sameScope(a: Scope, b: Scope): boolean {
@@ -327,6 +339,31 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
     return outcome;
   }
 
+  async function reconcile(recordId: Bytes32, ref: OperationRef): Promise<ReconciledPayment> {
+    const adapter = ports.reconciliation;
+    if (adapter === undefined) throw new PaymentProcessError('RECOVERY_UNAVAILABLE');
+    const scope = ports.currentScope();
+    if (!sameScope(scope, ref.scope)) throw new PaymentProcessError('SCOPE_CHANGED');
+    const listed = await ports.reservations.list(scope);
+    assertScope(scope);
+    if (listed.availability !== 'healthy') throw new PaymentProcessError('RECOVERY_BLOCKED');
+    const saved = listed.records.find(({ record }) => sameHash(record.recordId, recordId));
+    if (saved === undefined || !sameScope(saved.record.scope, scope)
+      || !sameHash(saved.record.operationId, ref.operationId)
+      || saved.record.kind !== 'pay' || !sameHash(saved.record.paymentId, ref.paymentId ?? '')) {
+      throw new PaymentProcessError('RECOVERY_BLOCKED');
+    }
+    const { history, receipt } = await adapter.readFinalized(ref, saved);
+    assertScope(scope);
+    const latest = await ports.reservations.get(scope, recordId);
+    assertScope(scope);
+    if (latest === undefined || latest.revision !== saved.revision
+      || !sameHash(latest.record.contentHash, saved.record.contentHash)) {
+      throw new PaymentProcessError('RECOVERY_BLOCKED');
+    }
+    return reconcilePayment(ref, saved.record, history, receipt, adapter.expectedChainId);
+  }
+
   return {
     preparePay: (input) => ports.preparePay(input),
     prepareFullWithdraw: (input) => ports.prepareFullWithdraw(input),
@@ -338,5 +375,6 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
       async (recovery, saved, evidence) => submitRecovered(saved, await recovery.restoreForRetry(saved, evidence))),
     prepareChangedTerms: (recordId, input) => recover(recordId, 'change-terms',
       (recovery, saved, evidence) => recovery.releaseAndPrepareChangedTerms(saved, evidence, input)),
+    reconcile,
   };
 }

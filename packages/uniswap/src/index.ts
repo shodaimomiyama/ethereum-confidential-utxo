@@ -12,7 +12,7 @@ export type { CoreReceiptResult, FinalizedHistory, ReconciledPayment } from './r
 export { assertWithdrawalBinding, paymentDigest } from './payment.js';
 export type { PaymentDeployment, PaymentTerms, WithdrawalBindingInput } from './payment.js';
 export { createPaymentClient, PaymentProcessError } from './process.js';
-export type { AuthorizationSignatures, PaymentClient, PaymentPorts, PreparedFullWithdraw, PreparedPay, RecoveryPorts, SubmissionOutcome } from './process.js';
+export type { AuthorizationSignatures, PaymentClient, PaymentPorts, PreparedFullWithdraw, PreparedPay, ReconciliationPorts, RecoveryPorts, SubmissionOutcome } from './process.js';
 export type {
   Address,
   AttemptId,
