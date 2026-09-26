@@ -28,6 +28,15 @@ describe('browser deployment resolver', () => {
     expect(resolver('other' as DeploymentId)).toBeUndefined();
   });
 
+  it('checks connection fields without treating browser parsing as on-chain verification', () => {
+    const input = fixture();
+    const manifest = input.readManifest() as { contracts: { pool: object } };
+    input.setManifest({ ...manifest, contracts: {
+      ...manifest.contracts, pool: { ...manifest.contracts.pool, runtimeSha256: 'unverified-runtime' },
+    } });
+    expect(createDeploymentResolver(input)(deploymentId)?.pool).toBe(pool);
+  });
+
   it('refuses asset-only and incomplete manifests', () => {
     for (const change of [
       { site: null }, { contracts: { pool: { address: pool } } },
