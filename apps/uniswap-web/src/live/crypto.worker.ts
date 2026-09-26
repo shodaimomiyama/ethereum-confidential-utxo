@@ -1,4 +1,5 @@
 import { generateRangeProof, generateBalanceProof, decryptReceipt } from '@confidential-utxo/crypto';
+import { buildOperation } from '@confidential-utxo/core';
 import type { CryptoJob, CryptoReply, JobIdentity } from './worker-protocol.js';
 
 const worker = globalThis as unknown as {
@@ -9,7 +10,13 @@ worker.onmessage = async ({ data: job }) => {
   // Explicit allowlist: never spread the request (which can carry a private key).
   const identity: JobIdentity = { jobId: job.jobId, epoch: job.epoch, scope: job.scope };
   try {
-    if (job.kind === 'prove') {
+    if (job.kind === 'build-operation') {
+      const value = await buildOperation(job.payload.intent, job.payload.context, {
+        inputs: job.payload.inputs,
+        randomSalt: () => globalThis.crypto.getRandomValues(new Uint8Array(32)),
+      });
+      worker.postMessage({ ...identity, kind: 'result', jobKind: 'build-operation', value });
+    } else if (job.kind === 'prove') {
       const range = generateRangeProof(...job.payload.range);
       const balance = generateBalanceProof(job.payload.balance);
       worker.postMessage({ ...identity, kind: 'result', jobKind: 'prove', value: { range, balance } });

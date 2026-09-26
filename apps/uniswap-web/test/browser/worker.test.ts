@@ -49,3 +49,74 @@ it('decrypts a known HPKE vector and returns only the opening; tampering returns
     await expect(worker.run({ kind: 'receive', jobId: 'bad', epoch: 0, scope, payload })).rejects.toMatchObject({ code: 'CRYPTO_FAILED' });
   } finally { payload.recipientPrivateKey.fill(0); worker.dispose(); }
 });
+
+it('builds a full Withdraw through published core in the production Worker and verifies its balance proof', async () => {
+  const { operationId, validateOperationShape } = await import('@confidential-utxo/core');
+  const { commit, computeBalancePoint } = await import('@confidential-utxo/crypto');
+  const { balanceChallengeTrace } = await import('../../../../packages/crypto/src/balance.js');
+  const { G } = await import('../../../../packages/crypto/src/fixed-parameters.js');
+  const { add, mul, samePoint } = await import('../../../../packages/crypto/src/group.js');
+  const payload = withdrawPayload();
+  payload.inputs.forEach(input => { input.commitment = commit(input.opening); });
+  const before = structuredClone(payload);
+  const worker = await client();
+  try {
+    const result = await worker.run({ kind: 'build-operation', jobId: 'withdraw', epoch: 0, scope, payload });
+    const draft = result.value;
+    expect(result.jobKind).toBe('build-operation');
+    expect(draft.context).toEqual(payload.context);
+    expect(draft.request).toMatchObject({ kind: 2, owner: scope.owner, inputIds: payload.inputs.map(i => i.id).reverse(),
+      outputs: [], d: 0n, w: 12n, destination: payload.intent.destination });
+    expect(() => validateOperationShape(draft.request)).not.toThrow();
+    expect(draft.operationId).toBe(operationId(payload.context, draft.request));
+    expect(draft.outputIds).toEqual([]); expect(draft.openings).toEqual([]); expect(draft.rangeProofs).toEqual([]);
+    expect(draft.inputOpenings).toEqual(payload.inputs.map(i => i.opening).reverse());
+    expect(draft.signature).toBeUndefined();
+    const X = computeBalancePoint(payload.inputs.map(i => i.commitment), [], 0n, 12n);
+    const R = { x: draft.balanceProof.Rx, y: draft.balanceProof.Ry };
+    const challenge = balanceChallengeTrace(payload.context.chainId, bytes(payload.context.pool), bytes(draft.operationId), X, R).at(-1)!.candidate;
+    expect(samePoint(mul(G, draft.balanceProof.s), add(R, mul(X, challenge)))).toBe(true);
+    const second = await worker.run({ kind: 'build-operation', jobId: 'fresh', epoch: 0, scope, payload });
+    expect(second.value.request.salt).not.toBe(draft.request.salt);
+    expect(second.value.operationId).not.toBe(draft.operationId);
+    expect(payload).toEqual(before);
+  } finally { worker.dispose(); }
+});
+
+function withdrawPayload() {
+  const context: import('@confidential-utxo/core').Context = {
+    chainId: 31337n, pool: `0x${'33'.repeat(20)}`, deploymentBlock: 0n, verifier: `0x${'44'.repeat(20)}`,
+    parametersHash: `0x${'55'.repeat(32)}`, finalityMode: 'local-simulated',
+  };
+  const intent = { kind: 2 as const, owner: scope.owner, amount: 12n, destination: scope.owner };
+  const inputs: import('@confidential-utxo/core').OwnedUtxo[] = [2, 1].map(id => ({
+    id: `0x${id.toString(16).padStart(64, '0')}`, owner: scope.owner, opening: { amount: 6n, blinding: BigInt(id) },
+    commitment: { x: 0n, y: 0n }, checkpoint: { number: 1n, hash: `0x${'66'.repeat(32)}`, mode: 'local-simulated' },
+    status: 'available', chainId: context.chainId, pool: context.pool,
+  }));
+  return { intent, context, inputs };
+}
+
+it('sanitizes a rejected core build without returning private inputs', async () => {
+  const worker = await client();
+  try {
+    await expect(worker.run({ kind: 'build-operation', jobId: 'invalid-build', epoch: 0, scope, payload: withdrawPayload() }))
+      .rejects.toMatchObject({ code: 'CRYPTO_FAILED', message: 'CRYPTO_FAILED' });
+  } finally { worker.dispose(); }
+});
+
+it('cancels a core build across A to B to A and delivers only the new epoch', async () => {
+  const worker = await client();
+  const { commit } = await import('@confidential-utxo/crypto');
+  const payload = withdrawPayload(); payload.inputs.forEach(input => { input.commitment = commit(input.opening); });
+  try {
+    const old = worker.run({ kind: 'build-operation', jobId: 'same', epoch: 0, scope, payload });
+    const cancelled = expect(old).rejects.toMatchObject({ code: 'CANCELLED' });
+    worker.setContext({ ...scope, owner: `0x${'22'.repeat(20)}` as Scope['owner'] }, 1); worker.setContext(scope, 2);
+    await cancelled;
+    const current = await worker.run({ kind: 'build-operation', jobId: 'same', epoch: 2, scope, payload });
+    expect(current.epoch).toBe(2); expect(current.value.request.w).toBe(12n);
+    const next = worker.run({ kind: 'build-operation', jobId: 'cancel', epoch: 2, scope, payload });
+    const rejection = expect(next).rejects.toMatchObject({ code: 'CANCELLED' }); worker.cancel(); await rejection;
+  } finally { worker.dispose(); }
+});

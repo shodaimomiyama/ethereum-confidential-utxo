@@ -16,7 +16,8 @@
     "react-dom": "19.3.0",
     "@hpke/dhkem-x25519": "1.8.0",
     "viem": "2.56.9",
-    "@confidential-utxo/crypto": "workspace:*"
+    "@confidential-utxo/crypto": "workspace:*",
+    "@confidential-utxo/core": "workspace:*"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "7.0.1",
@@ -33,7 +34,7 @@
     "build": "vite build",
     "check:site": "tsc --noEmit -p tsconfig.site.json",
     "test:site": "pnpm --dir ../.. exec vitest run apps/uniswap-web/test",
-    "build:worker": "pnpm --filter @confidential-utxo/crypto build && vite build --config vite.worker.config.ts",
+    "build:worker": "pnpm --filter @confidential-utxo/crypto build && pnpm --filter @confidential-utxo/core build && vite build --config vite.worker.config.ts",
     "test:browser": "pnpm build:worker && vitest run --config vitest.browser.config.ts"
   }
 }

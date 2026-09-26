@@ -1,13 +1,15 @@
 import type { Scope } from '@confidential-utxo/uniswap';
+import type { BuildIntent, Context, LocalDraft, OwnedUtxo } from '@confidential-utxo/core';
 import type { generateRangeProof, generateBalanceProof, decryptReceipt } from '@confidential-utxo/crypto';
 
-// This primitive adapter uses core's exact inputs. Task 8 binds the published #29
-// operation builder here; operation encoding and authorization stay in core.
 export interface CryptoPayloads {
+  'build-operation': { readonly intent: BuildIntent; readonly context: Context; readonly inputs: OwnedUtxo[] };
   prove: { readonly range: Parameters<typeof generateRangeProof>; readonly balance: Parameters<typeof generateBalanceProof>[0] };
   receive: Parameters<typeof decryptReceipt>[0];
 }
 export interface CryptoValues {
+  /** Secret local state for the calling adapter; never copy it into ViewState. */
+  'build-operation': LocalDraft;
   prove: { readonly range: ReturnType<typeof generateRangeProof>; readonly balance: ReturnType<typeof generateBalanceProof> };
   receive: Awaited<ReturnType<typeof decryptReceipt>>;
 }

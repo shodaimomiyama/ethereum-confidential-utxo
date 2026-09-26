@@ -48,6 +48,9 @@ importers:
 
   apps/uniswap-web:
     dependencies:
+      '@confidential-utxo/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@confidential-utxo/crypto':
         specifier: workspace:*
         version: link:../../packages/crypto

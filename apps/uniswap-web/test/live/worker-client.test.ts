@@ -69,3 +69,33 @@ it('settles constructor and postMessage failures without exposing exception cont
   await expect(client.run(job('two'))).rejects.toMatchObject({ code: 'WORKER_UNAVAILABLE', message: 'WORKER_UNAVAILABLE' });
   expect(worker.terminated).toBe(true);
 });
+
+it('discards a queued core draft from A after A to B to A even when the job ID is reused', async () => {
+  const workers: FakeWorker[] = [];
+  const client = new CryptoWorkerClient(() => { const worker = new FakeWorker(); workers.push(worker); return worker; });
+  const context = { chainId: 1n, pool: scope.owner, deploymentBlock: 0n, verifier: scope.owner,
+    parametersHash: `0x${'00'.repeat(32)}` as const, finalityMode: 'local-simulated' as const };
+  const build = (epoch: number): Extract<CryptoJob, { kind: 'build-operation' }> => ({
+    kind: 'build-operation', scope, epoch, jobId: 'build', payload: {
+      intent: { kind: 2, owner: scope.owner, amount: 1n, destination: scope.owner }, context, inputs: [],
+    },
+  });
+  const result = (epoch: number): Extract<CryptoReply, { jobKind: 'build-operation'; kind: 'result' }> => ({
+    kind: 'result', jobKind: 'build-operation', scope, epoch, jobId: 'build', value: {
+      context, request: { kind: 2, owner: scope.owner, salt: context.parametersHash, inputIds: [], outputs: [], d: 0n, w: 1n, destination: scope.owner },
+      operationId: context.parametersHash, outputIds: [], openings: [], inputOpenings: [{ amount: 1n, blinding: 987654321n }],
+      balanceProof: { Rx: 1n, Ry: 2n, s: 3n }, rangeProofs: [],
+    },
+  });
+  const first = client.run(build(0)); const cancelled = expect(first).rejects.toMatchObject({ code: 'CANCELLED' });
+  const queuedReply = workers[0]!.onmessage!;
+  client.setContext({ ...scope, deploymentId: 'B' as Scope['deploymentId'] }, 1); client.setContext(scope, 2); await cancelled;
+  const current = client.run(build(2)); let settled = false;
+  void current.then(() => { settled = true; });
+  queuedReply({ data: result(0) } as MessageEvent<CryptoReply>);
+  // Matching metadata cannot revive a terminated Worker generation either.
+  queuedReply({ data: result(2) } as MessageEvent<CryptoReply>);
+  workers[1]!.emit(result(0));
+  await Promise.resolve(); expect(settled).toBe(false); expect(workers[0]!.terminated).toBe(true);
+  workers[1]!.emit(result(2)); await expect(current).resolves.toEqual(result(2)); client.dispose();
+});
