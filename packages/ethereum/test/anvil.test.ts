@@ -6,7 +6,7 @@ import { expect, it } from "vitest";
 import { createPublicClient, createWalletClient, hexToBytes, http, publicActions } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { foundry } from "viem/chains";
-import { authorizeOperation, buildOperation, prepareSubmission, synchronize } from "@confidential-utxo/core";
+import { authorizeOperation, buildOperation, preflightSubmission, prepareSubmission, synchronize } from "@confidential-utxo/core";
 import type { LocalDraft, RecipientInfo, SyncResult } from "@confidential-utxo/core";
 import { createHistoryPort, createOperationSigner, createRecipientInfoSigner,
   defaultRpcPolicy, encodePoolSubmission, observeAttempt, replaceSubmissionFee, submitPublicOperation,
@@ -56,7 +56,11 @@ it("AC-04/05/06/09: runs real deposit, partial transfer, full UTXO withdrawal, r
     const verified = await verifyEthereumDeployment(client, manifest, "local-simulated");
     const context = verified.context;
     const history = createHistoryPort(verified, client, defaultRpcPolicy);
-    const submitter = privateKeyToAccount(submitterKey);
+    const submitter = privateKeyToAccount(`0x${"42".repeat(32)}`);
+    const funder = createWalletClient({ account: privateKeyToAccount(submitterKey),
+      chain: foundry, transport: http(url) });
+    const funding = await funder.sendTransaction({ to: submitter.address, value: 1_000_000_000_000_000_000n });
+    await client.waitForTransactionReceipt({ hash: funding });
     const wallet = createWalletClient({ account: submitter, chain: foundry, transport: http(url) }).extend(publicActions);
     const recipientBase = { chainId: context.chainId, pool: context.pool, owner: owner.address,
       receivePublicKey: receiver.recipientInfo.receivePublicKey,
@@ -162,5 +166,25 @@ it("AC-04/05/06/09: runs real deposit, partial transfer, full UTXO withdrawal, r
     } finally {
       await client.request({ method: "anvil_setAutomine", params: [true] } as Parameters<typeof client.request>[0]);
     }
+
+    const lostDraft = await buildOperation({ kind: 0, owner: owner.address, amount: 1n, recipient },
+      context, { inputs: [], randomSalt: () => new Uint8Array(32).fill(10) });
+    const lostSigned = { ...lostDraft,
+      signature: await authorizeOperation(context, lostDraft.request, signer) };
+    const lostPrepared = await prepareSubmission(lostSigned, { history, keys, storage });
+    expect(lostPrepared.status).toBe("ready");
+    if (lostPrepared.status !== "ready") throw new Error("lost-response preflight failed");
+    let acceptedHash: `0x${string}` | undefined;
+    const lostWallet = { ...wallet, sendTransaction: async (args: Parameters<typeof wallet.sendTransaction>[0]) => {
+      acceptedHash = await wallet.sendTransaction(args);
+      throw new Error("response lost after node acceptance");
+    } };
+    const uncertain = await submitPublicOperation(verified, history, lostWallet, submitter.address,
+      lostPrepared.submission, {});
+    expect(uncertain.attempt).toEqual({ outer: "unconfirmed" });
+    expect(uncertain.operationId).toBe(lostDraft.operationId);
+    expect(acceptedHash).toBeDefined();
+    expect((await client.waitForTransactionReceipt({ hash: acceptedHash! })).status).toBe("success");
+    expect((await preflightSubmission(context, lostDraft.request, { history })).status).toBe("executed");
   });
 }, 180_000);

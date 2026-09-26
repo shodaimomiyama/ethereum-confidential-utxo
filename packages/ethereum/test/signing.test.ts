@@ -46,6 +46,29 @@ it("rejects a different selected owner and wrong wallet chain", async () => {
     .rejects.toMatchObject({ code: "INCONSISTENT" });
 });
 
+it("rejects a wallet that switches chain after signing or returns another account's signature", async () => {
+  let chainReads = 0;
+  const switched = createWalletClient({ transport: custom({ request: async ({ method }) => {
+    if (method === "eth_chainId") return ++chainReads === 1 ? "0x7a69" : "0x1";
+    if (method === "eth_accounts") return [account.address];
+    if (method === "eth_signTypedData_v4") return "0x";
+    throw new Error(`unexpected ${method}`);
+  } }) });
+  await expect(createOperationSigner(switched, account.address)
+    .signTypedData(authorizationTypedData(context, request)))
+    .rejects.toMatchObject({ code: "INCONSISTENT" });
+  const another = privateKeyToAccount(`0x${"01".repeat(32)}`);
+  const wrongSignature = createWalletClient({ transport: custom({ request: async ({ method, params }) => {
+    if (method === "eth_chainId") return "0x7a69";
+    if (method === "eth_accounts") return [account.address];
+    if (method === "eth_signTypedData_v4") return another.signTypedData(JSON.parse((params as string[])[1]!));
+    throw new Error(`unexpected ${method}`);
+  } }) });
+  await expect(createOperationSigner(wrongSignature, account.address)
+    .signTypedData(authorizationTypedData(context, request)))
+    .rejects.toMatchObject({ code: "SIGNATURE_INVALID" });
+});
+
 it.each([
   { code: 4001, expected: "SIGNATURE_REJECTED" },
   { code: 4200, expected: "UNSUPPORTED" },

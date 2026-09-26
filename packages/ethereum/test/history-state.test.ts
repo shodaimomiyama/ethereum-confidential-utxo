@@ -76,6 +76,20 @@ it("reports a reorg between the pre-read and post-read headers", async () => {
   expect(await history.getUtxo(hash("1"), point)).toEqual({ complete: false, reason: "HASH_MISMATCH" });
 });
 
+it("honors an aborted finite policy even when a header RPC never resolves", async () => {
+  const abort = new AbortController();
+  abort.abort();
+  const hanging = { getBlock: () => new Promise<never>(() => {}) } as unknown as PublicClient;
+  const history = createHistoryPort(verified, hanging, { ...policy, signal: abort.signal,
+    requestTimeoutMs: 5, overallTimeoutMs: 10 });
+  const result = await Promise.race([
+    history.getUtxo(hash("1"), point),
+    new Promise<"pending">(resolve => setTimeout(() => resolve("pending"), 50)),
+  ]);
+  expect(result).not.toBe("pending");
+  expect(result).toEqual({ complete: false, reason: "RPC" });
+});
+
 it("requires complete event evidence for spent UTXOs and executed operations", async () => {
   const spent = createHistoryPort(verified, client(2).rpc, policy);
   expect(await spent.getUtxo(hash("1"), point)).toEqual({ complete: false, reason: "GAP" });

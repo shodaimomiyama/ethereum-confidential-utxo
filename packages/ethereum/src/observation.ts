@@ -63,7 +63,11 @@ export async function observeAttempt(history: HistoryPort, client: PublicClient,
       return { observation, ...(gas ? { gas } : {}) };
     }
     const matching = operations.value.filter(item => item.success && same(item.success.operationId, id));
-    if (!record.value.executed && matching.length === 0) return { observation, ...(gas ? { gas } : {}) };
+    if (!record.value.executed && matching.length === 0) {
+      // A prior checkpoint may have established success; this checkpoint does not.
+      observation.historyStatus = "uncertain";
+      return { observation, ...(gas ? { gas } : {}) };
+    }
     if (!record.value.executed || matching.length !== 1 || !matching[0]?.success ||
         !same(operationId(context, matching[0].request), id) ||
         (record.value.operation && !same(operationId(context, record.value.operation), id))) {

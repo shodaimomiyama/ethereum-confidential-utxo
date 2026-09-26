@@ -5,7 +5,7 @@ import type { Checkpoint, Context, HistoryPort, Observation, ObservedOperation, 
 import { poolAbi } from "./abi.js";
 import type { VerifiedDeployment } from "./deployment.js";
 import { EthereumFailure } from "./errors.js";
-import { canonicalHeader, readPinnedCall, readWithPolicy } from "./rpc.js";
+import { canonicalHeader, readPinnedCall, readWithPolicy, remainingRpcPolicy } from "./rpc.js";
 import type { RpcPolicy } from "./rpc.js";
 
 type Position = { operationId: Hex; blockNumber: bigint; blockHash: Hex;
@@ -35,7 +35,9 @@ export function chunkInclusive(from: bigint, to: bigint, width: bigint): [bigint
 function decode(log: RawLog): PoolEvent {
   if (log.blockNumber === null || !log.blockHash || !log.transactionHash || log.transactionIndex === null ||
       log.logIndex === null || log.removed || !Number.isSafeInteger(log.transactionIndex) ||
-      !Number.isSafeInteger(log.logIndex)) throw new Error("incomplete log metadata");
+      !Number.isSafeInteger(log.logIndex) || log.transactionIndex < 0 || log.logIndex < 0) {
+    throw new Error("incomplete log metadata");
+  }
   const parsed = decodeEventLog({ abi: poolAbi, topics: log.topics, data: log.data });
   const args = parsed.args as Record<string, unknown>;
   const position: Position = { operationId: args.operationId as Hex,
@@ -66,7 +68,8 @@ function fromCall(request: Record<string, unknown>): OperationRequest {
     d: request.d as bigint, w: request.w as bigint, destination: request.destination as `0x${string}` };
 }
 
-async function assemble(client: PublicClient, context: Context, events: PoolEvent[], policy: RpcPolicy): Promise<ObservedOperation[]> {
+async function assemble(client: PublicClient, context: Context, events: PoolEvent[], policy: RpcPolicy,
+  deadline: number): Promise<ObservedOperation[]> {
   const groups = new Map<string, PoolEvent[]>();
   for (const event of events) {
     const p = event.position;
@@ -111,7 +114,8 @@ async function assemble(client: PublicClient, context: Context, events: PoolEven
         throw new Error("mixed transaction evidence");
       }
     }
-    const transaction = await readWithPolicy(() => client.getTransaction({ hash: success.position.transactionHash }), policy);
+    const transaction = await readWithPolicy(() => client.getTransaction({ hash: success.position.transactionHash }),
+      remainingRpcPolicy(policy, deadline));
     if (transaction.to && same(transaction.to, context.pool)) {
       const call = decodeFunctionData({ abi: poolAbi, data: transaction.input });
       const expectedName = request.kind === 0 ? "deposit" : request.kind === 1 ? "transfer" : "withdraw";
@@ -137,12 +141,14 @@ async function assemble(client: PublicClient, context: Context, events: PoolEven
 export async function getPoolOperations(client: PublicClient, context: Context, fromBlock: bigint,
   point: Checkpoint, policy: RpcPolicy): Promise<Observation<ObservedOperation[]>> {
   if (fromBlock < context.deploymentBlock || fromBlock > point.number) return incomplete("GAP");
-  const before = await canonicalHeader(client, point.number, point);
+  const deadline = Date.now() + policy.overallTimeoutMs;
+  let before: Awaited<ReturnType<typeof canonicalHeader>>;
+  try { before = await canonicalHeader(client, point.number, point, remainingRpcPolicy(policy, deadline)); }
+  catch { return incomplete("RPC"); }
   if (!before.complete) return incomplete(before.reason);
   const logs: RawLog[] = [];
   let start = fromBlock;
   let width = policy.chunkBlocks;
-  const deadline = Date.now() + policy.overallTimeoutMs;
   try {
     while (start <= point.number) {
       const remaining = deadline - Date.now();
@@ -158,7 +164,7 @@ export async function getPoolOperations(client: PublicClient, context: Context, 
         }
         start = end + 1n;
       } catch (error) {
-        if (error instanceof Error && ("code" in error) && (error as { code?: string }).code === "ABORTED") return incomplete("RPC");
+        if (error instanceof EthereumFailure && (error.code === "ABORTED" || error.code === "TIMEOUT")) return incomplete("RPC");
         if (width === 1n) return incomplete("GAP");
         width = width / 2n || 1n;
       }
@@ -175,18 +181,18 @@ export async function getPoolOperations(client: PublicClient, context: Context, 
     for (const log of seen.values()) {
       const number = log.blockNumber!;
       if (!headers.has(number)) {
-        const header = await canonicalHeader(client, number, point);
+        const header = await canonicalHeader(client, number, point, remainingRpcPolicy(policy, deadline));
         if (!header.complete) return incomplete(header.reason);
         headers.set(number, header.value.hash);
       }
       if (!same(headers.get(number)!, log.blockHash!)) return incomplete("HASH_MISMATCH");
     }
     const events = [...seen.values()].map(decode);
-    const operations = await assemble(client, context, events, policy);
-    const after = await canonicalHeader(client, point.number, point);
+    const operations = await assemble(client, context, events, policy, deadline);
+    const after = await canonicalHeader(client, point.number, point, remainingRpcPolicy(policy, deadline));
     return after.complete ? { complete: true, blockHash: point.hash, value: operations } : incomplete(after.reason);
   } catch (error) {
-    if (error instanceof EthereumFailure && error.code === "RPC") return incomplete("RPC");
+    if (error instanceof EthereumFailure && (error.code === "RPC" || error.code === "TIMEOUT" || error.code === "ABORTED")) return incomplete("RPC");
     if (error instanceof EthereumFailure && error.code === "HASH_MISMATCH") return incomplete("HASH_MISMATCH");
     return incomplete("GAP");
   }
@@ -201,27 +207,29 @@ const samePoint = (point: Checkpoint, context: Context) =>
 export function createHistoryPort(verified: VerifiedDeployment, client: PublicClient, policy: RpcPolicy): HistoryPort {
   const context = verified.context;
   const checked = (point: Checkpoint) => samePoint(point, context) ? undefined : incompleteState("GAP");
-  const allOperations = (point: Checkpoint) =>
-    getPoolOperations(client, context, context.deploymentBlock, point, policy);
+  const allOperations = (point: Checkpoint, deadline: number) =>
+    getPoolOperations(client, context, context.deploymentBlock, point, remainingRpcPolicy(policy, deadline));
 
   const utxo = async (id: Hex, point: Checkpoint): Promise<Observation<UtxoState>> => {
     const invalid = checked(point);
     if (invalid) return invalid;
+    const deadline = Date.now() + policy.overallTimeoutMs;
     try {
       const data = await readPinnedCall(client, context.pool,
-        encodeFunctionData({ abi: poolAbi, functionName: "getUtxo", args: [id] }), point);
+        encodeFunctionData({ abi: poolAbi, functionName: "getUtxo", args: [id] }), point,
+        remainingRpcPolicy(policy, deadline));
       const [status, owner, x, y] = decodeFunctionResult({ abi: poolAbi, functionName: "getUtxo", data });
       if (status === 0) return completeState(point, { exists: false });
       if (status !== 1 && status !== 2) return incompleteState("GAP");
       const value: UtxoState = { exists: true, owner, commitment: { x, y } };
       if (status === 2) {
-        const operations = await allOperations(point);
+        const operations = await allOperations(point, deadline);
         if (!operations.complete) return incompleteState(operations.reason);
         const consumers = operations.value.filter(op => op.request.inputIds.some(input => same(input, id)));
         if (consumers.length !== 1 || !consumers[0]?.success) return incompleteState("GAP");
         value.consumedBy = consumers[0].success.operationId;
       }
-      const after = await canonicalHeader(client, point.number, point);
+      const after = await canonicalHeader(client, point.number, point, remainingRpcPolicy(policy, deadline));
       return after.complete ? completeState(point, value) : incompleteState(after.reason);
     } catch (error) {
       return incompleteState(error instanceof EthereumFailure && error.code === "HASH_MISMATCH" ? "HASH_MISMATCH" : "RPC");
@@ -231,16 +239,18 @@ export function createHistoryPort(verified: VerifiedDeployment, client: PublicCl
   const success = async (id: Hex, point: Checkpoint): Promise<Observation<OperationSuccess>> => {
     const invalid = checked(point);
     if (invalid) return invalid;
+    const deadline = Date.now() + policy.overallTimeoutMs;
     try {
       const data = await readPinnedCall(client, context.pool,
-        encodeFunctionData({ abi: poolAbi, functionName: "isOperationExecuted", args: [id] }), point);
+        encodeFunctionData({ abi: poolAbi, functionName: "isOperationExecuted", args: [id] }), point,
+        remainingRpcPolicy(policy, deadline));
       const executed = decodeFunctionResult({ abi: poolAbi, functionName: "isOperationExecuted", data });
       if (!executed) return completeState(point, { executed: false });
-      const operations = await allOperations(point);
+      const operations = await allOperations(point, deadline);
       if (!operations.complete) return incompleteState(operations.reason);
       const matches = operations.value.filter(op => op.success && same(op.success.operationId, id));
       if (matches.length !== 1 || !matches[0]) return incompleteState("GAP");
-      const after = await canonicalHeader(client, point.number, point);
+      const after = await canonicalHeader(client, point.number, point, remainingRpcPolicy(policy, deadline));
       return after.complete ? completeState(point, { executed: true, operation: matches[0].request }) : incompleteState(after.reason);
     } catch (error) {
       return incompleteState(error instanceof EthereumFailure && error.code === "HASH_MISMATCH" ? "HASH_MISMATCH" : "RPC");
@@ -258,12 +268,12 @@ export function createHistoryPort(verified: VerifiedDeployment, client: PublicCl
     async getContext(point) {
       const invalid = checked(point);
       if (invalid) return invalid;
-      const header = await canonicalHeader(client, point.number, point);
+      const header = await canonicalHeader(client, point.number, point, policy);
       return header.complete ? completeState(point, context) : incompleteState(header.reason);
     },
     getCanonicalHeader(number, point) {
       const invalid = checked(point);
-      return invalid ? Promise.resolve(invalid) : canonicalHeader(client, number, point);
+      return invalid ? Promise.resolve(invalid) : canonicalHeader(client, number, point, policy);
     },
     getOperations(fromBlock, point) {
       const invalid = checked(point);

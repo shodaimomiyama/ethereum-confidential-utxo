@@ -49,7 +49,7 @@ function client(status: "success" | "reverted" | "missing", blockHash = point.ha
 
 it("keeps missing receipts pending and separates outer failure from logical success", async () => {
   expect((await observeAttempt(history(), client("missing"), id, txHash, policy)).observation)
-    .toEqual({ txHash, outer: "pending", operation: "unconfirmed" });
+    .toMatchObject({ txHash, outer: "pending", operation: "unconfirmed", historyStatus: "uncertain" });
   const failed = await observeAttempt(history(), client("reverted"), id, txHash, policy);
   expect(failed.observation).toMatchObject({ outer: "failed", failure: "OUTER_REVERT" });
   expect(failed.gas).toEqual({ gasUsed: 21000n, effectiveGasPrice: 3n });
@@ -67,6 +67,23 @@ it("adopts a separately submitted finalized operation and revokes it after reorg
   const changed = await observeAttempt(history(true, true), client("success"), id, txHash, policy);
   expect(changed.observation.historyStatus).toBe("reorg");
   expect(trackAttempt(id, changed.observation, tracked).operation).toBe("unconfirmed");
+});
+
+it("retires an adopted success after a consistent replacement checkpoint removes the operation", async () => {
+  const first = await observeAttempt(history(true), client("success"), id, txHash, policy);
+  const adopted = trackAttempt(id, first.observation, []);
+  expect(adopted.operation).toBe("executed");
+  const nextPoint = { ...point, hash: hex(11) };
+  const nextBound = <T>(value: T) => ({ complete: true as const, blockHash: nextPoint.hash, value });
+  const replacement: HistoryPort = { ...history(),
+    getFinalizedCheckpoint: async () => nextPoint,
+    getContext: async () => nextBound(context),
+    getOperations: async () => nextBound([]),
+    getOperationSuccess: async () => nextBound({ executed: false }),
+    getCanonicalHeader: async () => nextBound({ number: nextPoint.number, hash: nextPoint.hash }),
+  };
+  const changed = await observeAttempt(replacement, client("missing"), id, txHash, policy);
+  expect(trackAttempt(id, changed.observation, adopted).operation).toBe("unconfirmed");
 });
 
 it("decodes only known Pool errors", () => {

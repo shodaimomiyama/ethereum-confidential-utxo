@@ -81,15 +81,24 @@ export async function readWithPolicy<T>(operation: (signal: AbortSignal) => Prom
 }
 
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+export function remainingRpcPolicy(policy: RpcPolicy, deadline: number): RpcPolicy {
+  const remaining = deadline - Date.now();
+  if (remaining <= 0) throw new EthereumFailure("TIMEOUT", "rpc.deadline");
+  return { ...policy, overallTimeoutMs: Math.min(policy.overallTimeoutMs, remaining) };
+}
 
 export async function canonicalHeader(client: PublicClient, number: bigint,
-  point: Checkpoint): Promise<Observation<{ number: bigint; hash: Hex }>> {
+  point: Checkpoint, policy: RpcPolicy = defaultRpcPolicy): Promise<Observation<{ number: bigint; hash: Hex }>> {
   if (number < 0n || number > point.number) return { complete: false, reason: "GAP" };
+  const deadline = Date.now() + policy.overallTimeoutMs;
   try {
-    const start = await client.getBlock({ blockNumber: point.number });
+    const start = await readWithPolicy(() => client.getBlock({ blockNumber: point.number }),
+      remainingRpcPolicy(policy, deadline));
     if (!start.hash || !same(start.hash, point.hash)) return { complete: false, reason: "HASH_MISMATCH" };
-    const header = number === point.number ? start : await client.getBlock({ blockNumber: number });
-    const end = await client.getBlock({ blockNumber: point.number });
+    const header = number === point.number ? start : await readWithPolicy(() => client.getBlock({ blockNumber: number }),
+      remainingRpcPolicy(policy, deadline));
+    const end = await readWithPolicy(() => client.getBlock({ blockNumber: point.number }),
+      remainingRpcPolicy(policy, deadline));
     if (!header.hash || header.number !== number || !end.hash || !same(end.hash, point.hash)) {
       return { complete: false, reason: "HASH_MISMATCH" };
     }
@@ -97,16 +106,18 @@ export async function canonicalHeader(client: PublicClient, number: bigint,
   } catch { return { complete: false, reason: "RPC" }; }
 }
 
-export async function readPinnedCall(client: PublicClient, to: Address, data: Hex, point: Checkpoint): Promise<Hex> {
-  const before = await canonicalHeader(client, point.number, point);
+export async function readPinnedCall(client: PublicClient, to: Address, data: Hex, point: Checkpoint,
+  policy: RpcPolicy = defaultRpcPolicy): Promise<Hex> {
+  const deadline = Date.now() + policy.overallTimeoutMs;
+  const before = await canonicalHeader(client, point.number, point, remainingRpcPolicy(policy, deadline));
   if (!before.complete) throw new EthereumFailure(before.reason, "rpc.pinnedCall");
   let result: Hex;
   try {
-    result = await client.request({ method: "eth_call", params: [
+    result = await readWithPolicy(() => client.request({ method: "eth_call", params: [
       { to, data }, { blockHash: point.hash, requireCanonical: true },
-    ] } as Parameters<PublicClient["request"]>[0]) as Hex;
+    ] } as Parameters<PublicClient["request"]>[0]) as Promise<Hex>, remainingRpcPolicy(policy, deadline));
   } catch { throw new EthereumFailure("RPC", "rpc.pinnedCall"); }
-  const after = await canonicalHeader(client, point.number, point);
+  const after = await canonicalHeader(client, point.number, point, remainingRpcPolicy(policy, deadline));
   if (!after.complete) throw new EthereumFailure(after.reason, "rpc.pinnedCall");
   return result;
 }

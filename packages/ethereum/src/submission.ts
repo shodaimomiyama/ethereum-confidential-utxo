@@ -1,5 +1,6 @@
 import { encodeFunctionData } from "viem";
 import type { Address, Hex } from "viem";
+import type { LocalAccount } from "viem/accounts";
 import { operationId, preflightSubmission, validateOperationShape, verifyOperationAuthorization } from "@confidential-utxo/core";
 import type { HistoryPort, PublicSubmission, SubmissionAttempt } from "@confidential-utxo/core";
 import { poolAbi } from "./abi.js";
@@ -9,14 +10,14 @@ import { EthereumFailure } from "./errors.js";
 export type SendOptions = { gas?: bigint; nonce?: number; maxFeePerGas?: bigint;
   maxPriorityFeePerGas?: bigint; signal?: AbortSignal };
 export type SubmissionWallet = {
-  account?: { address: Address };
+  account?: LocalAccount | { address: Address; type: "json-rpc" };
   chain?: { id: number };
   getChainId(): Promise<number>;
   estimateGas(args: { account: Address; to: Address; data: Hex; value: bigint }): Promise<bigint>;
   estimateFeesPerGas(): Promise<{ maxFeePerGas?: bigint; maxPriorityFeePerGas?: bigint }>;
   getBalance(args: { address: Address }): Promise<bigint>;
   getTransactionCount(args: { address: Address; blockTag: "pending" }): Promise<number>;
-  sendTransaction(args: { account: Address; to: Address; data: Hex; value: bigint; gas: bigint;
+  sendTransaction(args: { account: Address | LocalAccount; to: Address; data: Hex; value: bigint; gas: bigint;
     nonce: number; maxFeePerGas: bigint; maxPriorityFeePerGas: bigint }): Promise<Hex>;
 };
 export type SendResult = { operationId: Hex; attempt: SubmissionAttempt; attempts: SubmissionAttempt[];
@@ -105,7 +106,8 @@ async function send(verified: VerifiedDeployment, wallet: SubmissionWallet, acco
   prior: SubmissionAttempt[] = []): Promise<SendResult> {
   let attempt: SubmissionAttempt;
   try {
-    const txHash = await wallet.sendTransaction({ account, to: verified.context.pool, data: calldata,
+    const signingAccount = wallet.account?.type === "local" ? wallet.account : account;
+    const txHash = await wallet.sendTransaction({ account: signingAccount, to: verified.context.pool, data: calldata,
       value, ...selected });
     attempt = { outer: "pending", txHash };
   } catch {

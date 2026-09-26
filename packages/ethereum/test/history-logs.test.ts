@@ -54,6 +54,19 @@ it("shrinks a provider-limited range, then reports an unserviceable one-block ga
   expect(ranges).toContainEqual([10n, 10n]);
 });
 
+it("never accepts a provider's overlapping log as complete after a one-block range fails", async () => {
+  const ranges: [bigint, bigint][] = [];
+  const logs = logsFor(observation);
+  const base = fakeClient(logs, ranges);
+  const overlap = { ...base, getLogs: async (args: { fromBlock: bigint; toBlock: bigint }) => {
+    const part = await base.getLogs(args as Parameters<PublicClient["getLogs"]>[0]);
+    return args.fromBlock > 10n ? [...part, logs[0]] : part;
+  } } as unknown as PublicClient;
+  expect(await getPoolOperations(overlap, context, 10n, point, policy))
+    .toEqual({ complete: false, reason: "GAP" });
+  expect(ranges).toContainEqual([12n, 12n]);
+});
+
 it("rebuilds a complete Pool operation from independent event bytes", async () => {
   const logs = logsFor(observation);
   const result = await getPoolOperations(fakeClient(logs, []), context, 10n, point, policy);
@@ -89,6 +102,17 @@ it("does not complete a transaction with an orphan output event", async () => {
     blockNumber: 10n, blockHash: hash("b"), transactionHash: hash("c"),
     transactionIndex: 0, logIndex: 0, removed: false }];
   expect(await getPoolOperations(fakeClient(logs, []), context, 10n, point, policy))
+    .toEqual({ complete: false, reason: "GAP" });
+});
+
+it("rejects negative transaction and log indices from an RPC provider", async () => {
+  const shifted = logsFor(observation).map((log: { logIndex: number }) =>
+    ({ ...log, logIndex: log.logIndex - 1 }));
+  expect(await getPoolOperations(fakeClient(shifted, []), context, 10n, point, policy))
+    .toEqual({ complete: false, reason: "GAP" });
+  const negativeTransaction = logsFor(observation).map((log: object) =>
+    ({ ...log, transactionIndex: -1 }));
+  expect(await getPoolOperations(fakeClient(negativeTransaction, []), context, 10n, point, policy))
     .toEqual({ complete: false, reason: "GAP" });
 });
 
