@@ -9,6 +9,8 @@ export { inspectOperation } from './recovery.js';
 export type { AttemptEvidence, CurrentInput, RecoveryDecision, RecoveryEvidence } from './recovery.js';
 export { reconcilePayment } from './reconcile.js';
 export type { CoreReceiptResult, FinalizedHistory, ReconciledPayment } from './reconcile.js';
+export { assertWithdrawalBinding, paymentDigest } from './payment.js';
+export type { PaymentDeployment, PaymentTerms, WithdrawalBindingInput } from './payment.js';
 export type {
   Address,
   AttemptId,
