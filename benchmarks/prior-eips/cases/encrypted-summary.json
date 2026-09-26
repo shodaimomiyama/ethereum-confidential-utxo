@@ -1,0 +1,1104 @@
+{
+  "source": "separate encrypted-output case receipts and sync",
+  "runsPerCase": 1,
+  "successful": 17,
+  "cases": [
+    {
+      "name": "erc20_withdraw_full",
+      "status": "passed",
+      "asset": "MockERC20",
+      "inputs": [
+        "10",
+        "5"
+      ],
+      "inputIsReal": [
+        "1",
+        "1"
+      ],
+      "outputs": [
+        "0",
+        "0",
+        "0"
+      ],
+      "outputIsReal": [
+        "0",
+        "0",
+        "0"
+      ],
+      "publicAmountOut": "15",
+      "depositGas": [
+        "1836074",
+        "1227713"
+      ],
+      "policyRegistrationGas": "2014817",
+      "transactGas": "3561797",
+      "outputNoteDataBytes": [
+        0,
+        0,
+        0
+      ],
+      "poolProveMs": 4859.3931250000005,
+      "authProveMs": 368.3976250000005,
+      "totalEncryptMs": 0,
+      "totalEncryptedBytes": 0,
+      "historyLogCount": 3,
+      "trialAttempts": 0,
+      "syncFetchMs": 15.284582999999998,
+      "syncDecryptMs": 0.060081999999994196,
+      "syncIndexMs": 0.9920429999999953,
+      "syncWallMs": 22.022625000000005,
+      "expectedReceived": [],
+      "recipientPublicAssetDelta": "15",
+      "finalPoolAssetBalance": "0",
+      "recoveredNotes": [],
+      "receiptPath": "encrypted/erc20_withdraw_full/receipts.json",
+      "deliveryPath": "encrypted/erc20_withdraw_full/delivery.json",
+      "syncPath": "encrypted/erc20_withdraw_full/sync.json"
+    },
+    {
+      "name": "erc20_withdraw_partial",
+      "status": "passed",
+      "asset": "MockERC20",
+      "inputs": [
+        "10",
+        "5"
+      ],
+      "inputIsReal": [
+        "1",
+        "1"
+      ],
+      "outputs": [
+        "5",
+        "0",
+        "2"
+      ],
+      "outputIsReal": [
+        "1",
+        "0",
+        "1"
+      ],
+      "publicAmountOut": "8",
+      "depositGas": [
+        "1836074",
+        "1227713"
+      ],
+      "policyRegistrationGas": "2014817",
+      "transactGas": "3682173",
+      "outputNoteDataBytes": [
+        2348,
+        0,
+        2347
+      ],
+      "poolProveMs": 5354.320958,
+      "authProveMs": 558.2580000000007,
+      "totalEncryptMs": 33.94104100000001,
+      "totalEncryptedBytes": 4695,
+      "historyLogCount": 3,
+      "trialAttempts": 9,
+      "syncFetchMs": 20.597958999999975,
+      "syncDecryptMs": 23.480417000000045,
+      "syncIndexMs": 15.74391700000001,
+      "syncWallMs": 67.055125,
+      "expectedReceived": [
+        true,
+        true
+      ],
+      "recipientPublicAssetDelta": "8",
+      "finalPoolAssetBalance": "7",
+      "recoveredNotes": [
+        {
+          "outputIndex": 0,
+          "amount": "5",
+          "noteCommitment": "12767931481528423082863096878827187171133637936510511564533128787491498271765"
+        },
+        {
+          "outputIndex": 2,
+          "amount": "2",
+          "noteCommitment": "11460921072807110246981538405330933109065011614419063768934578425607570520671"
+        }
+      ],
+      "receiptPath": "encrypted/erc20_withdraw_partial/receipts.json",
+      "deliveryPath": "encrypted/erc20_withdraw_partial/delivery.json",
+      "syncPath": "encrypted/erc20_withdraw_partial/sync.json"
+    },
+    {
+      "name": "eth_withdraw_full",
+      "status": "passed",
+      "asset": "ETH",
+      "inputs": [
+        "10",
+        "5"
+      ],
+      "inputIsReal": [
+        "1",
+        "1"
+      ],
+      "outputs": [
+        "0",
+        "0",
+        "0"
+      ],
+      "outputIsReal": [
+        "0",
+        "0",
+        "0"
+      ],
+      "publicAmountOut": "15",
+      "depositGas": [
+        "1798919",
+        "1212458"
+      ],
+      "policyRegistrationGas": "2014817",
+      "transactGas": "3569442",
+      "outputNoteDataBytes": [
+        0,
+        0,
+        0
+      ],
+      "poolProveMs": 5682.023292000001,
+      "authProveMs": 314.38316699999996,
+      "totalEncryptMs": 0,
+      "totalEncryptedBytes": 0,
+      "historyLogCount": 3,
+      "trialAttempts": 0,
+      "syncFetchMs": 17.916750000000008,
+      "syncDecryptMs": 0.08962500000001228,
+      "syncIndexMs": 1.2849170000000072,
+      "syncWallMs": 25.997250000000008,
+      "expectedReceived": [],
+      "recipientPublicAssetDelta": "15",
+      "finalPoolAssetBalance": "0",
+      "recoveredNotes": [],
+      "receiptPath": "encrypted/eth_withdraw_full/receipts.json",
+      "deliveryPath": "encrypted/eth_withdraw_full/delivery.json",
+      "syncPath": "encrypted/eth_withdraw_full/sync.json"
+    },
+    {
+      "name": "eth_withdraw_partial",
+      "status": "passed",
+      "asset": "ETH",
+      "inputs": [
+        "10",
+        "5"
+      ],
+      "inputIsReal": [
+        "1",
+        "1"
+      ],
+      "outputs": [
+        "5",
+        "0",
+        "2"
+      ],
+      "outputIsReal": [
+        "1",
+        "0",
+        "1"
+      ],
+      "publicAmountOut": "8",
+      "depositGas": [
+        "1798919",
+        "1212458"
+      ],
+      "policyRegistrationGas": "2014817",
+      "transactGas": "3684955",
+      "outputNoteDataBytes": [
+        2347,
+        0,
+        2345
+      ],
+      "poolProveMs": 4247.3724170000005,
+      "authProveMs": 364.274625,
+      "totalEncryptMs": 18.445667,
+      "totalEncryptedBytes": 4692,
+      "historyLogCount": 3,
+      "trialAttempts": 9,
+      "syncFetchMs": 17.590000000000003,
+      "syncDecryptMs": 19.53079299999996,
+      "syncIndexMs": 13.063625000000002,
+      "syncWallMs": 57.06812499999998,
+      "expectedReceived": [
+        true,
+        true
+      ],
+      "recipientPublicAssetDelta": "8",
+      "finalPoolAssetBalance": "7",
+      "recoveredNotes": [
+        {
+          "outputIndex": 0,
+          "amount": "5",
+          "noteCommitment": "8501731961636076860001095465106583443123931131463172110953809685207548334806"
+        },
+        {
+          "outputIndex": 2,
+          "amount": "2",
+          "noteCommitment": "8871095594158630125615367377755271140703953937798860101571929577707510920557"
+        }
+      ],
+      "receiptPath": "encrypted/eth_withdraw_partial/receipts.json",
+      "deliveryPath": "encrypted/eth_withdraw_partial/delivery.json",
+      "syncPath": "encrypted/eth_withdraw_partial/sync.json"
+    },
+    {
+      "name": "merge",
+      "status": "passed",
+      "asset": "MockERC20",
+      "inputs": [
+        "10",
+        "5"
+      ],
+      "inputIsReal": [
+        "1",
+        "1"
+      ],
+      "outputs": [
+        "15",
+        "0",
+        "0"
+      ],
+      "outputIsReal": [
+        "1",
+        "0",
+        "0"
+      ],
+      "publicAmountOut": "0",
+      "depositGas": [
+        "1836074",
+        "1227713"
+      ],
+      "policyRegistrationGas": "2014817",
+      "transactGas": "3592526",
+      "outputNoteDataBytes": [
+        2348,
+        0,
+        0
+      ],
+      "poolProveMs": 3557.2739159999996,
+      "authProveMs": 258.42895799999997,
+      "totalEncryptMs": 10.394000000000005,
+      "totalEncryptedBytes": 2348,
+      "historyLogCount": 3,
+      "trialAttempts": 5,
+      "syncFetchMs": 16.56687500000001,
+      "syncDecryptMs": 11.226459999999975,
+      "syncIndexMs": 8.942083999999994,
+      "syncWallMs": 42.539917,
+      "expectedReceived": [
+        true
+      ],
+      "recipientPublicAssetDelta": "0",
+      "finalPoolAssetBalance": "15",
+      "recoveredNotes": [
+        {
+          "outputIndex": 0,
+          "amount": "15",
+          "noteCommitment": "497836894679904410092028019159926358751711595502331121444115302860262090031"
+        }
+      ],
+      "receiptPath": "encrypted/merge/receipts.json",
+      "deliveryPath": "encrypted/merge/delivery.json",
+      "syncPath": "encrypted/merge/sync.json"
+    },
+    {
+      "name": "s02_eth_transfer_full_10",
+      "status": "passed",
+      "asset": "ETH",
+      "inputs": [
+        "10",
+        "0"
+      ],
+      "inputIsReal": [
+        "1",
+        "0"
+      ],
+      "outputs": [
+        "10",
+        "0",
+        "0"
+      ],
+      "outputIsReal": [
+        "1",
+        "0",
+        "0"
+      ],
+      "publicAmountOut": "0",
+      "depositGas": [
+        "1798919"
+      ],
+      "policyRegistrationGas": "2014817",
+      "transactGas": "3592526",
+      "outputNoteDataBytes": [
+        2348,
+        0,
+        0
+      ],
+      "poolProveMs": 1692.2512080000001,
+      "authProveMs": 116.95304099999998,
+      "totalEncryptMs": 4.8303749999999965,
+      "totalEncryptedBytes": 2348,
+      "historyLogCount": 2,
+      "trialAttempts": 4,
+      "syncFetchMs": 13.842416,
+      "syncDecryptMs": 5.031831999999994,
+      "syncIndexMs": 4.3962080000000014,
+      "syncWallMs": 25.927542000000003,
+      "expectedReceived": [
+        true
+      ],
+      "recipientPublicAssetDelta": "0",
+      "finalPoolAssetBalance": "10",
+      "firstSpentNoteCommitment": "5113683940407049277743910086240528495385649011310587980125610534706511080593",
+      "createdNoteCommitments": [
+        "3071155170816779437506835602200882026163292984134552016902360349206020867403",
+        "17165790476801420955113013649939564295115189479633988784344490290703295095789",
+        "8397394285008017623250324924221546641112962026848811109673374285081797272989"
+      ],
+      "selfControlledOutputs": [
+        false,
+        false,
+        false
+      ],
+      "recoveredNotes": [
+        {
+          "outputIndex": 0,
+          "amount": "10",
+          "noteCommitment": "3071155170816779437506835602200882026163292984134552016902360349206020867403"
+        }
+      ],
+      "receiptPath": "encrypted/s02_eth_transfer_full_10/receipts.json",
+      "deliveryPath": "encrypted/s02_eth_transfer_full_10/delivery.json",
+      "syncPath": "encrypted/s02_eth_transfer_full_10/sync.json"
+    },
+    {
+      "name": "s02_transfer_full_10",
+      "status": "passed",
+      "asset": "MockERC20",
+      "inputs": [
+        "10",
+        "0"
+      ],
+      "inputIsReal": [
+        "1",
+        "0"
+      ],
+      "outputs": [
+        "10",
+        "0",
+        "0"
+      ],
+      "outputIsReal": [
+        "1",
+        "0",
+        "0"
+      ],
+      "publicAmountOut": "0",
+      "depositGas": [
+        "1831274"
+      ],
+      "policyRegistrationGas": "2014817",
+      "transactGas": "3592550",
+      "outputNoteDataBytes": [
+        2349,
+        0,
+        0
+      ],
+      "poolProveMs": 3808.496083,
+      "authProveMs": 295.9968329999997,
+      "totalEncryptMs": 10.811334000000002,
+      "totalEncryptedBytes": 2349,
+      "historyLogCount": 2,
+      "trialAttempts": 4,
+      "syncFetchMs": 17.336292000000014,
+      "syncDecryptMs": 10.383999999999958,
+      "syncIndexMs": 9.084124000000003,
+      "syncWallMs": 42.51441600000001,
+      "expectedReceived": [
+        true
+      ],
+      "recipientPublicAssetDelta": "0",
+      "finalPoolAssetBalance": "10",
+      "recoveredNotes": [
+        {
+          "outputIndex": 0,
+          "amount": "10",
+          "noteCommitment": "15728160437890587671587133675546352981345687255116407464304608293831643537145"
+        }
+      ],
+      "receiptPath": "encrypted/s02_transfer_full_10/receipts.json",
+      "deliveryPath": "encrypted/s02_transfer_full_10/delivery.json",
+      "syncPath": "encrypted/s02_transfer_full_10/sync.json"
+    },
+    {
+      "name": "s03_eth_transfer_partial_3",
+      "status": "passed",
+      "asset": "ETH",
+      "inputs": [
+        "10",
+        "0"
+      ],
+      "inputIsReal": [
+        "1",
+        "0"
+      ],
+      "outputs": [
+        "3",
+        "7",
+        "0"
+      ],
+      "outputIsReal": [
+        "1",
+        "1",
+        "0"
+      ],
+      "publicAmountOut": "0",
+      "depositGas": [
+        "1798919"
+      ],
+      "policyRegistrationGas": "2014817",
+      "transactGas": "3650325",
+      "outputNoteDataBytes": [
+        2347,
+        2349,
+        0
+      ],
+      "poolProveMs": 1675.3495,
+      "authProveMs": 128.0781669999999,
+      "totalEncryptMs": 7.9694999999999965,
+      "totalEncryptedBytes": 4696,
+      "historyLogCount": 2,
+      "trialAttempts": 7,
+      "syncFetchMs": 13.225500000000011,
+      "syncDecryptMs": 9.452918000000011,
+      "syncIndexMs": 6.300167000000002,
+      "syncWallMs": 32.126833000000005,
+      "expectedReceived": [
+        true,
+        true
+      ],
+      "recipientPublicAssetDelta": "0",
+      "finalPoolAssetBalance": "10",
+      "firstSpentNoteCommitment": "5113683940407049277743910086240528495385649011310587980125610534706511080593",
+      "createdNoteCommitments": [
+        "7046247739174775310755745064544982148446917763297576859118390579062909272886",
+        "4839319372609708663313204591190509843974519596881528018136976821758236369458",
+        "8397394285008017623250324924221546641112962026848811109673374285081797272989"
+      ],
+      "selfControlledOutputs": [
+        false,
+        true,
+        false
+      ],
+      "recoveredNotes": [
+        {
+          "outputIndex": 0,
+          "amount": "3",
+          "noteCommitment": "7046247739174775310755745064544982148446917763297576859118390579062909272886"
+        },
+        {
+          "outputIndex": 1,
+          "amount": "7",
+          "noteCommitment": "4839319372609708663313204591190509843974519596881528018136976821758236369458"
+        }
+      ],
+      "receiptPath": "encrypted/s03_eth_transfer_partial_3/receipts.json",
+      "deliveryPath": "encrypted/s03_eth_transfer_partial_3/delivery.json",
+      "syncPath": "encrypted/s03_eth_transfer_partial_3/sync.json"
+    },
+    {
+      "name": "s03_transfer_partial_3",
+      "status": "passed",
+      "asset": "MockERC20",
+      "inputs": [
+        "10",
+        "0"
+      ],
+      "inputIsReal": [
+        "1",
+        "0"
+      ],
+      "outputs": [
+        "3",
+        "7",
+        "0"
+      ],
+      "outputIsReal": [
+        "1",
+        "1",
+        "0"
+      ],
+      "publicAmountOut": "0",
+      "depositGas": [
+        "1831274"
+      ],
+      "policyRegistrationGas": "2014817",
+      "transactGas": "3650313",
+      "outputNoteDataBytes": [
+        2347,
+        2348,
+        0
+      ],
+      "poolProveMs": 4276.20775,
+      "authProveMs": 260.53320799999983,
+      "totalEncryptMs": 16.357667,
+      "totalEncryptedBytes": 4695,
+      "historyLogCount": 2,
+      "trialAttempts": 7,
+      "syncFetchMs": 18.06491699999998,
+      "syncDecryptMs": 23.19666799999999,
+      "syncIndexMs": 15.612209000000007,
+      "syncWallMs": 64.18937499999998,
+      "expectedReceived": [
+        true,
+        true
+      ],
+      "recipientPublicAssetDelta": "0",
+      "finalPoolAssetBalance": "10",
+      "recoveredNotes": [
+        {
+          "outputIndex": 0,
+          "amount": "3",
+          "noteCommitment": "8003901511066379240371806168804660517608878895305712696025544818434179690246"
+        },
+        {
+          "outputIndex": 1,
+          "amount": "7",
+          "noteCommitment": "4199249987437234448689612847400238124755883693754194653635753366810349294158"
+        }
+      ],
+      "receiptPath": "encrypted/s03_transfer_partial_3/receipts.json",
+      "deliveryPath": "encrypted/s03_transfer_partial_3/delivery.json",
+      "syncPath": "encrypted/s03_transfer_partial_3/sync.json"
+    },
+    {
+      "name": "s04_eth_transfer_2_plus_3",
+      "status": "passed",
+      "asset": "ETH",
+      "inputs": [
+        "2",
+        "3"
+      ],
+      "inputIsReal": [
+        "1",
+        "1"
+      ],
+      "outputs": [
+        "4",
+        "1",
+        "0"
+      ],
+      "outputIsReal": [
+        "1",
+        "1",
+        "0"
+      ],
+      "publicAmountOut": "0",
+      "depositGas": [
+        "1798919",
+        "1212458"
+      ],
+      "policyRegistrationGas": "2014817",
+      "transactGas": "3650313",
+      "outputNoteDataBytes": [
+        2348,
+        2349,
+        0
+      ],
+      "poolProveMs": 1584.040125,
+      "authProveMs": 149.29741599999988,
+      "totalEncryptMs": 7.647916999999996,
+      "totalEncryptedBytes": 4697,
+      "historyLogCount": 3,
+      "trialAttempts": 9,
+      "syncFetchMs": 14.385499999999993,
+      "syncDecryptMs": 9.193247999999997,
+      "syncIndexMs": 6.358915999999994,
+      "syncWallMs": 33.05745900000001,
+      "expectedReceived": [
+        true,
+        true
+      ],
+      "recipientPublicAssetDelta": "0",
+      "finalPoolAssetBalance": "5",
+      "firstSpentNoteCommitment": "17840936922357852573187498570193620456514912779616251625493754910683581923337",
+      "createdNoteCommitments": [
+        "19032470050433070647770089696870087480367831149822427589123317246730272579825",
+        "20880791836572524139069162199799679356595043526183991497127826348566845768258",
+        "18645402917643433042744109798614859268045495459535221659157776617522323999590"
+      ],
+      "selfControlledOutputs": [
+        false,
+        true,
+        false
+      ],
+      "recoveredNotes": [
+        {
+          "outputIndex": 0,
+          "amount": "4",
+          "noteCommitment": "19032470050433070647770089696870087480367831149822427589123317246730272579825"
+        },
+        {
+          "outputIndex": 1,
+          "amount": "1",
+          "noteCommitment": "20880791836572524139069162199799679356595043526183991497127826348566845768258"
+        }
+      ],
+      "receiptPath": "encrypted/s04_eth_transfer_2_plus_3/receipts.json",
+      "deliveryPath": "encrypted/s04_eth_transfer_2_plus_3/delivery.json",
+      "syncPath": "encrypted/s04_eth_transfer_2_plus_3/sync.json"
+    },
+    {
+      "name": "s04_transfer_2_plus_3",
+      "status": "passed",
+      "asset": "MockERC20",
+      "inputs": [
+        "2",
+        "3"
+      ],
+      "inputIsReal": [
+        "1",
+        "1"
+      ],
+      "outputs": [
+        "4",
+        "1",
+        "0"
+      ],
+      "outputIsReal": [
+        "1",
+        "1",
+        "0"
+      ],
+      "publicAmountOut": "0",
+      "depositGas": [
+        "1836074",
+        "1227713"
+      ],
+      "policyRegistrationGas": "2014817",
+      "transactGas": "3650313",
+      "outputNoteDataBytes": [
+        2348,
+        2348,
+        0
+      ],
+      "poolProveMs": 5252.043333,
+      "authProveMs": 331.7375830000001,
+      "totalEncryptMs": 19.622751000000008,
+      "totalEncryptedBytes": 4696,
+      "historyLogCount": 3,
+      "trialAttempts": 9,
+      "syncFetchMs": 18.130583,
+      "syncDecryptMs": 20.709291999999976,
+      "syncIndexMs": 13.674457999999959,
+      "syncWallMs": 59.053083000000015,
+      "expectedReceived": [
+        true,
+        true
+      ],
+      "recipientPublicAssetDelta": "0",
+      "finalPoolAssetBalance": "5",
+      "recoveredNotes": [
+        {
+          "outputIndex": 0,
+          "amount": "4",
+          "noteCommitment": "14949920320401335407578012377718172442853267817677157451714575354601944879141"
+        },
+        {
+          "outputIndex": 1,
+          "amount": "1",
+          "noteCommitment": "5670650740995087368068100274284785435738103320803534498929721487461157847827"
+        }
+      ],
+      "receiptPath": "encrypted/s04_transfer_2_plus_3/receipts.json",
+      "deliveryPath": "encrypted/s04_transfer_2_plus_3/delivery.json",
+      "syncPath": "encrypted/s04_transfer_2_plus_3/sync.json"
+    },
+    {
+      "name": "s05_self_recreate_10",
+      "status": "passed",
+      "asset": "MockERC20",
+      "inputs": [
+        "10",
+        "0"
+      ],
+      "inputIsReal": [
+        "1",
+        "0"
+      ],
+      "outputs": [
+        "10",
+        "0",
+        "0"
+      ],
+      "outputIsReal": [
+        "1",
+        "0",
+        "0"
+      ],
+      "publicAmountOut": "0",
+      "depositGas": [
+        "1831274"
+      ],
+      "policyRegistrationGas": "2014817",
+      "transactGas": "3592550",
+      "outputNoteDataBytes": [
+        2348,
+        0,
+        0
+      ],
+      "poolProveMs": 1742.175167,
+      "authProveMs": 119.16300000000001,
+      "totalEncryptMs": 5.032291999999998,
+      "totalEncryptedBytes": 2348,
+      "historyLogCount": 2,
+      "trialAttempts": 4,
+      "syncFetchMs": 13.822666999999996,
+      "syncDecryptMs": 5.510207999999992,
+      "syncIndexMs": 4.8218339999999955,
+      "syncWallMs": 26.988832999999985,
+      "expectedReceived": [
+        true
+      ],
+      "recipientPublicAssetDelta": "0",
+      "finalPoolAssetBalance": "10",
+      "firstSpentNoteCommitment": "4030930825031470223821903070750626991902827823222446838488463096407875444186",
+      "createdNoteCommitments": [
+        "11757218153642500180247874644750699017211711724793647296642884702472817942417",
+        "17165790476801420955113013649939564295115189479633988784344490290703295095789",
+        "8397394285008017623250324924221546641112962026848811109673374285081797272989"
+      ],
+      "selfControlledOutputs": [
+        true,
+        false,
+        false
+      ],
+      "recoveredNotes": [
+        {
+          "outputIndex": 0,
+          "amount": "10",
+          "noteCommitment": "11757218153642500180247874644750699017211711724793647296642884702472817942417"
+        }
+      ],
+      "receiptPath": "encrypted/s05_self_recreate_10/receipts.json",
+      "deliveryPath": "encrypted/s05_self_recreate_10/delivery.json",
+      "syncPath": "encrypted/s05_self_recreate_10/sync.json"
+    },
+    {
+      "name": "s05_self_split_10",
+      "status": "passed",
+      "asset": "MockERC20",
+      "inputs": [
+        "10",
+        "0"
+      ],
+      "inputIsReal": [
+        "1",
+        "0"
+      ],
+      "outputs": [
+        "3",
+        "7",
+        "0"
+      ],
+      "outputIsReal": [
+        "1",
+        "1",
+        "0"
+      ],
+      "publicAmountOut": "0",
+      "depositGas": [
+        "1831274"
+      ],
+      "policyRegistrationGas": "2014817",
+      "transactGas": "3650301",
+      "outputNoteDataBytes": [
+        2348,
+        2348,
+        0
+      ],
+      "poolProveMs": 1959.403792,
+      "authProveMs": 120.40795799999978,
+      "totalEncryptMs": 9.186458000000002,
+      "totalEncryptedBytes": 4696,
+      "historyLogCount": 2,
+      "trialAttempts": 7,
+      "syncFetchMs": 13.71758299999999,
+      "syncDecryptMs": 10.795292000000018,
+      "syncIndexMs": 6.69945899999999,
+      "syncWallMs": 34.55224999999999,
+      "expectedReceived": [
+        true,
+        true
+      ],
+      "recipientPublicAssetDelta": "0",
+      "finalPoolAssetBalance": "10",
+      "firstSpentNoteCommitment": "4030930825031470223821903070750626991902827823222446838488463096407875444186",
+      "createdNoteCommitments": [
+        "5094463346570385053657613527394326295105314723646662118264118279339076509711",
+        "4199249987437234448689612847400238124755883693754194653635753366810349294158",
+        "8397394285008017623250324924221546641112962026848811109673374285081797272989"
+      ],
+      "selfControlledOutputs": [
+        true,
+        true,
+        false
+      ],
+      "recoveredNotes": [
+        {
+          "outputIndex": 0,
+          "amount": "3",
+          "noteCommitment": "5094463346570385053657613527394326295105314723646662118264118279339076509711"
+        },
+        {
+          "outputIndex": 1,
+          "amount": "7",
+          "noteCommitment": "4199249987437234448689612847400238124755883693754194653635753366810349294158"
+        }
+      ],
+      "receiptPath": "encrypted/s05_self_split_10/receipts.json",
+      "deliveryPath": "encrypted/s05_self_split_10/delivery.json",
+      "syncPath": "encrypted/s05_self_split_10/sync.json"
+    },
+    {
+      "name": "s06_eth_withdraw_full_10",
+      "status": "passed",
+      "asset": "ETH",
+      "inputs": [
+        "10",
+        "0"
+      ],
+      "inputIsReal": [
+        "1",
+        "0"
+      ],
+      "outputs": [
+        "0",
+        "0",
+        "0"
+      ],
+      "outputIsReal": [
+        "0",
+        "0",
+        "0"
+      ],
+      "publicAmountOut": "10",
+      "depositGas": [
+        "1798919"
+      ],
+      "policyRegistrationGas": "2014817",
+      "transactGas": "3569490",
+      "outputNoteDataBytes": [
+        0,
+        0,
+        0
+      ],
+      "poolProveMs": 3654.45,
+      "authProveMs": 239.82166700000016,
+      "totalEncryptMs": 0,
+      "totalEncryptedBytes": 0,
+      "historyLogCount": 2,
+      "trialAttempts": 0,
+      "syncFetchMs": 15.985624999999999,
+      "syncDecryptMs": 0.053625000000039336,
+      "syncIndexMs": 0.7578750000000127,
+      "syncWallMs": 22.021333999999996,
+      "expectedReceived": [],
+      "recipientPublicAssetDelta": "10",
+      "finalPoolAssetBalance": "0",
+      "recoveredNotes": [],
+      "receiptPath": "encrypted/s06_eth_withdraw_full_10/receipts.json",
+      "deliveryPath": "encrypted/s06_eth_withdraw_full_10/delivery.json",
+      "syncPath": "encrypted/s06_eth_withdraw_full_10/sync.json"
+    },
+    {
+      "name": "s06_eth_withdraw_partial_3",
+      "status": "passed",
+      "asset": "ETH",
+      "inputs": [
+        "10",
+        "0"
+      ],
+      "inputIsReal": [
+        "1",
+        "0"
+      ],
+      "outputs": [
+        "7",
+        "0",
+        "0"
+      ],
+      "outputIsReal": [
+        "1",
+        "0",
+        "0"
+      ],
+      "publicAmountOut": "3",
+      "depositGas": [
+        "1798919"
+      ],
+      "policyRegistrationGas": "2014817",
+      "transactGas": "3627268",
+      "outputNoteDataBytes": [
+        2347,
+        0,
+        0
+      ],
+      "poolProveMs": 3244.136917,
+      "authProveMs": 236.03716699999995,
+      "totalEncryptMs": 10.094708000000004,
+      "totalEncryptedBytes": 2347,
+      "historyLogCount": 2,
+      "trialAttempts": 4,
+      "syncFetchMs": 16.270582999999988,
+      "syncDecryptMs": 10.37904199999997,
+      "syncIndexMs": 8.541000000000025,
+      "syncWallMs": 40.51941599999998,
+      "expectedReceived": [
+        true
+      ],
+      "recipientPublicAssetDelta": "3",
+      "finalPoolAssetBalance": "7",
+      "recoveredNotes": [
+        {
+          "outputIndex": 0,
+          "amount": "7",
+          "noteCommitment": "20127031876034858522107951539051901965439364666618523878544615253999536130585"
+        }
+      ],
+      "receiptPath": "encrypted/s06_eth_withdraw_partial_3/receipts.json",
+      "deliveryPath": "encrypted/s06_eth_withdraw_partial_3/delivery.json",
+      "syncPath": "encrypted/s06_eth_withdraw_partial_3/sync.json"
+    },
+    {
+      "name": "transfer_full",
+      "status": "passed",
+      "asset": "MockERC20",
+      "inputs": [
+        "10",
+        "5"
+      ],
+      "inputIsReal": [
+        "1",
+        "1"
+      ],
+      "outputs": [
+        "15",
+        "0",
+        "0"
+      ],
+      "outputIsReal": [
+        "1",
+        "0",
+        "0"
+      ],
+      "publicAmountOut": "0",
+      "depositGas": [
+        "1836074",
+        "1227713"
+      ],
+      "policyRegistrationGas": "2014817",
+      "transactGas": "3592562",
+      "outputNoteDataBytes": [
+        2349,
+        0,
+        0
+      ],
+      "poolProveMs": 3986.274708,
+      "authProveMs": 392.97112500000003,
+      "totalEncryptMs": 10.111874999999998,
+      "totalEncryptedBytes": 2349,
+      "historyLogCount": 3,
+      "trialAttempts": 5,
+      "syncFetchMs": 17.068332999999996,
+      "syncDecryptMs": 10.814290999999997,
+      "syncIndexMs": 9.521041000000025,
+      "syncWallMs": 43.748542000000015,
+      "expectedReceived": [
+        true
+      ],
+      "recipientPublicAssetDelta": "0",
+      "finalPoolAssetBalance": "15",
+      "recoveredNotes": [
+        {
+          "outputIndex": 0,
+          "amount": "15",
+          "noteCommitment": "18953037301392571971943420951480567740966045482883068403037051865848343972322"
+        }
+      ],
+      "receiptPath": "encrypted/transfer_full/receipts.json",
+      "deliveryPath": "encrypted/transfer_full/delivery.json",
+      "syncPath": "encrypted/transfer_full/sync.json"
+    },
+    {
+      "name": "transfer_partial",
+      "status": "passed",
+      "asset": "MockERC20",
+      "inputs": [
+        "10",
+        "5"
+      ],
+      "inputIsReal": [
+        "1",
+        "1"
+      ],
+      "outputs": [
+        "8",
+        "5",
+        "2"
+      ],
+      "outputIsReal": [
+        "1",
+        "1",
+        "1"
+      ],
+      "publicAmountOut": "0",
+      "depositGas": [
+        "1836074",
+        "1227713"
+      ],
+      "policyRegistrationGas": "2014817",
+      "transactGas": "3708105",
+      "outputNoteDataBytes": [
+        2348,
+        2349,
+        2347
+      ],
+      "poolProveMs": 4597.054958,
+      "authProveMs": 355.72949999999946,
+      "totalEncryptMs": 20.589542,
+      "totalEncryptedBytes": 7044,
+      "historyLogCount": 3,
+      "trialAttempts": 12,
+      "syncFetchMs": 18.55200000000002,
+      "syncDecryptMs": 29.362041000000033,
+      "syncIndexMs": 22.26325099999997,
+      "syncWallMs": 76.95920900000002,
+      "expectedReceived": [
+        true,
+        true,
+        true
+      ],
+      "recipientPublicAssetDelta": "0",
+      "finalPoolAssetBalance": "15",
+      "recoveredNotes": [
+        {
+          "outputIndex": 0,
+          "amount": "8",
+          "noteCommitment": "20031948641588875051289287926952016591584683649533996832165707547074596282700"
+        },
+        {
+          "outputIndex": 1,
+          "amount": "5",
+          "noteCommitment": "5731877343844649827298820120696346333058263639486836351424422467190060014958"
+        },
+        {
+          "outputIndex": 2,
+          "amount": "2",
+          "noteCommitment": "11460921072807110246981538405330933109065011614419063768934578425607570520671"
+        }
+      ],
+      "receiptPath": "encrypted/transfer_partial/receipts.json",
+      "deliveryPath": "encrypted/transfer_partial/delivery.json",
+      "syncPath": "encrypted/transfer_partial/sync.json"
+    }
+  ]
+}

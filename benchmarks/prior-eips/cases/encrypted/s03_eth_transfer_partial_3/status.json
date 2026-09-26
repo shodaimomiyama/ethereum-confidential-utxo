@@ -1,0 +1,8 @@
+{
+  "case": "s03_eth_transfer_partial_3",
+  "status": "passed",
+  "evidence": [
+    "receipts.json",
+    "sync.json"
+  ]
+}

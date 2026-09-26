@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "639baaf7b29c22eb43ba6150140902ea8dbbbc46",
+  "chainId": "1",
+  "poolAddress": "0x0000000000000000000000000000000000081820",
+  "fromBlock": 0,
+  "toBlock": "latest",
+  "historyLogCount": 3,
+  "outputCount": 5,
+  "trialAttempts": 9,
+  "fetchMs": 17.590000000000003,
+  "trialDecryptMs": 19.53079299999996,
+  "indexMs": 13.063625000000002,
+  "syncWallMs": 57.06812499999998,
+  "expectedReceived": [
+    true,
+    true
+  ],
+  "allExpectedReceived": true,
+  "events": [
+    {
+      "event": "ShieldedPoolDeposit",
+      "transactionHash": "0x88d489e7a6a57f0cd73318708e468dfb86bdc9b78772bf94ed45fbfb6d42c2d5",
+      "blockNumber": 4,
+      "outputBytes": [
+        0
+      ],
+      "trialMatches": [
+        null
+      ],
+      "notes": [
+        {
+          "id": "1:0x0000000000000000000000000000000000081820:0:0",
+          "status": "pending",
+          "outputIndex": 0,
+          "outputNoteDataHash": "1924180730567573949438414972962865885128629851683618892617351438379423999084",
+          "noteCommitment": "5113683940407049277743910086240528495385649011310587980125610534706511080593",
+          "amount": null,
+          "decryptedBy": null
+        }
+      ]
+    },
+    {
+      "event": "ShieldedPoolDeposit",
+      "transactionHash": "0xe64ee5779d3eac435044dd1df192741edc332b8c229fdfb26be4db008306477d",
+      "blockNumber": 5,
+      "outputBytes": [
+        0
+      ],
+      "trialMatches": [
+        null
+      ],
+      "notes": [
+        {
+          "id": "1:0x0000000000000000000000000000000000081820:1:0",
+          "status": "pending",
+          "outputIndex": 0,
+          "outputNoteDataHash": "1924180730567573949438414972962865885128629851683618892617351438379423999084",
+          "noteCommitment": "18219818868437243150606471202728699457023802938138622720186229669066286159295",
+          "amount": null,
+          "decryptedBy": null
+        }
+      ]
+    },
+    {
+      "event": "ShieldedPoolTransact",
+      "transactionHash": "0xa093f3666ea88ae58b105fe42e2da3c36060503ceb716afdcd09e704fe893dc9",
+      "blockNumber": 6,
+      "outputBytes": [
+        2347,
+        0,
+        2345
+      ],
+      "trialMatches": [
+        "test-slot-0",
+        null,
+        "test-slot-2"
+      ],
+      "notes": [
+        {
+          "id": "1:0x0000000000000000000000000000000000081820:2:0",
+          "status": "decrypted",
+          "outputIndex": 0,
+          "outputNoteDataHash": "17440782253593602872235396984813834972923645735334557991695986611394190407269",
+          "noteCommitment": "8501731961636076860001095465106583443123931131463172110953809685207548334806",
+          "amount": "5",
+          "decryptedBy": "test-slot-0"
+        },
+        {
+          "id": "1:0x0000000000000000000000000000000000081820:3:1",
+          "status": "pending",
+          "outputIndex": 1,
+          "outputNoteDataHash": "1924180730567573949438414972962865885128629851683618892617351438379423999084",
+          "noteCommitment": "16191362370732765580552738187076440776274133514401811217044130313696225322966",
+          "amount": null,
+          "decryptedBy": null
+        },
+        {
+          "id": "1:0x0000000000000000000000000000000000081820:4:2",
+          "status": "decrypted",
+          "outputIndex": 2,
+          "outputNoteDataHash": "17405051560428291558088949777950026603708225340079587307319062244741870388635",
+          "noteCommitment": "8871095594158630125615367377755271140703953937798860101571929577707510920557",
+          "amount": "2",
+          "decryptedBy": "test-slot-2"
+        }
+      ]
+    }
+  ]
+}

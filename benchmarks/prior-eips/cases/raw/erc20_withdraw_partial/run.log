@@ -1,0 +1,8 @@
+wrote /private/tmp/eip-8182-cases-issue10/build/pool/input.json
+{"case":"erc20_withdraw_partial","inputs":["10","5"],"outputs":["5","0","2"],"outputReal":["1","0","1"],"publicAmountOut":"8"}
+wrote /private/tmp/eip-8182-cases-issue10/build/auth_demo/input.json
+  authDataCommitment        = 21840486684661556917382627761647535514449498464860157795102844770608153675761
+  blindedAuthCommitment     = 5021276856499553829481810759566016603376103514767773686690103597471221640411
+  transactionIntentDigest   = 12290915225508682928234219522716556676134058635379625847915248622879741255511
+{"poolProveMs":3046.2076669999997,"authProveMs":257.0340839999999,"localVerify":true}
+{"transactGas":"3568464","state":{"nullifier0Spent":true,"nullifier1Spent":true,"replayIdUsed":true,"noteRootChanged":true,"recipientAssetDelta":"8","poolAssetBalance":"7"}}
