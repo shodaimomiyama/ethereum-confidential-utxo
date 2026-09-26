@@ -23,3 +23,5 @@ export { receiptInfo, operationPreimage, operationId, outputId, validateOperatio
 export { authorizationTypedData, authorizeOperation, verifyOperationAuthorization, verifyRecipientInfo } from "./authorization.js";
 export type { RecipientInfo } from "./authorization.js";
 export { selectInputs } from "./selection.js";
+export { buildOperation, regenerateProofs, toPublicSubmission } from "./operation.js";
+export type { BuildIntent, BuildDependencies, PublicSubmission } from "./operation.js";
