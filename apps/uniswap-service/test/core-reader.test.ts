@@ -14,7 +14,7 @@ const context: Context = {
   chainId: 31337n, pool, deploymentBlock: 1n, verifier: pool,
   parametersHash: hash, finalityMode: 'finalized',
 };
-const config: DeploymentConfig = { origin: 'https://site.test', siweUri: 'https://site.test/', chainId: 31337, pool };
+const config: DeploymentConfig = { origin: 'https://site.test', siweUri: 'https://site.test/', chainId: 31337, pool, finalityMode: 'finalized' };
 
 function history(overrides: {
   owner?: string; consumedBy?: string; complete?: boolean; context?: Context; latestContext?: Context;
@@ -52,4 +52,14 @@ it('uses #29 finalized and latest observations to identify an owned unspent inpu
     .readInput(scope, inputId)).toBe('unknown');
   expect(await createCoreInputReader(history({ latestContext: { ...context, parametersHash: `0x${'ff'.repeat(32)}` } }), config)
     .readInput(scope, inputId)).toBe('unknown');
+});
+
+it('uses the deployment finality mode and rejects a mismatched checkpoint', async () => {
+  const localConfig = { ...config, finalityMode: 'local-simulated' as const };
+  const localHistory = history();
+  localHistory.getFinalizedCheckpoint = async () => ({ ...point, mode: 'local-simulated' });
+  localHistory.getContext = async () => ({ complete: true, blockHash: hash,
+    value: { ...context, finalityMode: 'local-simulated' } });
+  expect(await createCoreInputReader(localHistory, localConfig).readInput(scope, inputId)).toBe('owned-unspent');
+  expect(await createCoreInputReader(history(), localConfig).readInput(scope, inputId)).toBe('unknown');
 });

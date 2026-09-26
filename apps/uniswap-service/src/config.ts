@@ -3,6 +3,7 @@ export interface DeploymentConfig {
   readonly siweUri: string;
   readonly chainId: number;
   readonly pool: string;
+  readonly finalityMode: 'finalized' | 'local-simulated';
 }
 
 export type DeploymentCatalog = Readonly<Record<string, DeploymentConfig>>;
@@ -16,7 +17,9 @@ export function resolveDeployment(deploymentId: string, catalog: DeploymentCatal
   const origin = new URL(config.origin);
   const siweUri = new URL(config.siweUri);
   if (origin.protocol !== 'https:' || origin.origin !== config.origin || siweUri.origin !== origin.origin
-    || !/^0x[0-9a-fA-F]{40}$/.test(config.pool)) {
+    || !/^0x[0-9a-fA-F]{40}$/.test(config.pool)
+    || (config.finalityMode !== 'finalized' && config.finalityMode !== 'local-simulated')
+    || (config.finalityMode === 'local-simulated' && config.chainId !== 31337)) {
     throw new Error('INVALID_DEPLOYMENT_CONFIG');
   }
   return config;

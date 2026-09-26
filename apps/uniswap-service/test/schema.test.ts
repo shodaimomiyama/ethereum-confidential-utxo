@@ -9,10 +9,13 @@ it('rejects an unregistered deployment instead of sharing a default object', () 
     'local-v1': {
       origin: 'https://site.test', siweUri: 'https://site.test/', chainId: 31337,
       pool: '0x0000000000000000000000000000000000000001',
+      finalityMode: 'finalized' as const,
     },
   };
   expect(() => resolveDeployment('missing', deployments)).toThrow(/UNKNOWN_DEPLOYMENT/);
   expect(resolveDeployment('local-v1', deployments).origin).toBe('https://site.test');
+  expect(() => resolveDeployment('local-v1', { 'local-v1': { ...deployments['local-v1'], finalityMode: 'local-simulated', chainId: 1 } }))
+    .toThrow(/INVALID_DEPLOYMENT_CONFIG/);
 });
 
 it('keeps SQLite rows across schema reapplication', async () => {
