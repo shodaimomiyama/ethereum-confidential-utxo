@@ -9,7 +9,7 @@ import { initialScenario } from './scenarios.js';
 
 export type ScenarioEvent = (
   | { readonly type: 'preparing'; readonly card: Card }
-  | { readonly type: 'quote'; readonly startedAt: number; readonly quoteOut: bigint; readonly latestBlockTimestamp: number }
+  | { readonly type: 'quote'; readonly startedAt: number; readonly quoteOut: bigint; readonly latestBlockTimestamp: number | bigint }
   | { readonly type: 'reservation-ack'; readonly card: 'pay' | 'withdraw' }
   | { readonly type: 'awaiting-approval'; readonly card: Card; readonly purpose: ApprovalPurpose }
   | { readonly type: 'submitted'; readonly card: Card; readonly operationId: OperationId; readonly attemptId?: string; readonly txHash?: TxHash }
@@ -223,11 +223,15 @@ export function createMockUiController({ scope, store, clock, scenario }: {
     }
     let state = runtime.state;
     if (event.type === 'quote') {
+      if (typeof event.latestBlockTimestamp === 'number'
+        && !Number.isSafeInteger(event.latestBlockTimestamp)) {
+        throw new RangeError('latestBlockTimestamp must be an exact integer');
+      }
       const incoming = {
           startedAt: event.startedAt,
           quoteOut: event.quoteOut,
           minAmountOut: (event.quoteOut * 99n / 100n) > 0n ? event.quoteOut * 99n / 100n : 1n,
-          deadline: event.latestBlockTimestamp + 600,
+          deadline: BigInt(event.latestBlockTimestamp) + 600n,
       };
       if (state.cards.pay.phase === 'awaiting-approval') {
         runtime.oldAuthorizationActive = true;
