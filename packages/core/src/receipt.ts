@@ -50,7 +50,7 @@ export async function inspectReceipt(observed: ObservedOperation, outputIndex: n
   const operation = state.operation;
   const utxo = state.utxo;
   if (!header.complete || !operation.complete || !utxo.complete) return fail("unknown", "HISTORY_UNAVAILABLE");
-  if (header.value.number !== success.blockNumber || !equal(header.value.hash, success.blockHash) || (success.blockNumber === point.number && !equal(success.blockHash, point.hash))) return fail("unknown", "CHECKPOINT");
+  if (header.value.number !== success.blockNumber || !equal(header.value.hash, success.blockHash) || (success.blockNumber === point.number && !equal(success.blockHash, point.hash))) return fail("inconsistent", "CHECKPOINT");
   if (!position(success.transactionIndex) || !position(success.logIndex)) return fail("inconsistent", "LOG_POSITION");
   if (outputLogs.some(log => !position(log.outputIndex) || log.outputIndex >= request.outputs.length)) return fail("inconsistent", "OPERATION_BINDING");
   let previous = -1;

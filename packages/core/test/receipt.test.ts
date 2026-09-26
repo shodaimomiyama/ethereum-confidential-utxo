@@ -43,7 +43,14 @@ const cases: [string, (f: Fixture) => void, string, string][] = [
   ["reordered chain positions", f => { f.observed.outputLogs[0]!.logIndex = 2; f.observed.outputLogs[1]!.logIndex = 1; }, "inconsistent", "LOG_POSITION"],
   ["wrong output id", f => { f.observed.outputLogs[1]!.outputId = hash("ff"); }, "inconsistent", "OPERATION_BINDING"],
   ["missing success", f => { delete f.observed.success; }, "unknown", "MISSING_SUCCESS"],
-  ["changed creation hash", f => { f.observed.success!.blockHash = hash("ff"); }, "unknown", "CHECKPOINT"],
+  ["changed creation hash", f => { f.observed.success!.blockHash = hash("ff"); }, "inconsistent", "CHECKPOINT"],
+  ["changed creation height", f => { f.observed.success!.blockNumber = 11n; }, "inconsistent", "CHECKPOINT"],
+  ["creation at checkpoint height with another hash", f => {
+    f.observed.success!.blockNumber = checkpoint.number;
+    f.state.creationBlock = complete({ number: checkpoint.number, hash: f.observed.success!.blockHash });
+  }, "inconsistent", "CHECKPOINT"],
+  ["missing creation history", f => { f.state.creationBlock = { complete: false, reason: "GAP" }; }, "unknown", "HISTORY_UNAVAILABLE"],
+  ["creation header bound to another checkpoint", f => { f.state.creationBlock = { complete: true, blockHash: hash("ff"), value: { number: 10n, hash: hash("10") } }; }, "unknown", "CHECKPOINT"],
   ["different transaction", f => { f.observed.outputLogs[1]!.transactionHash = hash("ff"); }, "inconsistent", "LOG_POSITION"],
   ["malformed packet", f => { f.observed.request.outputs[0]!.packet = "0x01"; }, "inconsistent", "INVALID_REQUEST"],
   ["wrong owner", f => { f.owner = zeroAddress; }, "inconsistent", "OWNER"],
