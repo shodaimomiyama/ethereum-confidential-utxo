@@ -5,7 +5,7 @@ import { createSiweMessage } from 'viem/siwe';
 import { expect, it } from 'vitest';
 import worker from '../src/index.js';
 import type { ServiceEnv } from '../src/index.js';
-import { initializeEnvironment } from '../src/recovery.js';
+import type { UniswapServiceObject } from '../src/durable-object.js';
 
 const serviceEnv = env as unknown as ServiceEnv;
 
@@ -24,8 +24,7 @@ function post(path: string, body: unknown, origin = 'https://site.test', cookie?
 it('authenticates through the Worker and returns only the owner records', async () => {
   const stub = serviceEnv.UNISWAP_STATE.get(serviceEnv.UNISWAP_STATE.idFromName('local-v1'));
   await stub.fetch('https://site.test/v1/operations');
-  await runInDurableObject(stub, (_obj, state) => initializeEnvironment(state.storage,
-    { generation: 'test-g1', stopped: false, initialize: true }));
+  await runInDurableObject(stub, (object) => (object as UniswapServiceObject).initializeForDeployment('local-v1'));
   const account = privateKeyToAccount(generatePrivateKey());
   const scope = { deploymentId: 'local-v1', owner: account.address };
   const challengeResponse = await worker.fetch(post('/v1/auth/challenge', { scope }), serviceEnv);

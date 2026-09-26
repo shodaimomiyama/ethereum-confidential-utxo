@@ -6,13 +6,23 @@ import { createChallenge, readSessionIdentity, verifyChallenge } from './auth.js
 import { parseDeploymentCatalog, resolveDeployment } from './config.js';
 import { apiError, apiSuccess, BodyTooLarge, readLimitedJson } from './http.js';
 import { listOperations, putOperation } from './store.js';
-import { ensureWritable, getAvailability, resolveRecoveryGate } from './recovery.js';
+import { ensureWritable, getAvailability, initializeEnvironment, resolveRecoveryGate } from './recovery.js';
 import { getServiceExtensions, makeServiceContext } from './extensions.js';
 
 export class UniswapServiceObject extends DurableObject<ServiceEnv> {
   constructor(ctx: DurableObjectState, env: ServiceEnv) {
     super(ctx, env);
     applyMigrations(ctx.storage, getServiceExtensions().flatMap((extension) => extension.migrations));
+  }
+
+  // Internal DO RPC for #60's operator-only bootstrap. No HTTP route calls this.
+  async initializeForDeployment(deploymentId: string): Promise<void> {
+    resolveDeployment(deploymentId, parseDeploymentCatalog(this.env.DEPLOYMENTS_JSON));
+    const gate = resolveRecoveryGate(this.env.RECOVERY_JSON, deploymentId);
+    const bound = await this.ctx.storage.get<string>('deploymentId');
+    if (bound !== undefined && bound !== deploymentId) throw new Error('SCOPE_MISMATCH');
+    if (bound === undefined) await this.ctx.storage.put('deploymentId', deploymentId);
+    initializeEnvironment(this.ctx.storage, gate);
   }
 
   async fetch(request: Request): Promise<Response> {
