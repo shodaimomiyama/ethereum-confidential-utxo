@@ -7,11 +7,12 @@ import { parseDeploymentCatalog, resolveDeployment } from './config.js';
 import { apiError, apiSuccess, BodyTooLarge, readLimitedJson } from './http.js';
 import { listOperations, putOperation } from './store.js';
 import { ensureWritable, getAvailability, resolveRecoveryGate } from './recovery.js';
+import { getServiceExtensions, makeServiceContext } from './extensions.js';
 
 export class UniswapServiceObject extends DurableObject<ServiceEnv> {
   constructor(ctx: DurableObjectState, env: ServiceEnv) {
     super(ctx, env);
-    applyMigrations(ctx.storage);
+    applyMigrations(ctx.storage, getServiceExtensions().flatMap((extension) => extension.migrations));
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -21,6 +22,9 @@ export class UniswapServiceObject extends DurableObject<ServiceEnv> {
       const parsed = parseApiRequest(request.method, url.pathname + url.search, body);
       const config = resolveDeployment(parsed.scope.deploymentId, parseDeploymentCatalog(this.env.DEPLOYMENTS_JSON));
       const recoveryGate = resolveRecoveryGate(this.env.RECOVERY_JSON, parsed.scope.deploymentId);
+      const boundDeployment = await this.ctx.storage.get<string>('deploymentId');
+      if (boundDeployment !== undefined && boundDeployment !== parsed.scope.deploymentId) return apiError(403, 'SCOPE_MISMATCH');
+      if (boundDeployment === undefined) await this.ctx.storage.put('deploymentId', parsed.scope.deploymentId);
       if (url.origin !== config.origin || (request.method !== 'GET' && request.headers.get('origin') !== config.origin)) {
         return apiError(403, 'SCOPE_MISMATCH');
       }
@@ -52,6 +56,14 @@ export class UniswapServiceObject extends DurableObject<ServiceEnv> {
           record: { ...saved.record, deadline: saved.record.kind === 'pay' ? saved.record.deadline.toString() : undefined },
         });
       }
+      for (const extension of getServiceExtensions()) {
+        const route = extension.routes.find((handler) => handler.route === parsed.route);
+        if (route !== undefined) {
+          const context = makeServiceContext(this.ctx.storage, recoveryGate, parsed.scope);
+          if (!parsed.route.startsWith('GET ')) context.ensureWritable();
+          return await route.handle(parsed, context);
+        }
+      }
       return apiError(503, 'SERVICE_UNAVAILABLE');
     } catch (error) {
       if (error instanceof BodyTooLarge) return apiError(413, 'PAYLOAD_TOO_LARGE');
@@ -68,5 +80,14 @@ export class UniswapServiceObject extends DurableObject<ServiceEnv> {
       }
       return apiError(400, 'INVALID_REQUEST');
     }
+  }
+
+  async alarm(): Promise<void> {
+    const deploymentId = await this.ctx.storage.get<string>('deploymentId');
+    if (deploymentId === undefined) throw new Error('UNKNOWN_DEPLOYMENT');
+    const gate = resolveRecoveryGate(this.env.RECOVERY_JSON, deploymentId);
+    const context = makeServiceContext(this.ctx.storage, gate);
+    context.ensureWritable();
+    for (const extension of getServiceExtensions()) await extension.alarm?.(context);
   }
 }
