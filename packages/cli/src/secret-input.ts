@@ -1,5 +1,6 @@
 import { generateKeyPairSync } from "node:crypto";
 import { stdin, stderr } from "node:process";
+import type { Readable, Writable } from "node:stream";
 import { privateKeyToAccount } from "viem/accounts";
 import type { LocalAccount } from "viem/accounts";
 import type { Address, Hex } from "viem";
@@ -32,23 +33,24 @@ export function generateReceiptKey(): { secretKey: Uint8Array; publicKey: Uint8A
   return { secretKey, publicKey };
 }
 
-async function hiddenLine(label: string): Promise<Uint8Array> {
-  if (!stdin.isTTY || !stderr.isTTY || typeof stdin.setRawMode !== "function") invalid();
-  stderr.write(label);
+export type SecretInput = Readable & { isTTY?: boolean; isRaw?: boolean; setRawMode?: (mode: boolean) => void };
+export type SecretOutput = Writable & { isTTY?: boolean };
+async function hiddenLine(label: string, input: SecretInput, output: SecretOutput): Promise<Uint8Array> {
+  if (!input.isTTY || !output.isTTY || typeof input.setRawMode !== "function") invalid();
   const chunks: number[] = [];
-  const oldRaw = stdin.isRaw;
-  stdin.setRawMode(true);
-  stdin.resume();
+  const oldRaw = input.isRaw;
+  input.setRawMode(true);
+  input.resume();
   try {
     return await new Promise<Uint8Array>((resolve, reject) => {
-      const cleanup = () => { stdin.off("data", onData); stdin.off("end", onEnd); stdin.off("error", onError); };
+      const cleanup = () => { input.off("data", onData); input.off("end", onEnd); input.off("error", onError); };
       const onEnd = () => { cleanup(); reject(new Error("SECRET_INPUT_INVALID")); };
       const onError = () => { cleanup(); reject(new Error("SECRET_INPUT_INVALID")); };
       const onData = (chunk: Buffer) => {
         for (const byte of chunk) {
           if (byte === 3) { cleanup(); reject(new Error("SECRET_INPUT_INVALID")); return; }
           if (byte === 10 || byte === 13) {
-            cleanup(); stderr.write("\n");
+            cleanup(); output.write("\n");
             if (chunks.length === 0) reject(new Error("SECRET_INPUT_INVALID"));
             else resolve(Uint8Array.from(chunks));
             return;
@@ -58,21 +60,23 @@ async function hiddenLine(label: string): Promise<Uint8Array> {
           chunks.push(byte);
         }
       };
-      stdin.on("data", onData);
-      stdin.once("end", onEnd);
-      stdin.once("error", onError);
+      input.on("data", onData);
+      input.once("end", onEnd);
+      input.once("error", onError);
+      output.write(label);
     });
   } finally {
-    stdin.setRawMode(Boolean(oldRaw));
-    stdin.pause();
+    input.setRawMode(Boolean(oldRaw));
+    input.pause();
   }
 }
 
-export async function promptPassphrase(mode: "unlock" | "new" | "change"): Promise<Uint8Array> {
-  if (mode === "unlock") return hiddenLine("Passphrase: ");
-  const first = await hiddenLine(mode === "new" ? "New passphrase: " : "Replacement passphrase: ");
+export async function promptPassphrase(mode: "unlock" | "new" | "change",
+  input: SecretInput = stdin, output: SecretOutput = stderr): Promise<Uint8Array> {
+  if (mode === "unlock") return hiddenLine("Passphrase: ", input, output);
+  const first = await hiddenLine(mode === "new" ? "New passphrase: " : "Replacement passphrase: ", input, output);
   try {
-    const second = await hiddenLine("Confirm passphrase: ");
+    const second = await hiddenLine("Confirm passphrase: ", input, output);
     try {
       if (!Buffer.from(first).equals(Buffer.from(second))) invalid();
       return new Uint8Array(first);

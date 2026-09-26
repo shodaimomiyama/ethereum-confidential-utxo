@@ -21,6 +21,9 @@ export type CliResult =
   | { kind: "operation"; operationId: Hex; status: OperationStatus; checkpoint?: Checkpoint; txHash?: Hex }
   | { kind: "sync"; status: "complete" | "unconfirmed" | "stale" | "inconsistent"; checkpoint?: Checkpoint; receiptStatus?: "available" | "spent" | "unknown" }
   | { kind: "balance"; status: "available" | "unknown" | "stale"; amount?: PrivateBalance; checkpoint?: Checkpoint }
+  | { kind: "utxos"; status: "complete" | "stale"; entries: { id: Hex; status: string; amount?: PrivateBalance }[]; checkpoint?: Checkpoint }
+  | { kind: "recipient"; owner: Address; path: string }
+  | { kind: "export"; operationId: Hex; path: string }
   | { kind: "backup"; status: "created"; path: string }
   | { kind: "restored"; status: "needs-resync"; owner: Address }
   | { kind: "passphrase"; status: "changed" }
@@ -44,6 +47,7 @@ function exitCode(result: CliResult): number {
   }
   if (result.kind === "sync" && result.status !== "complete") return 4;
   if (result.kind === "balance" && result.status !== "available") return 4;
+  if (result.kind === "utxos" && result.status !== "complete") return 4;
   return 0;
 }
 function publicDto(result: CliResult): Record<string, unknown> {
@@ -61,6 +65,11 @@ function publicDto(result: CliResult): Record<string, unknown> {
       ...(result.receiptStatus ? { receiptStatus: result.receiptStatus } : {}) };
     case "balance": return { schemaVersion: 1, kind: "balance", status: result.status,
       ...(result.checkpoint ? { checkpoint: checkpoint(result.checkpoint) } : {}) };
+    case "utxos": return { schemaVersion: 1, kind: "utxos", status: result.status,
+      entries: result.entries.map(item => ({ id: item.id, status: item.status })),
+      ...(result.checkpoint ? { checkpoint: checkpoint(result.checkpoint) } : {}) };
+    case "recipient": return { schemaVersion: 1, kind: "recipient", owner: result.owner, path: result.path };
+    case "export": return { schemaVersion: 1, kind: "export", operationId: result.operationId, path: result.path };
     case "backup": return { schemaVersion: 1, kind: "backup", status: result.status, path: result.path };
     case "restored": return { schemaVersion: 1, kind: "restored", status: result.status, owner: result.owner };
     case "passphrase": return { schemaVersion: 1, kind: "passphrase", status: result.status };
@@ -82,6 +91,9 @@ export function renderResult(result: CliResult, io: RenderIO, format: Format): n
   if (result.kind === "balance" && result.status === "available" && io.isTTY && result.amount) {
     io.stdout.write(`availableWei=${result.amount[privateAmount].toString()}\n`);
   }
+  if (result.kind === "utxos" && result.status === "complete" && io.isTTY) {
+    for (const item of result.entries) if (item.amount) io.stdout.write(`${item.id} amountWei=${item.amount[privateAmount].toString()}\n`);
+  }
   return code;
 }
 
@@ -101,7 +113,7 @@ export function classifyError(error: unknown): Extract<CliResult, {kind:"error"}
   }
   const message = error instanceof Error ? error.message : "";
   if (message === "STORE_LOCKED") return { kind: "error", code: "LOCK" };
-  if (["PRIVATE_FILE_INVALID", "INVALID_ENVELOPE", "INVALID_OWNER_STATE", "KDF_FAILED"].includes(message)) return { kind: "error", code: "STORAGE" };
-  if (["PUBLIC_FILE_INVALID", "INVALID_FORMAT", "SECRET_INPUT_INVALID"].includes(message)) return { kind: "error", code: "INPUT" };
+  if (["PRIVATE_FILE_INVALID", "INVALID_ENVELOPE", "INVALID_OWNER_STATE", "INVALID_JOURNAL", "KDF_FAILED"].includes(message)) return { kind: "error", code: "STORAGE" };
+  if (["PUBLIC_FILE_INVALID", "INVALID_FORMAT", "SECRET_INPUT_INVALID", "OWNER_OPERATION_INVALID", "SUBMITTER_INVALID", "CLI_INPUT"].includes(message)) return { kind: "error", code: "INPUT" };
   return { kind: "error", code: "UNKNOWN" };
 }

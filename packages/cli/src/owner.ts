@@ -38,7 +38,7 @@ export class OwnerService {
     const file = await stat(this.config.manifestPath);
     if (!file.isFile() || file.size > 1024 * 1024) invalid();
     const manifestBytes = await readFile(this.config.manifestPath);
-    const manifest = parseExactObject(manifestBytes, ["schemaVersion", "chainId", "hardfork", "artifacts", "parametersHash", "pool", "verifier"]) as { chainId: number };
+    const manifest = parseExactObject(manifestBytes, ["schemaVersion", "chainId", "hardfork", "signer", "tool", "artifacts", "parametersHash", "pool", "verifier"]) as { chainId: number };
     const mode = manifest.chainId === 31337 ? "local-simulated" : "finalized";
     const rpc = createEthereumRpc({ url: this.config.rpcUrl, mode });
     const verified = await verifyEthereumDeployment(rpc.client, manifest, mode);
