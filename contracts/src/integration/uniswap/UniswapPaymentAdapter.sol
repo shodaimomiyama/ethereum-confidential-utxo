@@ -3,6 +3,18 @@ pragma solidity 0.8.37;
 
 import {PoolTypes} from "../../PoolTypes.sol";
 import {PoolBinding} from "../../PoolBinding.sol";
+import {IPool} from "../../IPool.sol";
+
+interface IRouterSwap {
+    function swapExactETHForTokens(uint256 amountOutMin, address[] calldata path, address to, uint256 deadline)
+        external
+        payable
+        returns (uint256[] memory amounts);
+}
+
+interface ITokenBalance {
+    function balanceOf(address account) external view returns (uint256);
+}
 
 interface IRouterConfiguration {
     function factory() external view returns (address);
@@ -32,6 +44,18 @@ contract UniswapPaymentAdapter {
     error SwapAccountingMismatch();
     error DeliveryMismatch();
 
+    event PaymentSucceeded(
+        bytes32 indexed paymentId,
+        bytes32 indexed operationId,
+        address indexed owner,
+        uint256 ethAmount,
+        address token,
+        uint256 minAmountOut,
+        address recipient,
+        uint64 deadline,
+        uint256 amountOut
+    );
+
     bytes32 internal constant DOMAIN_TYPE =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
     bytes32 internal constant PAYMENT_TYPE = keccak256(
@@ -50,12 +74,22 @@ contract UniswapPaymentAdapter {
         uint64 deadline;
     }
 
+    struct PayContext {
+        bytes32 operationId;
+        uint256 initialEth;
+        uint256 initialRecipientBalance;
+    }
+
     address public immutable pool;
     address public immutable router02;
     address public immutable factory;
     address public immutable weth;
     address public immutable dUSD;
     address public immutable pair;
+    mapping(bytes32 => bool) private executedPayments;
+    bool private paymentInProgress;
+    bool private ethReceived;
+    uint256 private expectedEth;
 
     constructor(address pool_, address router02_, address factory_, address weth_, address dUSD_, address pair_) {
         if (
@@ -78,6 +112,80 @@ contract UniswapPaymentAdapter {
         weth = weth_;
         dUSD = dUSD_;
         pair = pair_;
+    }
+
+    receive() external payable {
+        if (!paymentInProgress || msg.sender != pool || ethReceived || msg.value != expectedEth) {
+            revert UnexpectedEthReceipt();
+        }
+        ethReceived = true;
+    }
+
+    function isPaymentExecuted(bytes32 paymentId) external view returns (bool) {
+        return executedPayments[paymentId];
+    }
+
+    function pay(
+        PoolTypes.OperationRequest calldata withdrawal,
+        PoolTypes.BalanceProof calldata balanceProof,
+        PoolTypes.RangeProofV3[] calldata rangeProofs,
+        bytes calldata poolSignature,
+        PaymentTerms calldata terms,
+        bytes calldata paymentSignature
+    ) external returns (bytes32 paymentId, uint256 amountOut) {
+        if (paymentInProgress) revert ReentrantPayment();
+        paymentInProgress = true;
+        PayContext memory context;
+        (context.operationId, paymentId) = _validatePayment(withdrawal, rangeProofs, terms, paymentSignature);
+        context.initialEth = address(this).balance;
+        context.initialRecipientBalance = ITokenBalance(dUSD).balanceOf(terms.recipient);
+        expectedEth = terms.ethAmount;
+        ethReceived = false;
+
+        IPool(pool).withdraw(withdrawal, balanceProof, rangeProofs, poolSignature);
+        if (!ethReceived || address(this).balance != context.initialEth + terms.ethAmount) {
+            revert SwapAccountingMismatch();
+        }
+        amountOut = _swapAndCheck(terms, context.initialEth, context.initialRecipientBalance);
+        executedPayments[paymentId] = true;
+        emit PaymentSucceeded(
+            paymentId,
+            context.operationId,
+            terms.owner,
+            terms.ethAmount,
+            terms.token,
+            terms.minAmountOut,
+            terms.recipient,
+            terms.deadline,
+            amountOut
+        );
+        expectedEth = 0;
+        ethReceived = false;
+        paymentInProgress = false;
+    }
+
+    function _swapAndCheck(PaymentTerms calldata terms, uint256 initialEth, uint256 initialRecipientBalance)
+        private
+        returns (uint256 amountOut)
+    {
+        address[] memory path = new address[](2);
+        path[0] = weth;
+        path[1] = dUSD;
+        uint256[] memory amounts = IRouterSwap(router02).swapExactETHForTokens{value: terms.ethAmount}(
+            terms.minAmountOut, path, terms.recipient, terms.deadline
+        );
+        if (
+            amounts.length != 2 || amounts[0] != terms.ethAmount || amounts[1] == 0 || amounts[1] < terms.minAmountOut
+                || address(this).balance != initialEth
+        ) {
+            revert SwapAccountingMismatch();
+        }
+        amountOut = amounts[1];
+        uint256 finalRecipientBalance = ITokenBalance(dUSD).balanceOf(terms.recipient);
+        if (
+            finalRecipientBalance < initialRecipientBalance
+                || finalRecipientBalance - initialRecipientBalance != amountOut
+        ) revert DeliveryMismatch();
     }
 
     function paymentDigest(PaymentTerms calldata terms) external view returns (bytes32) {
@@ -133,6 +241,7 @@ contract UniswapPaymentAdapter {
         if (block.timestamp > terms.deadline) revert PaymentExpired(terms.deadline);
 
         paymentId = _paymentDigest(terms);
+        if (executedPayments[paymentId]) revert PaymentAlreadyExecuted(paymentId);
         if (paymentSignature.length != 65) revert InvalidPaymentSignature();
         bytes32 r;
         bytes32 s;

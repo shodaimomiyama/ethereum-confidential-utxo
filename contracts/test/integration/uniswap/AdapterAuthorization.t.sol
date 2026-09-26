@@ -243,7 +243,7 @@ contract AdapterAuthorizationTest {
         AdapterAuthorizationHarness implementation = _deploy();
         address fixedAdapter = 0x2222222222222222222222222222222222222222;
         vm.etch(fixedAdapter, address(implementation).code);
-        AdapterAuthorizationHarness adapter = AdapterAuthorizationHarness(fixedAdapter);
+        AdapterAuthorizationHarness adapter = AdapterAuthorizationHarness(payable(fixedAdapter));
         address owner = 0x1a642f0E3c3aF545E7AcBD38b07251B3990914F1;
         PoolTypes.OperationRequest memory request = _request(owner, fixedAdapter);
         request.salt = 0x2121212121212121212121212121212121212121212121212121212121212121;
