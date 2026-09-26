@@ -7,9 +7,12 @@ import { parseDeploymentCatalog, resolveDeployment } from './config.js';
 import { apiError, apiSuccess, BodyTooLarge, readLimitedJson } from './http.js';
 import { listOperations, putOperation } from './store.js';
 import { ensureWritable, getAvailability, initializeEnvironment, resolveRecoveryGate } from './recovery.js';
-import { getServiceExtensions, makeServiceContext } from './extensions.js';
+import { getServiceExtensions, makeServiceContext, registerServiceExtension } from './extensions.js';
 import { createCoreInputReader, getCoreHistoryProvider } from './core-reader.js';
 import { loadEthereumHistory } from './ethereum-provider.js';
+import { rewardExtension } from './rewards/extension.js';
+
+registerServiceExtension(rewardExtension);
 
 export class UniswapServiceObject extends DurableObject<ServiceEnv> {
   constructor(ctx: DurableObjectState, env: ServiceEnv) {
@@ -76,7 +79,8 @@ export class UniswapServiceObject extends DurableObject<ServiceEnv> {
       for (const extension of getServiceExtensions()) {
         const route = extension.routes.find((handler) => handler.route === parsed.route);
         if (route !== undefined) {
-          const context = makeServiceContext(this.ctx.storage, recoveryGate, parsed.scope);
+          const context = makeServiceContext(this.ctx.storage, recoveryGate, parsed.scope,
+            { deploymentId: parsed.scope.deploymentId, deployment: config, env: this.env });
           if (!parsed.route.startsWith('GET ')) context.ensureWritable();
           return await route.handle(parsed, context);
         }
@@ -104,7 +108,9 @@ export class UniswapServiceObject extends DurableObject<ServiceEnv> {
     const deploymentId = await this.ctx.storage.get<string>('deploymentId');
     if (deploymentId === undefined) throw new Error('UNKNOWN_DEPLOYMENT');
     const gate = resolveRecoveryGate(this.env.RECOVERY_JSON, deploymentId);
-    const context = makeServiceContext(this.ctx.storage, gate);
+    const config = resolveDeployment(deploymentId, parseDeploymentCatalog(this.env.DEPLOYMENTS_JSON));
+    const context = makeServiceContext(this.ctx.storage, gate, undefined,
+      { deploymentId, deployment: config, env: this.env });
     context.ensureWritable();
     for (const extension of getServiceExtensions()) await extension.alarm?.(context);
   }
