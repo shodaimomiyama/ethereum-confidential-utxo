@@ -7,3 +7,5 @@ export { generateRangeProof } from "./range/prove.js";
 export type { RangeProof } from "./range/fold.js";
 export { balanceWitness, computeBalancePoint, generateBalanceProof } from "./balance.js";
 export type { BalanceProof, BalanceProofInput } from "./balance.js";
+export { encryptReceipt, decryptReceipt } from "./receipt.js";
+export type { EncryptReceiptInput, DecryptReceiptInput } from "./receipt.js";
