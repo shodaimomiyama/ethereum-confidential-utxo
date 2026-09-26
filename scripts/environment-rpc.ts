@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createPublicClient, createWalletClient, http, type Abi, type Hex } from 'viem';
-import { verifyEnvironmentArtifact } from './environment-artifact.mjs';
+import { verifyGeneratedEnvironmentFixture } from './environment-artifact.mjs';
 
 interface GeneratedFixture {
   abi: Abi;
@@ -18,7 +18,7 @@ export async function runEnvironmentRpcSmoke(url: string): Promise<{ answer: big
   const source = readFileSync(resolve('contracts/test/EnvironmentSmoke.t.sol'), 'utf8');
   const config = readFileSync(resolve('contracts/foundry.toml'), 'utf8');
   const generated = JSON.parse(readFileSync(resolve('packages/ethereum/generated/environment-smoke.json'), 'utf8')) as GeneratedFixture;
-  const manifest = verifyEnvironmentArtifact(artifact, generated.manifest, source, config);
+  const manifest = verifyGeneratedEnvironmentFixture(artifact, generated, source, config);
 
   const publicClient = createPublicClient({ transport: http(url) });
   const chainId = await publicClient.getChainId();

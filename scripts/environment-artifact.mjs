@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { keccak256, toHex } from 'viem';
 
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const hashText = (value) => hash(Buffer.from(value, 'utf8'));
@@ -11,7 +12,7 @@ function bytecode(value, name) {
   return Buffer.from(value.slice(2), 'hex');
 }
 
-function validateArtifact(artifact) {
+function validateArtifact(artifact, source) {
   if (!Array.isArray(artifact?.abi) || artifact.abi.length === 0) throw new Error('ABI missing');
   bytecode(artifact.bytecode?.object, 'creation bytecode');
   bytecode(artifact.deployedBytecode?.object, 'runtime bytecode');
@@ -22,10 +23,17 @@ function validateArtifact(artifact) {
   if (settings?.optimizer?.enabled !== true || settings.optimizer.runs !== 200 || settings.evmVersion !== 'cancun') {
     throw new Error('compiler settings mismatch');
   }
+  if (settings.viaIR !== undefined && settings.viaIR !== false) throw new Error('viaIR must be false');
+  if (settings.compilationTarget?.['test/EnvironmentSmoke.t.sol'] !== 'EnvironmentSmoke') {
+    throw new Error('compiler target mismatch');
+  }
+  if (artifact.metadata.sources?.['test/EnvironmentSmoke.t.sol']?.keccak256 !== keccak256(toHex(source))) {
+    throw new Error('artifact source hash mismatch');
+  }
 }
 
 export function createEnvironmentManifest(artifact, source, config) {
-  validateArtifact(artifact);
+  validateArtifact(artifact, source);
   return {
     compiler: artifact.metadata.compiler.version,
     artifactSha256: hashJson(artifact),
@@ -43,4 +51,16 @@ export function verifyEnvironmentArtifact(artifact, manifest, source, config) {
     if (manifest?.[name] !== expected[name]) throw new Error(`${name.replace('Sha256', '')} mismatch`);
   }
   return expected;
+}
+
+export function verifyGeneratedEnvironmentFixture(artifact, generated, source, config) {
+  const manifest = verifyEnvironmentArtifact(artifact, generated?.manifest, source, config);
+  if (hashJson(generated.abi) !== manifest.abiSha256) throw new Error('generated ABI mismatch');
+  if (hash(bytecode(generated.creationBytecode, 'generated creation bytecode')) !== manifest.creationSha256) {
+    throw new Error('generated creation bytecode mismatch');
+  }
+  if (hash(bytecode(generated.runtimeBytecode, 'generated runtime bytecode')) !== manifest.runtimeSha256) {
+    throw new Error('generated runtime bytecode mismatch');
+  }
+  return manifest;
 }
