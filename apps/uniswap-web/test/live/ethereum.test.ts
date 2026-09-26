@@ -77,6 +77,8 @@ it('uses the captured wallet for a Deposit and preserves an unknown transaction 
   });
   const result = await bridge.submitDeposit(submission(0));
   expect(result.diagnostic).toBe('SUBMISSION_UNKNOWN');
+  expect(result.scope).toEqual(scope);
+  expect(result.epoch).toBe(7);
   expect(sendTransaction).toHaveBeenCalledWith({ from: owner, to: pool, data: '0x1234', value: '0x2',
     gas: '0xa', nonce: '0x4', maxFeePerGas: '0x5', maxPriorityFeePerGas: '0x1' });
 });
@@ -95,4 +97,36 @@ it('passes a stale wallet response as unknown to the submission layer', async ()
     }
   });
   expect((await bridge.submitDeposit(submission(0))).diagnostic).toBe('SUBMISSION_UNKNOWN');
+});
+
+it('retains the original unknown attempt when the epoch changes during a possible broadcast', async () => {
+  const { bridge, sendTransaction, advance } = fixture();
+  sendTransaction.mockImplementationOnce(async () => {
+    advance();
+    throw new Error('response lost after possible broadcast');
+  });
+  const operationId = `0x${'ee'.repeat(32)}`;
+  vi.mocked(submitPublicOperation).mockImplementationOnce(async (_verified, _history, wallet, account) => {
+    try {
+      await wallet.sendTransaction({ account, to: pool as `0x${string}`, data: '0x', value: 2n,
+        gas: 1n, nonce: 0, maxFeePerGas: 1n, maxPriorityFeePerGas: 1n });
+      throw new Error('expected rejection');
+    } catch {
+      return { operationId, diagnostic: 'SUBMISSION_UNKNOWN', attempt: { outer: 'unconfirmed' },
+        attempts: [{ outer: 'unconfirmed' }] } as never;
+    }
+  });
+  const result = await bridge.submitDeposit(submission(0));
+  expect(result).toMatchObject({ operationId, diagnostic: 'SUBMISSION_UNKNOWN',
+    attempt: { outer: 'unconfirmed' }, attempts: [{ outer: 'unconfirmed' }], scope, epoch: 7 });
+  expect(sendTransaction).toHaveBeenCalledOnce();
+});
+
+it('rejects a stale submission result with a transaction hash', async () => {
+  const { bridge, advance } = fixture();
+  vi.mocked(submitPublicOperation).mockImplementationOnce(async () => {
+    advance();
+    return { attempt: { outer: 'pending', txHash: `0x${'aa'.repeat(32)}` } } as never;
+  });
+  await expect(bridge.submitDeposit(submission(0))).rejects.toThrow('SCOPE_CHANGED');
 });

@@ -3,6 +3,7 @@ import { createHistoryPort, submitPublicOperation,
   type RpcConnection, type SendOptions, type SendResult, type SubmissionWallet,
   type VerifiedDeployment } from '@confidential-utxo/ethereum';
 import type { Address, Hex } from 'viem';
+import type { Scope } from '@confidential-utxo/uniswap';
 import { sameScope } from './http.js';
 import type { OperationContext } from './operations.js';
 
@@ -16,9 +17,11 @@ export interface ScopedEthereumDependencies {
 export interface ScopedEthereumBridge {
   readonly history: HistoryPort;
   /** Pool direct submission is limited to Deposit and full Withdraw. Pay uses the adapter. */
-  submitDeposit(submission: PublicSubmission, options?: SendOptions): Promise<SendResult>;
-  submitFullWithdraw(submission: PublicSubmission, options?: SendOptions): Promise<SendResult>;
+  submitDeposit(submission: PublicSubmission, options?: SendOptions): Promise<ScopedSendResult>;
+  submitFullWithdraw(submission: PublicSubmission, options?: SendOptions): Promise<ScopedSendResult>;
 }
+
+export type ScopedSendResult = SendResult & { readonly scope: Scope; readonly epoch: number };
 
 function fingerprint(verified: VerifiedDeployment): string {
   const { context, manifest } = verified;
@@ -88,13 +91,22 @@ export function createScopedEthereumBridge(deps: ScopedEthereumDependencies): Sc
       return result.value as Hex;
     }),
   };
-  async function submit(submission: PublicSubmission, kind: 0 | 2, options: SendOptions = {}): Promise<SendResult> {
+  async function submit(submission: PublicSubmission, kind: 0 | 2, options: SendOptions = {}): Promise<ScopedSendResult> {
     check();
     if (submission.request.kind !== kind || submission.request.owner.toLowerCase() !== owner.toLowerCase() ||
       (kind === 2 && submission.request.outputs.length !== 0)) throw new Error('INVALID_POOL_SUBMISSION');
     const snapshot = structuredClone(submission);
     const selected: SendOptions = { ...options };
-    return guarded(() => submitPublicOperation(verified, history, wallet, owner, snapshot, selected));
+    let result: SendResult;
+    try { result = await submitPublicOperation(verified, history, wallet, owner, snapshot, selected); }
+    catch (error) { check(); throw error; }
+    try { check(); }
+    catch (error) {
+      // The wallet may have broadcast before its response or epoch was lost. Keep
+      // #30's unknown attempt attached to the original action, never a stale success.
+      if (result.diagnostic !== 'SUBMISSION_UNKNOWN' || result.attempt.outer !== 'unconfirmed') throw error;
+    }
+    return { ...result, scope: { ...scope }, epoch };
   }
   return { history, submitDeposit: (submission, options) => submit(submission, 0, options),
     submitFullWithdraw: (submission, options) => submit(submission, 2, options) };
