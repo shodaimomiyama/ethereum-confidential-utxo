@@ -6,7 +6,10 @@ export type SchemaErrorCode =
   | 'INVALID_BYTES32'
   | 'INVALID_ADDRESS'
   | 'INVALID_REVISION'
-  | 'INVALID_FIELD';
+  | 'INVALID_FIELD'
+  | 'EMPTY_AMOUNT'
+  | 'ZERO_AMOUNT'
+  | 'AMOUNT_OVERFLOW';
 
 export class SchemaError extends Error {
   constructor(

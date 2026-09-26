@@ -207,6 +207,19 @@ it('exposes the fixed automatic minimum and deadline with the quote', () => {
   expect(ui.snapshot().cards.pay.quote?.minAmountOut).toBe(1n);
 });
 
+it('preserves a deadline above the safe JavaScript number range', () => {
+  const { ui } = setup();
+  ui.control.inject({ type: 'quote', startedAt: 0, quoteOut: 100n, latestBlockTimestamp: 9007199254740993n });
+  expect(ui.snapshot().cards.pay.quote?.deadline).toBe(9007199254741593n);
+});
+
+it('rejects an unsafe numeric block timestamp before it can be rounded', () => {
+  const { ui } = setup();
+  expect(() => ui.control.inject({
+    type: 'quote', startedAt: 0, quoteOut: 100n, latestBlockTimestamp: Number.MAX_SAFE_INTEGER + 1,
+  })).toThrow(RangeError);
+});
+
 it('passes a validation reason to the UI and prevents an invalid Pay start', async () => {
   const { ui } = setup();
   ui.control.inject({ type: 'validation-result', card: 'pay', phase: 'invalid-input', reason: 'INPUT_INVALID', input: { amount: '0' } });

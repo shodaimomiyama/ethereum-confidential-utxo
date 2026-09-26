@@ -110,3 +110,35 @@ it('rejects response codes that disagree with conflict or unavailable status', (
   expect(() => parseApiResponse('POST /v1/rewards', 503, error)).toThrowError();
   expect(() => parseApiResponse('POST /v1/rewards', 409, error)).not.toThrow();
 });
+
+it('parses reservation lookup and revision-bound release without trusting caller success flags', () => {
+  const lookup = parseApiRequest('GET', `/v1/operations/${id}?deploymentId=local-v1&owner=${owner}`, undefined);
+  expect(lookup.route).toBe('GET /v1/operations/{id}');
+  expect(lookup.id).toBe(id);
+
+  const release = parseApiRequest('POST', `/v1/operations/${id}/release`, {
+    scope, expectedRevision: 1, sealedRevision: 2, blockHash: hash,
+    record: { ...payRecord, encryptedBundle: { ...payRecord.encryptedBundle, nonce: `0x${'01'.repeat(12)}` } },
+  });
+  expect(release.route).toBe('POST /v1/operations/{id}/release');
+  expect(release.sealedRevision).toBe(2);
+  expect(() => parseApiRequest('POST', `/v1/operations/${id}/release`, {
+    scope, expectedRevision: 1, sealedRevision: 2, blockHash: hash,
+    paymentSucceeded: false, inputUnspent: true, record: payRecord,
+  })).toThrowError();
+  expect(() => parseApiRequest('POST', `/v1/operations/${id}/release`, {
+    scope, expectedRevision: 1, sealedRevision: 3, blockHash: hash, record: payRecord,
+  })).toThrowError();
+});
+
+it('rejects a PUT whose sealed revision disagrees with its compare-and-swap target', () => {
+  expect(() => parseApiRequest('PUT', `/v1/operations/${id}`, {
+    scope, expectedRevision: 1, sealedRevision: 3, record: payRecord,
+  })).toThrowError();
+});
+
+it('parses released records and rejects unknown reservation states', () => {
+  const response = { scope, record: payRecord, revision: 2, reservationState: 'released' };
+  expect(parseApiResponse('POST /v1/operations/{id}/release', 200, response)).toMatchObject({ reservationState: 'released', revision: 2 });
+  expect(() => parseApiResponse('POST /v1/operations/{id}/release', 200, { ...response, reservationState: 'missing' })).toThrowError();
+});

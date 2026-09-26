@@ -22,6 +22,7 @@ import type {
   SavedOperation,
   SignedRecipientInfo,
 } from './storage.js';
+import type { SavedReservation } from './reservation.js';
 
 export type ApiTransport = (request: Request) => Promise<Response>;
 
@@ -30,6 +31,8 @@ export type ApiRoute =
   | 'POST /v1/auth/verify'
   | 'PUT /v1/operations/{id}'
   | 'GET /v1/operations'
+  | 'GET /v1/operations/{id}'
+  | 'POST /v1/operations/{id}/release'
   | 'POST /v1/rewards'
   | 'GET /v1/rewards'
   | 'GET /v1/rewards/{id}'
@@ -86,9 +89,18 @@ export interface ApiRequestBodyMap {
   readonly 'PUT /v1/operations/{id}': {
     readonly scope: Scope;
     readonly expectedRevision: number;
+    readonly sealedRevision?: number;
     readonly record: WireOperationRecord;
   };
   readonly 'GET /v1/operations': undefined;
+  readonly 'GET /v1/operations/{id}': undefined;
+  readonly 'POST /v1/operations/{id}/release': {
+    readonly scope: Scope;
+    readonly expectedRevision: number;
+    readonly sealedRevision: number;
+    readonly blockHash: Bytes32;
+    readonly record: WireOperationRecord;
+  };
   readonly 'POST /v1/rewards': WireRewardRequest;
   readonly 'GET /v1/rewards': undefined;
   readonly 'GET /v1/rewards/{id}': undefined;
@@ -107,11 +119,13 @@ export interface ApiSuccessResponseMap {
     readonly expiresAt: number;
   };
   readonly 'POST /v1/auth/verify': { readonly sessionExpiresAt: number };
-  readonly 'PUT /v1/operations/{id}': SavedOperation & { readonly scope: Scope };
+  readonly 'PUT /v1/operations/{id}': SavedOperation & { readonly scope: Scope; readonly reservationState?: SavedReservation['reservationState'] };
   readonly 'GET /v1/operations': {
     readonly availability: 'healthy' | 'rollback';
-    readonly records: readonly (SavedOperation & { readonly scope: Scope })[];
+    readonly records: readonly (SavedOperation & { readonly scope: Scope; readonly reservationState?: SavedReservation['reservationState'] })[];
   };
+  readonly 'GET /v1/operations/{id}': SavedReservation & { readonly scope: Scope };
+  readonly 'POST /v1/operations/{id}/release': SavedReservation & { readonly scope: Scope };
   readonly 'POST /v1/rewards': { readonly reward: RewardRecord };
   readonly 'GET /v1/rewards': { readonly rewards: readonly RewardRecord[] };
   readonly 'GET /v1/rewards/{id}': { readonly reward: RewardRecord };
@@ -126,6 +140,7 @@ export interface ParsedApiRequest {
   readonly siweMessage?: string;
   readonly signature?: `0x${string}`;
   readonly expectedRevision?: number;
+  readonly sealedRevision?: number;
   readonly record?: OperationRecord;
   readonly reward?: RewardRequest;
   readonly outputId?: Bytes32;
@@ -264,14 +279,43 @@ export function parseApiRequest(method: string, path: string, body: unknown): Pa
     const scope = parseScope(object.scope);
     const id = parseBytes32(operationMatch[1], 'id');
     const record = parseOperationRecord(object.record, scope);
+    const expectedRevision = parseRevision(object.expectedRevision, 'expectedRevision');
+    const sealedRevision = object.sealedRevision === undefined
+      ? undefined : parseRevision(object.sealedRevision, 'sealedRevision');
+    if (sealedRevision !== undefined && sealedRevision !== expectedRevision + 1) {
+      throw new SchemaError('INVALID_REVISION', 'sealedRevision');
+    }
     if (record.recordId.toLowerCase() !== id.toLowerCase()) {
       throw new SchemaError('INVALID_FIELD', 'record.recordId');
     }
     return {
       route: 'PUT /v1/operations/{id}', scope, id,
-      expectedRevision: parseRevision(object.expectedRevision, 'expectedRevision'),
+      expectedRevision,
+      sealedRevision,
       record,
     };
+  }
+  const releaseMatch = /^\/v1\/operations\/(0x[0-9a-fA-F]{64})\/release$/.exec(pathname);
+  if (method === 'POST' && releaseMatch) {
+    const object = parseJsonObject(body);
+    for (const forbidden of ['paymentSucceeded', 'inputUnspent', 'inputConsumed', 'finalized', 'blockTime']) {
+      if (object[forbidden] !== undefined) throw new SchemaError('INVALID_FIELD', forbidden);
+    }
+    const scope = parseScope(object.scope);
+    const id = parseBytes32(releaseMatch[1], 'id');
+    const expectedRevision = parseRevision(object.expectedRevision, 'expectedRevision');
+    const sealedRevision = parseRevision(object.sealedRevision, 'sealedRevision');
+    if (sealedRevision !== expectedRevision + 1) throw new SchemaError('INVALID_REVISION', 'sealedRevision');
+    const record = parseOperationRecord(object.record, scope);
+    if (record.recordId.toLowerCase() !== id.toLowerCase()) throw new SchemaError('INVALID_FIELD', 'record.recordId');
+    return {
+      route: 'POST /v1/operations/{id}/release', scope, id,
+      expectedRevision, sealedRevision, record,
+      blockHash: parseBytes32(object.blockHash, 'blockHash'),
+    };
+  }
+  if (method === 'GET' && operationMatch) {
+    return { route: 'GET /v1/operations/{id}', scope: parseQueryScope(url), id: parseBytes32(operationMatch[1], 'id') };
   }
   if (method === 'GET' && pathname === '/v1/operations') {
     return { route: 'GET /v1/operations', scope: parseQueryScope(url) };
@@ -363,6 +407,13 @@ function parseRewardRecord(value: unknown): RewardRecord {
   };
 }
 
+function parseReservationState(value: unknown): 'active' | 'released' {
+  if (value !== 'active' && value !== 'released') {
+    throw new SchemaError('INVALID_FIELD', 'reservationState');
+  }
+  return value;
+}
+
 function parseApiResponseValue(route: ApiRoute, status: number, body: unknown): unknown {
   const object = parseJsonObject(body);
   if (status >= 400) {
@@ -390,6 +441,18 @@ function parseApiResponseValue(route: ApiRoute, status: number, body: unknown): 
       scope,
       record: parseOperationRecord(object.record, scope),
       revision: parseRevision(object.revision, 'revision'),
+      ...(object.reservationState === undefined ? {} : {
+        reservationState: parseReservationState(object.reservationState),
+      }),
+    };
+  }
+  if (route === 'GET /v1/operations/{id}' || route === 'POST /v1/operations/{id}/release') {
+    const scope = parseScope(object.scope);
+    return {
+      scope,
+      record: parseOperationRecord(object.record, scope),
+      revision: parseRevision(object.revision, 'revision'),
+      reservationState: parseReservationState(object.reservationState),
     };
   }
   if (route === 'GET /v1/operations') {
@@ -404,6 +467,9 @@ function parseApiResponseValue(route: ApiRoute, status: number, body: unknown): 
         scope,
         record: parseOperationRecord(saved.record, scope),
         revision: parseRevision(saved.revision, 'revision'),
+        ...(saved.reservationState === undefined ? {} : {
+          reservationState: parseReservationState(saved.reservationState),
+        }),
       };
     }) };
   }
