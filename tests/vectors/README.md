@@ -59,6 +59,16 @@ node tests/vectors/tools/oracle-storage.mjs --out tests/vectors/.cache/regenerat
 
 Pool の `deposit`・`transfer`・`withdraw` の具体的な Solidity 宣言と selector は #27 の `IPool.sol` で固定し、`test-pool-abi.mjs` が独立したethers ABI宣言と比較します。`pool-operations.json` の25件は固定のローカルchain ID・Poolアドレスに対して、公開試験鍵による実署名とv3範囲証明を持ちます。非ゼロblindingによる収支証明、送金先・釣銭・出金残額の再使用、出金callbackとPool自己宛ても含みます。`POOL_VECTOR_PYTHON=tests/vectors/.cache/venv/bin/python pnpm fixture:pool` で全ケースを一時再生成し、保存済みJSONと `contracts/test/fixtures/pool-calldata.json` に照合します。Pool専用の追加packetは112 byteの公開試験データであり、HPKE復号可能性の証拠は既存の `application-operation.json` と #36 の結合試験で扱います。
 
+Issue #56 の追加ベクトルは既存のVEC-01〜08とは別に、`cases/uniswap-payment.json`（viemによるoperationId・EIP-712 digest/署名）と `cases/uniswap-payment-operations.json`（chain 31337、Pool `0x1111…1111`、Adapter `0x2222…2222` に結合した入金・部分出金・残額1 weiのPool署名と実v3証明）に置く。後者のSolidity呼出しデータは `contracts/test/fixtures/uniswap-payment-calldata.json` にある。公開試験鍵のみを用いる。前者の署名は固定の独立EIP-712ベクトルであり、後者の結合試験は配置時に決まるdUSDアドレスを使ってFoundry内で支払い署名を作る。両fixtureを単一の完成取引署名と誤認しない。
+
+```sh
+node tests/vectors/tools/oracle-uniswap-payment.mjs
+POOL_VECTOR_PYTHON=tests/vectors/.cache/venv/bin/python node scripts/generate-pool-fixtures.mjs --uniswap
+forge test --root contracts --match-path 'test/integration/uniswap/AdapterRealFlow.t.sol'
+```
+
+`--refresh` は固定fixtureを意図的に更新するときだけ使う。通常実行は一時ディレクトリに再生成してbyte単位で比較し、保存済みJSONを変更しない。証明生成には `requirements.txt` のPyCryptodomeが必要である。専用3件は `pool-operations.json` の25件を改変・再署名したものではない。
+
 ## 引渡し
 
 #26 は v3・収支証明と Pool からの公開入力、#27 は要求・認可・イベント・エラー、#28 は証明生成と HPKE、#29 は操作構成と受領照合、#30 は ABI・署名・RPC 接続、#31 は保存 envelope と内側 schema を各自の実装で照合してください。#36 は実暗号による結合、停止後の受領と再使用、再編成を検証します。新しい実装出力が固定値と違う場合、まず入力・profile・preimage を比較し、根拠となる仕様や版の変更を確認してから fixture 更新を判断します。
