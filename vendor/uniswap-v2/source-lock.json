@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "upstream": {
+    "core": {
+      "url": "https://github.com/Uniswap/v2-core.git",
+      "commit": "6a9e7c97860676e0992f22a49665760444c1cdf5"
+    },
+    "periphery": {
+      "url": "https://github.com/Uniswap/v2-periphery.git",
+      "commit": "ed24991304291297c3b4a52818d02f46a17aa9a2"
+    },
+    "lib": {
+      "url": "https://github.com/Uniswap/solidity-lib.git",
+      "commit": "c01640b0f0f1d8a85cba8de378cc48469fcfd9a6"
+    }
+  },
+  "compilers": {
+    "core": "0.5.16",
+    "periphery": "0.6.6"
+  },
+  "localPatch": {
+    "file": "periphery/contracts/libraries/UniswapV2Library.sol",
+    "before": "0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f",
+    "after": "0x730b60d8659dba7089b26ec3c5b93e948a9e179fd7a2db2d3c15732d610c2061"
+  },
+  "files": {
+    "core/LICENSE.txt": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+    "core/contracts/UniswapV2ERC20.sol": "b8ce88929ce2c93b8fce385f8d57701b1a64c600a95317ea5f3561d36297be32",
+    "core/contracts/UniswapV2Factory.sol": "e0cef3e874a68cbcc5986451b1fec180ba5ff5699f27a256b7c10fafefe36b99",
+    "core/contracts/UniswapV2Pair.sol": "43a5421b31415868367b62bfa161ca10bcee03778873faad905f5a3e2cce9cbd",
+    "core/contracts/interfaces/IERC20.sol": "2b63f199f838028184efefbcfd6cf2b9192624c3dae5dc1116ecbb15c36a67e8",
+    "core/contracts/interfaces/IUniswapV2Callee.sol": "ecfa434d468bb1888124d8c34b0b8483f4ea1e5cd63f0874c8b28aa4305c1dbc",
+    "core/contracts/interfaces/IUniswapV2ERC20.sol": "7948069aea398dec4b7e771ffc749a24fdce3a64673a1b14deae960e7a54c603",
+    "core/contracts/interfaces/IUniswapV2Factory.sol": "51d056199e3f5e41cb1a9f11ce581aa3e190cc982db5771ffeef8d8d1f962a0d",
+    "core/contracts/interfaces/IUniswapV2Pair.sol": "29c75e69ce173ff8b498584700fef76bc81498c1d98120e2877a1439f0c31b5a",
+    "core/contracts/libraries/Math.sol": "e4a9d451964a0689be2b244322a353de143ca4248d8736d91aca4ffadca4325f",
+    "core/contracts/libraries/SafeMath.sol": "4b1c95ff75de7342e0fadff58064820a4eb7c2fcb422a75b4994980ce8e216ae",
+    "core/contracts/libraries/UQ112x112.sol": "6633b57b0723b1d72e08cc3e8b29f0af838294e59863b6cdcce95a141ed02cdb",
+    "core/contracts/test/ERC20.sol": "e11b370820584a64b1ef5b498a348349f311787ba77b3b0a632abc1110dcc7e2",
+    "lib/LICENSE.txt": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+    "lib/contracts/libraries/AddressStringUtil.sol": "ce2c59159a9dd49d0465000ce2f255f79b414497d1c148e0a85970db5096af13",
+    "lib/contracts/libraries/Babylonian.sol": "fad5a3f3ff7b5f76bea8fee540d6cbb1e3bf238fef664a83869652a251c8a18e",
+    "lib/contracts/libraries/BitMath.sol": "738fb85edb0ab8888d5e094f7f769c0a3e71fd546bc828f824f05f819b871367",
+    "lib/contracts/libraries/FixedPoint.sol": "6d36a038b5961c5ad887fdbf48dd1a3c83b54e3fdcbe9149f3e027bae374d8df",
+    "lib/contracts/libraries/FullMath.sol": "6527db8c387485b64eb83f3b242970473410bf7a35f4d7db57aec61101fb5bc8",
+    "lib/contracts/libraries/SafeERC20Namer.sol": "a1fc6e34c67bac0d3dfe369a758f44dd23e48756b0d63da6f021d16197c30d0d",
+    "lib/contracts/libraries/TransferHelper.sol": "22b87fd425d590e533ab7e52478cf72bdc4bde2672e0977c7eff7742e8f0737d",
+    "lib/contracts/test/AddressStringUtilTest.sol": "a1225d42a2866c7388a5fb4edab1c2bbd0b0a7ff14d23482d765398253c06e1d",
+    "lib/contracts/test/BabylonianEchidnaTest.sol": "40b2682fd6e2eabd5049c4df535205fc021252b25c841ccc65346fa9575616ac",
+    "lib/contracts/test/BabylonianTest.sol": "f4e9acec7e2dc15491ba9af8a5ad18b0c0389cf4d5ad3e14cf2c9ca9e25eb2c9",
+    "lib/contracts/test/BitMathEchidnaTest.sol": "9854be34bf285a5bad286b4a37f029c5ca2ac163fb5c2d103e558ce9178992d8",
+    "lib/contracts/test/BitMathTest.sol": "f7ac5983a10cdb5196404e4e43f78f1dcdefa3c4c7a7db26ac87251bb6e3b4c9",
+    "lib/contracts/test/FixedPointTest.sol": "7088309314ac470bf290b82a67728360a02c5df3fcaf03475d91c4778d55a324",
+    "lib/contracts/test/FullMathEchidnaTest.sol": "b6e7be4cd2293629ada43aefa3e5b4a45a8483d345d0389fbfc18ecbdf2c862f",
+    "lib/contracts/test/FullMathTest.sol": "ec45a58676d6c677564a37163dd0e7a1d8b411440fd054603a48ebf0fe218531",
+    "lib/contracts/test/SafeERC20NamerTest.sol": "90d5bc120eb8960dbf1864ef11031efbe995ce43de3ae8c2086e6bf3f97473c1",
+    "lib/contracts/test/TransferHelperTest.sol": "77709e574a1074a0321630b198319904ce621d030baacb91982ef1184144f443",
+    "periphery/LICENSE.txt": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+    "periphery/contracts/UniswapV2Migrator.sol": "b1bf0327cec8556c602174e20f067782c71c051ddb6f45f00459a062402ca374",
+    "periphery/contracts/UniswapV2Router01.sol": "da25cb106f822d04eb126249b2a08f986dd579920f790560ef56ca9ed8879786",
+    "periphery/contracts/UniswapV2Router02.sol": "acabe6d6c9c275aa5c27d8ed59b3d23d21616523071043e89eea7bca474babb8",
+    "periphery/contracts/examples/ExampleComputeLiquidityValue.sol": "71e03fb7e90770f9b1b625f18f814ceb2ca5e9ac2094cffe265d98200a0997ef",
+    "periphery/contracts/examples/ExampleFlashSwap.sol": "845643504669ff07f365c3465fefaf23d591733f127e46bd6c6174eebdc3f7d9",
+    "periphery/contracts/examples/ExampleOracleSimple.sol": "ac597bb691036258e9416f8a8b292e318b80e3b7628e5e0de9222848038fd518",
+    "periphery/contracts/examples/ExampleSlidingWindowOracle.sol": "a84405c81d1fbd772abd51d51839154c3a640bee730347f484fae8139edad500",
+    "periphery/contracts/examples/ExampleSwapToPrice.sol": "64f6e16c11e2456cd3c39da3d9b8562de4aa77eacedcc18aafe7924b872f12c4",
+    "periphery/contracts/interfaces/IERC20.sol": "2b63f199f838028184efefbcfd6cf2b9192624c3dae5dc1116ecbb15c36a67e8",
+    "periphery/contracts/interfaces/IUniswapV2Migrator.sol": "e020b26f5d9c4162340fcbb42bf6ea5febfc3ee68f33aa25e527cd43e8de0483",
+    "periphery/contracts/interfaces/IUniswapV2Router01.sol": "0439ffe0fd4a5e1f4e22d71ddbda76d63d61679947d158cba4ee0a1da60cf663",
+    "periphery/contracts/interfaces/IUniswapV2Router02.sol": "a2900701961cb0b6152fc073856b972564f7c798797a4a044e83d2ab8f0e8d38",
+    "periphery/contracts/interfaces/IWETH.sol": "60760053849b916b72386fef1126ab69c7482c2aa6b5fb836368eff42905cb30",
+    "periphery/contracts/interfaces/V1/IUniswapV1Exchange.sol": "af0f040756cffdad159024068160e3d29974963eea113bf79debe6e0d9bfc5f4",
+    "periphery/contracts/interfaces/V1/IUniswapV1Factory.sol": "757faaa23cac0f415640c16c009e92458271ece8876c0b739f2a3bbad6338aee",
+    "periphery/contracts/libraries/SafeMath.sol": "39e5b4c0bc19b72fa59c2d2177ba5ed6cfadcd76f3f804563011e579367530fb",
+    "periphery/contracts/libraries/UniswapV2Library.sol": "3181f85256bd7b528000809dce414a541a6fb340103b4a066d48ce7e0618b5b6",
+    "periphery/contracts/libraries/UniswapV2LiquidityMathLibrary.sol": "9bd00cdd3fb4874a72d6c13a287e50b3e29d403a246d1d46e40ce7669f04b34b",
+    "periphery/contracts/libraries/UniswapV2OracleLibrary.sol": "508b544096f9d916bef314a517a1f3573243272f34d8c4fbacbc7f256523e74f",
+    "periphery/contracts/test/DeflatingERC20.sol": "d9768f5ce9f19aeda89356a272b560ae5b9447df3200aceaa59dbb9ed8a1c8bc",
+    "periphery/contracts/test/ERC20.sol": "16ace9cf263a8918972fe942217ec6854dc8251fb28420df16be7be53fb0fb88",
+    "periphery/contracts/test/RouterEventEmitter.sol": "82aaec8037248d47c013c33a491df044a4e34eef87491b3b94c24a8fd135ddda",
+    "periphery/contracts/test/WETH9.sol": "33f13565b207188485030aa20fd1f38d52d8c455cc64720560fb38149dcb4137"
+  }
+}

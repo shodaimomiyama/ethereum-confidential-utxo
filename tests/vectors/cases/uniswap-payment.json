@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "oracle": "viem 2.56.9 independent ABI operation ID and hashTypedData/signTypedData",
+  "input": {
+    "operation": {
+      "chainId": "31337",
+      "pool": "0x1111111111111111111111111111111111111111",
+      "kind": 2,
+      "owner": "0x1a642f0E3c3aF545E7AcBD38b07251B3990914F1",
+      "salt": "0x2121212121212121212121212121212121212121212121212121212121212121",
+      "inputIds": [
+        "0x2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c"
+      ],
+      "outputs": [
+        {
+          "owner": "0x1a642f0E3c3aF545E7AcBD38b07251B3990914F1",
+          "Cx": "0",
+          "Cy": "0",
+          "receiptFormat": 1,
+          "packet": "0x"
+        }
+      ],
+      "d": "0",
+      "w": "3",
+      "destination": "0x2222222222222222222222222222222222222222"
+    },
+    "adapter": "0x2222222222222222222222222222222222222222",
+    "token": "0x3333333333333333333333333333333333333333",
+    "recipient": "0x4444444444444444444444444444444444444444",
+    "minAmountOut": "2",
+    "deadline": "1000"
+  },
+  "expected": {
+    "operationId": "0xd3f5da24e3f3ed38dc05a6fe1f8493e88897d930ca9599ce9eca92f17fab966e",
+    "domainSeparator": "0xc45f02d13dc94dc22f5997c2c0893c1981e216d6cec7f41dd09850e2d579063a",
+    "typeHash": "0x01327cc9cca8fef40b157d06b700aa4d988ff3734b398005c494d9f309aa491d",
+    "structHash": "0x3a21c4d9658f23a57b3a32ce8f01f1ee6163d2d1a667d2b5915d5eac22b041f2",
+    "paymentId": "0x8b9a3f0c7fd79170cfe55065db21ec76966e79e251092c64f4dc6e702c3b40b6",
+    "signature": "0x9b62d4ece9693c2838070db4fada42848bab18ddc69f1dd1724c3b57a3f75ee01d7f7713fc008b0da8e6f74ed9092e7ad9d6217ae6dd440e31cdefd07dff20921c"
+  }
+}
