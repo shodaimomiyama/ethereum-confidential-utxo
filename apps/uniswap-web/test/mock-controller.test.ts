@@ -55,6 +55,68 @@ it('accepts quote age 30000ms and rejects 30001ms, negative age, or unknown age'
   expect((await ui.dispatch({ type: 'start', card: 'pay' })).kind).toBe('blocked');
 });
 
+it('returns to an editable Pay draft after a stale quote and accepts a fresh quote', async () => {
+  const { ui } = setup('interactive');
+  ui.control.inject({ type: 'utxos', utxos: [{ id: outputId, amountWei: 10n ** 16n, available: true }] });
+  await ui.dispatch({ type: 'edit', card: 'pay', field: 'amount', value: '0.003' });
+  await ui.dispatch({ type: 'edit', card: 'pay', field: 'recipient', value: owner });
+  ui.control.inject({ type: 'quote', startedAt: 0, quoteOut: 100n, latestBlockTimestamp: 100 });
+  ui.control.inject({ type: 'invalidate-quote' });
+  expect(ui.snapshot().cards.pay.reason).toBe('QUOTE_STALE');
+  await ui.dispatch({ type: 'edit', card: 'pay', field: 'amount', value: '0.004' });
+  expect(ui.snapshot().cards.pay.phase).toBe('ready');
+  expect(ui.snapshot().cards.pay.reason).toBeUndefined();
+  ui.control.inject({ type: 'quote', startedAt: 0, quoteOut: 200n, latestBlockTimestamp: 101 });
+  expect(ui.snapshot().cards.pay.quote?.quoteOut).toBe(200n);
+  expect(await ui.dispatch({ type: 'start', card: 'pay' })).toEqual({ kind: 'accepted' });
+});
+
+it('rejects an invalid chain timestamp without throwing or keeping the prior quote', async () => {
+  const { ui } = setup();
+  ui.control.inject({ type: 'quote', startedAt: 0, quoteOut: 100n, latestBlockTimestamp: 100 });
+  expect(() => ui.control.inject({ type: 'quote', startedAt: 1, quoteOut: 200n, latestBlockTimestamp: Number.NaN })).not.toThrow();
+  expect(ui.snapshot().cards.pay.quote).toBeUndefined();
+  expect(await ui.dispatch({ type: 'start', card: 'pay' })).toEqual({ kind: 'blocked', reason: 'QUOTE_STALE' });
+});
+
+it('blocks an expired Pay deadline after chain time advances', async () => {
+  const { ui } = setup();
+  const updates: string[] = [];
+  ui.subscribe((view) => { updates.push(view.reasons['start:pay'] ?? 'ready'); });
+  ui.control.inject({ type: 'quote', startedAt: 0, quoteOut: 100n, latestBlockTimestamp: 100 });
+  ui.control.inject({ type: 'chain-timestamp', latestBlockTimestamp: 700 });
+  expect(updates.at(-1)).toBe('TERMS_EXPIRED');
+  expect(await ui.dispatch({ type: 'start', card: 'pay' })).toEqual({ kind: 'blocked', reason: 'TERMS_EXPIRED' });
+});
+
+it('does not confirm replacement Pay terms after their deadline passes', async () => {
+  const { ui } = setup();
+  ui.control.inject({ type: 'quote', startedAt: 0, quoteOut: 100n, latestBlockTimestamp: 100 });
+  ui.control.inject({ type: 'terms-changed', card: 'pay', oldAuthorizationActive: false });
+  ui.control.inject({ type: 'quote', startedAt: 0, quoteOut: 200n, latestBlockTimestamp: 101 });
+  ui.control.inject({ type: 'chain-timestamp', latestBlockTimestamp: 701 });
+  expect(await ui.dispatch({ type: 'confirm-terms', card: 'pay' })).toEqual({ kind: 'blocked', reason: 'TERMS_EXPIRED' });
+});
+
+it('validates edited payment minimum and deadline before authorization', async () => {
+  const { ui } = setup('interactive');
+  ui.control.inject({ type: 'utxos', utxos: [{ id: outputId, amountWei: 10n ** 16n, available: true }] });
+  await ui.dispatch({ type: 'edit', card: 'pay', field: 'amount', value: '0.003' });
+  await ui.dispatch({ type: 'edit', card: 'pay', field: 'recipient', value: owner });
+  ui.control.inject({ type: 'quote', startedAt: 0, quoteOut: 10n ** 18n, latestBlockTimestamp: 1_790_460_000 });
+  await ui.dispatch({ type: 'edit', card: 'pay', field: 'minAmountOut', value: '2' });
+  expect(ui.snapshot().cards.pay.phase).toBe('confirm-terms');
+  expect(await ui.dispatch({ type: 'start', card: 'pay' })).toEqual({ kind: 'blocked', reason: 'NOT_ALLOWED' });
+  await ui.dispatch({ type: 'edit', card: 'pay', field: 'minAmountOut', value: '0.9' });
+  await ui.dispatch({ type: 'edit', card: 'pay', field: 'deadline', value: 'bad' });
+  expect(await ui.dispatch({ type: 'start', card: 'pay' })).toEqual({ kind: 'blocked', reason: 'TERMS_EXPIRED' });
+  await ui.dispatch({ type: 'edit', card: 'pay', field: 'deadline', value: '1790460300' });
+  expect(ui.snapshot().cards.pay.quote?.minAmountOut).toBe(9n * 10n ** 17n);
+  expect(ui.snapshot().cards.pay.quote?.deadline).toBe(1_790_460_300n);
+  expect((await ui.dispatch({ type: 'start', card: 'pay' })).kind).toBe('accepted');
+  ui.dispose();
+});
+
 it('keeps finalized success separate from invalid receipt and counts valid change only once', () => {
   const { ui } = setup();
   ui.control.inject({ type: 'finalized-success', card: 'pay', operationId, amountWei: 7n });
@@ -170,7 +232,7 @@ it('exposes the fixed automatic minimum and deadline with the quote', () => {
     startedAt: 0,
     quoteOut: 100n,
     minAmountOut: 99n,
-    deadline: 610,
+    deadline: 610n,
   });
   ui.control.inject({ type: 'quote', startedAt: 1, quoteOut: 1n, latestBlockTimestamp: 11 });
   expect(ui.snapshot().cards.pay.quote?.minAmountOut).toBe(1n);
@@ -182,6 +244,51 @@ it('passes a validation reason to the UI and prevents an invalid Pay start', asy
   expect(ui.snapshot().cards.pay.input.amount).toBe('0');
   expect(ui.snapshot().cards.pay.reason).toBe('INPUT_INVALID');
   expect((await ui.dispatch({ type: 'start', card: 'pay' })).kind).toBe('blocked');
+});
+
+it('shows disconnected preparation without an active wallet scope', () => {
+  const { ui } = setup('disconnected');
+  expect(ui.snapshot().connection).toBe('disconnected');
+  expect(ui.snapshot().currentScope).toBeUndefined();
+  expect(ui.snapshot().preparation.wallet).toBe(false);
+  expect(ui.snapshot().allowedActions).not.toContain('start:reward');
+});
+
+it('blocks Pay when combined UTXOs cover the amount but no single one does', async () => {
+  const { ui } = setup('interactive');
+  ui.control.inject({ type: 'preparation', wallet: true, network: true, key: true, faucet: true, gas: true });
+  ui.control.inject({ type: 'utxos', utxos: [
+    { id: `0x${'01'.repeat(32)}`, amountWei: 2n * 10n ** 18n, available: true },
+    { id: `0x${'02'.repeat(32)}`, amountWei: 2n * 10n ** 18n, available: true },
+  ] });
+  await ui.dispatch({ type: 'edit', card: 'pay', field: 'amount', value: '3' });
+  expect(ui.snapshot().cards.pay.reason).toBe('NO_SINGLE_INPUT');
+  expect(await ui.dispatch({ type: 'start', card: 'pay' })).toEqual({ kind: 'blocked', reason: 'NO_SINGLE_INPUT' });
+  expect(ui.control.journal().filter((entry) => entry.kind === 'start')).toHaveLength(0);
+});
+
+it('selects the smallest eligible UTXO and the lower ID on equal amounts', async () => {
+  const { ui } = setup('interactive');
+  ui.control.inject({ type: 'utxos', utxos: [
+    { id: `0x${'03'.repeat(32)}`, amountWei: 4n * 10n ** 18n, available: true },
+    { id: `0x${'02'.repeat(32)}`, amountWei: 4n * 10n ** 18n, available: true },
+    { id: `0x${'01'.repeat(32)}`, amountWei: 5n * 10n ** 18n, available: true },
+  ] });
+  await ui.dispatch({ type: 'edit', card: 'pay', field: 'amount', value: '3' });
+  expect(ui.snapshot().selectedInput.pay).toEqual({
+    id: `0x${'02'.repeat(32)}`, amountWei: 4n * 10n ** 18n, changeWei: 1n * 10n ** 18n,
+  });
+});
+
+it('keeps unrelated UTXOs when one operation is removed by reorganization', () => {
+  const { ui } = setup('interactive');
+  const unrelatedId = `0x${'99'.repeat(32)}`;
+  ui.control.inject({ type: 'utxos', utxos: [{ id: unrelatedId, amountWei: 5n, available: true }] });
+  ui.control.inject({ type: 'finalized-success', card: 'reward', operationId });
+  ui.control.inject({ type: 'receipt-confirmed', card: 'reward', operationId, outputId, amountWei: 7n });
+  ui.control.inject({ type: 'reorg', card: 'reward', operationId });
+  expect(ui.snapshot().utxos).toEqual([{ id: unrelatedId, amountWei: 5n, available: true }]);
+  expect(ui.snapshot().availablePrivateWei).toBe(5n);
 });
 
 it('shows finalized full Withdraw as complete without waiting for a change output', () => {

@@ -1,6 +1,12 @@
 import { execFileSync } from 'node:child_process';
 
 let failed = false;
+const profileIndex = process.argv.indexOf('--profile');
+const profile = profileIndex === -1 ? 'macos-arm64' : process.argv[profileIndex + 1];
+if (!['macos-arm64', 'github-macos-arm64'].includes(profile)) {
+  console.error(`unsupported tool profile: ${profile ?? 'missing'}`);
+  failed = true;
+}
 
 function requireVersion(tool, expected, parse = (value) => value.trim()) {
   let actual;
@@ -15,8 +21,10 @@ function requireVersion(tool, expected, parse = (value) => value.trim()) {
   }
 }
 
-if (process.platform !== 'darwin' || process.arch !== 'arm64') {
-  console.error(`platform: expected darwin arm64, found ${process.platform} ${process.arch}`);
+const expectedPlatform = { 'macos-arm64': ['darwin', 'arm64'],
+  'github-macos-arm64': ['darwin', 'arm64'] }[profile];
+if (expectedPlatform && (process.platform !== expectedPlatform[0] || process.arch !== expectedPlatform[1])) {
+  console.error(`platform: expected ${expectedPlatform.join(' ')}, found ${process.platform} ${process.arch}`);
   failed = true;
 }
 if (process.version !== 'v24.21.0') {
@@ -30,4 +38,4 @@ if (!process.argv.includes('--no-foundry')) {
   }
 }
 if (failed) process.exitCode = 1;
-else console.log('Tool versions match the macOS ARM64 setup profile.');
+else console.log(`Tool versions match the ${profile} setup profile.`);
