@@ -1,0 +1,32 @@
+{
+  "experiment": "EXP-08",
+  "stage": "design adoption feasibility, before execution",
+  "question": "Can a distinct candidate using EXP-07A generators, a direct full-prefix Fiat-Shamir input, and canonical identity proof points produce matching Java/EVM decisions and transcript challenges without an obvious single-proof gas regression?",
+  "affectedRules": [
+    "docs/design.md: Fiat-Shamir, internal proof point, and bounded challenge conditions",
+    "docs/specification.md: proof relation and amount range, without changing specification behavior"
+  ],
+  "profileDecisionBeforeExecution": {
+    "name": "BN254-64-v3-experimental",
+    "generators": "Reuse the 130 EXP-07A HashToG1 points, selected by role and index. Do not regenerate or change their coordinates.",
+    "domainSeparation": "Use distinct v3 protocol, role, challenge, accepted, and stage tags; derive a v3 parameters digest from the same ordered points under a v3 parameters tag.",
+    "challenge": "For each stage form segment=stageTag||uint256(payloadByteLength)||payload; choose the first canonical nonzero scalar K(prefix||segment||candidateTag||uint256(counter)), counter 0..255. After acceptance append segment||acceptedTag||uint256(challenge) to prefix. Prefix starts with v3 protocol tag, dimensions, v3 parameters digest, operationId, v3 role tag, output index, and C_range. There is no inner prefix hash in challenge derivation.",
+    "points": "Canonical (0,0) is allowed for C_range and proof points A,S,T1,T2,L,R. Fixed generators must remain distinct nonidentity points. Malformed or noncanonical coordinates remain rejected.",
+    "retry": "Do not regenerate a proof solely because an internal proof point is identity. Abort proof generation if bounded scalar sampling or challenge extraction exhausts its candidates; do not emit a partial proof.",
+    "algebra": "Keep the v2 range and inner-product verification equations, 64-bit range shift, and exact input shape. This experiment tests profile encoding changes, not a new proof relation."
+  },
+  "method": [
+    "Make a separate v3 experiment from the fixed EXP-07B code without changing v2 evidence.",
+    "Compile the Java prover/verifier and Solidity verifier with the pinned EXP-07B toolchain.",
+    "Generate fresh v3 proofs for v=1,r=42; v=2^64,r=42; and v=1,r=0, then test Java and EVM acceptance.",
+    "Reject v=2^64+1 and a changed operationId in Java and EVM.",
+    "Compare all ten stage challenges, accepted counters, and eleven full-prefix trace hashes on one valid proof.",
+    "Check canonical identity handling at the point decoding boundary in both languages; do not claim a naturally generated identity proof without one.",
+    "Measure a single direct verifier transaction under the same Anvil/solc configuration as EXP-07B and record code and evidence hashes."
+  ],
+  "decisionCriteria": {
+    "pass": "Three valid cases accepted and two invalid cases rejected by both implementations, all checked stage traces match, canonical identity accepted at decoding boundary while invalid coordinates are rejected, and gas measurement completes under the configured transaction cap.",
+    "fail": "Any decision mismatch, trace mismatch, identity parsing mismatch, noncanonical point acceptance, or out-of-gas result prevents using v3 as an interoperable design candidate until diagnosed.",
+    "scopeLimit": "Passing does not prove cryptographic soundness, zero knowledge, theorem applicability, identity-point soundness for adversarial proofs, full Pool operation gas, or formal verification."
+  }
+}

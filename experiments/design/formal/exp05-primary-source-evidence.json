@@ -1,0 +1,142 @@
+[
+  {
+    "url": "https://raw.githubusercontent.com/runtimeverification/haskell-backend/v0.1.155/kore/src/Kore/BugReport.hs",
+    "sha256": "972b1f197f01cf64cf05aa89e39a3c2cc5bdc8bed416752af2dac791f72fbbfd",
+    "relevant_lines": [
+      {
+        "line": 61,
+        "text": "    createTempDirectory,"
+      },
+      {
+        "line": 62,
+        "text": "    getCanonicalTemporaryDirectory,"
+      },
+      {
+        "line": 137,
+        "text": "                acquireTempDirectory"
+      },
+      {
+        "line": 143,
+        "text": "    handler _ = pure (ExitFailure 1)"
+      },
+      {
+        "line": 144,
+        "text": "    acquireTempDirectory = do"
+      },
+      {
+        "line": 145,
+        "text": "        tmp <- getCanonicalTemporaryDirectory"
+      },
+      {
+        "line": 146,
+        "text": "        createTempDirectory tmp (getExeName exeName)"
+      }
+    ]
+  },
+  {
+    "url": "https://raw.githubusercontent.com/runtimeverification/haskell-backend/v0.1.155/kore/app/exec/Main.hs",
+    "sha256": "d25081c4a4929e27ad37130963f16646503eb79f4350833f65dc740fecfab191",
+    "relevant_lines": [
+      {
+        "line": 604,
+        "text": "        withBugReport Main.exeName bugReportOption $ \\tmpDir -> do"
+      },
+      {
+        "line": 609,
+        "text": "            writeOptionsAndKoreFiles tmpDir execOptions'"
+      },
+      {
+        "line": 664,
+        "text": "        | serialize = koreSerialize execOptions"
+      },
+      {
+        "line": 772,
+        "text": "koreSerialize execOptions = do"
+      },
+      {
+        "line": 780,
+        "text": "        makeSerializedDefinition"
+      }
+    ]
+  },
+  {
+    "url": "https://github.com/runtimeverification/kontrol/blob/0ac55eda300e64ec30300117fe71c02d6db59ab5/src/kontrol/kompile.py",
+    "sha256": "54971c67d255622c787948f71f3d16b64d93fbfad13a75e75d94e68fdf9e6a3f",
+    "relevant_lines": [
+      {
+        "line": 38,
+        "text": "    base_definition = 'KONTROL-BASE'"
+      },
+      {
+        "line": 40,
+        "text": "        base_definition = 'KONTROL-KECCAK'"
+      },
+      {
+        "line": 42,
+        "text": "        base_definition = 'KONTROL-AUX'"
+      },
+      {
+        "line": 44,
+        "text": "        base_definition = 'KONTROL-FULL'"
+      },
+      {
+        "line": 109,
+        "text": "            base_definition=base_definition,"
+      },
+      {
+        "line": 110,
+        "text": "            requires=(['kontrol.md'] + copied_requires),"
+      },
+      {
+        "line": 111,
+        "text": "            imports=flattened_imports,"
+      },
+      {
+        "line": 182,
+        "text": "    base_definition: str,"
+      },
+      {
+        "line": 188,
+        "text": "    _main_module = KFlatModule("
+      },
+      {
+        "line": 190,
+        "text": "        imports=tuple([KImport(imp) for imp in imports] + [KImport(base_definition)]),"
+      },
+      {
+        "line": 196,
+        "text": "        requires=(KRequire(req) for req in list(requires)),"
+      }
+    ]
+  },
+  {
+    "url": "https://github.com/runtimeverification/kontrol/blob/0ac55eda300e64ec30300117fe71c02d6db59ab5/src/kontrol/foundry.py",
+    "sha256": "ed4871f200cc05ab5e10a4b240be4148e5870c93ff3552a815666d7123013a82",
+    "relevant_lines": [
+      {
+        "line": 509,
+        "text": "        return self.out / 'proofs'"
+      },
+      {
+        "line": 513,
+        "text": "        return self.out / 'digest'"
+      },
+      {
+        "line": 517,
+        "text": "        return self.out / 'kompiled'"
+      },
+      {
+        "line": 534,
+        "text": "            return self.out / 'build-info'"
+      },
+      {
+        "line": 549,
+        "text": "            definition_dir=self.kompiled,"
+      },
+      {
+        "line": 589,
+        "text": "                contract = Contract(contract_name, contract_json, foundry=True)"
+      }
+    ]
+  }
+]

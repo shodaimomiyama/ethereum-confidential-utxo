@@ -1,0 +1,17 @@
+npm-ci: exit 0, 0.899 s
+maven-dependencies: exit 0, 2.614 s
+java-compile: exit 0, 1.241 s
+fixture-4: exit 0, 2.931 s
+java-4: exit 0, 1.404 s
+fresh-4: exit 0, 2.978 s
+java-64: exit 0, 8.340 s
+fresh-64: exit 0, 3.401 s
+diagnostics-64: exit 0, 3.610 s
+identity-64: exit 0, 0.637 s
+{
+  "connectionStagesSucceeded": true,
+  "canonicalRejectionSatisfied": false,
+  "identityProverGenerated": false,
+  "zeroChallenge": "Not generated or submitted; source review only",
+  "productionAdoptionEstablished": false
+}

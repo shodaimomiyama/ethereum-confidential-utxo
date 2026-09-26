@@ -1,0 +1,10 @@
+No files changed, compilation skipped
+
+Ran 4 tests for test/VerifierSlice.t.sol:VerifierSliceTest
+[PASS] test_invalidPointAdditionRevertsAndRestoresCallerState() (gas: 1040429985)
+[PASS] test_negZeroReturnsNoncanonicalScalar() (gas: 321)
+[PASS] test_subCanonicalInputsMatchModularDifference(uint256,uint256) (runs: 32, μ: 518, ~: 545)
+[PASS] test_subCanonicalInputsStayCanonical(uint256,uint256) (runs: 32, μ: 397, ~: 404)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 172.52ms (347.12ms CPU time)
+
+Ran 1 test suite in 302.17ms (172.52ms CPU time): 4 tests passed, 0 failed, 0 skipped (4 total tests)

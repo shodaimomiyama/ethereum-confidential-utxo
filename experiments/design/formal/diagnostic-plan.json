@@ -1,0 +1,40 @@
+{
+  "experiment": "EXP-05",
+  "question": "Can a fixed Kontrol/KEVM environment initialize its Haskell backend and complete a machine proof about actual verifier code, after EXP-02 stopped before proof execution?",
+  "requirements": [
+    "FV-03",
+    "FV-04"
+  ],
+  "baseline": "EXP-02 uses the pinned Kontrol v1.0.255 image digest sha256:858f004144d61b005997f56bb8b7cd15673850286c96e0e5ec0502d9c9a9e204. The first build hit cgroup OOM; sequential compilation passed that point but Kore definition validation failed without diagnostics. No formal claim was run.",
+  "method": [
+    "Inspect available host and container runtimes, native Linux availability, effective VM memory and the pinned image without changing global Docker memory settings.",
+    "On the pinned image, isolate whether kore-exec can run a minimal documented command and can validate the previously generated actual definition; capture exit status, stdout/stderr, cgroup memory and version.",
+    "Only after backend validation succeeds with adequate measured resources, build a target linked to revised verifier source and bytecode, then execute one small property with its exact preconditions and logs.",
+    "When the previously compiled K definition proves generic and validates with an experiment-owned tmpfs, prepare a separate Foundry root from byte-identical revised Solidity source, compile with pinned solc 0.4.19, and attempt a small claim by reusing that exact validated definition without a full K rebuild. Record both revised source and bytecode hashes; stop if the definition is not reusable."
+  ],
+  "resources": {
+    "diagnosticCommandSeconds": 120,
+    "buildCommandSeconds": 600,
+    "claimCommandSeconds": 600,
+    "containerCpuLimit": 4,
+    "recommendedEffectiveMemoryGiB": 16,
+    "recommendedSwapGiB": 16,
+    "doNotChangeGlobalHostOrDockerConfiguration": true,
+    "doNotRepeatFullBuildIfMeasuredEffectiveMemoryIsBelowGiB": 8,
+    "revisedArtifactCompileSeconds": 120
+  },
+  "decision": {
+    "successfulProof": "A claim about the pinned actual verifier source or compiled bytecode completes, with version, code hash, assumptions, solver result and replay command recorded; this is only a slice of FV-03.",
+    "toolFailure": "Backend fails before a claim with a confirmed tool/runtime error; record the evidence and keep the requirement unverified.",
+    "resourceFailure": "OOM, effective memory below the gate, or timeout; record resource evidence and keep the requirement unverified.",
+    "counterexample": "A completed claim returns a concrete counterexample under its stated preconditions; record it separately from tool failure.",
+    "notAllowedAsSuccess": [
+      "Concrete Foundry tests",
+      "Kore parser acceptance alone",
+      "Disabled definition validation",
+      "Assuming the verifier as a trusted black box"
+    ],
+    "sliceScope": "The old source slice can establish tool execution only. The revised source and compiled bytecode require their own claim result. Neither slice establishes full FV-03."
+  },
+  "record": "Write new logs and JSON summaries under experiments/design/formal/ with distinct names. Preserve EXP-02 evidence and avoid creating a new Markdown file."
+}

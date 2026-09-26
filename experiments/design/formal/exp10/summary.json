@@ -1,0 +1,23 @@
+{
+  "experiment": "EXP-10",
+  "classification": "unverified",
+  "setupInvestigation": {
+    "startedUtc": "2026-09-26T10:18:16Z",
+    "endedUtc": "2026-09-26T10:20:16Z",
+    "limitSeconds": 120,
+    "pinnedImage": "runtimeverificationinc/kontrol@sha256:858f004144d61b005997f56bb8b7cd15673850286c96e0e5ec0502d9c9a9e204",
+    "attempt": "Generated a direct KEVM claim over the exact v3 runtime with a concrete malformed verify call as a syntax and target-entry probe. Invoked kevm prove against the existing generic Kontrol definition. ClaimLoader failed during kprove parse_modules with exit code 1 before a proof started.",
+    "parserDiagnostic": "The pinned kevm-pyk wrapper exposed only the kprove subprocess exit code in this run; its captured stdout and stderr contain no detailed K parser message beyond the Python traceback.",
+    "symbolicCalldataPrepared": false,
+    "proofStarted": false,
+    "targetRuntimeReached": false,
+    "proofLimitUsed": false
+  },
+  "target": {
+    "runtimeBytes": 8467,
+    "runtimeKeccak256": "0xaff25bc27e32f19321b9e062965a418b2be7d5df872164865f58398c3ad015c5",
+    "runtimeSha256": "724fac3aad23842c1462df4ad8eca960581d14de26d42e4d1ca792a7ac35b073"
+  },
+  "decision": "The direct claim could not be parsed and generalized to at least one unconstrained calldata word inside the precommitted 120-second setup limit. No direct KEVM proof or v3 target-runtime execution occurred. This does not establish that direct KEVM is impossible or that the rejection property is false.",
+  "evidence": ["plan.json", "generate.cjs", "input.json", "direct-spec.k", "setup-stdout.txt", "setup-stderr.txt"]
+}

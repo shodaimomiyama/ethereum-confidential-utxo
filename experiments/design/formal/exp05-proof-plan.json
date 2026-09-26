@@ -1,0 +1,62 @@
+{
+  "experiment": "EXP-05",
+  "basis": "Existing diagnostic-plan.json, README.txt and manifest.json; parent approved reuse without a full build.",
+  "claim": {
+    "id": "sub-range",
+    "test": "VerifierSliceTest.test_subCanonicalInputsStayCanonical(uint256,uint256)",
+    "precondition": "0 <= left < q and 0 <= right < q",
+    "property": "0 <= alt_bn128.sub(left,right) < q",
+    "outside_precondition": "The harness returns successfully outside the precondition; no rejection guarantee is asserted.",
+    "classification": "inconclusive",
+    "proof_executed": false,
+    "reason": "Kontrol definition compilation did not complete Haskell backend validation."
+  },
+  "success_criterion": "Kontrol proves the symbolic test using the unchanged existing source, bytecode and K definition, with no pending/failing proof nodes.",
+  "target_scope": "Unchanged upstream alt_bn128.sol compiled in EXP-02 using solc 0.4.26; not EXP-03 revised verifier or solc 0.4.19 bytecode.",
+  "preconditions": "uint256 ABI arguments; inside the claim left<q and right<q. Existing harness returns outside that range; no input rejection property.",
+  "trusted_boundary": [
+    "Fixed Kontrol/KEVM semantics, Haskell backend, Z3, and Solidity 0.4.26 compiler",
+    "No gas-cost property; gas calculations omitted explicitly",
+    "Ordinary test harness setup and ABI input constraints"
+  ],
+  "resources": {
+    "proof_wall_seconds": 600,
+    "serialization_wall_seconds": 60,
+    "workers": 1,
+    "cpu_limit": 4,
+    "container_limit_gib": 8,
+    "effective_vm_memory_bytes": 4109803520,
+    "tmpfs_bytes": 536870912,
+    "full_build": false
+  },
+  "no_bypass": [
+    "Do not disable definition validation",
+    "Do not add assume-defined, no-stack-checks, custom axioms or trusted summaries",
+    "Do not modify existing source/bytecode/K definition"
+  ],
+  "command": [
+    "kontrol",
+    "prove",
+    "--foundry-project-root",
+    "/tmp/exp05-project",
+    "--match-test",
+    "test_subCanonicalInputsStayCanonical",
+    "--schedule",
+    "CANCUN",
+    "--no-use-booster",
+    "--workers",
+    "1",
+    "--max-frontier-parallel",
+    "1",
+    "--force-sequential",
+    "--no-gas",
+    "--reinit",
+    "--hide-status-bar"
+  ],
+  "hashes": {
+    "src/alt_bn128.sol": "3f6c02b0e60a4ca0f834b3bc4223cf61858cd44b9c5527972fd37af1502ef07f",
+    "test/VerifierSlice.t.sol": "3d5e376bb5891397d92f57f3916190d91f2e4a963a84a13cbf36918e64843bac",
+    "out/VerifierSlice.t.sol/VerifierSliceTest.json": "b376d32602b713b1cdade5dd1388c077a89666ed43cb19860b34503c473efd10",
+    "out/kompiled/definition.kore": "fb62ff4829ce8939340144d26aa9aa5cac09223b3081259b72f45363f8f0ef07"
+  }
+}

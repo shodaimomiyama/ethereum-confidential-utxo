@@ -1,0 +1,122 @@
+{
+  "method": "Decode the Foundry artifact deployedBytecode.object as hex bytes. Load the retained APR proof metadata init node, recursively decode KToken values of sort Bytes with Python ast.literal_eval, and compare every byte including compiler metadata. Preserve JSON pointer and ancestor K labels for each exact match.",
+  "claims": [
+    {
+      "proof_record": "exp05-existing-claim-offline.json",
+      "proof_id": "test%VerifierSliceTest.test_subCanonicalInputsStayCanonical(uint256,uint256):0",
+      "artifact": "out/VerifierSlice.t.sol/VerifierSliceTest.json",
+      "artifact_sha256": "b376d32602b713b1cdade5dd1388c077a89666ed43cb19860b34503c473efd10",
+      "runtime_bytes": 1383,
+      "runtime_sha256": "1efe66a1f956349e0c5eaf7046d5917a1c16fa5449309fae834bfc1c603e136c",
+      "initial_node": "out/proofs/test%VerifierSliceTest.test_subCanonicalInputsStayCanonical(uint256,uint256):0/kcfg/nodes/1.json",
+      "initial_node_json_sha256": "c79cd5008892b45c9ad3ca8574110132765f00b97c53b0a336c5d9e1c79778ed",
+      "exact_match_count": 2,
+      "matches": [
+        {
+          "json_pointer": "/cterm/config/args/0/args/0/args/5/args/0/args/5/args/0/args/0",
+          "ancestor_k_labels": [
+            "<generatedTop>",
+            "<foundry>",
+            "<kevm>",
+            "<ethereum>",
+            "<evm>",
+            "<callState>",
+            "<program>"
+          ]
+        },
+        {
+          "json_pointer": "/cterm/config/args/0/args/0/args/5/args/1/args/1/args/0/args/0/args/2/args/0",
+          "ancestor_k_labels": [
+            "<generatedTop>",
+            "<foundry>",
+            "<kevm>",
+            "<ethereum>",
+            "<network>",
+            "<accounts>",
+            "_AccountCellMap_",
+            "<account>",
+            "<code>"
+          ]
+        }
+      ]
+    },
+    {
+      "proof_record": "exp05-revised-claim.json",
+      "proof_id": "test%VerifierSliceTest.test_negZeroReturnsZero():0",
+      "artifact": "revised/out/VerifierSlice.t.sol/VerifierSliceTest.json",
+      "artifact_sha256": "a11ca5b7e63aa1370e4c09137b61fedccd4f556c58f7a4481308b7f1dbfff940",
+      "runtime_bytes": 965,
+      "runtime_sha256": "345c6a79f5de1b8f301605ee4eac64de306d76c7a6f5eae1b07a3425d5c0d5d3",
+      "initial_node": "out/proofs/test%VerifierSliceTest.test_negZeroReturnsZero():0/kcfg/nodes/1.json",
+      "initial_node_json_sha256": "d521e685cc8c4d80916d69a8d73a172638594f4b54b99b74d52452df85b40f05",
+      "exact_match_count": 2,
+      "matches": [
+        {
+          "json_pointer": "/cterm/config/args/0/args/0/args/5/args/0/args/5/args/0/args/0",
+          "ancestor_k_labels": [
+            "<generatedTop>",
+            "<foundry>",
+            "<kevm>",
+            "<ethereum>",
+            "<evm>",
+            "<callState>",
+            "<program>"
+          ]
+        },
+        {
+          "json_pointer": "/cterm/config/args/0/args/0/args/5/args/1/args/1/args/0/args/0/args/2/args/0",
+          "ancestor_k_labels": [
+            "<generatedTop>",
+            "<foundry>",
+            "<kevm>",
+            "<ethereum>",
+            "<network>",
+            "<accounts>",
+            "_AccountCellMap_",
+            "<account>",
+            "<code>"
+          ]
+        }
+      ]
+    },
+    {
+      "proof_record": "exp05-revised-sub-claim.json",
+      "proof_id": "test%VerifierSliceTest.test_subCanonicalInputsStayCanonical(uint256,uint256):0",
+      "artifact": "revised/out/VerifierSlice.t.sol/VerifierSliceTest.json",
+      "artifact_sha256": "a11ca5b7e63aa1370e4c09137b61fedccd4f556c58f7a4481308b7f1dbfff940",
+      "runtime_bytes": 965,
+      "runtime_sha256": "345c6a79f5de1b8f301605ee4eac64de306d76c7a6f5eae1b07a3425d5c0d5d3",
+      "initial_node": "out/proofs/test%VerifierSliceTest.test_subCanonicalInputsStayCanonical(uint256,uint256):0/kcfg/nodes/1.json",
+      "initial_node_json_sha256": "245a26ac5fd049cfa0e1ffca2d0b6772463808b8881ece364decd5e2ad4535c5",
+      "exact_match_count": 2,
+      "matches": [
+        {
+          "json_pointer": "/cterm/config/args/0/args/0/args/5/args/0/args/5/args/0/args/0",
+          "ancestor_k_labels": [
+            "<generatedTop>",
+            "<foundry>",
+            "<kevm>",
+            "<ethereum>",
+            "<evm>",
+            "<callState>",
+            "<program>"
+          ]
+        },
+        {
+          "json_pointer": "/cterm/config/args/0/args/0/args/5/args/1/args/1/args/0/args/0/args/2/args/0",
+          "ancestor_k_labels": [
+            "<generatedTop>",
+            "<foundry>",
+            "<kevm>",
+            "<ethereum>",
+            "<network>",
+            "<accounts>",
+            "_AccountCellMap_",
+            "<account>",
+            "<code>"
+          ]
+        }
+      ]
+    }
+  ]
+}

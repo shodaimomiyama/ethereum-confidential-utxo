@@ -1,0 +1,49 @@
+[
+  {
+    "command": [
+      "z3",
+      "-in",
+      "-smt2"
+    ],
+    "input": "(set-logic ALL)\n(check-sat)\n(exit)\n",
+    "exit_code": 0,
+    "stdout": "sat\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "kore-exec",
+      "/workspace/out/kompiled/definition.kore",
+      "--module",
+      "KONTROL-MAIN",
+      "--output",
+      "/workspace/out/kompiled/haskellDefinition.bin",
+      "--serialize",
+      "+RTS",
+      "-N1",
+      "-M1024m",
+      "-RTS"
+    ],
+    "input": null,
+    "exit_code": 1,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "kore-exec",
+      "/workspace/out/kompiled/definition.kore",
+      "--module",
+      "KONTROL-MAIN",
+      "--output",
+      "/workspace/out/kompiled/haskellDefinition.bin",
+      "--serialize",
+      "--smt",
+      "none"
+    ],
+    "input": null,
+    "exit_code": 1,
+    "stdout": "",
+    "stderr": ""
+  }
+]

@@ -1,0 +1,35 @@
+{
+  "experiment": "EXP-09",
+  "question": "Can a completed, non-vacuous formal claim reach the exact optimized v3 RangeProofVerifier runtime and prove a representative early input rejection?",
+  "target": {
+    "source": "../../crypto-profile-v3/exp08/solidity/RangeProofVerifier.sol",
+    "compiler": "solc 0.4.19+commit.c4cbbb05",
+    "optimizerEnabled": true,
+    "optimizerRuns": 200,
+    "runtimeBytes": 8467,
+    "runtimeKeccak256": "0xaff25bc27e32f19321b9e062965a418b2be7d5df872164865f58398c3ad015c5"
+  },
+  "claim": "A verify call with ls.length = 0 and rs.length = 12 reverts for every uint256 value of the first range commitment x/y coordinates and the first proof scalar, while all other words are fixed to zero. The rejection occurs at decodeProof's array-length require before storage or precompile access.",
+  "method": [
+    "Compile the unchanged EXP-08 v3 Solidity sources with the EXP-08 compiler and optimizer settings; compare byte length and Keccak-256 of deployed runtime with the recorded target.",
+    "Prefer a direct KEVM claim whose initial account code is the target runtime and whose call data uses the exact verify ABI, avoiding symbolic execution of vm.etch setup. If that interface cannot be constructed using the pinned tool in a bounded investigation, use a Kontrol Foundry harness with exact runtime etch in a separate concrete setUp proof and a symbolic test call.",
+    "Run one bounded claim with the pinned Kontrol/KEVM image and inspect the saved KCFG, proof status, target code hash, any admitted nodes, vacuity, and actual execution in the target account. Do not treat a concrete Forge pass or tool exit code alone as a formal proof."
+  ],
+  "decision": {
+    "pass": "Exact target runtime hash confirmed; proof PASSED; admitted, pending, failing, vacuous, stuck, and bounded counts all zero; saved trace demonstrates execution of the target runtime and rejection of the malformed verify call.",
+    "fail": "Counterexample to the claim or proof of a different runtime; record the precise cause.",
+    "unverified": "Timeout, unsupported tool interface, initialization failure, or proof without demonstrable target-runtime execution. This leaves formal feasibility open."
+  },
+  "resources": {
+    "pinnedImage": "runtimeverificationinc/kontrol@sha256:858f004144d61b005997f56bb8b7cd15673850286c96e0e5ec0502d9c9a9e204",
+    "schedule": "BYZANTIUM",
+    "proofLimitSeconds": 600,
+    "setupInvestigationLimitSeconds": 120,
+    "containerMemoryLimitGiB": 8,
+    "cpuLimit": 4,
+    "temporaryFilesystemMiB": 512,
+    "noFullKRebuild": true,
+    "noGlobalDockerChanges": true
+  },
+  "scopeLimit": "This is a design-stage feasibility check of one malformed-input rejection, not a proof of complete v3 verification, cryptographic soundness, Pool correctness, gas, or deployment initialization."
+}

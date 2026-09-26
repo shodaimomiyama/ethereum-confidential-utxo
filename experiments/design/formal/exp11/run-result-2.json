@@ -1,0 +1,73 @@
+{
+  "startedUtc": "2026-09-26T10:32:38.103134+00:00",
+  "targetRuntimeSha256": "724fac3aad23842c1462df4ad8eca960581d14de26d42e4d1ca792a7ac35b073",
+  "definitionSha256": "fb62ff4829ce8939340144d26aa9aa5cac09223b3081259b72f45363f8f0ef07",
+  "serialization": {
+    "command": [
+      "kore-exec",
+      "/tmp/exp11/kompiled/definition.kore",
+      "--module",
+      "KONTROL-MAIN",
+      "--serialize",
+      "--output",
+      "/tmp/exp11/kompiled/haskellDefinition.bin"
+    ],
+    "exitCode": 0,
+    "timedOut": false,
+    "seconds": 4.825,
+    "stdoutTail": "",
+    "stderrTail": ""
+  },
+  "proof": {
+    "command": [
+      "kevm",
+      "prove",
+      "/tmp/exp11/direct-symbolic-spec.k",
+      "--definition",
+      "/tmp/exp11/kompiled",
+      "--spec-module",
+      "EXP11-SYMBOLIC-SPEC",
+      "--save-directory",
+      "/tmp/exp11/proof",
+      "--no-use-booster",
+      "--workers",
+      "1",
+      "--max-frontier-parallel",
+      "1",
+      "--force-sequential",
+      "--reinit",
+      "-I",
+      "/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics",
+      "-I",
+      "/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/plugin"
+    ],
+    "exitCode": 1,
+    "timedOut": false,
+    "seconds": 735.787,
+    "stdoutTail": "PROOF FAILED: EXP11-SYMBOLIC-SPEC.wrong-left-length\n2 Failure nodes. (2 pending and 0 failing)\n\nPending nodes:\n\nID: 10:\n\nID: 11:\n\nJoin the Runtime Verification Discord server (https://discord.com/invite/CurfmXNtbN) or Telegram group (https://t.me/rv_kontrol) for support.\n",
+    "stderrTail": "WARNING 2026-09-26 05:32:43,230 kevm_pyk.__main__ - Ignoring --equation-max-local-steps for non-booster server: kore-rpc\nERROR 2026-09-26 05:44:58,295 kevm_pyk.utils - Proof crashed: EXP11-SYMBOLIC-SPEC.wrong-left-length\nEmpty response received\nTraceback (most recent call last):\n  File \"/home/user/.local/lib/python3.10/site-packages/kevm_pyk/utils.py\", line 157, in run_prover\n    prover.advance_proof(\n  File \"/home/user/.local/lib/python3.10/site-packages/pyk/proof/proof.py\", line 613, in advance_proof\n    results = self._execute_step(step, executor)\n  File \"/home/user/.local/lib/python3.10/site-packages/pyk/proof/proof.py\", line 558, in _execute_step\n    return self.step_proof(step)\n  File \"/home/user/.local/lib/python3.10/site-packages/pyk/proof/reachability.py\", line 903, in step_proof\n    extend_results = self.kcfg_explore.extend_cterm(\n  File \"/home/user/.local/lib/python3.10/site-packages/pyk/kcfg/explore.py\", line 236, in extend_cterm\n    cterm, next_states, depth, vacuous, next_node_logs = self.cterm_symbolic.execute(\n  File \"/home/user/.local/lib/python3.10/site-packages/pyk/cterm/symbolic.py\", line 174, in execute\n    response = self._kore_client.execute(\n  File \"/home/user/.local/lib/python3.10/site-packages/pyk/kore/rpc.py\", line 1135, in execute\n    result = self._request('execute', **params)\n  File \"/home/user/.local/lib/python3.10/site-packages/pyk/kore/rpc.py\", line 1070, in _request\n    return self._client.request(method, **params)\n  File \"/home/user/.local/lib/python3.10/site-packages/pyk/kore/rpc.py\", line 287, in request\n    response = self._default_client.request(method, **params)\n  File \"/home/user/.local/lib/python3.10/site-packages/pyk/kore/rpc.py\", line 380, in request\n    raise RuntimeError('Empty response received')\nRuntimeError: Empty response received\n"
+  },
+  "proofSnapshotFiles": [
+    "digest",
+    "direct-symbolic-spec.k.parsed.json.ctjqvx0c",
+    "EXP11-SYMBOLIC-SPEC.wrong-left-length/proof.json",
+    "EXP11-SYMBOLIC-SPEC.wrong-left-length/kcfg/kcfg.json",
+    "EXP11-SYMBOLIC-SPEC.wrong-left-length/kcfg/nodes/6.json",
+    "EXP11-SYMBOLIC-SPEC.wrong-left-length/kcfg/nodes/7.json",
+    "EXP11-SYMBOLIC-SPEC.wrong-left-length/kcfg/nodes/10.json",
+    "EXP11-SYMBOLIC-SPEC.wrong-left-length/kcfg/nodes/1.json",
+    "EXP11-SYMBOLIC-SPEC.wrong-left-length/kcfg/nodes/11.json",
+    "EXP11-SYMBOLIC-SPEC.wrong-left-length/kcfg/nodes/2.json",
+    "EXP11-SYMBOLIC-SPEC.wrong-left-length/kcfg/nodes/3.json",
+    "EXP11-SYMBOLIC-SPEC.wrong-left-length/kcfg/nodes/8.json",
+    "EXP11-SYMBOLIC-SPEC.wrong-left-length/kcfg/nodes/4.json",
+    "EXP11-SYMBOLIC-SPEC.wrong-left-length/kcfg/nodes/5.json",
+    "EXP11-SYMBOLIC-SPEC.wrong-left-length/kcfg/nodes/9.json",
+    ".kprove-2026-09-26-05-32-44-729-44912023-fec5-4438-9f33-b2089d1bdf51/spec.kore"
+  ],
+  "memory": {
+    "memory.max": "8589934592\n",
+    "memory.peak": "3956592640\n",
+    "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 1\noom_group_kill 0\n"
+  }
+}

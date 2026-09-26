@@ -1,0 +1,14 @@
+[profile.default]
+src = "src"
+test = "test"
+out = "out"
+cache_path = "cache"
+solc = ".cache/bin/solc-0.4.19"
+evm_version = "byzantium"
+optimizer = false
+ast = true
+extra_output = ["storageLayout", "evm.bytecode.generatedSources", "evm.deployedBytecode.generatedSources"]
+
+[profile.default.fuzz]
+runs = 256
+seed = "0x0000000000000000000000000000000000000000000000000000000000000007"

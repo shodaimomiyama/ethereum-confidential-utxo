@@ -1,0 +1,52 @@
+{
+  "experiment": "EXP-02",
+  "formal_proofs_completed": 0,
+  "formal_proofs_attempted": 0,
+  "overall_classification": "inconclusive",
+  "successful_observations": [
+    "Fixed image startup and module hash comparison",
+    "Unchanged upstream source compiled using Solidity 0.4.26",
+    "Four supplementary concrete/fuzz tests passed",
+    "Generated Kore definition accepted by kore-parser; this is syntax validation only"
+  ],
+  "counterexamples": [
+    {
+      "property": "alt_bn128.neg always returns a canonical scalar for canonical input",
+      "witness": "input 0 gives output q",
+      "evidence": "Supplementary concrete EVM execution, not a completed machine proof",
+      "log": "outputs/concrete-tests.log"
+    }
+  ],
+  "confirmed_unsupported_features": [],
+  "inconclusive": [
+    {
+      "claims": [
+        "sub-range",
+        "sub-modular",
+        "neg-zero",
+        "precompile-failure"
+      ],
+      "reason": "The proof stage was not started because Haskell definition validation did not complete."
+    }
+  ],
+  "build_failures": [
+    {
+      "stage": "kontrol-build",
+      "duration_seconds": 203.592,
+      "classification": "resource_exhaustion",
+      "evidence": "cgroup oom_kill=1; Haskell JVM exit 137"
+    },
+    {
+      "stage": "kontrol-build-sequential",
+      "duration_seconds": 277.445,
+      "classification": "runtime_or_validation_failure_root_cause_unresolved",
+      "evidence": "kompile exit 113; standalone kore-exec --serialize exit 1 with empty stdout/stderr"
+    }
+  ],
+  "next_experiment_conditions": [
+    "Same pinned image on native linux/amd64 to distinguish emulation effects",
+    "Recommended 16 GiB RAM and 16 GiB swap, or measured adequate memory with sequential compilation",
+    "Successful actual-input kore-exec definition validation before starting any claim",
+    "Preserve the complete verifier/source/bytecode relation and do not infer proof success from concrete tests or parser acceptance"
+  ]
+}

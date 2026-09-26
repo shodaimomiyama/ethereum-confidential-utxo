@@ -1,0 +1,23 @@
+{
+  "experiment": "EXP-07B",
+  "question": "Can EXP-07A's 130 HashToG1 points and an explicitly encoded full-prefix Fiat-Shamir transcript support one 64-bit range proof across Java generation, Java verification, and EVM verification?",
+  "affectedRequirements": ["SEC-01", "PRIV-01", "FV-03"],
+  "scope": "Minimal design-stage interoperability experiment. Reuse the EXP-03 range-proof arithmetic and verifier ABI; do not implement the UTXO Pool, CLI, final profile, security proof, or formal verification.",
+  "inputs": {
+    "generatorVectors": "vectors.json from EXP-07A (130 ordered points)",
+    "baseline": "experiments/design/bulletproof-revised",
+    "bitWidth": 64,
+    "aggregationCount": 1
+  },
+  "method": [
+    "Copy only experiment-owned EXP-03 Java and Solidity source into this directory and replace fixed generator loading with EXP-07A vectors.",
+    "Specify an unambiguous full-prefix transcript that includes every earlier stage payload before each challenge, domain-separated with fixed-width encodings.",
+    "Generate one valid boundary proof and one altered-statement case; compare Java prover/verifier transcripts.",
+    "Compile and run the corresponding EVM verifier on those cases if the local pinned toolchain is available.",
+    "Record source hashes, commands, versions, actual outcomes, and untested claims in JSON."
+  ],
+  "decision": {
+    "pass": "Retain v2 as a feasible candidate for design-stage security review, without treating interoperability as a security proof.",
+    "fail": "Record the concrete blocker and leave v2 adoption undecided."
+  }
+}

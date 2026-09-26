@@ -1,0 +1,8 @@
+{
+  "selector": "0x1e354db5",
+  "symbolicWord": "coords[0]",
+  "symbolicOffsetBytes": 68,
+  "calldataBytes": 1060,
+  "prefixBytes": 68,
+  "suffixBytes": 960
+}

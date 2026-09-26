@@ -1,0 +1,58 @@
+(node:3449) V8: /Users/momiyamashodai/orca/workspaces/ethereum-confidential-utxo/docs-design-doc/experiments/design/bulletproof/node_modules/solc/soljson.js:3 Invalid asm.js: Invalid member of stdlib
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "stage": "diagnostics-64",
+  "diagnosticCompleted": true,
+  "canonicalRejectionSatisfied": false,
+  "observations": [
+    {
+      "label": "value-0-tauX-plus-q",
+      "expectedValid": false,
+      "calldataBytes": 1380,
+      "accepted": false,
+      "returned": true,
+      "callMilliseconds": 55.52424999999994,
+      "matchesExpectation": true
+    },
+    {
+      "label": "value-0-mu-plus-q",
+      "expectedValid": false,
+      "calldataBytes": 1380,
+      "accepted": false,
+      "returned": true,
+      "callMilliseconds": 53.6904999999997,
+      "matchesExpectation": true
+    },
+    {
+      "label": "value-0-t-plus-q",
+      "expectedValid": false,
+      "calldataBytes": 1380,
+      "accepted": false,
+      "returned": true,
+      "callMilliseconds": 51.43779200000017,
+      "matchesExpectation": true
+    },
+    {
+      "label": "value-0-a-plus-q",
+      "expectedValid": false,
+      "calldataBytes": 1380,
+      "accepted": true,
+      "returned": true,
+      "callMilliseconds": 50.57866699999977,
+      "gasUsed": "3635728",
+      "transactionHash": "0x92122da29f425f7aa41aaaed12e019a41c2dceddd6e3c7a30656624888cdd2f8",
+      "matchesExpectation": false
+    },
+    {
+      "label": "value-0-b-plus-q",
+      "expectedValid": false,
+      "calldataBytes": 1380,
+      "accepted": true,
+      "returned": true,
+      "callMilliseconds": 50.24595799999952,
+      "gasUsed": "3635728",
+      "transactionHash": "0xd49545ac91165ea6e040aa803d8a14dda84a96e9c8620541e2b9635d863cc78d",
+      "matchesExpectation": false
+    }
+  ]
+}

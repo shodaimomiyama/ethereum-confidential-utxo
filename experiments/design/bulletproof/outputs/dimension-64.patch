@@ -1,0 +1,26 @@
+--- upstream/RangeProofVerifier.sol
++++ experiment-64/RangeProofVerifier.sol
+@@ -8,8 +8,8 @@
+     using alt_bn128 for uint256;
+     using alt_bn128 for alt_bn128.G1Point;
+ 
+-    uint256 public constant m = 4;
+-    uint256 public constant n = 2;
++    uint256 public constant m = 64;
++    uint256 public constant n = 6;
+ 
+     alt_bn128.G1Point[m] public gs;
+     alt_bn128.G1Point[m] public hs;
+--- upstream/EfficientInnerProductVerifier.sol
++++ experiment-64/EfficientInnerProductVerifier.sol
+@@ -7,8 +7,8 @@
+     using alt_bn128 for uint256;
+     using alt_bn128 for alt_bn128.G1Point;
+ 
+-    uint256 public constant m = 4;
+-    uint256 public constant n = 2;
++    uint256 public constant m = 64;
++    uint256 public constant n = 6;
+ 
+     alt_bn128.G1Point[m] public gs;
+     alt_bn128.G1Point[m] public hs;

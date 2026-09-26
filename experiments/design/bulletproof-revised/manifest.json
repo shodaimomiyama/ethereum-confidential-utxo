@@ -1,0 +1,37 @@
+{
+  "experiment": "EXP-03",
+  "question": "Do the revised Java prover and EVM verifier agree on the fixed profile and boundary inputs?",
+  "preplan": "../../../docs/design.md#exp-03-\u4fee\u6b63\u7248bulletproofs\u306e\u76f8\u4e92\u904b\u7528\u3068\u5883\u754c\u5165\u529b",
+  "profile": "profile.json",
+  "parameters": "parameters.json",
+  "upstreamCommit": "b7ec38970636d47f6b6bc0db6a3df62b188a247c",
+  "dependencies": "../bulletproof/package-lock.json and ../bulletproof/java-dependencies.json",
+  "limits": {
+    "commandSeconds": 600,
+    "javaHeapBytes": 2147483648,
+    "blockGasLimit": 30000000
+  },
+  "adoptionEstablished": false,
+  "results": {
+    "initial": "outputs/summary.json",
+    "lockedDependencyReproduction": "outputs/locked-reproduction/summary.json",
+    "normalCasesAccepted": 5,
+    "invalidCasesRejectedByEvm": 42,
+    "javaMutationCasesRejected": 21,
+    "transcriptStagesPerNormalCase": 11,
+    "changedParameterSetsRejected": 3,
+    "revisedProfileChecksSucceeded": true,
+    "cryptographicSecurityEstablished": false,
+    "formalProofsCompleted": 0,
+    "initialHarnessGasRange": [
+      3808413,
+      3849645
+    ],
+    "reproductionHarnessGasRange": [
+      3806997,
+      3827433
+    ],
+    "calldataBytes": 1444
+  },
+  "provenance": "source-hashes.json records each run. The final runner always uses npm ci and is captured by outputs/locked-reproduction/source-hashes.json; cryptographic source/profile/parameters are identical across both runs. README/manifest result text was updated after execution."
+}

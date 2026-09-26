@@ -1,0 +1,67 @@
+{
+  "experiment": "EXP-08",
+  "status": "Design-stage v3 candidate; not security reviewed",
+  "bitWidth": 64,
+  "rounds": 6,
+  "scalarModulus": "21888242871839275222246405745257275088548364400416034343698204186575808495617",
+  "coordinateModulus": "21888242871839275222246405745257275088696311157297823662689037894645226208583",
+  "encoding": "Every integer is unsigned 32-byte big-endian; every tag is Keccak256(UTF8(label)); point encoding is x||y, infinity is (0,0); concatenation has no lengths except the explicit dimensions below",
+  "tags": {
+    "parameters": "ecu/bp/parameters/v3",
+    "protocol": "ecu/bp/range/BN254/v3",
+    "role": "ecu/bp/range-output/v3",
+    "y": "ecu/bp/y/v3",
+    "z": "ecu/bp/z/v3",
+    "x": "ecu/bp/x/v3",
+    "u": "ecu/bp/u/v3",
+    "inner": "ecu/bp/inner/v3",
+    "round": "ecu/bp/round/v3",
+    "candidate": "ecu/bp/challenge/v3",
+    "accepted": "ecu/bp/accepted/v3"
+  },
+  "parametersHash": "K(tag(parameters)||64||valueBase||blindingBase||g[0]||...||g[63]||h[0]||...||h[63]); points selected by role and index from EXP-07A vectors.json, rather than by their JSON order",
+  "initialState": "prefix=tag(protocol)||uint256(64)||uint256(1)||parametersHash||operationId||tag(role)||uint256(outputIndex)||C_range(x,y); state=K(prefix) is trace-only",
+  "challenge": "segment=tag(stage)||uint256(payload byte length)||payload; first c=uint256(K(prefix||segment||tag(candidate)||uint256(counter))) with 0<c<q and counter in [0,255] is accepted; prefix=prefix||segment||tag(accepted)||uint256(c); no modular reduction",
+  "stages": [
+    {
+      "stage": "y",
+      "payload": "A||S"
+    },
+    {
+      "stage": "z",
+      "payload": "empty"
+    },
+    {
+      "stage": "x",
+      "payload": "T1||T2"
+    },
+    {
+      "stage": "u",
+      "payload": "tauX||mu||t"
+    },
+    {
+      "stage": "inner",
+      "operation": "prefix=prefix||tag(inner)||uint256(160)||uint256(64)||P||uPoint; no challenge here"
+    },
+    {
+      "stage": "round",
+      "payload": "roundIndex||L||R",
+      "repeat": "roundIndex 0..5"
+    }
+  ],
+  "pointRules": "C_range and proof points A,S,T1,T2,L,R may use canonical identity (0,0); fixed generators must be nonidentity. Every nonidentity point has x,y<p and y^2=x^3+3 mod p.",
+  "scalarRules": "tauX,mu,t,a,b must each be <q; zero is allowed; challenges are all in [1,q-1]",
+  "randomness": "SecureRandom rejection sampling in [0,q-1], including zero; no retry solely for an internal identity point. Abort without a partial proof if a 256-candidate scalar or challenge search exhausts.",
+  "statement": "For amount v, prove u=v-1 in [0,2^64-1] over C_range=C_original-valueBase; v may equal 2^64 and must not be truncated to uint64",
+  "abi": "verify(bytes32 operationId,uint256 outputIndex,uint256[10] coords,uint256[5] scalars,uint256[] ls,uint256[] rs); coords=C_range,A,S,T1,T2 as x,y pairs; scalars=tauX,mu,t,a,b; ls/rs each exactly 12 scalars (six x then six y)",
+  "testBoundary": "Candidate zero/q/max rejection is tested at the production scalar acceptance predicate, not by finding a Keccak preimage or overriding the production verifier transcript",
+  "expectedParametersHash": "0x0bfd116b8ef31332d31d3350ed24fa36d1e17865a7c1dc0758331da0755f8dae",
+  "aggregationCount": 1,
+  "proverLimits": {
+    "proofAttempts": 1,
+    "secretScalarCandidatesPerSample": 256
+  },
+  "parametersValidationPlacement": "EXP-07A validates all fixed points and reproducible derivation; this experiment checks their canonical/on-curve/nonidentity/distinctness and constructor digest, but does not establish unknown discrete-log relations.",
+  "generatorDerivation": "EXP-07A vectors.json, gnark-crypto v0.20.1 HashToG1",
+  "transcript": "Direct full-prefix; each challenge hashes an explicitly encoded concatenation of all earlier stage data. The trace state is only K(prefix), never substituted for the prefix in challenge derivation. No intermediate hash of prefix||segment is used."
+}

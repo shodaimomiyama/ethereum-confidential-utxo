@@ -1,0 +1,81 @@
+{
+  "experiment": "EXP-01",
+  "question": "Can fresh proofs from the pinned Java Bulletproof prover be accepted by source-compiled EVM verifiers at 4 and 64 bits, with corresponding invalid inputs rejected?",
+  "upstream": {
+    "repository": "https://github.com/leanderdulac/BulletProofLib",
+    "commit": "b7ec38970636d47f6b6bc0db6a3df62b188a247c",
+    "license": "MIT"
+  },
+  "stages": [
+    "Compile original 4-bit verifier source and run the existing valid fixture and a modified proof",
+    "Generate fresh 4-bit Java proofs and submit directly encoded calldata without generated web3j wrappers",
+    "Parameterize dimension only to 64 bits and run fresh boundary proofs"
+  ],
+  "inputs": {
+    "fourBitValid": [
+      "0",
+      "1",
+      "15"
+    ],
+    "fourBitOutsideRange": [
+      "-1",
+      "16"
+    ],
+    "sixtyFourBitValid": [
+      "0",
+      "1",
+      "18446744073709551615"
+    ],
+    "sixtyFourBitOutsideRange": [
+      "-1",
+      "18446744073709551616"
+    ],
+    "mutations": [
+      "commitment",
+      "proof scalar"
+    ],
+    "sourceReviewBoundaries": [
+      "identity representation",
+      "non-canonical scalars",
+      "zero challenge inverse"
+    ]
+  },
+  "acceptance": "Every tested in-range fresh proof returns true from EVM verification; tested invalid proofs or statements are rejected. Prover rejection and EVM rejection are recorded separately. Transaction success alone is not proof acceptance.",
+  "stopCondition": "Stop advancement on a failed stage, record its cause, and do not claim later stages succeeded. Source-level fixes beyond dimension and transport must be documented and evaluated before execution.",
+  "scope": "Local CPU experiment using a disposable local EVM; no UTXO application or external chain.",
+  "notEstablished": [
+    "cryptographic security",
+    "formal verification",
+    "UTXO conservation or authorization",
+    "receipt privacy",
+    "production performance"
+  ],
+  "toolchain": {
+    "solc": "0.4.19+commit.c4cbbb05",
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "node": "22.22.0",
+    "ethers": "6.13.4",
+    "anvil": "1.7.1 (4072e48705af9d93e3c0f6e29e93b5e9a40caed8)",
+    "hardfork": "prague",
+    "chainId": 31337,
+    "blockGasLimit": 30000000,
+    "maven": "3.9.9",
+    "java": "Temurin 23+37",
+    "javaSources": "Pinned upstream, unmodified; experiment runner compiled separately",
+    "mavenDependencyPlugin": "3.8.1"
+  },
+  "boundaryDiagnosticPlan": {
+    "timing": "Run only after the required stage succeeds; diagnostic outcomes are not a claim of conformance",
+    "scalar": "Add group order q separately to tauX, mu, t, a, b of a valid 64-bit proof; canonical encoding requires rejection, reference verifier may accept. Record diagnostics separately from normal-proof connection success.",
+    "identity": "Generate a zero-value commitment with zero blinding, which is the identity; distinguish Java exception from EVM rejection",
+    "zeroChallenge": "Review inversion and challenge reduction in source; do not force a Keccak preimage or replace transcript"
+  },
+  "gasMeasurement": {
+    "directVerifier": "Reference transaction gas after a preceding true eth_call",
+    "assertingHarness": "Fresh64 measurements also forward identical calldata with STATICCALL and require successful call, exactly 32-byte return, and return value 1. A known false proof must produce transaction status 0 through this harness.",
+    "changedCode": "Only an experiment forwarding contract; upstream verifier and prover are unchanged beyond bit dimensions"
+  }
+}

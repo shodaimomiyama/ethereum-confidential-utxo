@@ -1,0 +1,90 @@
+{
+  "experiment": "EXP-08",
+  "compiler": "0.4.19+commit.c4cbbb05.Emscripten.clang",
+  "optimizerRuns": 200,
+  "sourceSha256": {
+    "alt_bn128.sol": "b5db410990b99ac6ec25dc56a85f89cc9963126af11cc8b0f9385f74015ddd7c",
+    "Transcript.sol": "ec87587e61dba283777e9a6fbe5e7f6dd5eea48320e5ac83861eb91a006e8545",
+    "RangeProofVerifier.sol": "0e64d8e4e5eb63cc9bfdf5336df0b95728d260ba8620d3cefc53831f20ece819",
+    "TranscriptProbe.sol": "b124e0270197ef45153f97e285d4884604556cb05872a02303f4ca53a6bd8b6d"
+  },
+  "constructorParametersHash": "0x0bfd116b8ef31332d31d3350ed24fa36d1e17865a7c1dc0758331da0755f8dae",
+  "runtimeBytes": 8467,
+  "observations": [
+    {
+      "label": "amount-1-blinding-42",
+      "expectedValid": true,
+      "accepted": true,
+      "returnedNormally": true,
+      "matchesJava": true,
+      "matchesExpectation": true
+    },
+    {
+      "label": "amount-max-blinding-42",
+      "expectedValid": true,
+      "accepted": true,
+      "returnedNormally": true,
+      "matchesJava": true,
+      "matchesExpectation": true
+    },
+    {
+      "label": "amount-1-blinding-0",
+      "expectedValid": true,
+      "accepted": true,
+      "returnedNormally": true,
+      "matchesJava": true,
+      "matchesExpectation": true
+    },
+    {
+      "label": "amount-over-max",
+      "expectedValid": false,
+      "accepted": false,
+      "returnedNormally": true,
+      "matchesJava": true,
+      "matchesExpectation": true
+    },
+    {
+      "label": "changed-operation-id",
+      "expectedValid": false,
+      "accepted": false,
+      "returnedNormally": true,
+      "matchesJava": true
+    }
+  ],
+  "deployment": {
+    "gasUsed": "7956431",
+    "runtimeKeccak256": "0xaff25bc27e32f19321b9e062965a418b2be7d5df872164865f58398c3ad015c5"
+  },
+  "pointDecodeBoundaryChecks": [
+    {
+      "label": "canonical-identity",
+      "accepted": true,
+      "matchesJava": true
+    },
+    {
+      "label": "x-equals-p",
+      "accepted": false,
+      "matchesJava": true
+    },
+    {
+      "label": "off-curve",
+      "accepted": false,
+      "matchesJava": true
+    }
+  ],
+  "transcriptStagesChecked": [
+    "y",
+    "z",
+    "x",
+    "u",
+    "inner",
+    "round",
+    "round",
+    "round",
+    "round",
+    "round",
+    "round"
+  ],
+  "validProofTransactionGasUsed": "4293388",
+  "passed": true
+}

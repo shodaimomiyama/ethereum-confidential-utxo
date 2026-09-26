@@ -1,0 +1,5 @@
+value-0: generated=true, javaVerifierAccepted=true
+value-1: generated=true, javaVerifierAccepted=true
+value-15: generated=true, javaVerifierAccepted=true
+value--1: generated=true, javaVerifierAccepted=false
+value-16: generated=true, javaVerifierAccepted=false

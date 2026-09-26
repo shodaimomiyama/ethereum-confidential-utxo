@@ -1,0 +1,34 @@
+{
+  "experiment": "EXP-11",
+  "question": "Can a corrected direct KEVM specification establish a non-vacuous early-rejection claim over the exact optimized v3 verifier runtime?",
+  "affectedDecision": "Whether the current v3 verifier and KEVM path have a credible design-stage formal-verification route for FV-03 and FV-04",
+  "target": {
+    "sourceRuntime": "../exp09/runtime.hex",
+    "bytes": 8467,
+    "keccak256": "0xaff25bc27e32f19321b9e062965a418b2be7d5df872164865f58398c3ad015c5",
+    "sha256": "724fac3aad23842c1462df4ad8eca960581d14de26d42e4d1ca792a7ac35b073"
+  },
+  "claim": "A verify call with ls.length=0 and rs.length=12 reverts before storage or precompile access for at least one unconstrained uint256 input word. The test must start in the exact v3 runtime, not in a Solidity harness.",
+  "method": [
+    "Diagnose EXP-10 parse_modules using the pinned KEVM/Kontrol image, the raw kprove parser output and a known-good upstream claim; identify and correct the failing syntax or module dependency rather than simply extending the timeout.",
+    "Prepare a direct specification with the exact verified runtime, fixed canonical verify ABI shape and at least one unconstrained calldata word. Hash-match the runtime and check that the precondition is satisfiable.",
+    "Run one bounded proof, record parser result, proof status, admitted/vacuous/pending nodes, a target-runtime execution trace and final revert status. Treat a parser pass, concrete execution or timeout alone as unverified."
+  ],
+  "decision": {
+    "pass": "The exact runtime hash is linked to the initial program; a satisfiable symbolic claim is PASSED without admitted, vacuous, pending, failing, stuck or bounded nodes; execution and revert of the target bytecode are evidenced.",
+    "fail": "A concrete counterexample to early rejection on the exact runtime or evidence that the proof targets different bytecode.",
+    "unverified": "Parser/setup failure, missing symbolic input or target link, proof timeout, or incomplete/non-vacuous status."
+  },
+  "limits": {
+    "pinnedImage": "runtimeverificationinc/kontrol@sha256:858f004144d61b005997f56bb8b7cd15673850286c96e0e5ec0502d9c9a9e204",
+    "schedule": "BYZANTIUM",
+    "diagnosticSeconds": 600,
+    "proofSeconds": 900,
+    "cpuLimit": 4,
+    "containerMemoryGiB": 8,
+    "tmpfsMiB": 512,
+    "noGlobalDockerChanges": true,
+    "noFullVerifierOrPoolImplementation": true
+  },
+  "scopeLimit": "One design-stage feasibility claim; no full verifier proof, cryptographic soundness, Pool implementation or formal completion of FV-03/FV-04."
+}

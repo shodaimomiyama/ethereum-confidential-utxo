@@ -1,0 +1,15 @@
+{
+  "reason": "Prioritize revised verifier claim without concurrent claim execution in 3.83 GiB VM; explicit parent direction.",
+  "at_utc": "2026-09-26T07:06:01.743766+00:00",
+  "command": [
+    "docker",
+    "exec",
+    "exp05-existing-claim-offline",
+    "python3",
+    "-c",
+    "import pathlib,json,os,signal\nroot=pathlib.Path(\"/tmp/exp05-project/out/proofs\")\nproofs={str(p.relative_to(root)):p.read_text() for p in root.rglob(\"*.json\")}\nprovers=[]\nfor proc in pathlib.Path(\"/proc\").iterdir():\n if not proc.name.isdigit():continue\n try: command=(proc/\"cmdline\").read_bytes().split(bytes([0]))\n except (FileNotFoundError,PermissionError):continue\n if any(arg.endswith(b\"/kontrol\") for arg in command) and b\"prove\" in command:provers.append(int(proc.name))\nprint(json.dumps({\"proof_files\":proofs,\"memory\":{n:pathlib.Path(\"/sys/fs/cgroup\",n).read_text() for n in [\"memory.current\",\"memory.peak\",\"memory.events\"]},\"terminated_prover_pids\":provers}))\nfor pid in provers:os.killpg(pid,signal.SIGTERM)\n"
+  ],
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "Error response from daemon: No such container: exp05-existing-claim-offline\n"
+}

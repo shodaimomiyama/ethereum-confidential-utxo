@@ -1,0 +1,9 @@
+No files changed, compilation skipped
+
+Ran 3 tests for test/VerifierSlice.t.sol:VerifierSliceTest
+[PASS] test_negZeroReturnsZero() (gas: 318)
+[PASS] test_subBoundaryInputsStayCanonical() (gas: 1776)
+[PASS] test_subCanonicalInputsStayCanonical(uint256,uint256) (runs: 256, μ: 501, ~: 520)
+Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 107.18ms (87.77ms CPU time)
+
+Ran 1 test suite in 248.75ms (107.18ms CPU time): 3 tests passed, 0 failed, 0 skipped (3 total tests)

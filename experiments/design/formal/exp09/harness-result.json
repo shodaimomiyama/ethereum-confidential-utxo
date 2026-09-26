@@ -1,0 +1,7 @@
+{
+  "sourceSha256": "9b3484505b73baae7532ae61eee9b775a9ba34205453f0e186f395a8899f9c16",
+  "runtimeBytes": 8467,
+  "runtimeHexEmbeddedOnce": true,
+  "runtimeFrom": "runtime.hex",
+  "setUpSeparateFromTest": true
+}

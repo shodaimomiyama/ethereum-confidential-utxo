@@ -1,0 +1,10 @@
+[profile.default]
+src = "src"
+test = "test"
+out = "out"
+cache_path = "cache"
+solc = ".cache/bin/solc-0.4.26"
+evm_version = "byzantium"
+optimizer = false
+ast = true
+extra_output = ["storageLayout", "evm.bytecode.generatedSources", "evm.deployedBytecode.generatedSources"]

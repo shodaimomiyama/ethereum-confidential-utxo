@@ -1,0 +1,33 @@
+{
+  "experiment": "EXP-10",
+  "question": "Can a direct KEVM reachability claim, initialized with the exact optimized v3 verifier runtime and malformed verify calldata, complete a non-vacuous rejection proof without a Foundry harness?",
+  "target": {
+    "sourceRuntime": "../exp09/runtime.hex",
+    "bytes": 8467,
+    "keccak256": "0xaff25bc27e32f19321b9e062965a418b2be7d5df872164865f58398c3ad015c5",
+    "sha256": "724fac3aad23842c1462df4ad8eca960581d14de26d42e4d1ca792a7ac35b073"
+  },
+  "claim": "Exact v3 verify ABI calldata with ls.length=0 and rs.length=12 must reach EVMC_REVERT; three otherwise unused uint256 words are unconstrained if direct-claim syntax supports it.",
+  "method": [
+    "Use the pinned Kontrol/KEVM definition and direct KEVM claim syntax from upstream examples. The initial program must be the exact target runtime, with calldata encoded for verify; no vm.etch or test harness may execute in the claim.",
+    "Limit setup investigation, including claim syntax and tooling compatibility, to 120 seconds. If the direct specification cannot be prepared and parsed in that time, record unverified and stop without a full definition rebuild.",
+    "If preparation succeeds, run one claim with a 600-second proof cap and inspect proof status, vacuity, admitted nodes, initial program hash, target execution, and final revert status."
+  ],
+  "decision": {
+    "pass": "At least one calldata word is unconstrained; direct claim PASSED with admitted=false and no pending, failing, vacuous, stuck or bounded nodes, with exact initial target runtime hash and EVMC_REVERT final state.",
+    "fail": "A counterexample to rejection or a proof over the wrong runtime; report precise cause.",
+    "unverified": "Unsupported direct-claim syntax or definition, setup limit, proof timeout, missing runtime link, or incomplete proof."
+  },
+  "limits": {
+    "setupInvestigationSeconds": 120,
+    "proofSeconds": 600,
+    "containerMemoryGiB": 8,
+    "cpuLimit": 4,
+    "tmpfsMiB": 512,
+    "schedule": "BYZANTIUM",
+    "pinnedImage": "runtimeverificationinc/kontrol@sha256:858f004144d61b005997f56bb8b7cd15673850286c96e0e5ec0502d9c9a9e204",
+    "noFullDefinitionRebuild": true,
+    "noGlobalDockerChanges": true
+  },
+  "scopeLimit": "One design feasibility claim only; not full verifier soundness, Pool correctness, gas, or proof of constructor initialization."
+}

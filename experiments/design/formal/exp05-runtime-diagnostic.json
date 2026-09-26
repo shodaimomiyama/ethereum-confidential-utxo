@@ -1,0 +1,66 @@
+{
+  "experiment": "EXP-05",
+  "started_at_utc": "2026-09-26T06:53:47.130122+00:00",
+  "docker": {
+    "OperatingSystem": "Docker Desktop",
+    "Architecture": "aarch64",
+    "NCPU": 8,
+    "MemTotal": 4109803520,
+    "ServerVersion": "28.3.0",
+    "KernelVersion": "6.10.14-linuxkit"
+  },
+  "host": {
+    "command": [
+      "uname",
+      "-a"
+    ],
+    "timeout_seconds": 60,
+    "duration_seconds": 0.005,
+    "exit_code": 0,
+    "stdout": "Darwin MacBook-Air-4.local 25.5.0 Darwin Kernel Version 25.5.0: Mon Apr 27 20:41:26 PDT 2026; root:xnu-12377.121.6~2/RELEASE_ARM64_T8132 arm64\n",
+    "stderr": "",
+    "status": "completed"
+  },
+  "native_tool_paths": {
+    "kontrol": null,
+    "kore-exec": null,
+    "nix": null,
+    "qemu-system-aarch64": null,
+    "multipass": null,
+    "limactl": null,
+    "orb": null
+  },
+  "diagnostic": {
+    "command": [
+      "docker",
+      "run",
+      "--rm",
+      "--platform",
+      "linux/amd64",
+      "--name",
+      "exp05-runtime-diagnostic",
+      "--cpus",
+      "4",
+      "--memory",
+      "8g",
+      "--memory-swap",
+      "8g",
+      "--network",
+      "none",
+      "--mount",
+      "type=bind,source=/Users/momiyamashodai/orca/workspaces/ethereum-confidential-utxo/docs-design-doc/experiments/design/formal,target=/evidence,readonly",
+      "--workdir",
+      "/tmp",
+      "runtimeverificationinc/kontrol@sha256:858f004144d61b005997f56bb8b7cd15673850286c96e0e5ec0502d9c9a9e204",
+      "python3",
+      "/evidence/diagnose_exp05.py",
+      "container"
+    ],
+    "timeout_seconds": 300,
+    "duration_seconds": 0.652,
+    "exit_code": 1,
+    "stdout": "",
+    "stderr": "Traceback (most recent call last):\n  File \"/evidence/diagnose_exp05.py\", line 107, in <module>\n    diagnose_container()\n  File \"/evidence/diagnose_exp05.py\", line 51, in diagnose_container\n    scratch.mkdir()\n  File \"/usr/lib/python3.10/pathlib.py\", line 1175, in mkdir\n    self._accessor.mkdir(self, mode)\nOSError: [Errno 28] No space left on device: '/tmp/exp05'\n",
+    "status": "failed"
+  }
+}

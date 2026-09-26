@@ -1,0 +1,73 @@
+{
+  "experiment": "EXP-07B",
+  "compiler": "0.4.19+commit.c4cbbb05.Emscripten.clang",
+  "optimizerRuns": 200,
+  "sourceSha256": {
+    "alt_bn128.sol": "b5db410990b99ac6ec25dc56a85f89cc9963126af11cc8b0f9385f74015ddd7c",
+    "Transcript.sol": "e6ae1875435aae12705b071357777175d06a41c5b4480f2ed304bcf5b81cbc4a",
+    "RangeProofVerifier.sol": "8b46afab30dfe4c0f7cfe04478949fb11b2556b190eb2e0ee97b5091e555c580",
+    "TranscriptProbe.sol": "7ceb7ae9a59a1d86754c619f481b62da777dad46f31533cc11ddff5d03d00a07"
+  },
+  "constructorParametersHash": "0x8586da43dac1bfdfc6741c00fb62e8cc17e2ee0777f31f88e92c7369212c41ea",
+  "runtimeBytes": 8504,
+  "observations": [
+    {
+      "label": "amount-1-blinding-42",
+      "expectedValid": true,
+      "accepted": true,
+      "returnedNormally": true,
+      "matchesJava": true,
+      "matchesExpectation": true
+    },
+    {
+      "label": "amount-max-blinding-42",
+      "expectedValid": true,
+      "accepted": true,
+      "returnedNormally": true,
+      "matchesJava": true,
+      "matchesExpectation": true
+    },
+    {
+      "label": "amount-1-blinding-0",
+      "expectedValid": true,
+      "accepted": true,
+      "returnedNormally": true,
+      "matchesJava": true,
+      "matchesExpectation": true
+    },
+    {
+      "label": "amount-over-max",
+      "expectedValid": false,
+      "accepted": false,
+      "returnedNormally": true,
+      "matchesJava": true,
+      "matchesExpectation": true
+    },
+    {
+      "label": "changed-operation-id",
+      "expectedValid": false,
+      "accepted": false,
+      "returnedNormally": true,
+      "matchesJava": true
+    }
+  ],
+  "deployment": {
+    "gasUsed": "7964320",
+    "runtimeKeccak256": "0xc3b08625dc5c72f08e7947d465aef6b13bd8dad2aff19f468500887f749e4b3a"
+  },
+  "transcriptStagesChecked": [
+    "y",
+    "z",
+    "x",
+    "u",
+    "inner",
+    "round",
+    "round",
+    "round",
+    "round",
+    "round",
+    "round"
+  ],
+  "validProofTransactionGasUsed": "3937298",
+  "passed": true
+}

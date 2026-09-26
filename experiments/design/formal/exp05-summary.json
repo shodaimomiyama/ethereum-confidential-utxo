@@ -1,0 +1,189 @@
+{
+  "experiment": "EXP-05",
+  "formal_claims_attempted": 3,
+  "formal_claims_completed": 3,
+  "claims": [
+    {
+      "scope": "Unchanged upstream library in the EXP-02 harness, solc 0.4.26, optimizer=false, CANCUN.",
+      "property": "For ABI uint256 left,right with left<q and right<q, sub(left,right)<q. The harness returns outside that precondition; no input-rejection property.",
+      "classification": "proved",
+      "command": [
+        "kontrol",
+        "prove",
+        "--foundry-project-root",
+        "/tmp/exp05-project",
+        "--match-test",
+        "test_subCanonicalInputsStayCanonical",
+        "--schedule",
+        "CANCUN",
+        "--no-use-booster",
+        "--workers",
+        "1",
+        "--max-frontier-parallel",
+        "1",
+        "--force-sequential",
+        "--no-gas",
+        "--reinit",
+        "--hide-status-bar"
+      ],
+      "proof_duration_seconds": 307.552,
+      "total_container_duration_seconds": 320.837,
+      "serialization_duration_seconds": 10.159,
+      "proof_listing": "APRProof: test%VerifierSliceTest.test_subCanonicalInputsStayCanonical(uint256,uint256):0\n    status: ProofStatus.PASSED\n    admitted: False\n    nodes: 15\n    pending: 0\n    failing: 0\n    vacuous: 0\n    stuck: 0\n    terminal: 5\n    refuted: 0\n    bounded: 0\n    execution time: 5m 4s\nSubproofs: 0\n",
+      "proof_exit_code": 0,
+      "timed_out": false,
+      "source_artifact_hashes_unchanged": true,
+      "deployed_bytecode_sha256": "1efe66a1f956349e0c5eaf7046d5917a1c16fa5449309fae834bfc1c603e136c",
+      "exact_deployed_bytecode_matches_in_initial_proof_state": 2,
+      "artifact_sha256": "b376d32602b713b1cdade5dd1388c077a89666ed43cb19860b34503c473efd10",
+      "hashes": {
+        "src/alt_bn128.sol": "3f6c02b0e60a4ca0f834b3bc4223cf61858cd44b9c5527972fd37af1502ef07f",
+        "test/VerifierSlice.t.sol": "3d5e376bb5891397d92f57f3916190d91f2e4a963a84a13cbf36918e64843bac",
+        "out/VerifierSlice.t.sol/VerifierSliceTest.json": "b376d32602b713b1cdade5dd1388c077a89666ed43cb19860b34503c473efd10",
+        "out/kompiled/definition.kore": "fb62ff4829ce8939340144d26aa9aa5cac09223b3081259b72f45363f8f0ef07"
+      },
+      "memory": {
+        "memory.max": "8589934592\n",
+        "memory.current": "361377792\n",
+        "memory.peak": "1577398272\n",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n"
+      },
+      "proof_json_files_retained": 17,
+      "evidence": "exp05-existing-claim-offline.json"
+    },
+    {
+      "scope": "Byte-identical EXP-03 revised library source in a separate harness, solc 0.4.19, optimizer=false, BYZANTIUM; not the full deployed verifier bytecode.",
+      "property": "alt_bn128.neg(uint256(0)) == 0. Only the fixed-zero input; no all-scalar theorem.",
+      "classification": "proved",
+      "command": [
+        "kontrol",
+        "prove",
+        "--foundry-project-root",
+        "/tmp/exp05-revised",
+        "--match-test",
+        "test_negZeroReturnsZero",
+        "--schedule",
+        "BYZANTIUM",
+        "--no-use-booster",
+        "--workers",
+        "1",
+        "--max-frontier-parallel",
+        "1",
+        "--force-sequential",
+        "--no-gas",
+        "--reinit",
+        "--hide-status-bar"
+      ],
+      "proof_duration_seconds": 137.615,
+      "total_container_duration_seconds": 153.129,
+      "serialization_duration_seconds": 12.273,
+      "proof_listing": "APRProof: test%VerifierSliceTest.test_negZeroReturnsZero():0\n    status: ProofStatus.PASSED\n    admitted: False\n    nodes: 3\n    pending: 0\n    failing: 0\n    vacuous: 0\n    stuck: 0\n    terminal: 2\n    refuted: 0\n    bounded: 0\n    execution time: 2m 15s\nSubproofs: 0\n",
+      "proof_exit_code": 0,
+      "timed_out": false,
+      "source_artifact_hashes_unchanged": true,
+      "deployed_bytecode_sha256": "345c6a79f5de1b8f301605ee4eac64de306d76c7a6f5eae1b07a3425d5c0d5d3",
+      "exact_deployed_bytecode_matches_in_initial_proof_state": 2,
+      "artifact_sha256": "a11ca5b7e63aa1370e4c09137b61fedccd4f556c58f7a4481308b7f1dbfff940",
+      "hashes": {
+        "src/alt_bn128.sol": "b5db410990b99ac6ec25dc56a85f89cc9963126af11cc8b0f9385f74015ddd7c",
+        "test/VerifierSlice.t.sol": "19b2fde546f72e96f53f8358b90a9e08cc3858b7db307998c396f21db886bdce",
+        "out/VerifierSlice.t.sol/VerifierSliceTest.json": "a11ca5b7e63aa1370e4c09137b61fedccd4f556c58f7a4481308b7f1dbfff940"
+      },
+      "memory": {
+        "memory.max": "8589934592\n",
+        "memory.current": "320057344\n",
+        "memory.peak": "1493233664\n",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n"
+      },
+      "proof_json_files_retained": 5,
+      "evidence": "exp05-revised-claim.json"
+    },
+    {
+      "scope": "Same revised library and harness artifact as the fixed-zero claim, solc 0.4.19, optimizer=false, BYZANTIUM.",
+      "property": "For ABI uint256 left,right with left<q and right<q, sub(left,right)<q. The harness returns outside that precondition; no input-rejection property or modular-correctness theorem.",
+      "classification": "proved",
+      "command": [
+        "kontrol",
+        "prove",
+        "--foundry-project-root",
+        "/tmp/exp05-revised",
+        "--match-test",
+        "test_subCanonicalInputsStayCanonical",
+        "--schedule",
+        "BYZANTIUM",
+        "--no-use-booster",
+        "--workers",
+        "1",
+        "--max-frontier-parallel",
+        "1",
+        "--force-sequential",
+        "--no-gas",
+        "--reinit",
+        "--hide-status-bar"
+      ],
+      "proof_duration_seconds": 322.425,
+      "total_container_duration_seconds": 337.461,
+      "serialization_duration_seconds": 12.172,
+      "proof_listing": "APRProof: test%VerifierSliceTest.test_subCanonicalInputsStayCanonical(uint256,uint256):0\n    status: ProofStatus.PASSED\n    admitted: False\n    nodes: 15\n    pending: 0\n    failing: 0\n    vacuous: 0\n    stuck: 0\n    terminal: 5\n    refuted: 0\n    bounded: 0\n    execution time: 5m 19s\nSubproofs: 0\n",
+      "proof_exit_code": 0,
+      "timed_out": false,
+      "source_artifact_hashes_unchanged": true,
+      "deployed_bytecode_sha256": "345c6a79f5de1b8f301605ee4eac64de306d76c7a6f5eae1b07a3425d5c0d5d3",
+      "exact_deployed_bytecode_matches_in_initial_proof_state": 2,
+      "artifact_sha256": "a11ca5b7e63aa1370e4c09137b61fedccd4f556c58f7a4481308b7f1dbfff940",
+      "hashes": {
+        "src/alt_bn128.sol": "b5db410990b99ac6ec25dc56a85f89cc9963126af11cc8b0f9385f74015ddd7c",
+        "test/VerifierSlice.t.sol": "19b2fde546f72e96f53f8358b90a9e08cc3858b7db307998c396f21db886bdce",
+        "out/VerifierSlice.t.sol/VerifierSliceTest.json": "a11ca5b7e63aa1370e4c09137b61fedccd4f556c58f7a4481308b7f1dbfff940"
+      },
+      "memory": {
+        "memory.max": "8589934592\n",
+        "memory.current": "322174976\n",
+        "memory.peak": "1483272192\n",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n"
+      },
+      "proof_json_files_retained": 17,
+      "evidence": "exp05-revised-sub-claim.json"
+    }
+  ],
+  "current_environment_diagnosis": {
+    "host_available_kib": 270801736,
+    "docker_vm_memory_bytes": 4109803520,
+    "docker_rootfs_available_kib": 0,
+    "docker_rootfs_inode_use_percent": 43,
+    "container_tmpfs_bytes": 536870912,
+    "container_memory_limit_bytes": 8589934592,
+    "observed_failures": [
+      "Creating /tmp/exp05 on the Docker rootfs returned ENOSPC.",
+      "Same Kore command and definition: ordinary /tmp returned empty exit 1; container tmpfs /tmp serialized successfully.",
+      "Kontrol telemetry initialization then returned ENOSPC for /home/user/.config; documented KPROFILE_TELEMETRY_DISABLED=true avoided that non-proof initialization path."
+    ],
+    "exp02_causality_limit": "No contemporaneous EXP-02 df/ENOSPC record was retained. The current cause is consistent with the old silent failure but does not retrospectively establish its cause.",
+    "global_configuration_changed": false,
+    "user_docker_images_or_caches_deleted": false,
+    "full_k_definition_rebuild_performed": false
+  },
+  "trust_and_scope_limits": [
+    "Trusted fixed Kontrol/KEVM semantics, Haskell backend, Z3 and Solidity compilers; retained APR graphs make these tool-relative proofs replayable.",
+    "Gas computations were omitted explicitly. No gas-cost or out-of-gas theorem.",
+    "No custom axiom, assume-defined, no-stack-checks, admitted node or proof summary was supplied.",
+    "Reused generic K definition was normally validated/serialized, with unchanged definition hash.",
+    "Revised noncanonical-input rejection, modular arithmetic correctness, neg for all scalars, precompile wrappers, transcript, full Bulletproof verifier and UTXO core are not established by these claims.",
+    "Cryptographic soundness and the complete FV-03/FV-04 obligations remain unproved."
+  ],
+  "evidence": [
+    "exp05-runtime-diagnostic.json",
+    "exp05-storage-inspection.json",
+    "exp05-host-storage-and-prior-evidence.json",
+    "exp05-tmpfs-diagnostic.json",
+    "exp05-paired-serialization.json",
+    "exp05-primary-source-evidence.json",
+    "exp05-telemetry-module.json",
+    "exp05-existing-claim.json",
+    "exp05-existing-claim-stop.json",
+    "exp05-proof-plan.json",
+    "exp05-revised-proof-plan.json",
+    "exp05-revised-sub-proof-plan.json",
+    "revised/outputs/target-bytecode.json"
+  ]
+}

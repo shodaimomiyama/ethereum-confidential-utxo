@@ -1,0 +1,8 @@
+Picked up JAVA_TOOL_OPTIONS: -Xmx2g
+amount-1-blinding-42: generated=true; verifierAccepted=true; transcriptMatches=true; attempts=1
+amount-2-blinding-42: generated=true; verifierAccepted=true; transcriptMatches=true; attempts=1
+amount-max-blinding-42: generated=true; verifierAccepted=true; transcriptMatches=true; attempts=1
+amount-1-blinding-0: generated=true; verifierAccepted=true; transcriptMatches=true; attempts=1
+polynomial-blindings-zero: generated=true; verifierAccepted=true; transcriptMatches=true; attempts=1
+amount-0: generated=true; verifierAccepted=false; transcriptMatches=false; attempts=1
+amount-over-max: generated=true; verifierAccepted=false; transcriptMatches=false; attempts=1

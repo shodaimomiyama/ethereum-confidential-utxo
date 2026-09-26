@@ -1,0 +1,919 @@
+{
+  "library": "github.com/consensys/gnark-crypto v0.20.1",
+  "dstAscii": "ECU_BP_BN254_G1_V2",
+  "messageEncoding": "ASCII ECU || 0x02 || role byte || uint32 big-endian index",
+  "orderedSha256": "8755cb06eb0fe82e46d0c35a79591dd590a7bbbbb4ac66436c560f9823af5d5e",
+  "generatorCount": 130,
+  "generators": [
+    {
+      "role": "blindingBase",
+      "index": 0,
+      "inputHex": "454355020100000000",
+      "xHex": "17cb04e7970362050a9862f3c4a49d469d4cc653c0a14864ce3de1e9c9dca195",
+      "yHex": "1d9474cb44e4e2c636ad42e8229a0ad85fe60d61803587896d7c778210078a7b"
+    },
+    {
+      "role": "valueBase",
+      "index": 0,
+      "inputHex": "454355020200000000",
+      "xHex": "1c2541ace2d3f35c1a520e0b68acf05c49d39d02a336476f08f4c7b2fc556a73",
+      "yHex": "19871f356fc2d6a772a472081e4a0f7d77f2b3eded7d38e8b735c1dc572486fc"
+    },
+    {
+      "role": "vectorG",
+      "index": 0,
+      "inputHex": "454355020300000000",
+      "xHex": "17714a693b3147b1507f0571057d30047300e98184cd1199fa2bc8a3dc58c026",
+      "yHex": "20da63deb360863e2d66c16d30019d29bbae5c964e5fdc1a379f48c5f84476f1"
+    },
+    {
+      "role": "vectorG",
+      "index": 1,
+      "inputHex": "454355020300000001",
+      "xHex": "00eaf30c3dccdc1f6779938cbe6d9ab8fb7c317f10c40bf4c45dce74ac08485a",
+      "yHex": "13d7e7472b02e0e0ad4a64dec2af98a6b0c5bf52dfdcd3529068d89fb7bbfa1a"
+    },
+    {
+      "role": "vectorG",
+      "index": 2,
+      "inputHex": "454355020300000002",
+      "xHex": "1bf3df5eaf6ba84d753542868ed1c87475df73eedb3c94310c0418a19a44ca30",
+      "yHex": "26dccbbd4030444a08478b744ec956e6058447bf135560250ebdda96f8b9d107"
+    },
+    {
+      "role": "vectorG",
+      "index": 3,
+      "inputHex": "454355020300000003",
+      "xHex": "1108bdf216afc039a4d6ddeea70c65e1ac6b60b6dac46d4920a6784c0d895608",
+      "yHex": "1aeaab46c2852f84e2f25f12beec032c2c1efbc8617429eb27dbb04acf01307a"
+    },
+    {
+      "role": "vectorG",
+      "index": 4,
+      "inputHex": "454355020300000004",
+      "xHex": "18719e742e0c1e5ec3df95f16989ef2bf42a94a76ec9fc9928e72a0107e50e79",
+      "yHex": "231a75647315f20684570e063e802348f062929af03cc43c3b358331aeeeaf82"
+    },
+    {
+      "role": "vectorG",
+      "index": 5,
+      "inputHex": "454355020300000005",
+      "xHex": "150e1b80cf55804b67bc4df9953cde932efff4922932341c62386e18026b9b6b",
+      "yHex": "21fdda58743f06f37e72aae42e718725aac23b0921cc1b724aec623899cb1a7e"
+    },
+    {
+      "role": "vectorG",
+      "index": 6,
+      "inputHex": "454355020300000006",
+      "xHex": "273fff6d754e089f8bfc2ca516c5909cf7a6f09b3207d71a54ba295a831236bb",
+      "yHex": "1bd353882006723eebd3f812bb022f0d79bce20ff797d6690c43ecb2eb3534fa"
+    },
+    {
+      "role": "vectorG",
+      "index": 7,
+      "inputHex": "454355020300000007",
+      "xHex": "12feab70a6737255523baf918159819bb7febab443dd5e370509f7d6aa5d5268",
+      "yHex": "11b6193c23b09af0be44bdca9c1045b7db28e16f90c2196668e191924c387a24"
+    },
+    {
+      "role": "vectorG",
+      "index": 8,
+      "inputHex": "454355020300000008",
+      "xHex": "0af49ded52cfc40e7c86a12c40e4c8eca7c2ee7121b985786c7420afa4254169",
+      "yHex": "10c6aaf2959ae45b3c3d3a2ab9cbc5197d80bbac65bc789e6aade14c46d0eb3a"
+    },
+    {
+      "role": "vectorG",
+      "index": 9,
+      "inputHex": "454355020300000009",
+      "xHex": "17428c68ca38ed9d7aa1011e5c5f236ce24c81699714cbbd297b3c6c0030fe01",
+      "yHex": "0955e75b8f19af4692835fec54f62006c8170fbc59f4ba24933783892bf64a17"
+    },
+    {
+      "role": "vectorG",
+      "index": 10,
+      "inputHex": "45435502030000000a",
+      "xHex": "0f15032f3c6e1bfe2ba7df79e8f528bd46291fdc9236b699cd8507bf74e44839",
+      "yHex": "2feed5f69b5f6dcbfefa4e61a5b43702f81b7ec91fdc4505ddfb6ea5448592ce"
+    },
+    {
+      "role": "vectorG",
+      "index": 11,
+      "inputHex": "45435502030000000b",
+      "xHex": "10742dfc5794189b13e26d026b63e42c3e80a169e383cba5d49c8ac54f0d874e",
+      "yHex": "133823a74fa35f7d6eba0c227b4b7ff322d2366759963871f52b50de10face5a"
+    },
+    {
+      "role": "vectorG",
+      "index": 12,
+      "inputHex": "45435502030000000c",
+      "xHex": "23a0dc3200091ecd782f7dbe6559a55d9f0ae6f658e2dd4ba951f837ce36ce9c",
+      "yHex": "1a14205a8fbb4bc9fb13b03f330aeb6deb593a5401913f7130f58f19dad01d38"
+    },
+    {
+      "role": "vectorG",
+      "index": 13,
+      "inputHex": "45435502030000000d",
+      "xHex": "304b3dfde705272a42f015baf8b81b352881431ce8491c9ccb5edfbe583a372e",
+      "yHex": "2e0de0408713d16625326abc6129827523ddae2b4eafadf2a8205b804be6be55"
+    },
+    {
+      "role": "vectorG",
+      "index": 14,
+      "inputHex": "45435502030000000e",
+      "xHex": "01f525449a517204528d433919f3752ccf9e99027a0f65cf22e2acf0ab263c15",
+      "yHex": "076c4e5f9f1e93f6ee1a96389ca63c896ff35a44e405b9cba04a16570ec87a13"
+    },
+    {
+      "role": "vectorG",
+      "index": 15,
+      "inputHex": "45435502030000000f",
+      "xHex": "0525d6a8c8427ac685f03674372e4f336608ff7f0f52f42b4f65300e535ccc3d",
+      "yHex": "17ae70301368cdd81ebbd314ff725adb94f9ee86142ddbcb6d724e4c08abc31d"
+    },
+    {
+      "role": "vectorG",
+      "index": 16,
+      "inputHex": "454355020300000010",
+      "xHex": "22b4e092a77d6f2537c9bf535c5bcda68e0b4635de60000d02104052cae38ab5",
+      "yHex": "075d6e82fead3439ae80389a8400c2cae1dc738f3361cdeda41c693be01384b7"
+    },
+    {
+      "role": "vectorG",
+      "index": 17,
+      "inputHex": "454355020300000011",
+      "xHex": "217236559df349e59f42e37b83b4b0f7ca5f7e541d539bc3ea54f69e847a1020",
+      "yHex": "2e718253eef2999d8798bf552303ecc1905da7b41796f643990754fc05be3a93"
+    },
+    {
+      "role": "vectorG",
+      "index": 18,
+      "inputHex": "454355020300000012",
+      "xHex": "1c01a80c87caab5226776a2addb5a254d5bc94b5b1905b02610a236bfd69554b",
+      "yHex": "2e9f760ee6f9c52409495663337211c218b1edfd9335822f677a5f6b166de495"
+    },
+    {
+      "role": "vectorG",
+      "index": 19,
+      "inputHex": "454355020300000013",
+      "xHex": "07cba41363c094f347d5fbc4a89b0a8c673f10af746c5df672004ff7fd2133c4",
+      "yHex": "23a491c9836c031bac7b3a53dcec0e49414867b59ae395d88126d5c5a5825495"
+    },
+    {
+      "role": "vectorG",
+      "index": 20,
+      "inputHex": "454355020300000014",
+      "xHex": "0e33131cf9576c36db7669c9834d7ab6fe2e4b3e07b68e5b944182b21f3a7fb1",
+      "yHex": "24a6c063af0c029d4f9fdbbb80becd94f2fbe3968e41a4d28c397ee29dd9f5fb"
+    },
+    {
+      "role": "vectorG",
+      "index": 21,
+      "inputHex": "454355020300000015",
+      "xHex": "0f3bae6af5527e1ad095e29ef98279fbb700395b1bec41d964ea99e5e9a6df92",
+      "yHex": "0ec7f30e4f11454fb1dcde19a79147b1dae5319b0b853e31a891082319911416"
+    },
+    {
+      "role": "vectorG",
+      "index": 22,
+      "inputHex": "454355020300000016",
+      "xHex": "195afdc6e76de60933fdcd0a4b359266a0fd7b3998dc0d233d576d5ab5b64115",
+      "yHex": "2cc2693f74a0f7df2806f048fd89697fcf8437bcfe885cc504b6770357253252"
+    },
+    {
+      "role": "vectorG",
+      "index": 23,
+      "inputHex": "454355020300000017",
+      "xHex": "01ce4a7899b91bdd0dd8ec2463f530652ef344d392985fdb2d4458343f3f9800",
+      "yHex": "0a9bcadd6d2c811a0389cf0de45dff605c5e882ed3658ac7751f1ea689ccd297"
+    },
+    {
+      "role": "vectorG",
+      "index": 24,
+      "inputHex": "454355020300000018",
+      "xHex": "13f662220ba5b77c35f29883ee6c61e4cf34193ef700f398a93e9d6de3d0bec2",
+      "yHex": "1b095ce1654dc6b871f862b1835dff09f4e67abdeef973d82f35aeb0fc987ed1"
+    },
+    {
+      "role": "vectorG",
+      "index": 25,
+      "inputHex": "454355020300000019",
+      "xHex": "2bc1297ce11a345e2ea61be63778a3d97c848ef3dfc666c9d85757ab902dc672",
+      "yHex": "01029070f09fe5daae2f8f45e5c414fce32582626d9dae90cbbd77e89917b205"
+    },
+    {
+      "role": "vectorG",
+      "index": 26,
+      "inputHex": "45435502030000001a",
+      "xHex": "114b9112d1225e745a782f67cd095aee5e27fa235b4cd35faa26f6d7dda6cc8a",
+      "yHex": "0ff087a33f01ea8e320d801e40858049b448aa8d70ab25d4f77c0457f1a9cf84"
+    },
+    {
+      "role": "vectorG",
+      "index": 27,
+      "inputHex": "45435502030000001b",
+      "xHex": "1d87ad553f31842235ce6b006d0f62fedaa490b7a25ec9a244f40078520f2f51",
+      "yHex": "09b39e5b47b67c746240b53237e24adaff18056be797e3681e2e08a968f25e6a"
+    },
+    {
+      "role": "vectorG",
+      "index": 28,
+      "inputHex": "45435502030000001c",
+      "xHex": "0a98adfc4826a1994110e568caa96dd7fe7ad233f134f397a757266f4f2498cb",
+      "yHex": "0afe1c4974fb6aa4ebd6089f6bbcd8f79b5c1f0bd7e7727e1ec9a35e2c3be386"
+    },
+    {
+      "role": "vectorG",
+      "index": 29,
+      "inputHex": "45435502030000001d",
+      "xHex": "2f0940a94a8daad6675da0d0a40e1ac518858c01658cc3eed8b9eb50d93162e8",
+      "yHex": "0fdf89087282376cfa405af71115527bf4e5a80bb3374753837bf355d1155905"
+    },
+    {
+      "role": "vectorG",
+      "index": 30,
+      "inputHex": "45435502030000001e",
+      "xHex": "260d422e0d3e74a79936815d5f85fab3f9eb15fe18a16febb4a1204777dd9ca2",
+      "yHex": "02141eaf3b2447b2aa7333be5180c3d8879c4ba12c027991c0c3ea628025abaf"
+    },
+    {
+      "role": "vectorG",
+      "index": 31,
+      "inputHex": "45435502030000001f",
+      "xHex": "01292f0c771b7d5740193c45b9ee3a6598cc821e4956d7ed8ef70aff3e3e0a6b",
+      "yHex": "203ba10f2d177f5093c8c7b8fe840bb068b24cd3ab38e0ae107c4b7b25e7a214"
+    },
+    {
+      "role": "vectorG",
+      "index": 32,
+      "inputHex": "454355020300000020",
+      "xHex": "2fcbf13b8fb42cb44c829d059aea35848bf185a96abe5e5ac356f0af76d51a41",
+      "yHex": "2e117b4e8990a3a658f39b49ce39e33e2cec83b69277979697d9f0c6f59ad79b"
+    },
+    {
+      "role": "vectorG",
+      "index": 33,
+      "inputHex": "454355020300000021",
+      "xHex": "278c77cc415ff234839bda914c3bfe133f449c6d503b14aa7594a5b5e8eba886",
+      "yHex": "15ad718bd5ac2a297b83e93eae3878a68db555b3b7ca1c5e3afa36b3e41b0bcd"
+    },
+    {
+      "role": "vectorG",
+      "index": 34,
+      "inputHex": "454355020300000022",
+      "xHex": "2ffee9212264791b9d521bbd91d92f4b07ef8db84c2ee333734f6bcd6367eb04",
+      "yHex": "0d2eb09fb41388bfa50767cf8572a83945377f33393039325b39e6e98eb575a7"
+    },
+    {
+      "role": "vectorG",
+      "index": 35,
+      "inputHex": "454355020300000023",
+      "xHex": "1e714480a150fc26e5f5c1235922207312c8ec1281195d364d9f8105a765acd8",
+      "yHex": "06c3dce110c6d0a6cf7a6374338629049d5128a620dd1e6387d734afce1928a5"
+    },
+    {
+      "role": "vectorG",
+      "index": 36,
+      "inputHex": "454355020300000024",
+      "xHex": "189b21e5fbbb050410538303cb77a35fffef19920f506f6cdde6828b914f15c0",
+      "yHex": "245d4d2b1d768fd36d5b1092c8f9692553a9bdb014e1b70616c87f3b348f16fc"
+    },
+    {
+      "role": "vectorG",
+      "index": 37,
+      "inputHex": "454355020300000025",
+      "xHex": "0c646d068ac14ba9c58fb597d4006a05ec4874cad52e212532e8232c99a11185",
+      "yHex": "05734b4a359398f01a5054620147d05cce77ce0a70139caf33140941200c684b"
+    },
+    {
+      "role": "vectorG",
+      "index": 38,
+      "inputHex": "454355020300000026",
+      "xHex": "04d19deb6a50ff08993f90030305ab752dbb29297f4c599d45ef6500b64dbac9",
+      "yHex": "10d92ed37e57bc981192e704af691b8093efa26033375302a9625962f0aa0a48"
+    },
+    {
+      "role": "vectorG",
+      "index": 39,
+      "inputHex": "454355020300000027",
+      "xHex": "13fa0c19acd0868bfd000c4edc0c3874e0acf86659e62ae6f022d7bd11b2d70e",
+      "yHex": "05f900d54a85115b9c35c38b453c64e8159c0fdddf324755f37caf6800a48ff9"
+    },
+    {
+      "role": "vectorG",
+      "index": 40,
+      "inputHex": "454355020300000028",
+      "xHex": "07bf8267ba4af847484a32424623b21a1d7a859ac6de6cad31786767122e4db2",
+      "yHex": "295d073fa3f950ec72db571651c6c3a6e9ce5c783b8e57795c6ef2581f946a24"
+    },
+    {
+      "role": "vectorG",
+      "index": 41,
+      "inputHex": "454355020300000029",
+      "xHex": "1b520aef9edfcbe079c40e9fcf253917c1523af018fde2f66152eaab70cae85f",
+      "yHex": "089b60ec29a6665b44033e795b4b40a3ae230870884c776430c153163048eedf"
+    },
+    {
+      "role": "vectorG",
+      "index": 42,
+      "inputHex": "45435502030000002a",
+      "xHex": "1ea3acc65cd5b2968a9f5e180cb3cec5a3485e608204c8ecbb849768c555b035",
+      "yHex": "18aaffc0eb377b9d5c3865f71b74318e53c9b1e0ef53a0beeecb9c701b61eb4b"
+    },
+    {
+      "role": "vectorG",
+      "index": 43,
+      "inputHex": "45435502030000002b",
+      "xHex": "09d26152eeec1bed98e17b4c5d9a2cc1fc34be1ba070e5c52d4ad2536b3ff29b",
+      "yHex": "1c133341517950e267246abb0249c359cc0d8f59071de9a7f4ce1fb53729a693"
+    },
+    {
+      "role": "vectorG",
+      "index": 44,
+      "inputHex": "45435502030000002c",
+      "xHex": "223b55b4d388639085a536c719f75945923b638240f009068f5a982214598ced",
+      "yHex": "01894aa1a346c65cc049406cb605f17aff3c7d72c7214b781a4e0004b14433d0"
+    },
+    {
+      "role": "vectorG",
+      "index": 45,
+      "inputHex": "45435502030000002d",
+      "xHex": "11744c5dee6652f65111c73af85c838e1536eb2ce8806842d2721e550cfe676a",
+      "yHex": "03782cea6b00a0654b13672eb05bf72e43ffc7e2bcd93585f55f4c772e5c0834"
+    },
+    {
+      "role": "vectorG",
+      "index": 46,
+      "inputHex": "45435502030000002e",
+      "xHex": "04cc63d1f0a2e3f345cb809dc0be7417ee2ffb7a9fac9d2a84055347aed7512f",
+      "yHex": "2817bb44a3f355b7c23c02d8870f35036c4f2129453981769aa7f72112658c4b"
+    },
+    {
+      "role": "vectorG",
+      "index": 47,
+      "inputHex": "45435502030000002f",
+      "xHex": "0e2eea392aeb0313cdfe92f1fe1dffda80f1646a9f72b270738793427965dc99",
+      "yHex": "19e1e3c35b0a9e9838013d6f14c3982261381d7c425f3b1ab12bfbca49fd0bf7"
+    },
+    {
+      "role": "vectorG",
+      "index": 48,
+      "inputHex": "454355020300000030",
+      "xHex": "02a5ac53ccf7628bbf3dc9d19586522c1f8365b938d65004fbc69568baba6bc8",
+      "yHex": "169f27eff1b7577e8299f4a12d46aac29ffe30b18f8e7b9c627d849483bd6d92"
+    },
+    {
+      "role": "vectorG",
+      "index": 49,
+      "inputHex": "454355020300000031",
+      "xHex": "10bcdf02423641a7926a5c490e36c4c1cea12d421faea300d4ce1328a683fc2d",
+      "yHex": "13d21e5787c08d8c92caa27ea0f0e627af98ab0952af01ac340a3a27d748a436"
+    },
+    {
+      "role": "vectorG",
+      "index": 50,
+      "inputHex": "454355020300000032",
+      "xHex": "118afa3405eedc5c68c8d09bcd7400b2e7e64b23567cbdb846026bf05db6142c",
+      "yHex": "03ec00ea60f6795538f5bb10a824acad760a9cb88f5d15299767c1e554685bb4"
+    },
+    {
+      "role": "vectorG",
+      "index": 51,
+      "inputHex": "454355020300000033",
+      "xHex": "2937b43329a1bd0ad35542cc08f733f89b96bcfdedc1c44050a0e09144a513f9",
+      "yHex": "0a43b4998a8c75756d7551e135ac262a52ad984831a0978b660fdfca1cef00f9"
+    },
+    {
+      "role": "vectorG",
+      "index": 52,
+      "inputHex": "454355020300000034",
+      "xHex": "2ecd381c435204efa010481b12d3dc5f2a8b60c5db438c09fc245e151a2d9c19",
+      "yHex": "03420f982ccfc17ed0cab3c772b20d47e4da3c3696ee4c8120426f1f3d280cbc"
+    },
+    {
+      "role": "vectorG",
+      "index": 53,
+      "inputHex": "454355020300000035",
+      "xHex": "0a2dbaebf434f5a335fee09577b06bf3968e2404df2166870b12cd928a717b33",
+      "yHex": "264f208552ec4dfab1347ee1daf83bb307acafeb9b018e7b8007f520fec647e3"
+    },
+    {
+      "role": "vectorG",
+      "index": 54,
+      "inputHex": "454355020300000036",
+      "xHex": "11c79fee856ed2fcbb5df89b53527f5ec47838fec72d20cc1c3c68deb12245b0",
+      "yHex": "16b65bd22f8ec112d2dc8c0eb574b758074b38419384fe2729b9b1384b15ae8a"
+    },
+    {
+      "role": "vectorG",
+      "index": 55,
+      "inputHex": "454355020300000037",
+      "xHex": "2ab3715e25be880c4111f7d7f768b63f8b0109be1608dcddc5a4cd18f0c0a2f4",
+      "yHex": "17f08f5e055ecacfda7d70659a53286a65e0701b525f75a46f53eda86bd6f93e"
+    },
+    {
+      "role": "vectorG",
+      "index": 56,
+      "inputHex": "454355020300000038",
+      "xHex": "15f8d6ac9c43ba7689e62eee128e3073eae5596953fc320480c7b66e3d65285c",
+      "yHex": "0492db79b336d148c32c4dd7a7195c021772246337a54ac87610801dd4040aeb"
+    },
+    {
+      "role": "vectorG",
+      "index": 57,
+      "inputHex": "454355020300000039",
+      "xHex": "20df6da43f857e027233059011b0c0a61f4a60c357f80b86b7b46cb544fa59f6",
+      "yHex": "09feb228ad04e63ca23233b46a2bf3f5ace713fa2f9479a2eba13d69a345628f"
+    },
+    {
+      "role": "vectorG",
+      "index": 58,
+      "inputHex": "45435502030000003a",
+      "xHex": "211b827f5e358a71c0ed9d60885b556f8c50a1462bc0f682e6fbe6a73dbf40bb",
+      "yHex": "1120312df2f166a0c8a78184ab8203cb51a410e1c93070b3e020badb7960b0da"
+    },
+    {
+      "role": "vectorG",
+      "index": 59,
+      "inputHex": "45435502030000003b",
+      "xHex": "150ff4e573f48a6d6fca637f9cb9008cf11d6aafe8c4fdea0a485d8657f75320",
+      "yHex": "2f8d1e9c2edd0b682f6de82097cb9231801fc282e26b98033ab7aa5353d72093"
+    },
+    {
+      "role": "vectorG",
+      "index": 60,
+      "inputHex": "45435502030000003c",
+      "xHex": "00725c50490526cf1a3e1c683a4ccea01e3d2c10938842116eccbc855e9dc734",
+      "yHex": "1c47b8ac0657f1cf06fbf80600d4003863ac809b9ac951931158782523a3866c"
+    },
+    {
+      "role": "vectorG",
+      "index": 61,
+      "inputHex": "45435502030000003d",
+      "xHex": "09932f71e1dfe0ce958d49fd9cb362e8f53363b77e51b49028f044b431a1799e",
+      "yHex": "1c66cec7aea88934637245cfabdb34ab935cae186ea74d7b52447999f23825dc"
+    },
+    {
+      "role": "vectorG",
+      "index": 62,
+      "inputHex": "45435502030000003e",
+      "xHex": "2b5f71b9a8bdb5fa41da766e07dab1a74ec8222684a4350c3c6727fda8dd04ef",
+      "yHex": "19305b3b2406513a95b3c0602da34b44e76061814256dcc3e72d15ff0cd49c41"
+    },
+    {
+      "role": "vectorG",
+      "index": 63,
+      "inputHex": "45435502030000003f",
+      "xHex": "2e2edd3bb6fdcc3e0194f8227c193b3d1800fabbce717be8bb5ccbb9aef437c3",
+      "yHex": "2232594aef3fc473946873e07f9dff3fd45f32c4aca77f4ef0a2cc1c50b6c149"
+    },
+    {
+      "role": "vectorH",
+      "index": 0,
+      "inputHex": "454355020400000000",
+      "xHex": "21e0e06f0674f8f6949d2ab58fb17661707915e0c43ae4689a01faad2f7bd9a7",
+      "yHex": "2b1735ae1099ac8c2de650c8a01cd94574ecbc4a7badbbefbabd97c096eb3986"
+    },
+    {
+      "role": "vectorH",
+      "index": 1,
+      "inputHex": "454355020400000001",
+      "xHex": "295685bc106df9299e816c643582fb6f935fc54da4b52327499de0c9903f47b5",
+      "yHex": "0ba35e60c1c9eab79ff0f6492d7509fcd7bb7d9a58e1153fbf6d21ef31898c5b"
+    },
+    {
+      "role": "vectorH",
+      "index": 2,
+      "inputHex": "454355020400000002",
+      "xHex": "15b2c7dd4b14179460223dfcb31f7f4e95a85b99517f250e16c702f44d9e3fb7",
+      "yHex": "058835528ba589cac08d43f7e3c3957aefb8d213784d0cbf0d1fad5fb93996bb"
+    },
+    {
+      "role": "vectorH",
+      "index": 3,
+      "inputHex": "454355020400000003",
+      "xHex": "0b7e69b6dc49bac5869dc988fde1ebe14dd3a9b5a4241d4c3c526dc474172896",
+      "yHex": "17733c861a5b4b35f0077df0fa6959f22c05307cd6c1ddc3c71c0adb4c601e6b"
+    },
+    {
+      "role": "vectorH",
+      "index": 4,
+      "inputHex": "454355020400000004",
+      "xHex": "08bb966cc290718e66df568bd3ba7c849890420991b7a748b1498a7d252b3f0e",
+      "yHex": "201c8220bcba949a400c79ffe4b3fc5664e962f53a904b425dad27df21df9c22"
+    },
+    {
+      "role": "vectorH",
+      "index": 5,
+      "inputHex": "454355020400000005",
+      "xHex": "21f53d209e44a7aca9041f97203d4b55b03cbb031b71f36185c55e574f5fbde4",
+      "yHex": "1414a9e3a6f281d0a9664be594c9903bea64949f65fbd4586ae3af280aca7cf0"
+    },
+    {
+      "role": "vectorH",
+      "index": 6,
+      "inputHex": "454355020400000006",
+      "xHex": "2130b01b98145e5acfb901ed93788e8e7c97c8b3d22f8885b3675b466cb3bd12",
+      "yHex": "02744889fe040b3fa16eed00ec9ba8089bf189ac351c452a7cb56da759131953"
+    },
+    {
+      "role": "vectorH",
+      "index": 7,
+      "inputHex": "454355020400000007",
+      "xHex": "0665286571cb9f5f33297020acf6345fcd6685a77078d139fcf425cec9166274",
+      "yHex": "1fe975fd2c583d8f49bacb5dcb54a1034e0deb218728aab2b0433e4caa306920"
+    },
+    {
+      "role": "vectorH",
+      "index": 8,
+      "inputHex": "454355020400000008",
+      "xHex": "1778eec99defb50512dcc330b6e36e9af1d19197de5687e9428be74b2d1d17c0",
+      "yHex": "0f4f9a70a864e5ce97cb66f1cbece9568e55d4a368e1637ac1d4d8c5738c8df1"
+    },
+    {
+      "role": "vectorH",
+      "index": 9,
+      "inputHex": "454355020400000009",
+      "xHex": "21612474366c91cc4bf118a128bb2d6b0a9422a741465d4e9741cea60d2ffa0b",
+      "yHex": "2a10cae8081daa927a10b85798a43d49b8bcaf89f660aefa3e5759b714effc47"
+    },
+    {
+      "role": "vectorH",
+      "index": 10,
+      "inputHex": "45435502040000000a",
+      "xHex": "2d5cbad01c743c14871d5442c7f72b64ed0867b7406d0b233f4d1dc24846d017",
+      "yHex": "010e06e1f74d083f7f8e5612030dfcc9151920eb48e867e9e7ef5e7a5e808232"
+    },
+    {
+      "role": "vectorH",
+      "index": 11,
+      "inputHex": "45435502040000000b",
+      "xHex": "1d3ee4fc480ea8a56c4b18c4bea5ad86cdeb9f61c1f565dd5df5db8de1cfbd49",
+      "yHex": "2b527718ae76a628289bf187770b7beb924d7ff2fae31c13d5176a0d1b8b4599"
+    },
+    {
+      "role": "vectorH",
+      "index": 12,
+      "inputHex": "45435502040000000c",
+      "xHex": "078bf00c9c71cad4c8df95e3a157283e553767d67198abee828c250ac55a2ef3",
+      "yHex": "2d5b4cc634089a9e87c4c3f18c1ef4ee085b0b8206fe5520e3174b687c9f9fa7"
+    },
+    {
+      "role": "vectorH",
+      "index": 13,
+      "inputHex": "45435502040000000d",
+      "xHex": "0f2800c6e0798f25a02e6a497df2bbdd2b42f0d08e51f555847c99ab288d49b1",
+      "yHex": "27cb5094f5a31d248a415f4165b481bf3d64a9a0efcf681855d075de230e84b5"
+    },
+    {
+      "role": "vectorH",
+      "index": 14,
+      "inputHex": "45435502040000000e",
+      "xHex": "11dc424c75807bef9ce74087054469d96bbc38abff3d10e402198cbb2c681aaf",
+      "yHex": "2fe26d43140f82e5f7e0c3bb0085fa846810a2776069dadce82d0e3649df0d49"
+    },
+    {
+      "role": "vectorH",
+      "index": 15,
+      "inputHex": "45435502040000000f",
+      "xHex": "01f54a623549aa2a53ed6f17a4904906e7d24da0cdb0043b8b94dcf4c7cef8bd",
+      "yHex": "0806515bf830c96a3e5639a900c74ddc5717dbcabdfa81dec066177730a7b7d6"
+    },
+    {
+      "role": "vectorH",
+      "index": 16,
+      "inputHex": "454355020400000010",
+      "xHex": "02a603378a8124db996d8912a528d59c88fefbb43a9c2f02e3a9abfd1304a7dd",
+      "yHex": "18bdfccfbf9697c100052447bec39f5266df23c5b7222a463970a066549a339a"
+    },
+    {
+      "role": "vectorH",
+      "index": 17,
+      "inputHex": "454355020400000011",
+      "xHex": "0aa63cf4b2cda10504a90578ee774f8d8728e8319ed85450a6e0bd6476a7a77b",
+      "yHex": "0e4bc07a2fce29e58049d41d329710feb49ea0955d80b3eec569bc256b7fc6fc"
+    },
+    {
+      "role": "vectorH",
+      "index": 18,
+      "inputHex": "454355020400000012",
+      "xHex": "096ad48026167901a935c3ec62c9c026e2286636e158ab4c8801ea6d4835272d",
+      "yHex": "13e9ba6f8829a77102c74f78b6d51cc184ec7945fe8a7dd4d162dd7b03581db4"
+    },
+    {
+      "role": "vectorH",
+      "index": 19,
+      "inputHex": "454355020400000013",
+      "xHex": "16dae1eea4400bdb7ec7f209a70e698f878efffd7691f56f1824e801671620cc",
+      "yHex": "130ed1fa0576e3cf154dcde2df0e5e0e5fd437ce64adf4c5ecf1071a670a048c"
+    },
+    {
+      "role": "vectorH",
+      "index": 20,
+      "inputHex": "454355020400000014",
+      "xHex": "18b1df3f87dea1e36e586ff6c73cb78db6f6c19f643118f2608b308000b62ad1",
+      "yHex": "2365b4fdafb25c12e9cc14ab5b4e168cf30c99189dc2ad721bfd3ae918d05581"
+    },
+    {
+      "role": "vectorH",
+      "index": 21,
+      "inputHex": "454355020400000015",
+      "xHex": "26a192417feff36683bf5ca647e49cfe3d856971cb7de87799245132fc35042c",
+      "yHex": "09f667c587c014fa4cb8381fe49fb62ee72f7c4967225446bae7fdef29b714cb"
+    },
+    {
+      "role": "vectorH",
+      "index": 22,
+      "inputHex": "454355020400000016",
+      "xHex": "03f806e8f6f5fc0930f0bb3433dea2573420058ec5f2f977baf7c56f654723fb",
+      "yHex": "02581287092ed009e119530b6b32f6d33f7dd1c5fa4d7951ddc86663668e7697"
+    },
+    {
+      "role": "vectorH",
+      "index": 23,
+      "inputHex": "454355020400000017",
+      "xHex": "26d887d1f3c74e5332660260f5795928f9110912e6ed0dc381fa6e42b0a47b84",
+      "yHex": "0fdac2db51af811b3c0dd44c415a8759dbe2d60c5b2f941d15640df7054aee27"
+    },
+    {
+      "role": "vectorH",
+      "index": 24,
+      "inputHex": "454355020400000018",
+      "xHex": "25fd58f1235aaa8c5673fc6fe04dfc9ede181657861d88cca5f265cf91922f35",
+      "yHex": "218e1f4ac9e1184bd0660ff5773e9f7db934f5cacf90ef555f432a8e699e8454"
+    },
+    {
+      "role": "vectorH",
+      "index": 25,
+      "inputHex": "454355020400000019",
+      "xHex": "1041ab05f069da0b1479e5de890956f6a42eac252045ab931d8bc44faf39b68d",
+      "yHex": "0480c190ad083c0489d781c1e84795269feb3b32f935a14a68275a409036d5b6"
+    },
+    {
+      "role": "vectorH",
+      "index": 26,
+      "inputHex": "45435502040000001a",
+      "xHex": "159df801ab4a4b97e7c573bfbc47402e1e06d2a8e5d5e5ac268af81fedd14eb6",
+      "yHex": "2a365db4b22f89c1ce3a31f434d472f0661cd5fc5a34591d933597b211913738"
+    },
+    {
+      "role": "vectorH",
+      "index": 27,
+      "inputHex": "45435502040000001b",
+      "xHex": "10136d6bb736d6c5348737ac4bbcd1b4fba66d8f60f59931714648440bedc1eb",
+      "yHex": "1e87e54927666135cd145ed30bc443031e4531c48bd21926a48df55a4982fe40"
+    },
+    {
+      "role": "vectorH",
+      "index": 28,
+      "inputHex": "45435502040000001c",
+      "xHex": "15403bc657fdda2cdb9adcb51d295e8bc08d5ce4cf03d5d4a8d8501adab13fab",
+      "yHex": "12d6ec6a4ddc59e4a36f7b4b88a6196f0a527c64dc4a42529caa04d33fa44718"
+    },
+    {
+      "role": "vectorH",
+      "index": 29,
+      "inputHex": "45435502040000001d",
+      "xHex": "0ec275f36a74d53ad226ce78acc41dd5f9ba1892c83ac86f6f30f74bedad0666",
+      "yHex": "053d7fbb7549ab0756ac90d5e54f34a1ed2a4a90c9a591a43347254c68c3305e"
+    },
+    {
+      "role": "vectorH",
+      "index": 30,
+      "inputHex": "45435502040000001e",
+      "xHex": "273086690904ce078b21213274162ed9585d1ab4d0cf5ce2292f623c71e163c8",
+      "yHex": "08331d56984a2f844eb0b965d1aa1911bd9f96089c016dda59f6ae82fc14c08a"
+    },
+    {
+      "role": "vectorH",
+      "index": 31,
+      "inputHex": "45435502040000001f",
+      "xHex": "168b602797e138357d8c7ce49dd7490ac387c480aebb673a7a564c20695d36cc",
+      "yHex": "1bbf931faf6db410424a9a4534033c33a682fcb112833af0d70a4309d528db37"
+    },
+    {
+      "role": "vectorH",
+      "index": 32,
+      "inputHex": "454355020400000020",
+      "xHex": "2df0a5b8df452f1cee6b7a931632c744657c42eb83911d7ed2abe257cca5d5ee",
+      "yHex": "084ce52f5b812e28fbffb7358a6c7b8f2351e1d706a033d8603c2a5730d12dc0"
+    },
+    {
+      "role": "vectorH",
+      "index": 33,
+      "inputHex": "454355020400000021",
+      "xHex": "2703877200ff5e4a2191aaf8bcfd38a94a2580d6b917bd2e89c9294c7fe91f26",
+      "yHex": "108d015d189937319fb93657625c269c037f3898ce3d15f5d7343aa5f9f20a1b"
+    },
+    {
+      "role": "vectorH",
+      "index": 34,
+      "inputHex": "454355020400000022",
+      "xHex": "0c6083a39c0894136d33c50a35d6fd6dfb2714e7e49cba9fe38aeb9f9559b3d4",
+      "yHex": "1764939ae941dd0673379e2d5cdf01651b30ad813f41f2cf81a46547b13cf685"
+    },
+    {
+      "role": "vectorH",
+      "index": 35,
+      "inputHex": "454355020400000023",
+      "xHex": "2cb001cae86a37e05c3a4faa890119dd2dd470e1175fe408aacf000fea6e5165",
+      "yHex": "18c60b21b9ad53272b2b1deba2922af253a5c5440dc72f77dd6cd21d67a2b25e"
+    },
+    {
+      "role": "vectorH",
+      "index": 36,
+      "inputHex": "454355020400000024",
+      "xHex": "16498f751836db47fc55b41473f5bb419c840026633b23a0879532bb5dfd011e",
+      "yHex": "17a00daa25d339bace690e76a5b67e67cc8e5f78c9f5734b0dfd1a84b3bf7a19"
+    },
+    {
+      "role": "vectorH",
+      "index": 37,
+      "inputHex": "454355020400000025",
+      "xHex": "1c399a967d3ceb2da87c9fc4d9690d395e9de4868d36f3dcc7275c909b6f747a",
+      "yHex": "244c916aa5859287ec760d33baa2d2d65203ac5ddf62ea626eb7a1cb40bb31f5"
+    },
+    {
+      "role": "vectorH",
+      "index": 38,
+      "inputHex": "454355020400000026",
+      "xHex": "269a08e25060f2099846a9abe1a2c790d4ea0e54e491c8f36b5f243f9cd512e8",
+      "yHex": "16eeb9c2eebe77c05e54d44dac597c81e3a14e82487c8f32f43f2a7df5ed4268"
+    },
+    {
+      "role": "vectorH",
+      "index": 39,
+      "inputHex": "454355020400000027",
+      "xHex": "304d50d3f807ee4b97a64d6325528cbc63d8e4a0d183835c2d64e6459eb5f4f8",
+      "yHex": "0080bfb4da6cb7de546969e6eaddf7945d4227f11964a38c9b418880bd804c65"
+    },
+    {
+      "role": "vectorH",
+      "index": 40,
+      "inputHex": "454355020400000028",
+      "xHex": "065fa7d2ca2ae6eefcdfbbdda5ac0e0d541ac6addaf4b7074d9b0ea75005d3b2",
+      "yHex": "18b6f5e02ecfe071e9c494b1baee1d2b5bd0e81d8d9488a3daad975307de2030"
+    },
+    {
+      "role": "vectorH",
+      "index": 41,
+      "inputHex": "454355020400000029",
+      "xHex": "1fd341210f68a03caf9ae8a37eb60cabcac3359c2695bc85fd757e7550c21e24",
+      "yHex": "05251b6f845f99c00935200818d7cd11658b60b1098bcf00a7ccf2f2f81c0bf4"
+    },
+    {
+      "role": "vectorH",
+      "index": 42,
+      "inputHex": "45435502040000002a",
+      "xHex": "0177686118271e550f7423231b7da5b117407f97bcdffe38828d5cc7c71f08de",
+      "yHex": "04e2c613f69228babce3ce616db60671bda2d6208b6822775d884eb3e615ecdd"
+    },
+    {
+      "role": "vectorH",
+      "index": 43,
+      "inputHex": "45435502040000002b",
+      "xHex": "121308f2b70b2436ed0af024372342de882e7baa75e7e98f4976d9ed3a67830f",
+      "yHex": "1f2e53e7177fc02c90a705599623a75e715f874ff656973128657dbec2629eb1"
+    },
+    {
+      "role": "vectorH",
+      "index": 44,
+      "inputHex": "45435502040000002c",
+      "xHex": "2362c92ea7f5a66acdfbc5950d6c235c3ab949b1bf8920c55d670b7f396310ff",
+      "yHex": "1bfeaf79150f3cd8c7da6a7654855f39b961d7b42348cc1ebeb2dfce729dae55"
+    },
+    {
+      "role": "vectorH",
+      "index": 45,
+      "inputHex": "45435502040000002d",
+      "xHex": "27ab196f24eafcd0af3ceaa46843f67055b56afdbd2f3117c66b2a4a60d47fae",
+      "yHex": "1fe7bf4f84aa629ef04280acb2199fbbbcf2d6cf9010fd78908f89a8bb6c224c"
+    },
+    {
+      "role": "vectorH",
+      "index": 46,
+      "inputHex": "45435502040000002e",
+      "xHex": "257dd005680510b408b6bd6d11a68592b255c263f421d7f0836a4c222a1d766e",
+      "yHex": "0d451528a24f3972ca0ad780246a6edcf8f6f968b2cabcca8177742ce9af957c"
+    },
+    {
+      "role": "vectorH",
+      "index": 47,
+      "inputHex": "45435502040000002f",
+      "xHex": "00290ea280d8646b5ed81173511f393a24cbfc52dace62091176139ae5a962ac",
+      "yHex": "0673630edf60c4fe7adf37b2a3930377d2e986678fdea705d2cc33a09207b85f"
+    },
+    {
+      "role": "vectorH",
+      "index": 48,
+      "inputHex": "454355020400000030",
+      "xHex": "084c842ba47d1316d1661ab6d972516ef28fcfce699e3c5c54df92c4a147dab9",
+      "yHex": "270c586133c64ea9f20166bee0adc4cae3b793b7c95e9ea46c046f7890338730"
+    },
+    {
+      "role": "vectorH",
+      "index": 49,
+      "inputHex": "454355020400000031",
+      "xHex": "11a07f3412b2645a093099da9997a770f78f59d93f43e193152ca3ba8e0b04c0",
+      "yHex": "0f2e9bad280ebc881972bdccf74337b76b5bffca5f4e3e97ba073c44c8742b25"
+    },
+    {
+      "role": "vectorH",
+      "index": 50,
+      "inputHex": "454355020400000032",
+      "xHex": "0aa2e50bc7881482efd2aa20e3bc4f33943c29305fac31b6700423bc5122b80d",
+      "yHex": "279acf303dd2f187e31ef5af986db6522e74b665ed4ccfc1727d6d806f1f9911"
+    },
+    {
+      "role": "vectorH",
+      "index": 51,
+      "inputHex": "454355020400000033",
+      "xHex": "2baac1b7acc44a37f0e1b2a21743a35bfc4b51275fe5d59f4cd5d39ecebb706e",
+      "yHex": "17e6ddb33cf8539d7d8e4f28b9f6a7c49aab5c182dada908afc27f1bbb444546"
+    },
+    {
+      "role": "vectorH",
+      "index": 52,
+      "inputHex": "454355020400000034",
+      "xHex": "1adc7aa72924c6d28a6c74bda64bbdbf21367a7f7cadc7fbff8b3168517f843a",
+      "yHex": "26048aba51bea102a546c6469bae8ec4d04b1c9d00ccab0af4d2982e72d87a16"
+    },
+    {
+      "role": "vectorH",
+      "index": 53,
+      "inputHex": "454355020400000035",
+      "xHex": "0507d5026525e0ccd299ea64f04eec221cfd828417226cd9957ba818c0e339b1",
+      "yHex": "00973e06d1c482543a5c41a83f387f38e21380c94eb7e155dec86cb5490caf4e"
+    },
+    {
+      "role": "vectorH",
+      "index": 54,
+      "inputHex": "454355020400000036",
+      "xHex": "1ec6f0be7096e2db5ca0a96a0a1379e3d4a534a55d4f55fee32cf81f47d1c56c",
+      "yHex": "1d4a8968fb6041089b5610fe7034456f00f6ca77c2a7e5ff1cba7e4e406f68fd"
+    },
+    {
+      "role": "vectorH",
+      "index": 55,
+      "inputHex": "454355020400000037",
+      "xHex": "2306662da8044ddc0194d4a559dec4234c27174aea38d000de39fbc214fe1985",
+      "yHex": "1144951ce66ab5cce65d94259e6b6a4e9758805b9db76d604c1fdaae4f1d3b15"
+    },
+    {
+      "role": "vectorH",
+      "index": 56,
+      "inputHex": "454355020400000038",
+      "xHex": "275fd98bc5209a72f69c21ac709aa6d4402cb15eb87f02cd90205a78705154c7",
+      "yHex": "126c45cf9726e2d6648e96ce777bdb490c1672e7345ce30063c1f235be67d543"
+    },
+    {
+      "role": "vectorH",
+      "index": 57,
+      "inputHex": "454355020400000039",
+      "xHex": "1dc702373b8a8edba304465437d570a5cc960660828bc01f95862d917b7624dc",
+      "yHex": "01ceb4ccdfe11b38d3334a69b224b595fbaa214a20b860225d5854684336539c"
+    },
+    {
+      "role": "vectorH",
+      "index": 58,
+      "inputHex": "45435502040000003a",
+      "xHex": "182f05499b31b1421467c64d6e987f21af89cad40d3ea96a083d77aeaac3de4e",
+      "yHex": "07ff134fcb5afd5023e714f75bf82070de3e7290223956288506c5f1a44e0e48"
+    },
+    {
+      "role": "vectorH",
+      "index": 59,
+      "inputHex": "45435502040000003b",
+      "xHex": "1f8317e591427194d07433e8d550297c256674fa724b90486ad63713b5a8144a",
+      "yHex": "254368d9c37b6777373acbbad606213a0a3f479928f56a5e3dda1c633ba5f42e"
+    },
+    {
+      "role": "vectorH",
+      "index": 60,
+      "inputHex": "45435502040000003c",
+      "xHex": "22a2f5b236b0d56eca47b0b3361f2373d1d013fca7b909b559fb39a3594eb653",
+      "yHex": "18feb6af0b8ee1c78badaf2a082d58cbc26375bc989575a4547cbd84fa42b2bf"
+    },
+    {
+      "role": "vectorH",
+      "index": 61,
+      "inputHex": "45435502040000003d",
+      "xHex": "113504ccae998d537eb82e485b4c9f28ecb65dd53f264d2f8e8de6ed1d3d7303",
+      "yHex": "2ed7ef027ac5ad6e52cb0dd6a33e97e76e4efcfce036618505866334bd7385f1"
+    },
+    {
+      "role": "vectorH",
+      "index": 62,
+      "inputHex": "45435502040000003e",
+      "xHex": "2d480777fe119c48d83002d4e907f6e4462a9a479d632210cb98d666083350c5",
+      "yHex": "057ddba37ee89cfc53a29c769a84ecc2fd6b4815469294a48d7c783e30c84269"
+    },
+    {
+      "role": "vectorH",
+      "index": 63,
+      "inputHex": "45435502040000003f",
+      "xHex": "2030bf848b668d794b9e771b2d2fed93f9567b31b7b817782b4e2adf0ac7f990",
+      "yHex": "0d4a7bdc13fa4dad8b93ed456f01abcfc81d54891e57eb996374de6ca8441dbc"
+    }
+  ]
+}

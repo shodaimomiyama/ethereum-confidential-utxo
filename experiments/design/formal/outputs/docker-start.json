@@ -1,0 +1,15 @@
+{
+  "name": "docker-start",
+  "command": [
+    "open",
+    "-a",
+    "Docker"
+  ],
+  "working_directory": "/Users/momiyamashodai/orca/workspaces/ethereum-confidential-utxo/docs-design-doc",
+  "started_at_utc": "2026-09-26T05:30:33.320123+00:00",
+  "duration_seconds": 0.187,
+  "timeout_seconds": 30,
+  "exit_code": 0,
+  "status": "completed",
+  "log": "outputs/docker-start.log"
+}

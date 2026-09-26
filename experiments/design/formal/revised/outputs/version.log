@@ -1,0 +1,6 @@
+solc, the solidity compiler commandline interface
+Version: 0.4.19+commit.c4cbbb05.Linux.g++
+forge Version: 1.5.1-v1.5.1
+Commit SHA: b0a9dd9ceda36f63e2326ce530c10e6916f4b8a2
+Build Timestamp: 2025-12-19T14:07:55.455914129Z (1766153275)
+Build Profile: maxperf

@@ -1,0 +1,19 @@
+WARNING 2026-09-26 05:19:58,031 kevm_pyk.__main__ - Ignoring --equation-max-local-steps for non-booster server: kore-rpc
+Traceback (most recent call last):
+  File "/home/user/.local/bin/kevm", line 8, in <module>
+    sys.exit(main())
+  File "/home/user/.local/lib/python3.10/site-packages/kevm_pyk/__main__.py", line 110, in main
+    execute(options)
+  File "/home/user/.local/lib/python3.10/site-packages/kevm_pyk/__main__.py", line 273, in exec_prove
+    all_claims = ClaimLoader(kevm).load_claims(
+  File "/home/user/.local/lib/python3.10/site-packages/pyk/ktool/claim_loader.py", line 72, in load_claims
+    module_list = self._kprove.parse_modules(
+  File "/home/user/.local/lib/python3.10/site-packages/pyk/ktool/kprove.py", line 264, in parse_modules
+    _kprove(
+  File "/home/user/.local/lib/python3.10/site-packages/pyk/ktool/kprove.py", line 99, in _kprove
+    return run_process_2(run_args, logger=_LOGGER, env=env, check=check)
+  File "/home/user/.local/lib/python3.10/site-packages/pyk/utils.py", line 527, in run_process_2
+    res.check_returncode()
+  File "/usr/lib/python3.10/subprocess.py", line 457, in check_returncode
+    raise CalledProcessError(self.returncode, self.args, self.stdout,
+subprocess.CalledProcessError: Command '('kprove', '/evidence/exp10/direct-spec.k', '--definition', '/evidence/out/kompiled', '--spec-module', 'EXP10-SPEC', '--md-selector', 'k', '-I', '/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics', '-I', '/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/plugin', '--output', 'json', '--temp-dir', '/tmp/exp10-proof', '--dry-run', '--emit-json-spec', '/tmp/exp10-proof/direct-spec.k.parsed.json._shwhzuc', '--allow-rules')' returned non-zero exit status 1.

@@ -1,0 +1,21 @@
+{
+  ".gitignore": "046032151fe6113c18a8d7d9971c557e81129ca1ba244e5263d54b7e0e6f9643",
+  "README.txt": "fc0558eede4f0de7467a088d0ab803006c9f1670e69be8d5733fbbb69aa0edd5",
+  "UPSTREAM-LICENSE.txt": "06a54024b435038ec834ef4cc1a6aa7cb60981f6600827ba121ece9087010743",
+  "VerificationHarness.sol": "9dcf1d327ef5df2cc54e71c6784e5dffa4b77bb9a476403f4a5425d76c9d3465",
+  "java/GenerateRevisedProofs.java": "7dc7f13dfadefde4f8d284c85bfcff5da26f2e63dfd967aa87a7ccd36cb9e465",
+  "java/RevisedProtocol.java": "9bc1db9f264b2fa96b49456c0461c4897d258ec5eabe09ef7c6a97944d368ed4",
+  "java/RevisedRangeProof.java": "406846ba3714d64ed4e3b5ead8fadcc5f8a32606bca4ac421b37aab058fb13d1",
+  "java/RevisedRangeProver.java": "4dfac927afc30fc2f598e8ed75fe826829cd7327cf0e99a985104a4d366f8f21",
+  "java/RevisedRangeVerifier.java": "3f2fd9fe1be2df072a6ddcce8a17a1f4f212f4ec8efde234368544604926285d",
+  "manifest.json": "7ca40ee68f01338acce41d9f16aa89cdafefd744c27a1bb8a74622919b14a2c9",
+  "parameters.json": "f19548588663f15f103877bdaa12384774aec8fdce9ca65c086e7400e9c0d926",
+  "profile.json": "bd36ec236f1e14115476be38c1f91a98fe3f8ed6050af41911dbe173b8ef092f",
+  "run-evm.cjs": "240fa43bd5174dba1e831ce0db4596c4687bcaefb52da67cdac90325eb486503",
+  "run.py": "f44228f4262e07c3b44192d5f56aceccd0a638c61262da454f6ab9f5e32903e0",
+  "solidity/RangeProofVerifier.sol": "bc1aecb3048f9b9e08e208fdbe26ebe56da4dadd655afb75c2de356817e7b5a8",
+  "solidity/Transcript.sol": "fc3c0c123ebd8b4a0b84920a5931ec22ae6fc50992dd75da55def9dfea72665c",
+  "solidity/VerifierTestHelper.sol": "14fb5fe2cc94eaf891d08e79bd78154b4c52370b23d3a1039be008bb5cf3fbaf",
+  "solidity/alt_bn128.sol": "b5db410990b99ac6ec25dc56a85f89cc9963126af11cc8b0f9385f74015ddd7c",
+  "solidity/compile-diagnostics.json": "349ea71e87feed302f594f964323bab7f59489f27a95657e57d927d361aa8e0b"
+}

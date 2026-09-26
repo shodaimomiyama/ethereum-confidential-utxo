@@ -1,0 +1,37 @@
+{
+  "experiment": "EXP-06",
+  "question": "Can a local rejection property be proven over the exact optimized EXP-03 verifier runtime?",
+  "targetRuntimeBytes": 7821,
+  "targetRuntimeSha256": "7cbb71e2873c5fb1ff21684589ee3ffbd9fa08d354ba8de8f3ff9a566630b0ea",
+  "concreteCheck": {
+    "tool": "forge test --fuzz-runs 64",
+    "result": "passed",
+    "scope": "wrong-left-array-length rejection with three fuzzed uint256 words"
+  },
+  "symbolicCheck": {
+    "tool": "pinned Kontrol and KEVM Docker image",
+    "claim": "verify rejects ls.length = 0 for arbitrary first commitment x/y coordinates and first scalar, with other words fixed at zero",
+    "result": "unverified: 600-second proof limit reached",
+    "proofStatus": "PENDING",
+    "nodes": 5,
+    "pending": 1,
+    "failing": 0,
+    "vacuous": 0,
+    "stuck": 0,
+    "admitted": false,
+    "subproofs": 0,
+    "oomKill": 0,
+    "memoryPeakBytes": 1880641536
+  },
+  "attempts": [
+    "exp06-proof.json: Foundry artifact lacked required AST and storageLayout metadata; no claim selected",
+    "exp06-proof-with-ast.json: fixed-array ABI unsupported by this Kontrol version; claim selected but not started",
+    "exp06-proof-scalar-abi.json: scalar ABI claim selected and executed; timed out with one pending node"
+  ],
+  "integrity": "Harness source, Foundry artifact, and generic K definition hashes matched the pre-execution plan before and after the symbolic run. The locked verifier runtime was embedded in the harness source; the symbolic claim did not finish, so no runtime-level property is established.",
+  "limitations": [
+    "The harness injects deployed runtime and does not execute its constructor or populate generator storage.",
+    "No successful symbolic proof of this local claim or full verifier correctness was obtained.",
+    "The test does not establish FV-03, FV-04, cryptographic soundness, or gas bounds."
+  ]
+}

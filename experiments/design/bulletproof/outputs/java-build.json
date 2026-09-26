@@ -1,0 +1,14 @@
+{
+  "command": [
+    "javac",
+    "-d",
+    ".cache/classes",
+    "-cp",
+    "<.cache/classpath.txt>",
+    "-sourcepath",
+    ".cache/upstream/src/main/java",
+    "GenerateProofs.java"
+  ],
+  "seconds": 1.390715917000307,
+  "exitCode": 0
+}

@@ -1,0 +1,18 @@
+{
+  "atUtc": "2026-09-26T10:47:20.812279+00:00",
+  "settingsPath": "/Users/momiyamashodai/Library/Group Containers/group.com.docker/settings-store.json",
+  "backupPath": "/tmp/ecu-exp12-docker-original-0jbmm3x9.json",
+  "originalSha256": "db66acf68b29faf1d3ccf4c0886e02f325d5dcf96fad6645fa6b68ec25940522",
+  "updatedSha256": "f324ac2bbe498c8b4480e270f132953f7900c0eae304fbff743452551365d933",
+  "originalMemoryMiB": 4096,
+  "originalSwapMiB": 1024,
+  "temporaryMemoryMiB": 8192,
+  "temporarySwapMiB": 4096,
+  "adjustedSwapMiB": 1024,
+  "adjustmentReason": "Docker VM failed to allocate 4096 MiB swap: No space left on device",
+  "adjustedAtUtc": "2026-09-26T10:48:45.375380+00:00",
+  "adjustedSha256": "50e0e67f67df1fa56f9bc270377a254c88d92d249a08e04c7953d492486dd268",
+  "restoredAtUtc": "2026-09-26T11:07:53.410530+00:00",
+  "restoredSha256": "db66acf68b29faf1d3ccf4c0886e02f325d5dcf96fad6645fa6b68ec25940522",
+  "restoredExactOriginalBytes": true
+}

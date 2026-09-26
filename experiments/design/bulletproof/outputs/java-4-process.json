@@ -1,0 +1,13 @@
+{
+  "command": [
+    "java",
+    "-cp",
+    "<.cache/classes and .cache/classpath.txt>",
+    "GenerateProofs",
+    "4",
+    "outputs/java-4.json"
+  ],
+  "seconds": 1.5866240000004836,
+  "maxResidentBytes": 308543488,
+  "exitCode": 0
+}

@@ -1,0 +1,64 @@
+{
+  "versions": {
+    "kontrol": {
+      "exit_code": 0,
+      "stdout": "Kontrol version: 1.0.255\n",
+      "stderr": ""
+    },
+    "kompile": {
+      "exit_code": 0,
+      "stdout": "K version:    v7.1.337\nBuild date:   Thu Jun 18 07:59:56 CDT 2026\n",
+      "stderr": ""
+    },
+    "kore-rpc": {
+      "exit_code": 0,
+      "stdout": "0.1.155\n",
+      "stderr": ""
+    },
+    "z3": {
+      "exit_code": 0,
+      "stdout": "Z3 version 4.13.4 - 64 bit\n",
+      "stderr": ""
+    },
+    "forge": {
+      "exit_code": 0,
+      "stdout": "forge Version: 1.5.1-v1.5.1\nCommit SHA: b0a9dd9ceda36f63e2326ce530c10e6916f4b8a2\nBuild Timestamp: 2025-12-19T14:07:55.455914129Z (1766153275)\nBuild Profile: maxperf\n",
+      "stderr": ""
+    }
+  },
+  "python_packages": {
+    "kontrol": "1.0.255",
+    "kevm-pyk": "1.0.921",
+    "kframework": "7.1.337"
+  },
+  "kontrol_source_sha256": {
+    "src/kontrol/__init__.py": "621965156153dfbd8a026905c47ff2022eacc830220a1a746bfc10297ea82be1",
+    "src/kontrol/__main__.py": "fa2adbae02dbea93a4ed12829924816164ac6128965d95fe5f538d04f43d6c91",
+    "src/kontrol/cli.py": "2c62b8cd2041fe6a992f84683d0f9179c083fd95fa0e6c440dff5376515021b4",
+    "src/kontrol/counterexample_generation.py": "342351837f172e2ea4ec3e64aad71bddc201de222901becec90dc28599d461ee",
+    "src/kontrol/display.py": "88ae74d1cd9844d1876028160dcc09e416293d3bf8b0c32a56040895de14a8a6",
+    "src/kontrol/foundry.py": "ed4871f200cc05ab5e10a4b240be4148e5870c93ff3552a815666d7123013a82",
+    "src/kontrol/kdist/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "src/kontrol/kdist/assert.md": "49ab7dd299d373872f3b1199fdcfd41d28e41c565775d60ccf53644ee3a59215",
+    "src/kontrol/kdist/cheatcodes.md": "20ce47ad9cb15a970f9753447c393e72816ce6ca676aed7c7e356d9997fbc74f",
+    "src/kontrol/kdist/foundry.md": "0aa0dfaf87d45bd7060fcfea85c7f96d56886e3627009c60f21adc7b913eab3d",
+    "src/kontrol/kdist/hevm.md": "0ddd1a14d2eeaf7fb94cd2df90bc79f18c21b2b16a9cab979130d0348604a4af",
+    "src/kontrol/kdist/keccak.md": "4d411a447298503dc370bb724d2d027e2abebe63e6e1ddf55aa4c83e0060f22f",
+    "src/kontrol/kdist/kontrol.md": "a9d6869c1447c3b1c9c430d0a554d6bd5bb7603ac73789cb0dbbee96e0e85469",
+    "src/kontrol/kdist/kontrol_lemmas.md": "4d377b23de5071d9a47c0e1345dad003eea2675abc0756276a70f4f912d6f5e3",
+    "src/kontrol/kdist/no_code_size_checks.md": "642213e1a446944a6147961bb09762f3cd72d8186fdc970025d5fe2117401408",
+    "src/kontrol/kdist/no_stack_checks.md": "cfc36e8ede57548934f6a521c1059357facd1fda231606f02588c1df28e45523",
+    "src/kontrol/kdist/plugin.py": "a7b7ebe85ef91aa725ba71a0863a59202a257be3a6b1d5a543f8447f16a77b96",
+    "src/kontrol/kdist/utils.py": "bd840e4c49b9c864bb977d05eca9cf6ed27552557a8bede9719b3218f3860c3d",
+    "src/kontrol/kompile.py": "54971c67d255622c787948f71f3d16b64d93fbfad13a75e75d94e68fdf9e6a3f",
+    "src/kontrol/natspec.py": "234ce0757d5e0517224680478c479e1c9d2317505d887104459cc3ec60b46527",
+    "src/kontrol/options.py": "f39ffef86b3c24cb2d6387003da9fa88175d7bff342c51fd22690a51e6627550",
+    "src/kontrol/prove.py": "8190070602c5aee389cfa6bf1575896c1430c62d6e22936a88d6ec9b57600725",
+    "src/kontrol/py.typed": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "src/kontrol/solc.py": "9248189d4559ff9895494f89ff79d69800654897c54a6638260d6aa0189f4742",
+    "src/kontrol/solc_to_k.py": "0423106a1b823f75afd09f3d3ca7d052834ff65f46e8692f7feaf295840442c2",
+    "src/kontrol/state_record.py": "ffedd21e1a2966146a9cd4744491ec5f224d36a4b3b8fa69844283a238f3e476",
+    "src/kontrol/storage_generation.py": "43da9f08c7f24b8b7fc65c19f564f7ace72e4dd8e61f4f0bfbd2931f90df2cb5",
+    "src/kontrol/utils.py": "cae6971f364448ecf72d50787729a98cc9b9c421f7215ecc1a5310bb304257cd"
+  }
+}

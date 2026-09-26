@@ -1,0 +1,18 @@
+[
+  {
+    "record": "exp05-tmpfs-diagnostic.json",
+    "field": "started_at_utc",
+    "correction": "This ad-hoc driver wrote the timestamp after subprocess completion. Interpret the retained value as completion time, not start time.",
+    "approximate_start_utc": "2026-09-26T06:54:49.006630+00:00",
+    "completed_at_utc": "2026-09-26T06:55:05.671630+00:00",
+    "duration_seconds": 16.665
+  },
+  {
+    "record": "exp05-existing-claim-offline.json",
+    "field": "started_at_utc",
+    "correction": "This ad-hoc driver wrote the timestamp after subprocess completion. Interpret the retained value as completion time, not start time.",
+    "approximate_start_utc": "2026-09-26T07:00:34.188713+00:00",
+    "completed_at_utc": "2026-09-26T07:05:55.025713+00:00",
+    "duration_seconds": 320.837
+  }
+]

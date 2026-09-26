@@ -1,0 +1,101 @@
+(node:22318) V8: /Users/momiyamashodai/orca/workspaces/ethereum-confidential-utxo/docs-design-doc/experiments/design/bulletproof/node_modules/solc/soljson.js:3 Invalid asm.js: Invalid member of stdlib
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "stage": "fresh-64",
+  "succeeded": true,
+  "observations": [
+    {
+      "label": "value-0",
+      "expectedValid": true,
+      "calldataBytes": 1380,
+      "accepted": true,
+      "returnedNormally": true,
+      "callMilliseconds": 51.982416999999714,
+      "gasUsed": "3635728",
+      "gasScope": "Direct verifier transaction; acceptance established by preceding eth_call",
+      "transactionHash": "0x74cb45d22ee9aedd5cfdacc20f0882cb44926de3c96ebc82dacdb3f2ce336d38",
+      "harness": {
+        "gasUsed": "3640905",
+        "calldataBytes": 1380,
+        "transactionHash": "0x47ace5c089ff07a0bf8ce0f26a77303bafc540e8790534bf25f7cb8900d3c23f",
+        "status": "1",
+        "assertion": "STATICCALL succeeded, returndata length is 32 bytes, and returned uint256 equals 1"
+      },
+      "matchesExpectation": true
+    },
+    {
+      "label": "value-1",
+      "expectedValid": true,
+      "calldataBytes": 1380,
+      "accepted": true,
+      "returnedNormally": true,
+      "callMilliseconds": 50.281375000000025,
+      "gasUsed": "3635630",
+      "gasScope": "Direct verifier transaction; acceptance established by preceding eth_call",
+      "transactionHash": "0x6b63e67215529a8bb20f96314aba3585559c3e91a48dee6c8e3050b1635358c9",
+      "harness": {
+        "gasUsed": "3640807",
+        "calldataBytes": 1380,
+        "transactionHash": "0xc1302eed8b4b7c988b5716657daddc340d60cb53eb05abdf1360a7890f8b12e9",
+        "status": "1",
+        "assertion": "STATICCALL succeeded, returndata length is 32 bytes, and returned uint256 equals 1"
+      },
+      "matchesExpectation": true
+    },
+    {
+      "label": "value-18446744073709551615",
+      "expectedValid": true,
+      "calldataBytes": 1380,
+      "accepted": true,
+      "returnedNormally": true,
+      "callMilliseconds": 50.432708000000275,
+      "gasUsed": "3635715",
+      "gasScope": "Direct verifier transaction; acceptance established by preceding eth_call",
+      "transactionHash": "0xeab78fc89de5c3cd8d0f23a5830a364819446dc3cc0457e872b4dfa40f141fe3",
+      "harness": {
+        "gasUsed": "3640892",
+        "calldataBytes": 1380,
+        "transactionHash": "0x69498a95323a01b8fe3c339256b2f0870e06974218aac194dcbdf11c69d86a33",
+        "status": "1",
+        "assertion": "STATICCALL succeeded, returndata length is 32 bytes, and returned uint256 equals 1"
+      },
+      "matchesExpectation": true
+    },
+    {
+      "label": "value--1",
+      "expectedValid": false,
+      "calldataBytes": 1380,
+      "accepted": false,
+      "returnedNormally": true,
+      "callMilliseconds": 51.035917000000154,
+      "matchesExpectation": true
+    },
+    {
+      "label": "value-18446744073709551616",
+      "expectedValid": false,
+      "calldataBytes": 1380,
+      "accepted": false,
+      "returnedNormally": true,
+      "callMilliseconds": 48.84587499999998,
+      "matchesExpectation": true
+    },
+    {
+      "label": "value-0-modified-tauX",
+      "expectedValid": false,
+      "calldataBytes": 1380,
+      "accepted": false,
+      "returnedNormally": true,
+      "callMilliseconds": 13.722999999999956,
+      "matchesExpectation": true
+    },
+    {
+      "label": "value-0-modified-commitment",
+      "expectedValid": false,
+      "calldataBytes": 1380,
+      "accepted": false,
+      "returnedNormally": true,
+      "callMilliseconds": 13.401792000000114,
+      "matchesExpectation": true
+    }
+  ]
+}

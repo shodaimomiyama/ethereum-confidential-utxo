@@ -1,0 +1,39 @@
+{
+  "experiment": "EXP-07F",
+  "question": "Did the EXP-06 proof budget expire in the test harness before the optimized verifier ran, and does the 7821-byte vm.etch literal explain that delay?",
+  "savedExp06Graph": {
+    "pendingNode": 5,
+    "program": "byte-identical to the optimized test harness runtime",
+    "programCounter": 297,
+    "callDepth": 0,
+    "conclusion": "The saved execution had not entered the target verifier runtime. This alone does not identify the cause of slow execution."
+  },
+  "comparison": {
+    "environment": "Pinned Kontrol/KEVM image and generic K definition from EXP-06; same test shape, solc 0.4.19, optimizer 200 runs, BYZANTIUM, no gas proof",
+    "setupObservation": "Kore definition serialization finished successfully in 10.221 seconds before either 90-second proof budget began. Both Kontrol processes selected the test function and reported that they were running the test function. Neither saved a proof graph before termination, so the records cannot separate later claim initialization from symbolic execution work.",
+    "difference": "The large case embeds the exact EXP-06 7821-byte verifier runtime; the stub case substitutes the 5-byte runtime 60006000fd. The stub has no verifier semantics.",
+    "large": {
+      "proofSeconds": 90.013,
+      "timedOut": true,
+      "proofGraphAvailable": false
+    },
+    "stub": {
+      "concreteForgeTest": "passed with one fuzz case",
+      "proofSeconds": 90.1,
+      "timedOut": true,
+      "proofGraphAvailable": false
+    },
+    "memoryPeakBytes": 1691561984,
+    "oomKills": 0,
+    "conclusion": "Both bounded runs timed out after claim selection but before saving a proof graph. This comparison cannot establish whether the large literal is the bottleneck; shared claim preparation or symbolic execution may dominate."
+  },
+  "designImplication": "Kontrol can prove small library properties as in EXP-05, but this attempt still does not establish that it can prove a property of the exact optimized verifier runtime. Keep that formal-feasibility question open when selecting the design; do not count these attempts as FV-03/FV-04 proofs.",
+  "scopeLimit": "No verifier correctness, cryptographic soundness, gas bound, or PoC implementation is established. No full-verifier proof was attempted.",
+  "evidence": [
+    "EXP-07F-plan.json",
+    "EXP-07F-kcfg.json",
+    "EXP-07F-result.json",
+    "EXP-07F-stub/test/OptimizedVerifierRejection.t.sol",
+    "EXP-07F-stub/foundry.toml"
+  ]
+}

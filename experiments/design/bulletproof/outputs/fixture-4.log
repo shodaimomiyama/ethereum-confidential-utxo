@@ -1,0 +1,37 @@
+(node:74355) V8: /Users/momiyamashodai/orca/workspaces/ethereum-confidential-utxo/docs-design-doc/experiments/design/bulletproof/node_modules/solc/soljson.js:3 Invalid asm.js: Invalid member of stdlib
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "stage": "fixture-4",
+  "succeeded": true,
+  "observations": [
+    {
+      "label": "upstream-fixture",
+      "expectedValid": true,
+      "calldataBytes": 868,
+      "accepted": true,
+      "returned": true,
+      "callMilliseconds": 23.151875000000018,
+      "gasUsed": "410033",
+      "transactionHash": "0x069c6d60f5f55c30bf592226bd3b7e1c4ee7372b14e497e65d7d4d202869054c",
+      "matchesExpectation": true
+    },
+    {
+      "label": "upstream-fixture-modified-tauX",
+      "expectedValid": false,
+      "calldataBytes": 868,
+      "accepted": false,
+      "returned": true,
+      "callMilliseconds": 12.757834000000003,
+      "matchesExpectation": true
+    },
+    {
+      "label": "upstream-fixture-modified-commitment",
+      "expectedValid": false,
+      "calldataBytes": 868,
+      "accepted": false,
+      "returned": true,
+      "callMilliseconds": 13.687334000000192,
+      "matchesExpectation": true
+    }
+  ]
+}

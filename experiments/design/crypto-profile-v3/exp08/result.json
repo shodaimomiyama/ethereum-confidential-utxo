@@ -1,0 +1,132 @@
+{
+  "experiment": "EXP-08",
+  "status": "passed within the bounded design-stage interoperability scope",
+  "parametersHashV3": "0x0bfd116b8ef31332d31d3350ed24fa36d1e17865a7c1dc0758331da0755f8dae",
+  "EXP07AVectorsSha256": "8f8eda0da4a0ee2be1dc081f22f4f41ef1331cdab991403510aae36017408601",
+  "v2ResultSha256": "4fdd07437f90d040be2d8d00db248ca2b014b9a5247201c2c41ca5376b28f017",
+  "toolchain": {
+    "java": "Temurin 23+37",
+    "node": "22.22.0",
+    "solc": "0.4.19+commit.c4cbbb05.Emscripten.clang",
+    "anvil": "1.7.1, commit 4072e48705af9d93e3c0f6e29e93b5e9a40caed8",
+    "hardfork": "prague",
+    "optimizerRuns": 200,
+    "transactionGasLimit": 16777216
+  },
+  "commands": [
+    "node build-profile.cjs",
+    "javac -d .cache/classes -cp $(cat ../../bulletproof/.cache/classpath.txt) -sourcepath java:../../bulletproof/.cache/upstream/src/main/java java/*.java",
+    "java -Xmx2g -cp .cache/classes:$(cat ../../bulletproof/.cache/classpath.txt) GenerateRevisedProofs java-result.json",
+    "node run-evm.cjs",
+    "python3 summarize.py"
+  ],
+  "results": {
+    "java": {
+      "amount-1-blinding-42": {
+        "expected": true,
+        "accepted": true,
+        "proverVerifierTraceMatched": true,
+        "attempts": 1
+      },
+      "amount-max-blinding-42": {
+        "expected": true,
+        "accepted": true,
+        "proverVerifierTraceMatched": true,
+        "attempts": 1
+      },
+      "amount-1-blinding-0": {
+        "expected": true,
+        "accepted": true,
+        "proverVerifierTraceMatched": true,
+        "attempts": 1
+      },
+      "amount-over-max": {
+        "expected": false,
+        "accepted": false,
+        "proverVerifierTraceMatched": false,
+        "attempts": 1
+      }
+    },
+    "evm": {
+      "amount-1-blinding-42": {
+        "expected": true,
+        "accepted": true,
+        "returnedNormally": true
+      },
+      "amount-max-blinding-42": {
+        "expected": true,
+        "accepted": true,
+        "returnedNormally": true
+      },
+      "amount-1-blinding-0": {
+        "expected": true,
+        "accepted": true,
+        "returnedNormally": true
+      },
+      "amount-over-max": {
+        "expected": false,
+        "accepted": false,
+        "returnedNormally": true
+      },
+      "changed-operation-id": {
+        "expected": false,
+        "accepted": false,
+        "returnedNormally": true
+      }
+    },
+    "pointDecodeBoundary": {
+      "canonical-identity": true,
+      "x-equals-p": false,
+      "off-curve": false
+    },
+    "transcript": "One valid proof: 10 challenges and accepted counters, 11 Java/EVM prefix hashes; every candidate through acceptance independently recomputed in ethers from the direct full prefix.",
+    "stageSequence": [
+      "y",
+      "z",
+      "x",
+      "u",
+      "inner",
+      "round",
+      "round",
+      "round",
+      "round",
+      "round",
+      "round"
+    ],
+    "singleVerifierTransactionGas": 4293388,
+    "v2SingleVerifierTransactionGasDifferentFixture": 3937298,
+    "v3MinusV2GasDifferentFixtures": 356090,
+    "twoV3ProofsArithmeticSumNotPoolTransaction": 8586776,
+    "runtimeBytes": 8467,
+    "runtimeKeccak256": "0xaff25bc27e32f19321b9e062965a418b2be7d5df872164865f58398c3ad015c5"
+  },
+  "sourceSha256": {
+    "plan.json": "06b7f8d4af4e04e93c3086adcd80e219fc6a865cd798f7c8369bed9eea139e9a",
+    "profile.json": "8d78e9d4ba05e62e0cb1f97df0873f57690223aa92e6a1544d1a5500aabd4836",
+    "parameters.json": "884f531df7b30698d9a3d798ade2d26c5e985425d657d7c0f54bdec6a64d3755",
+    "build-profile.cjs": "d033f6189228fb31550a0911b06d99379d97227e5e4db87e36b0ae094882f287",
+    "run-evm.cjs": "0265ea15f2e250655209e64f70d38c96bca4b2a888262e153398a89ee1513655",
+    "summarize.py": "1562ceee906dd93d85bcdec71581f86e60c8a19e58fff9543e67b5546f00ee5d",
+    "java/GenerateRevisedProofs.java": "deacc9013c9e920dd375c873b7f0e6345ceb1f4a030895a48dea9d8255c0fc4c",
+    "java/RevisedProtocol.java": "a25011bf233fc1ddaa36750614209560a7a24f3a684b24eab66c519046a71325",
+    "java/RevisedRangeProof.java": "406846ba3714d64ed4e3b5ead8fadcc5f8a32606bca4ac421b37aab058fb13d1",
+    "java/RevisedRangeProver.java": "354964f2b2fa665f45152c5ef5157f04d4c94f6c6fae3004cc366a5f47bb6890",
+    "java/RevisedRangeVerifier.java": "ac693263980b8871a2619ef8add246c143d23bf206d180377adf6d366eae0fc0",
+    "solidity/RangeProofVerifier.sol": "0e64d8e4e5eb63cc9bfdf5336df0b95728d260ba8620d3cefc53831f20ece819",
+    "solidity/Transcript.sol": "ec87587e61dba283777e9a6fbe5e7f6dd5eea48320e5ac83861eb91a006e8545",
+    "solidity/TranscriptProbe.sol": "b124e0270197ef45153f97e285d4884604556cb05872a02303f4ca53a6bd8b6d",
+    "solidity/alt_bn128.sol": "b5db410990b99ac6ec25dc56a85f89cc9963126af11cc8b0f9385f74015ddd7c"
+  },
+  "evidenceSha256": {
+    "java-result.json": "1aedc650490a85430b4310821b146205943c9fb28d195965e0f7e89aa44d3bd8",
+    "evm-result.json": "4ee392d483a395298a121d20c60605dd311be8459b6fdf82777ce4378b530e3c",
+    "evm-compiler-diagnostics.json": "f25ea19c20e41a2ad56822a14e5b786bfe1747f4773748d3283083208b91c22b"
+  },
+  "interpretation": "The v3 encoding and verifier interoperate for the specified finite cases, and one direct verification fits the configured transaction cap. The v2 and v3 gas fixtures differ and their difference is not a controlled marginal-cost estimate. The two-proof figure is arithmetic only; Pool state, balance proof, authorization, events, and call-context costs were not measured.",
+  "unverified": [
+    "Cryptographic soundness, zero knowledge, and applicability of the original Bulletproofs theorem to this profile and identity-point policy",
+    "A naturally generated identity proof point or adversarial identity-point soundness; only decoding boundaries and invalid mutations were checked",
+    "All possible values, blindings, malformed inputs, prefix lengths, or candidate-exhaustion paths",
+    "Formal verification, full Pool operation, two-output gas, and public testnet behavior"
+  ]
+}

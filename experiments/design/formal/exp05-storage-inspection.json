@@ -1,0 +1,27 @@
+{
+  "command": [
+    "docker",
+    "run",
+    "--rm",
+    "--platform",
+    "linux/amd64",
+    "--name",
+    "exp05-storage-inspection",
+    "--cpus",
+    "4",
+    "--memory",
+    "8g",
+    "--memory-swap",
+    "8g",
+    "--network",
+    "none",
+    "runtimeverificationinc/kontrol@sha256:858f004144d61b005997f56bb8b7cd15673850286c96e0e5ec0502d9c9a9e204",
+    "python3",
+    "-c",
+    "import os,subprocess,json,pathlib\nprint(json.dumps({\"commands\":[{\"command\":command,\"exit_code\":run.returncode,\"stdout\":run.stdout,\"stderr\":run.stderr} for command in [[\"df\",\"-hT\"],[\"df\",\"-i\"],[\"du\",\"-sh\",\"/tmp\"],[\"id\"]] for run in [subprocess.run(command,text=True,capture_output=True)]],\"temp_environment\":{k:os.environ.get(k) for k in [\"TMPDIR\",\"TMP\",\"TEMP\",\"KORE_EXEC_OPTS\"]},\"memory_events\":pathlib.Path(\"/sys/fs/cgroup/memory.events\").read_text()},indent=2))"
+  ],
+  "duration_seconds": 1.3,
+  "exit_code": 0,
+  "stdout": "{\n  \"commands\": [\n    {\n      \"command\": [\n        \"df\",\n        \"-hT\"\n      ],\n      \"exit_code\": 0,\n      \"stdout\": \"Filesystem     Type     Size  Used Avail Use% Mounted on\\noverlay        overlay   59G   57G     0 100% /\\ntmpfs          tmpfs     64M     0   64M   0% /dev\\nshm            tmpfs     64M     0   64M   0% /dev/shm\\n/dev/vda1      ext4      59G   57G     0 100% /etc/hosts\\ntmpfs          tmpfs    2.0G     0  2.0G   0% /proc/scsi\\ntmpfs          tmpfs    2.0G     0  2.0G   0% /sys/firmware\\n\",\n      \"stderr\": \"\"\n    },\n    {\n      \"command\": [\n        \"df\",\n        \"-i\"\n      ],\n      \"exit_code\": 0,\n      \"stdout\": \"Filesystem      Inodes   IUsed   IFree IUse% Mounted on\\noverlay        3907584 1663033 2244551   43% /\\ntmpfs           501685      16  501669    1% /dev\\nshm             501685       1  501684    1% /dev/shm\\n/dev/vda1      3907584 1663033 2244551   43% /etc/hosts\\ntmpfs           501685       1  501684    1% /proc/scsi\\ntmpfs           501685       1  501684    1% /sys/firmware\\n\",\n      \"stderr\": \"\"\n    },\n    {\n      \"command\": [\n        \"du\",\n        \"-sh\",\n        \"/tmp\"\n      ],\n      \"exit_code\": 0,\n      \"stdout\": \"20K\\t/tmp\\n\",\n      \"stderr\": \"\"\n    },\n    {\n      \"command\": [\n        \"id\"\n      ],\n      \"exit_code\": 0,\n      \"stdout\": \"uid=1010(user) gid=1010(user) groups=1010(user)\\n\",\n      \"stderr\": \"\"\n    }\n  ],\n  \"temp_environment\": {\n    \"TMPDIR\": null,\n    \"TMP\": null,\n    \"TEMP\": null,\n    \"KORE_EXEC_OPTS\": null\n  },\n  \"memory_events\": \"low 0\\nhigh 0\\nmax 0\\noom 0\\noom_kill 0\\noom_group_kill 0\\n\"\n}\n",
+  "stderr": ""
+}

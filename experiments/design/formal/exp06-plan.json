@@ -1,0 +1,44 @@
+{
+  "experiment": "EXP-06",
+  "question": "Can the EXP-03 optimized full RangeProofVerifier runtime be linked to a symbolic Kontrol claim for an early input rejection, without treating that claim as a proof of the full Bulletproof verifier?",
+  "requirements": ["FV-03", "FV-04"],
+  "target": {
+    "source": "experiments/design/bulletproof-revised/solidity/RangeProofVerifier.sol",
+    "sourceSha256": "bc1aecb3048f9b9e08e208fdbe26ebe56da4dadd655afb75c2de356817e7b5a8",
+    "transcriptSha256": "fc3c0c123ebd8b4a0b84920a5931ec22ae6fc50992dd75da55def9dfea72665c",
+    "groupLibrarySha256": "b5db410990b99ac6ec25dc56a85f89cc9963126af11cc8b0f9385f74015ddd7c",
+    "compiler": "solc 0.4.19+commit.c4cbbb05, optimizer enabled, 200 runs",
+    "lockedRuntimeSha256": "7cbb71e2873c5fb1ff21684589ee3ffbd9fa08d354ba8de8f3ff9a566630b0ea",
+    "harnessSourceSha256": "bb8ff1940fb8a909c438706f30d027743cb0dd990edb9e4155598d44a090b0c0",
+    "harnessArtifactSha256": "cffdfc8b613d7269ab8813650cd44afe498157a6190b08d11a08a3252113a254",
+    "genericDefinitionSha256": "fb62ff4829ce8939340144d26aa9aa5cac09223b3081259b72f45363f8f0ef07",
+    "claim": "Calling verify with ls.length = 0 reverts before any proof equation is evaluated. The harness makes commitment x/y and first scalar symbolic, with all other coordinates and scalar words fixed at zero."
+  },
+  "method": [
+    "Reuse byte-identical EXP-03 verifier sources and the pinned compiler; record source, artifact, deployed runtime and proof-state hashes.",
+    "Run a concrete Foundry check of the chosen rejection path before symbolic proof.",
+    "Reuse the previously validated generic K definition with a private tmpfs and telemetry disabled; do not rebuild K under the measured 3.83 GiB Docker VM.",
+    "Attempt one Kontrol claim with a 600-second proof limit. Record the exact precondition, proof graph status, resource use, and whether the runtime in the initial proof state matches the optimized artifact."
+  ],
+  "harnessBoundary": "The test etches the exact locked runtime at a fixed address. It does not execute the verifier constructor or populate its 130 generator points. The claimed early length rejection precedes any storage or precompile use; no constructor invariant or accepted-proof path is covered.",
+  "preProofConcreteObservation": "Pinned solc 0.4.19 compiled the harness; forge test with 64 fuzz cases passed for the wrong-left-length rejection path. This is not a formal claim.",
+  "firstProofAttempt": "exp06-proof.json reached Kontrol but its Foundry artifact lacked the AST and storageLayout fields required by pinned Kontrol. No symbolic claim was selected. The harness was rebuilt with those metadata fields, without changing its Solidity source or embedded runtime, before the second attempt.",
+  "secondProofAttempt": "exp06-proof-with-ast.json selected the claim, then pinned Kontrol could not create constrained calldata for a test function whose ABI parameters were fixed arrays. The harness was changed to three uint256 parameters and constructs arrays internally; the target runtime stays byte-identical. This narrows the symbolic claim to three words.",
+  "resources": {
+    "compileSeconds": 120,
+    "concreteTestSeconds": 120,
+    "serializationSeconds": 60,
+    "proofSeconds": 600,
+    "cpuLimit": 4,
+    "containerMemoryLimitGiB": 8,
+    "noFullKRebuildWhenEffectiveVmMemoryBelowGiB": 8,
+    "noGlobalDockerConfigurationChange": true,
+    "noUserCacheDeletion": true
+  },
+  "decision": {
+    "passed": "Only the specified early-rejection path of the optimized verifier runtime is established under the stated harness assumptions.",
+    "failed": "Retain any counterexample and inspect whether it comes from the actual verifier or harness assumptions.",
+    "timeoutOrToolFailure": "Leave the claim unverified and record the precise blocker.",
+    "neverImplied": ["Full verifier correctness", "Cryptographic soundness", "Whole FV-03/FV-04 completion", "Gas bounds"]
+  }
+}

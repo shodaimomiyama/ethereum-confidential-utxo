@@ -1,0 +1,78 @@
+{
+  "experiment": "EXP-07F",
+  "source": "EXP-06 retained KCFG, no replay",
+  "exp06ProofStatus": "APRProof: test%OptimizedVerifierRejectionTest.test_rejectsWrongLeftLength(uint256,uint256,uint256):0\n    status: ProofStatus.PENDING\n    admitted: False\n    nodes: 5\n    pending: 1\n    failing: 0\n    vacuous: 0\n    stuck: 0\n    terminal: 1\n    refuted: 0\n    bounded: 0\n    execution time: 0s\nSubproofs: 0",
+  "edges": [
+    {
+      "source": 1,
+      "target": 3,
+      "depth": 1000
+    },
+    {
+      "source": 3,
+      "target": 4,
+      "depth": 1000
+    },
+    {
+      "source": 4,
+      "target": 5,
+      "depth": 1000
+    }
+  ],
+  "nodes": [
+    {
+      "node": 1,
+      "attrs": [],
+      "pc": "0",
+      "callDepth": "0",
+      "accountId": "728815563385977040452943777879061427756277306518",
+      "programBytes": 8870,
+      "programSha256": "39b516f647b3059f4be3675aedb8615f96a01cb28e23a44d24e0b9090ca107d8",
+      "sameAsHarnessRuntime": true
+    },
+    {
+      "node": 2,
+      "attrs": [
+        "terminal"
+      ],
+      "pc": null,
+      "callDepth": null,
+      "accountId": "728815563385977040452943777879061427756277306518",
+      "programBytes": null,
+      "programSha256": null,
+      "sameAsHarnessRuntime": null
+    },
+    {
+      "node": 3,
+      "attrs": [],
+      "pc": "955",
+      "callDepth": "0",
+      "accountId": "728815563385977040452943777879061427756277306518",
+      "programBytes": 8870,
+      "programSha256": "39b516f647b3059f4be3675aedb8615f96a01cb28e23a44d24e0b9090ca107d8",
+      "sameAsHarnessRuntime": true
+    },
+    {
+      "node": 4,
+      "attrs": [],
+      "pc": "293",
+      "callDepth": "0",
+      "accountId": "728815563385977040452943777879061427756277306518",
+      "programBytes": 8870,
+      "programSha256": "39b516f647b3059f4be3675aedb8615f96a01cb28e23a44d24e0b9090ca107d8",
+      "sameAsHarnessRuntime": true
+    },
+    {
+      "node": 5,
+      "attrs": [],
+      "pc": "297",
+      "callDepth": "0",
+      "accountId": "728815563385977040452943777879061427756277306518",
+      "programBytes": 8870,
+      "programSha256": "39b516f647b3059f4be3675aedb8615f96a01cb28e23a44d24e0b9090ca107d8",
+      "sameAsHarnessRuntime": true
+    }
+  ],
+  "harnessRuntimeSha256": "39b516f647b3059f4be3675aedb8615f96a01cb28e23a44d24e0b9090ca107d8",
+  "interpretation": "Node 5 is pending in the optimized test harness at PC 297 and call depth 0; it has not entered the target verifier runtime. This does not by itself prove that vm.etch is the cause."
+}

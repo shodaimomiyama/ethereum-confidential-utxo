@@ -1,0 +1,45 @@
+{
+  "experiment": "EXP-05 revised actual source claim",
+  "claim": {
+    "test": "VerifierSliceTest.test_negZeroReturnsZero()",
+    "precondition": "Argument is uint256(0)",
+    "property": "alt_bn128.neg(uint256(0)) == 0"
+  },
+  "success_criterion": "Kontrol APRProof PASSED, admitted=false, pending=failing=vacuous=stuck=0; retain proof graph and exact input hashes.",
+  "scope": "Revised alt_bn128.sol byte-identical to EXP-03 source, compiled inside this harness using solc 0.4.19, optimizer=false. The target is this harness bytecode, not the deployed full RangeProofVerifier bytecode.",
+  "limits": [
+    "This fixed-zero claim does not prove neg for all scalars, noncanonical input rejection, precompile behavior, transcript, range verification or cryptographic security.",
+    "No gas-cost claim; gas computations explicitly omitted.",
+    "Generic KEVM/Kontrol semantics and SMT solver are trusted; no custom assumptions or admitted proof nodes added."
+  ],
+  "generic_definition_reuse": "Old foundry.k imports KONTROL-FULL and has no target-specific sentences; fixed Kontrol loads deployed bytecode from the new Foundry artifact when constructing the proof. Original compiled definition is copied unchanged then normally serialized. No K build rerun.",
+  "command": [
+    "kontrol",
+    "prove",
+    "--foundry-project-root",
+    "/tmp/exp05-revised",
+    "--match-test",
+    "test_negZeroReturnsZero",
+    "--schedule",
+    "BYZANTIUM",
+    "--no-use-booster",
+    "--workers",
+    "1",
+    "--max-frontier-parallel",
+    "1",
+    "--force-sequential",
+    "--no-gas",
+    "--reinit",
+    "--hide-status-bar"
+  ],
+  "timeout_seconds": 600,
+  "serialized_timeout_seconds": 60,
+  "telemetry_disabled": true,
+  "hashes": {
+    "src/alt_bn128.sol": "b5db410990b99ac6ec25dc56a85f89cc9963126af11cc8b0f9385f74015ddd7c",
+    "test/VerifierSlice.t.sol": "19b2fde546f72e96f53f8358b90a9e08cc3858b7db307998c396f21db886bdce",
+    "out/VerifierSlice.t.sol/VerifierSliceTest.json": "a11ca5b7e63aa1370e4c09137b61fedccd4f556c58f7a4481308b7f1dbfff940"
+  },
+  "generic_definition_sha256": "fb62ff4829ce8939340144d26aa9aa5cac09223b3081259b72f45363f8f0ef07",
+  "original_revised_library_sha256": "b5db410990b99ac6ec25dc56a85f89cc9963126af11cc8b0f9385f74015ddd7c"
+}

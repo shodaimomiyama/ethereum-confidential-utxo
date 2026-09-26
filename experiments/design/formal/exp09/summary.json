@@ -1,0 +1,33 @@
+{
+  "experiment": "EXP-09",
+  "classification": "unverified",
+  "question": "Can one formal rejection claim complete after entering the exact optimized v3 verifier runtime?",
+  "target": {
+    "runtimeBytes": 8467,
+    "runtimeKeccak256": "0xaff25bc27e32f19321b9e062965a418b2be7d5df872164865f58398c3ad015c5",
+    "runtimeSha256": "724fac3aad23842c1462df4ad8eca960581d14de26d42e4d1ca792a7ac35b073",
+    "matchesEXP08": true
+  },
+  "method": "The pinned Kontrol generic definition was reused. The exact target runtime was installed with vm.etch in a separate setUp; the test called verify with a zero-length left array and a 12-word right array while three uint256 words were symbolic. A direct KEVM claim was investigated but not used because it would require a fresh K specification/module and likely a definition build beyond this bounded setup investigation; this does not establish that direct KEVM is impossible.",
+  "observations": {
+    "definitionSerialization": "passed in 5.47 seconds",
+    "forgeConcrete": "passed, 64 fuzz runs",
+    "setUpProof": "PASSED in 66 seconds; admitted=false, pending=0, failing=0, vacuous=0, stuck=0, bounded=0",
+    "symbolicTest": "PENDING after 600-second limit; admitted=false, pending=1, failing=0, vacuous=0, stuck=0, bounded=0",
+    "symbolicTestNodes": 8,
+    "lastPendingProgramSha256": "77fae5e9f0071d81e231cb6c6f788473e30f65bb4afddc51a7915948cb6c963a",
+    "lastPendingProgram": "test harness at PC 750, call depth 0",
+    "targetRuntimeReached": false,
+    "oomKills": 0,
+    "peakMemoryBytes": 2206044160
+  },
+  "interpretation": "The separate setup proof and concrete test succeeded, but the symbolic test never reached the v3 verifier runtime and remained pending. Therefore no formal property of the v3 verifier bytecode was established. The result neither refutes the rejection rule nor demonstrates feasibility of completing verifier claims with this tool setup.",
+  "evidence": [
+    "plan.json",
+    "compile-result.json",
+    "runtime.hex",
+    "harness-result.json",
+    "run-result.json",
+    "test/V3OptimizedVerifierRejection.t.sol"
+  ]
+}
