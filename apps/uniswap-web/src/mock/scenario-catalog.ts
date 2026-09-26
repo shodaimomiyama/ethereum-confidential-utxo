@@ -1,10 +1,11 @@
-import type { ChainOutcome, OperationId, ReceiptState, Scope } from '@confidential-utxo/uniswap';
+import type { ChainOutcome, OperationId, ReceiptState, RequestId, Scope } from '@confidential-utxo/uniswap';
 import type { ManualClock, MemoryStore, StoreSeed } from '@confidential-utxo/uniswap/testing';
 import type { UiAction, UiController } from '../contracts/controller.js';
 import type { Card, CardPhase, ValidationReason } from '../contracts/state.js';
 import type { ScenarioControl, ScenarioEvent } from './controller.js';
 
 const operationId = `0x${'33'.repeat(32)}` as OperationId;
+const requestId = `0x${'66'.repeat(32)}` as RequestId;
 const outputId = `0x${'44'.repeat(32)}`;
 const txHash = `0x${'55'.repeat(32)}` as never;
 const otherOwner = `0x${'22'.repeat(20)}`;
@@ -75,7 +76,7 @@ export const scenarios: readonly Scenario[] = [
   scenario('S-26/old-authorization-active', [event({ type: 'terms-changed', card: 'pay', oldAuthorizationActive: true }), action({ type: 'confirm-terms', card: 'pay' }, 'blocked')], { card: 'pay', phase: 'confirm-terms', allowedActions: ['edit:pay'], forbiddenActions: ['confirm-terms'], reason: 'AUTHORIZATION_ACTIVE' }),
   scenario('S-26/old-authorization-unusable', [event({ type: 'terms-changed', card: 'pay', oldAuthorizationActive: false }), action({ type: 'confirm-terms', card: 'pay' }, 'accepted')], { card: 'pay', phase: 'preparing', allowedActions: ['resync'], forbiddenActions: ['confirm-terms'] }),
   scenario('S-27/pending', [event({ type: 'submitted', card: 'pay', operationId }), action({ type: 'start', card: 'pay' }, 'blocked')], { card: 'pay', phase: 'pending', chainOutcome: 'pending', allowedActions: ['recheck'], forbiddenActions: ['start:pay', 'retry-attempt'], knownHashes: 0 }),
-  scenario('S-27/hash-unknown', [action({ type: 'start', card: 'pay' }, 'blocked'), action({ type: 'recheck', operationId }, 'accepted')], { card: 'pay', phase: 'unknown', chainOutcome: 'none', allowedActions: ['recheck'], forbiddenActions: ['start:pay', 'retry-attempt'], knownHashes: 0 }, 'S-27/hash-unknown'),
+  scenario('S-27/hash-unknown', [event({ type: 'unknown', card: 'pay', operationId }), action({ type: 'start', card: 'pay' }, 'blocked'), action({ type: 'recheck', operationId }, 'accepted')], { card: 'pay', phase: 'unknown', chainOutcome: 'unknown', allowedActions: ['recheck'], forbiddenActions: ['start:pay', 'retry-attempt'], knownHashes: 0 }),
   scenario('S-27/rpc-down', [event({ type: 'unknown', card: 'pay', operationId }), action({ type: 'retry-attempt', operationId }, 'blocked')], { card: 'pay', phase: 'unknown', chainOutcome: 'unknown', allowedActions: ['recheck'], forbiddenActions: ['start:pay', 'retry-attempt'] }),
   scenario('S-28/decryption-failed', [event({ type: 'finalized-success', card: 'pay', operationId }), event({ type: 'receipt-invalid', card: 'pay', operationId })], { card: 'pay', phase: 'receipt-invalid', chainOutcome: 'finalized-success', receiptState: 'invalid', availablePrivateWei: 0n, allowedActions: ['recheck', 'acknowledge-receipt'], forbiddenActions: ['start:pay'] }),
   scenario('S-28/owner-or-amount-mismatch', [event({ type: 'finalized-success', card: 'pay', operationId }), event({ type: 'receipt-invalid', card: 'pay', operationId })], { card: 'pay', phase: 'receipt-invalid', chainOutcome: 'finalized-success', receiptState: 'invalid', availablePrivateWei: 0n, allowedActions: ['recheck'], forbiddenActions: ['start:pay'] }),
@@ -87,8 +88,8 @@ export const scenarios: readonly Scenario[] = [
   scenario('S-32/revisit-and-resync', [action({ type: 'resync' }, 'accepted')], { card: 'pay', phase: 'ready', allowedActions: ['resync'], forbiddenActions: ['start:pay'] }),
   invalid('S-33/no-single-utxo', 'pay', 'NO_SINGLE_INPUT', { amount: '3' }),
   scenario('S-33/multiple-candidates', [quote, action({ type: 'start', card: 'pay' }, 'accepted')], { card: 'pay', phase: 'preparing', allowedActions: ['resync'], forbiddenActions: ['start:pay'], effects: { starts: 1 } }),
-  scenario('S-34/quote-changed-before-authorization', [event({ type: 'terms-changed', card: 'pay', oldAuthorizationActive: false })], { card: 'pay', phase: 'confirm-terms', allowedActions: ['confirm-terms'], forbiddenActions: ['start:pay'] }),
-  scenario('S-34/quote-changed-during-authorization', [event({ type: 'terms-changed', card: 'pay', oldAuthorizationActive: true })], { card: 'pay', phase: 'confirm-terms', allowedActions: ['edit:pay'], forbiddenActions: ['confirm-terms'] }),
+  scenario('S-34/quote-changed-before-authorization', [quote, event({ type: 'terms-changed', card: 'pay', oldAuthorizationActive: false }), event({ type: 'quote', startedAt: 1, quoteOut: 200n, latestBlockTimestamp: 11 })], { card: 'pay', phase: 'confirm-terms', allowedActions: ['confirm-terms'], forbiddenActions: ['start:pay'] }),
+  scenario('S-34/quote-changed-during-authorization', [quote, event({ type: 'terms-changed', card: 'pay', oldAuthorizationActive: true }), event({ type: 'quote', startedAt: 1, quoteOut: 200n, latestBlockTimestamp: 11 })], { card: 'pay', phase: 'confirm-terms', allowedActions: ['edit:pay'], forbiddenActions: ['confirm-terms'] }),
   invalid('S-35/empty-amount', 'pay', 'INVALID_DECIMAL', { amount: '' }),
   invalid('S-35/invalid-format', 'pay', 'INVALID_DECIMAL', { amount: '1e3' }),
   invalid('S-35/unsupported-recipient', 'pay', 'UNSUPPORTED_RECIPIENT', { recipient: '0x0' }),
@@ -108,7 +109,7 @@ export const scenarios: readonly Scenario[] = [
   scenario('S-39/reward-hash-known', [event({ type: 'submitted', card: 'reward', operationId, txHash })], { card: 'reward', phase: 'pending', chainOutcome: 'pending', knownHashes: 1, allowedActions: ['recheck'], forbiddenActions: ['start:reward'] }),
   scenario('S-39/withdraw-hash-known', [event({ type: 'submitted', card: 'withdraw', operationId, txHash })], { card: 'withdraw', phase: 'pending', chainOutcome: 'pending', knownHashes: 1, allowedActions: ['recheck'], forbiddenActions: ['start:withdraw'] }),
   invalid('S-40/coming-soon', 'pay', 'UNSUPPORTED', { feature: 'multi-input' }),
-  scenario('S-41/request-in-progress', [event({ type: 'submitted', card: 'reward', operationId }), action({ type: 'start', card: 'reward' }, 'blocked')], { card: 'reward', phase: 'pending', chainOutcome: 'pending', allowedActions: ['recheck'], forbiddenActions: ['start:reward'] }),
+  scenario('S-41/request-in-progress', [event({ type: 'reward-request', requestId, status: 'accepted', operationId }), event({ type: 'submitted', card: 'reward', operationId }), action({ type: 'start', card: 'reward' }, 'blocked')], { card: 'reward', phase: 'pending', chainOutcome: 'pending', allowedActions: ['recheck'], forbiddenActions: ['start:reward'] }),
   scenario('S-42/reward-ack-lost', [event({ type: 'unknown', card: 'reward', operationId }), action({ type: 'start', card: 'reward' }, 'blocked')], { card: 'reward', phase: 'unknown', chainOutcome: 'unknown', allowedActions: ['recheck'], forbiddenActions: ['start:reward'] }),
   scenario('S-43/reward-finalized-receipt-invalid', [event({ type: 'finalized-success', card: 'reward', operationId }), event({ type: 'receipt-invalid', card: 'reward', operationId }), action({ type: 'start', card: 'reward' }, 'blocked')], { card: 'reward', phase: 'receipt-invalid', chainOutcome: 'finalized-success', receiptState: 'invalid', allowedActions: ['recheck'], forbiddenActions: ['start:reward'] }),
   scenario('S-44/new-explicit-same-amount-request', [event({ type: 'finalized-success', card: 'reward', operationId }), event({ type: 'receipt-confirmed', card: 'reward', operationId, outputId, amountWei: 7n }), action({ type: 'start', card: 'reward' }, 'accepted')], { card: 'reward', phase: 'preparing', chainOutcome: 'finalized-success', receiptState: 'confirmed', availablePrivateWei: 7n, allowedActions: ['resync'], forbiddenActions: ['start:reward'], effects: { starts: 1 } }),
