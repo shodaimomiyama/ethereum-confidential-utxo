@@ -1,5 +1,5 @@
 import { keccak_256 } from "@noble/hashes/sha3.js";
-import { bytesToBigInt, concat, tag, word } from "../bytes.js";
+import { bytesHex, bytesToBigInt, concat, tag, word } from "../bytes.js";
 import { CryptoFailure } from "../errors.js";
 import { PARAMETERS_HASH_V3 } from "../fixed-parameters.js";
 import { pointBytes, Q, type G1Point } from "../group.js";
@@ -43,7 +43,7 @@ export class RangeTranscript {
   }
 
   stateHex(): string {
-    return `0x${Buffer.from(keccak_256(this.prefix)).toString("hex")}`;
+    return `0x${bytesHex(keccak_256(this.prefix))}`;
   }
 
   challenge(stage: ChallengeStage, payload: Uint8Array): bigint {

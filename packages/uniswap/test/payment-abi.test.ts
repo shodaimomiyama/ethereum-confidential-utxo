@@ -59,9 +59,14 @@ it('encodes the core withdrawal and payment terms through the generated Adapter 
   expect(encodedPaymentSignature).toBe(paymentSignature);
 });
 
-it('identifies Adapter errors only with verified Adapter provenance', () => {
+it('rejects malformed fixed-size range proof arrays before ABI encoding', () => {
+  const malformed = { ...draft, rangeProofs: [{ ...draft.rangeProofs[0]!, coords: [0n] }] } as LocalDraft;
+  expect(() => encodePayCall(malformed, terms, deployment, poolSignature, paymentSignature)).toThrow('INVALID_FIELD');
+});
+
+it('identifies Adapter errors only when a trace proves the originating frame', () => {
   const data = encodeErrorResult({ abi: adapterAbi, errorName: 'PaymentExpired', args: [600n] });
-  expect(decodeAdapterError(data, 'verified-adapter')).toEqual({ kind: 'adapter', name: 'PaymentExpired' });
+  expect(decodeAdapterError(data, 'trace-proven-adapter')).toEqual({ kind: 'adapter', name: 'PaymentExpired' });
   expect(decodeAdapterError(data, 'unverified')).toEqual({ kind: 'unknown' });
-  expect(decodeAdapterError('0x12345678', 'verified-adapter')).toEqual({ kind: 'unknown' });
+  expect(decodeAdapterError('0x12345678', 'trace-proven-adapter')).toEqual({ kind: 'unknown' });
 });

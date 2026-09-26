@@ -127,10 +127,21 @@ export function encodePayCall(
       receiptFormat: output.receiptFormat, packet: output.packet,
     })),
   };
+  const rangeProofs = draft.rangeProofs.map((proof) => {
+    if (proof.coords.length !== 10 || proof.scalars.length !== 5 || proof.ls.length !== proof.rs.length) {
+      throw new SchemaError('INVALID_FIELD', 'rangeProofs');
+    }
+    return {
+      coords: proof.coords as readonly [bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint],
+      scalars: proof.scalars as readonly [bigint, bigint, bigint, bigint, bigint],
+      ls: proof.ls,
+      rs: proof.rs,
+    };
+  });
   return encodeFunctionData({
     abi: adapterAbi,
     functionName: 'pay',
-    args: [withdrawal, draft.balanceProof, draft.rangeProofs, poolSignature, terms, paymentSignature] as never,
+    args: [withdrawal, draft.balanceProof, rangeProofs, poolSignature, terms, paymentSignature],
   });
 }
 
@@ -138,8 +149,9 @@ export type AdapterError =
   | { readonly kind: 'adapter'; readonly name: Extract<(typeof adapterAbi)[number], { readonly type: 'error' }>['name'] }
   | { readonly kind: 'unknown' };
 
-export function decodeAdapterError(data: Hex, provenance: 'verified-adapter' | 'unverified'): AdapterError {
-  if (provenance !== 'verified-adapter') return { kind: 'unknown' };
+/** Use trace-proven-adapter only when an execution trace attributes this revert to the Adapter frame itself. */
+export function decodeAdapterError(data: Hex, provenance: 'trace-proven-adapter' | 'unverified'): AdapterError {
+  if (provenance !== 'trace-proven-adapter') return { kind: 'unknown' };
   try {
     const decoded = decodeErrorResult({ abi: adapterAbi, data });
     return { kind: 'adapter', name: decoded.errorName };
