@@ -78,6 +78,7 @@ export interface RewardRecord extends RewardRequest {
 
 export type StoreErrorCode =
   | 'CONFLICT'
+  | 'REVISION_CONFLICT'
   | 'UNAVAILABLE'
   | 'NOT_FOUND'
   | 'PENDING_REQUEST'
