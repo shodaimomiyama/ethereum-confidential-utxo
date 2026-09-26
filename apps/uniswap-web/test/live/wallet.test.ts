@@ -71,7 +71,7 @@ it('returns a scoped value and sends purpose-specific methods', async () => {
   const { provider, wallet } = setup();
   const connection = await wallet.connect();
   expect(connection.scope).toEqual({ deploymentId, owner: alice });
-  expect(connection.epoch).toBe(0);
+  expect(connection.epoch).toBe(1);
   const signed = await wallet.typedSign({ hello: 'world' }, 'recipient-info');
   expect(signed.scope).toEqual(connection.scope);
   expect(signed.epoch).toBe(connection.epoch);
@@ -107,14 +107,14 @@ it('advances the epoch on chain change, disconnect and dispose; removes listener
   const events: number[] = [];
   const unsubscribe = wallet.subscribe(event => events.push(event.epoch));
   provider.emit('chainChanged', '0x1');
-  expect(epochs.current()).toBe(1);
-  expect(events).toEqual([1]);
+  expect(epochs.current()).toBe(2);
+  expect(events).toEqual([2]);
   unsubscribe();
   provider.emit('disconnect', { message: 'secret' });
-  expect(epochs.current()).toBe(2);
-  expect(events).toEqual([1]);
-  wallet.dispose();
   expect(epochs.current()).toBe(3);
+  expect(events).toEqual([2]);
+  wallet.dispose();
+  expect(epochs.current()).toBe(4);
   expect([...provider.listeners.values()].every(set => set.size === 0)).toBe(true);
 });
 
@@ -123,7 +123,7 @@ it('switches from a mismatched chain to the deployment chain', async () => {
   provider.chain = '0x1';
   await expect(wallet.connect()).rejects.toMatchObject({ code: 'CHAIN_MISMATCH' });
   const switched = await wallet.switchChain(31337n);
-  expect(switched.epoch).toBe(1);
+  expect(switched.epoch).toBe(2);
   provider.holdSign();
   const signing = wallet.personalSign(new Uint8Array(), 'api-login');
   provider.resolveSign?.(`0x${'66'.repeat(65)}`);
@@ -136,4 +136,65 @@ it('rejects a scope change during typed data serialization', async () => {
   const data = { toJSON: () => { provider.emit('accountsChanged', [bob]); return { safe: true }; } };
   await expect(wallet.typedSign(data, 'payment-authorization')).rejects.toMatchObject({ code: 'SCOPE_CHANGED' });
   expect(provider.calls.every(call => call.method !== 'eth_signTypedData_v4')).toBe(true);
+});
+
+it('reconciles an initial accountsChanged event with the permission response', async () => {
+  class GrantingProvider extends Provider {
+    override async request(args: { method: string; params?: unknown[] }): Promise<unknown> {
+      if (args.method === 'eth_requestAccounts') this.emit('accountsChanged', [alice]);
+      return super.request(args);
+    }
+  }
+  const { wallet } = setup(new GrantingProvider());
+  const connected = await wallet.connect();
+  expect(connected.scope.owner).toBe(alice);
+  expect(connected.epoch).toBeGreaterThan(0);
+});
+
+it('notifies subscribers of the first connected scope', async () => {
+  const { wallet, epochs } = setup();
+  const events: { epoch: number; owner?: string }[] = [];
+  wallet.subscribe(event => events.push({ epoch: event.epoch, owner: event.scope?.owner }));
+  const connected = await wallet.connect();
+  expect(connected.epoch).toBe(1);
+  expect(epochs.current()).toBe(1);
+  expect(events).toEqual([{ epoch: 1, owner: alice }]);
+});
+
+it('accepts a switch response before chainChanged, then ignores its duplicate event', async () => {
+  class LateEventProvider extends Provider {
+    override async request(args: { method: string; params?: unknown[] }): Promise<unknown> {
+      if (args.method === 'wallet_switchEthereumChain') {
+        this.chain = (args.params?.[0] as { chainId: string }).chainId;
+        setTimeout(() => this.emit('chainChanged', this.chain), 0);
+        return null;
+      }
+      return super.request(args);
+    }
+  }
+  const { wallet, provider, epochs } = setup(new LateEventProvider());
+  provider.chain = '0x1';
+  await expect(wallet.connect()).rejects.toMatchObject({ code: 'CHAIN_MISMATCH' });
+  const switched = await wallet.switchChain(31337n);
+  expect(switched.scope.owner).toBe(alice);
+  expect(epochs.current()).toBe(switched.epoch);
+  await new Promise(resolve => setTimeout(resolve, 0));
+  expect(epochs.current()).toBe(switched.epoch);
+});
+
+it('rejects a switch when the provider reports the wrong target', async () => {
+  class WrongTargetProvider extends Provider {
+    override async request(args: { method: string; params?: unknown[] }): Promise<unknown> {
+      if (args.method === 'wallet_switchEthereumChain') {
+        this.chain = '0x2';
+        this.emit('chainChanged', this.chain);
+        return null;
+      }
+      return super.request(args);
+    }
+  }
+  const { wallet, provider } = setup(new WrongTargetProvider());
+  provider.chain = '0x1';
+  await expect(wallet.connect()).rejects.toMatchObject({ code: 'CHAIN_MISMATCH' });
+  await expect(wallet.switchChain(31337n)).rejects.toMatchObject({ code: 'SCOPE_CHANGED' });
 });

@@ -86,8 +86,14 @@ export function createMetaMaskWallet(
   const listeners = new Set<(event: WalletEvent) => void>();
 
   const scope = (): Scope | undefined => owner === undefined ? undefined : { deploymentId, owner };
+  const connectedScope = (): Scope | undefined => {
+    const current = scope();
+    const expected = resolveDeployment(deploymentId);
+    return current && expected && chainId === expected.chainId ? current : undefined;
+  };
   const emit = (): void => {
-    const event: WalletEvent = { epoch: epochs.current(), ...(scope() ? { scope: scope() } : {}) };
+    const current = connectedScope();
+    const event: WalletEvent = { epoch: epochs.current(), ...(current ? { scope: current } : {}) };
     for (const listener of listeners) listener(event);
   };
   const changed = (): void => { epochs.advance(); emit(); };
@@ -99,8 +105,11 @@ export function createMetaMaskWallet(
     changed();
   };
   const chainChanged = (...args: unknown[]): void => {
-    try { chainId = parseChainId(args[0]); }
-    catch { chainId = undefined; }
+    let nextChain: bigint | undefined;
+    try { nextChain = parseChainId(args[0]); }
+    catch { nextChain = undefined; }
+    if (nextChain === chainId) return;
+    chainId = nextChain;
     changed();
   };
   const disconnected = (): void => { owner = undefined; chainId = undefined; accountRevision++; changed(); };
@@ -155,22 +164,32 @@ export function createMetaMaskWallet(
       if (disposed) throw new WalletError('SCOPE_CHANGED');
       const expected = deployment();
       const epoch = epochs.current();
+      const initialOwner = owner;
+      const initialAccountRevision = accountRevision;
       let accounts: unknown;
-      let observedChain: unknown;
-      try {
-        accounts = await provider.request({ method: 'eth_requestAccounts' });
-        if (!epochs.isCurrent(epoch)) throw new WalletError('SCOPE_CHANGED');
-        observedChain = await provider.request({ method: 'eth_chainId' });
-      } catch (error) {
+      try { accounts = await provider.request({ method: 'eth_requestAccounts' }); }
+      catch (error) {
         if (disposed || !epochs.isCurrent(epoch)) throw new WalletError('SCOPE_CHANGED');
         throw providerError(error);
       }
-      if (disposed || !epochs.isCurrent(epoch)) throw new WalletError('SCOPE_CHANGED');
       if (!Array.isArray(accounts) || accounts.length === 0) throw new WalletError('INVALID_PROVIDER_RESPONSE');
       const nextOwner = normalizeAddress(accounts[0]);
+      const permissionEventMatches = (): boolean => initialOwner === undefined
+        && accountRevision === initialAccountRevision + 1
+        && epochs.current() === epoch + 1
+        && owner === nextOwner;
+      const assertConnectCurrent = (): void => {
+        if (disposed || (!epochs.isCurrent(epoch) && !permissionEventMatches())) {
+          throw new WalletError('SCOPE_CHANGED');
+        }
+      };
+      assertConnectCurrent();
+      let observedChain: unknown;
+      try { observedChain = await provider.request({ method: 'eth_chainId' }); }
+      catch (error) { assertConnectCurrent(); throw providerError(error); }
+      assertConnectCurrent();
       const nextChain = parseChainId(observedChain);
-      const connectionChanged = (owner !== undefined && owner !== nextOwner)
-        || (chainId !== undefined && chainId !== nextChain);
+      const connectionChanged = owner !== nextOwner || chainId !== nextChain;
       owner = nextOwner;
       chainId = nextChain;
       if (connectionChanged) changed();
@@ -187,16 +206,27 @@ export function createMetaMaskWallet(
       const requestedScope: Scope = { deploymentId, owner };
       const epoch = epochs.current();
       const originalAccountRevision = accountRevision;
+      const assertSwitchCurrent = (): void => {
+        if (disposed || accountRevision !== originalAccountRevision || owner !== requestedScope.owner
+          || !sameDeployment(expected) || epochs.current() > epoch + 1
+          || (epochs.current() !== epoch && chainId !== target)) {
+          throw new WalletError('SCOPE_CHANGED');
+        }
+      };
       const targetHex = `0x${target.toString(16)}`;
       try { await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: targetHex }] }); }
-      catch (error) {
-        if (disposed || accountRevision !== originalAccountRevision || owner !== requestedScope.owner || !sameDeployment(expected)) throw new WalletError('SCOPE_CHANGED');
-        throw providerError(error);
+      catch (error) { assertSwitchCurrent(); throw providerError(error); }
+      assertSwitchCurrent();
+      let observedChain: unknown;
+      try { observedChain = await provider.request({ method: 'eth_chainId' }); }
+      catch (error) { assertSwitchCurrent(); throw providerError(error); }
+      assertSwitchCurrent();
+      if (parseChainId(observedChain) !== target) throw new WalletError('CHAIN_MISMATCH');
+      if (chainId !== target) {
+        chainId = target;
+        changed();
       }
-      if (disposed || owner !== requestedScope.owner || !sameDeployment(expected)) throw new WalletError('SCOPE_CHANGED');
-      // A chainChanged event for the requested chain is expected. A different
-      // connection event during the request invalidates the result.
-      if (accountRevision !== originalAccountRevision || chainId !== target || epochs.current() > epoch + 1) throw new WalletError('SCOPE_CHANGED');
+      assertSwitchCurrent();
       return { value: undefined, scope: requestedScope, epoch: epochs.current() };
     },
     personalSign(message, purpose) {
