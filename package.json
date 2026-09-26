@@ -6,10 +6,14 @@
     "node": "24.21.0"
   },
   "scripts": {
+    "fixture:verifier": "node scripts/generate-verifier-fixtures.mjs",
     "build": "node scripts/check-tools.mjs && forge build --root contracts && node scripts/export-environment-artifact.mjs && tsc --noEmit -p tsconfig.tools.json",
-    "test": "node scripts/check-tools.mjs && node --test tests/environment/check-tools.test.mjs tests/environment/entrypoints.test.mjs && forge test --root contracts && vitest run tests/environment/artifact-guard.test.mjs",
+    "test": "node scripts/check-tools.mjs && forge build --root contracts && node --test tests/environment/check-tools.test.mjs tests/environment/entrypoints.test.mjs tests/environment/verifier-artifact-guard.test.mjs && forge test --root contracts && vitest run tests/environment/artifact-guard.test.mjs",
     "check": "tsc --noEmit -p tsconfig.tools.json && forge fmt --check --root contracts",
     "artifact:environment": "node scripts/export-environment-artifact.mjs",
+    "artifact:verifier": "node scripts/export-verifier-artifact.mjs",
+    "check:verifier": "node scripts/verify-verifier-artifact.mjs",
+    "measure:verifier": "node scripts/measure-verifier.mjs",
     "smoke:rpc": "node scripts/check-tools.mjs && node scripts/run-environment-smoke.mjs",
     "smoke:formal": "sh formal/environment/run-smoke.sh"
   },
