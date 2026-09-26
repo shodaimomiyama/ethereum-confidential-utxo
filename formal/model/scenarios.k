@@ -1,8 +1,8 @@
-requires "operations.k"
+requires "paths.k"
 requires "auth.k"
 
 module UTXO-SCENARIOS
-  imports UTXO-OPERATIONS
+  imports UTXO-PATHS
   imports UTXO-AUTH
 
   claim <k> apply(initial(7), validatedDeposit(1, 100, 10, 10, 1), execContext(1, 1))
@@ -207,4 +207,49 @@ module UTXO-SCENARIOS
               domain(1, 1), 1, 100, 900))))
           => rejected(state(.Map, .Set, .Set, 0, 0, 0), invalidOperation) </k>
     [label(S-09-forged-certificate-reusing-seal)]
+
+  claim <k> execP(initial(0), pRequest(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), authCert(8, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), 300, 1),
+                  pContext(1, 1, 1, 1, 50, 8, ListItem(authCert(8, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))), execContext(1, 1))
+          => accepted(state(1 |-> utxo(100, 10), .Set, SetItem(7), 10, 10, 0)) </k>
+    [label(S-17-p-deposit)]
+
+  claim <k> execQ(initial(0), qRequest(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), authCert(8, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), true, 400, 2),
+                  authContext(1, 1, 1, 1, 50, 8, ListItem(authCert(8, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))), execContext(1, 1))
+          => accepted(state(1 |-> utxo(100, 10), .Set, SetItem(7), 10, 10, 0)) </k>
+    [label(S-17-q-deposit)]
+  claim <k> execP(state(1 |-> utxo(100, 10), .Set, .Set, 10, 10, 0), pRequest(authIntent(validatedTransfer(7, 100, ListItem(1), 200, 3, 2, 3), 77, 78, 500), authCert(8, 1, 100, logicalId(authIntent(validatedTransfer(7, 100, ListItem(1), 200, 3, 2, 3), 77, 78, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), 300, 1), pContext(1, 1, 1, 1, 50, 8, ListItem(authCert(8, 1, 100, logicalId(authIntent(validatedTransfer(7, 100, ListItem(1), 200, 3, 2, 3), 77, 78, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))), execContext(1, 1))
+          => accepted(state((1 |-> utxo(100, 10)) (2 |-> utxo(200, 3)) (3 |-> utxo(100, 7)), SetItem(1), SetItem(7), 10, 10, 0)) </k>
+    [label(S-07-p-transfer)]
+  claim <k> execQ(state(1 |-> utxo(100, 10), .Set, .Set, 10, 10, 0), qRequest(authIntent(validatedTransfer(7, 100, ListItem(1), 200, 3, 2, 3), 77, 78, 500), authCert(8, 1, 100, logicalId(authIntent(validatedTransfer(7, 100, ListItem(1), 200, 3, 2, 3), 77, 78, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), true, 400, 2), authContext(1, 1, 1, 1, 50, 8, ListItem(authCert(8, 1, 100, logicalId(authIntent(validatedTransfer(7, 100, ListItem(1), 200, 3, 2, 3), 77, 78, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))), execContext(1, 1))
+          => accepted(state((1 |-> utxo(100, 10)) (2 |-> utxo(200, 3)) (3 |-> utxo(100, 7)), SetItem(1), SetItem(7), 10, 10, 0)) </k>
+    [label(S-07-q-transfer)]
+  claim <k> execQ(state(1 |-> utxo(100, 10), SetItem(1), .Set, 0, 0, 0), qRequest(authIntent(validatedTransfer(7, 100, ListItem(1), 200, 3, 2, 3), 77, 78, 500), authCert(8, 1, 100, logicalId(authIntent(validatedTransfer(7, 100, ListItem(1), 200, 3, 2, 3), 77, 78, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), true, 400, 2),
+                  authContext(1, 1, 1, 1, 50, 8, ListItem(authCert(8, 1, 100, logicalId(authIntent(validatedTransfer(7, 100, ListItem(1), 200, 3, 2, 3), 77, 78, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))), execContext(1, 1))
+          => rejected(state(1 |-> utxo(100, 10), SetItem(1), .Set, 0, 0, 0), invalidOperation) </k>
+    [label(S-18-q-stale-input)]
+  claim <k> execP(state(1 |-> utxo(100, 10), .Set, .Set, 10, 10, 0), pRequest(authIntent(validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), 0, 77, 500), authCert(8, 1, 100, logicalId(authIntent(validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), 0, 77, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), 300, 1), pContext(1, 1, 1, 1, 50, 8, ListItem(authCert(8, 1, 100, logicalId(authIntent(validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), 0, 77, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))), execContext(1, 1))
+          => accepted(state((1 |-> utxo(100, 10)) (2 |-> utxo(100, 7)), SetItem(1), SetItem(7), 7, 7, 0)) </k>
+    [label(S-07-p-withdraw)]
+  claim <k> execQ(state(1 |-> utxo(100, 10), .Set, .Set, 10, 10, 0), qRequest(authIntent(validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), 0, 77, 500), authCert(8, 1, 100, logicalId(authIntent(validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), 0, 77, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), true, 400, 2), authContext(1, 1, 1, 1, 50, 8, ListItem(authCert(8, 1, 100, logicalId(authIntent(validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), 0, 77, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))), execContext(1, 1))
+          => accepted(state((1 |-> utxo(100, 10)) (2 |-> utxo(100, 7)), SetItem(1), SetItem(7), 7, 7, 0)) </k>
+    [label(S-07-q-withdraw)]
+  claim <k> execP(state(1 |-> utxo(100, 10), .Set, SetItem(7), 10, 10, 0), pRequest(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), authCert(8, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), 300, 3), pContext(1, 1, 1, 1, 50, 8, ListItem(authCert(8, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))), execContext(1, 1))
+          => rejected(state(1 |-> utxo(100, 10), .Set, SetItem(7), 10, 10, 0), invalidOperation) </k>
+    [label(S-17-p-cross-path-replay)]
+  claim <k> execQ(state(1 |-> utxo(100, 10), .Set, SetItem(7), 10, 10, 0), qRequest(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), authCert(8, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), true, 400, 4), authContext(1, 1, 1, 1, 50, 8, ListItem(authCert(8, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))), execContext(1, 1))
+          => rejected(state(1 |-> utxo(100, 10), .Set, SetItem(7), 10, 10, 0), invalidOperation) </k>
+    [label(S-17-q-cross-path-replay)]
+  claim <k> execQ(initial(0), qRequest(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), authCert(8, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), true, 400, 2), authContext(1, 1, 1, 1, 101, 8, ListItem(authCert(8, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))), execContext(1, 1))
+          => rejected(state(.Map, .Set, .Set, 0, 0, 0), invalidOperation) </k>
+    [label(S-18-q-expired)]
+  claim <k> execQ(initial(0), qRequest(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), authCert(8, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), true, 400, 2), authContext(1, 1, 1, 1, 50, 8, .List), execContext(1, 1))
+          => rejected(state(.Map, .Set, .Set, 0, 0, 0), invalidOperation) </k>
+    [label(S-18-q-fake-success)]
+  claim <k> execQ(initial(0), qRequest(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), authCert(8, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), false, 400, 2), authContext(1, 1, 1, 1, 50, 8, ListItem(authCert(8, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))), execContext(1, 1))
+          => accepted(state(1 |-> utxo(100, 10), .Set, SetItem(7), 10, 10, 0)) </k>
+    [label(S-18-q-false-flag-valid-cert)]
+  claim <k> execP(initial(0), pRequest(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), authCert(8, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), 300, 1),
+                  pContext(1, 1, 1, 1, 50, 8, .List), execContext(1, 1))
+          => rejected(state(.Map, .Set, .Set, 0, 0, 0), invalidOperation) </k>
+    [label(S-09-p-no-live-verifier-result)]
 endmodule
