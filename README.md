@@ -4,6 +4,8 @@
 
 [仕様書](docs/specification.md): 方式に依存しない状態遷移、認可、資産保存、受領と同期の規則。
 
+[Uniswap接続の要件定義書](docs/integration/uniswap/requirements.md): 機密ETHからの部分支払い、認可と取消、機密性、コストと追試の受入条件。
+
 [先行EIP/ERCの比較調査](docs/research/prior-eip-comparison.md): 比較対象の選定、公開値の読み方、実測条件と結果。
 
 先行方式の実測を再現するには、Node.js 22、Foundry、`jq` が使える環境で次を実行する。固定した参照実装を取得し、開発用の証明鍵と計測用コードを準備する。
