@@ -6,6 +6,8 @@
     "node": "24.21.0"
   },
   "scripts": {
+    "check:contracts": "tsc --noEmit -p tsconfig.contracts.json",
+    "test:contracts": "vitest run packages/uniswap apps/uniswap-web",
     "fixture:verifier": "node scripts/generate-verifier-fixtures.mjs",
     "build": "node scripts/check-tools.mjs && forge build --root contracts && node scripts/export-environment-artifact.mjs && tsc --noEmit -p tsconfig.tools.json && pnpm --filter @confidential-utxo/crypto build",
     "test": "node scripts/check-tools.mjs && forge build --root contracts && node --test tests/environment/check-tools.test.mjs tests/environment/entrypoints.test.mjs tests/environment/verifier-artifact-guard.test.mjs && forge test --root contracts && vitest run tests/environment/artifact-guard.test.mjs && pnpm --filter @confidential-utxo/crypto test",
