@@ -10,6 +10,7 @@ import { initialScenario } from './scenarios.js';
 export type ScenarioEvent = (
   | { readonly type: 'preparing'; readonly card: Card }
   | { readonly type: 'quote'; readonly startedAt: number; readonly quoteOut: bigint; readonly latestBlockTimestamp: number }
+  | { readonly type: 'chain-timestamp'; readonly latestBlockTimestamp: number }
   | { readonly type: 'reservation-ack'; readonly card: 'pay' | 'withdraw' }
   | { readonly type: 'awaiting-approval'; readonly card: Card; readonly purpose: ApprovalPurpose }
   | { readonly type: 'submitted'; readonly card: Card; readonly operationId: OperationId; readonly attemptId?: string; readonly txHash?: TxHash }
@@ -201,6 +202,19 @@ function quoteValid(startedAt: number | undefined, now: number): boolean {
   return age >= 0 && age <= 30000;
 }
 
+const maximumDeadline = (1n << 64n) - 1n;
+
+function chainTimestamp(value: number): bigint | undefined {
+  if (!Number.isSafeInteger(value) || value < 0) return undefined;
+  const timestamp = BigInt(value);
+  return timestamp + 600n <= maximumDeadline ? timestamp : undefined;
+}
+
+function deadlineValid(runtime: Runtime, deadline: bigint): boolean {
+  return deadline > 0n && deadline <= maximumDeadline
+    && (runtime.latestBlockTimestamp === undefined || deadline > runtime.latestBlockTimestamp);
+}
+
 function derive(runtime: Runtime, now: number): ViewState {
   const allowed = new Set<string>(['switch-scope', 'resync']);
   const reasons: Record<string, ValidationReason> = {};
@@ -220,6 +234,9 @@ function derive(runtime: Runtime, now: number): ViewState {
     if (phase === 'ready') {
       if (state.storageAvailability !== 'healthy') {
         reasons[`start:${card}`] = 'SERVICE_UNAVAILABLE';
+      } else if (card === 'pay' && state.cards.pay.quote !== undefined
+        && !deadlineValid(runtime, state.cards.pay.quote.deadline)) {
+        reasons['start:pay'] = 'TERMS_EXPIRED';
       } else if (card === 'pay' && !quoteValid(runtime.quoteStartedAt, now)) {
         reasons['start:pay'] = 'QUOTE_STALE';
       } else {
@@ -232,7 +249,11 @@ function derive(runtime: Runtime, now: number): ViewState {
     if (card === 'reward' && phase === 'complete' && state.storageAvailability === 'healthy') allowed.add('start:reward');
     if (phase === 'complete') allowed.add(`new-operation:${card}`);
     if (phase === 'confirm-terms') {
-      if (card === 'pay' && !runtime.oldAuthorizationActive) allowed.add('confirm-terms');
+      if (card === 'pay' && !runtime.oldAuthorizationActive
+        && (state.cards.pay.proposedQuote === undefined
+          || deadlineValid(runtime, state.cards.pay.proposedQuote.deadline))) allowed.add('confirm-terms');
+      else if (card === 'pay' && state.cards.pay.proposedQuote !== undefined
+        && !deadlineValid(runtime, state.cards.pay.proposedQuote.deadline)) reasons['confirm-terms'] = 'TERMS_EXPIRED';
       else reasons['confirm-terms'] = 'AUTHORIZATION_ACTIVE';
     }
     if (phase === 'unknown' || phase === 'pending' || phase === 'failed' || phase === 'receipt-invalid') {
@@ -337,25 +358,36 @@ export function createMockUiController({ scope, store, clock, scenario }: {
     }
     let state = runtime.state;
     if (event.type === 'quote') {
-      const incoming = {
+      const timestamp = chainTimestamp(event.latestBlockTimestamp);
+      if (timestamp === undefined || event.quoteOut <= 0n) {
+        runtime.quoteStartedAt = undefined;
+        state = setCard(state, 'pay', { quote: undefined, proposedQuote: undefined, phase: 'needs-preparation', reason: 'QUOTE_STALE' });
+      } else {
+        const incoming = {
           startedAt: event.startedAt,
           quoteOut: event.quoteOut,
           minAmountOut: (event.quoteOut * 99n / 100n) > 0n ? event.quoteOut * 99n / 100n : 1n,
-          deadline: BigInt(event.latestBlockTimestamp) + 600n,
-      };
-      runtime.latestBlockTimestamp = BigInt(event.latestBlockTimestamp);
-      if (state.cards.pay.phase === 'awaiting-approval') {
-        runtime.oldAuthorizationActive = true;
-        state = setCard(state, 'pay', { phase: 'confirm-terms', reason: 'TERMS_CHANGED', proposedQuote: incoming });
-      } else if (state.cards.pay.phase === 'confirm-terms') {
-        state = setCard(state, 'pay', { proposedQuote: incoming });
-      } else {
-        runtime.quoteStartedAt = event.startedAt;
-        state = setCard(state, 'pay', { quote: incoming, reason: undefined });
+          deadline: timestamp + 600n,
+        };
+        runtime.latestBlockTimestamp = timestamp;
+        if (state.cards.pay.phase === 'awaiting-approval') {
+          runtime.oldAuthorizationActive = true;
+          state = setCard(state, 'pay', { phase: 'confirm-terms', reason: 'TERMS_CHANGED', proposedQuote: incoming });
+        } else if (state.cards.pay.phase === 'confirm-terms') {
+          state = setCard(state, 'pay', { proposedQuote: incoming });
+        } else {
+          runtime.quoteStartedAt = event.startedAt;
+          state = setCard(state, 'pay', { quote: incoming, reason: undefined });
+        }
+      }
+    } else if (event.type === 'chain-timestamp') {
+      const timestamp = chainTimestamp(event.latestBlockTimestamp);
+      if (timestamp !== undefined && (runtime.latestBlockTimestamp === undefined || timestamp > runtime.latestBlockTimestamp)) {
+        runtime.latestBlockTimestamp = timestamp;
       }
     } else if (event.type === 'invalidate-quote') {
       runtime.quoteStartedAt = undefined;
-      state = setCard(state, 'pay', { quote: undefined, phase: 'needs-preparation', reason: 'QUOTE_STALE' });
+      state = setCard(state, 'pay', { quote: undefined, proposedQuote: undefined, phase: 'needs-preparation', reason: 'QUOTE_STALE' });
     } else if (event.type === 'reservation-ack') {
       runtime.reservationAck.add(event.card);
     } else if (event.type === 'awaiting-approval') {

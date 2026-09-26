@@ -65,6 +65,7 @@ export function createMockExperience({ scope }: { readonly scope: Scope }): Mock
 
   async function dispatch(action: UiAction, record = true): Promise<DispatchResult> {
     if (flow !== undefined && (action.type === 'start' || action.type === 'confirm-terms')) return { kind: 'blocked', reason: 'NOT_ALLOWED' };
+    const startingView = mock.snapshot();
     const result = await mock.dispatch(action);
     if (result.kind !== 'accepted') return result;
     if (record) recorded.push({ kind: 'action', action });
@@ -79,20 +80,19 @@ export function createMockExperience({ scope }: { readonly scope: Scope }): Mock
     if (action.type === 'start' || action.type === 'confirm-terms') {
       const card = action.card;
       counter += 1;
-      const view = mock.snapshot();
       const operationId = identifier(counter, 1) as OperationId;
       const amountWei = card === 'withdraw'
-        ? view.selectedInput.withdraw?.amountWei ?? 0n
-        : parseEthWei(view.cards[card].input.amount) ?? 0n;
+        ? startingView.selectedInput.withdraw?.amountWei ?? 0n
+        : parseEthWei(startingView.cards[card].input.amount) ?? 0n;
       const requestId = card === 'reward' ? identifier(counter, 2) as RequestId : undefined;
-      flow = { scope: view.scope, card, operationId, outputId: identifier(counter, 3) as Bytes32,
-        amountWei, changeWei: card === 'pay' ? view.selectedInput.pay?.changeWei ?? 0n : 0n,
+      flow = { scope: startingView.scope, card, operationId, outputId: identifier(counter, 3) as Bytes32,
+        amountWei, changeWei: card === 'pay' ? startingView.selectedInput.pay?.changeWei ?? 0n : 0n,
         requestId, stage: 0 };
       if (requestId !== undefined) {
-        store.rewards.create({ scope: view.scope, requestId, amountWei, recipientInfo: {
-          owner: view.scope.owner, publicKey: identifier(counter, 4) as Bytes32, signature: '0x00',
+        store.rewards.create({ scope: startingView.scope, requestId, amountWei, recipientInfo: {
+          owner: startingView.scope.owner, publicKey: identifier(counter, 4) as Bytes32, signature: '0x00',
         } });
-        mock.control.inject({ type: 'reward-request', requestId, status: 'accepted', operationId });
+        mock.control.inject({ type: 'reward-request', requestId, status: 'accepted', operationId, scope: startingView.scope });
       }
       for (const listener of listeners) listener(snapshot());
     }
@@ -159,9 +159,9 @@ export function createMockExperience({ scope }: { readonly scope: Scope }): Mock
     dispatch: (action) => dispatch(action),
     advance: () => advance(),
     setClock(at) { clock.set(at); for (const listener of listeners) listener(snapshot()); },
-    save: () => encodeSession(recorded),
+    save: () => encodeSession(scope, recorded),
     restore(serialized) {
-      const steps = decodeSession(serialized);
+      const steps = decodeSession(serialized, scope);
       reset();
       return (async () => {
         for (const step of steps) {
@@ -169,7 +169,7 @@ export function createMockExperience({ scope }: { readonly scope: Scope }): Mock
           else advance();
         }
         if (mock.snapshot().cards.pay.quote !== undefined
-          && ['ready', 'invalid-input', 'needs-preparation'].includes(mock.snapshot().cards.pay.phase)) {
+          && ['ready', 'invalid-input', 'needs-preparation', 'confirm-terms'].includes(mock.snapshot().cards.pay.phase)) {
           mock.control.inject({ type: 'invalidate-quote' });
         }
       })();

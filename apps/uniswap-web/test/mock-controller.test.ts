@@ -55,6 +55,49 @@ it('accepts quote age 30000ms and rejects 30001ms, negative age, or unknown age'
   expect((await ui.dispatch({ type: 'start', card: 'pay' })).kind).toBe('blocked');
 });
 
+it('returns to an editable Pay draft after a stale quote and accepts a fresh quote', async () => {
+  const { ui } = setup('interactive');
+  ui.control.inject({ type: 'utxos', utxos: [{ id: outputId, amountWei: 10n ** 16n, available: true }] });
+  await ui.dispatch({ type: 'edit', card: 'pay', field: 'amount', value: '0.003' });
+  await ui.dispatch({ type: 'edit', card: 'pay', field: 'recipient', value: owner });
+  ui.control.inject({ type: 'quote', startedAt: 0, quoteOut: 100n, latestBlockTimestamp: 100 });
+  ui.control.inject({ type: 'invalidate-quote' });
+  expect(ui.snapshot().cards.pay.reason).toBe('QUOTE_STALE');
+  await ui.dispatch({ type: 'edit', card: 'pay', field: 'amount', value: '0.004' });
+  expect(ui.snapshot().cards.pay.phase).toBe('ready');
+  expect(ui.snapshot().cards.pay.reason).toBeUndefined();
+  ui.control.inject({ type: 'quote', startedAt: 0, quoteOut: 200n, latestBlockTimestamp: 101 });
+  expect(ui.snapshot().cards.pay.quote?.quoteOut).toBe(200n);
+  expect(await ui.dispatch({ type: 'start', card: 'pay' })).toEqual({ kind: 'accepted' });
+});
+
+it('rejects an invalid chain timestamp without throwing or keeping the prior quote', async () => {
+  const { ui } = setup();
+  ui.control.inject({ type: 'quote', startedAt: 0, quoteOut: 100n, latestBlockTimestamp: 100 });
+  expect(() => ui.control.inject({ type: 'quote', startedAt: 1, quoteOut: 200n, latestBlockTimestamp: Number.NaN })).not.toThrow();
+  expect(ui.snapshot().cards.pay.quote).toBeUndefined();
+  expect(await ui.dispatch({ type: 'start', card: 'pay' })).toEqual({ kind: 'blocked', reason: 'QUOTE_STALE' });
+});
+
+it('blocks an expired Pay deadline after chain time advances', async () => {
+  const { ui } = setup();
+  const updates: string[] = [];
+  ui.subscribe((view) => { updates.push(view.reasons['start:pay'] ?? 'ready'); });
+  ui.control.inject({ type: 'quote', startedAt: 0, quoteOut: 100n, latestBlockTimestamp: 100 });
+  ui.control.inject({ type: 'chain-timestamp', latestBlockTimestamp: 700 });
+  expect(updates.at(-1)).toBe('TERMS_EXPIRED');
+  expect(await ui.dispatch({ type: 'start', card: 'pay' })).toEqual({ kind: 'blocked', reason: 'TERMS_EXPIRED' });
+});
+
+it('does not confirm replacement Pay terms after their deadline passes', async () => {
+  const { ui } = setup();
+  ui.control.inject({ type: 'quote', startedAt: 0, quoteOut: 100n, latestBlockTimestamp: 100 });
+  ui.control.inject({ type: 'terms-changed', card: 'pay', oldAuthorizationActive: false });
+  ui.control.inject({ type: 'quote', startedAt: 0, quoteOut: 200n, latestBlockTimestamp: 101 });
+  ui.control.inject({ type: 'chain-timestamp', latestBlockTimestamp: 701 });
+  expect(await ui.dispatch({ type: 'confirm-terms', card: 'pay' })).toEqual({ kind: 'blocked', reason: 'TERMS_EXPIRED' });
+});
+
 it('validates edited payment minimum and deadline before authorization', async () => {
   const { ui } = setup('interactive');
   ui.control.inject({ type: 'utxos', utxos: [{ id: outputId, amountWei: 10n ** 16n, available: true }] });
