@@ -6,6 +6,9 @@
     "node": "24.21.0"
   },
   "scripts": {
+    "check:site": "pnpm --filter @confidential-utxo/uniswap-web check:site",
+    "build:site": "pnpm --filter @confidential-utxo/uniswap-web build",
+    "test:site": "pnpm --filter @confidential-utxo/uniswap-web test:site",
     "check:contracts": "tsc --noEmit -p tsconfig.contracts.json",
     "test:contracts": "vitest run packages/uniswap apps/uniswap-web",
     "fixture:verifier": "node scripts/generate-verifier-fixtures.mjs",
