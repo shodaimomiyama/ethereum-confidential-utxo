@@ -59,18 +59,19 @@ pnpm verify:pool -- --rpc http://127.0.0.1:18546 --manifest /tmp/ecu-pool-local.
 ```
 
 manifestには両コントラクトのアドレス、デプロイ取引とブロック、constructor引数のhash、runtime hash、検証器の固定パラメータhash、artifactの識別子を保存し、鍵やRPC認証情報は保存しない。再検査は実チェーンからruntime、検証器の全生成点・基底点、Pool内の検証器参照、取引入力とreceiptを読み直す。再起動で状態が消えるAnvilのmanifestは、その実行中のチェーンに対してのみ有効である。`node --test tests/environment/pool-deployment.test.mjs` は新しいAnvil上で配置と改変拒否を再現する。
+出力先の既存ファイルと作成不能なディレクトリは送信前に拒否する。送信後の照合などで失敗した場合は `<manifest>.pending.jsonl` に採掘済み取引hashとアドレスを残す。成功時はその記録を削除する。
 
 ### #27 の受入証拠
 
 | 条件 | ローカルで確認する対象 |
 | --- | --- |
-| A-01 操作成功 | `contracts/test/PoolFlow.t.sol` の入金、全額・部分送金、統合、自己操作、受取人による再使用、全額・部分出金。固定ケースは `tests/vectors/cases/pool-operations.json` の `VEC-07-POOL-*` |
-| A-02 形と上限 | `PoolAuthorization.t.sol` の個数、入力順、packet、公開額 `M`・`W` の拒否と `PoolFlow.t.sol` の `M+M`・`W` 正常例 |
+| A-01 操作成功 | `contracts/test/PoolFlow.t.sol` の入金、全額・部分送金、統合、自己操作、送金先・釣銭・出金残額の再使用、全額・部分出金、本人EOAへの出金。第三者EOAと受領可能コントラクトへの出金も固定ケース `VEC-07-POOL-*` で確認 |
+| A-02 形と上限 | `PoolAuthorization.t.sol` の3入力、過剰出力、証明件数、入力順、packet、非正規点、公開額 `M`・`W` の拒否。`PoolFlow.t.sol` の実検証器による非正規scalar・金額0出力の拒否と `M+M`・`W` 正常例 |
 | A-03 ゼロアドレス | `PoolAuthorization.t.sol` の出力所有者・出金先拒否、`PoolWithdrawal.t.sol` のPool自己宛て正常例、`VEC-01-ZERO-*` |
-| A-04 認可と文脈 | `PoolBinding.t.sol` のID、`PoolAuthorization.t.sol` の署名境界、`PoolFlow.t.sol` のchain/Pool変更拒否と第三者提出 |
-| A-05 再使用と競合 | `PoolFlow.t.sol` の成功済み操作・消費済み入力の拒否 |
-| A-06 証明器境界 | `PoolProofBoundary.t.sol` のfalse・revert・空・短長・2の戻り値、`PoolFlow.t.sol` の実v3検証器と非ゼロblinding |
-| A-07 出金と再入 | `PoolWithdrawal.t.sol` の再入捕捉・伝播・受領拒否・大きい戻り値 |
+| A-04 認可と文脈 | `PoolBinding.t.sol` のID、`PoolAuthorization.t.sol` の署名境界と有効形の入力・出力・packet・公開額・宛先・salt改変拒否、`PoolFlow.t.sol` のchain/Pool変更拒否と第三者提出 |
+| A-05 再使用と競合 | `PoolFlow.t.sol` の成功済み操作・消費済み入力の拒否、署名・証明変更後の再提出、同額別認可入金、独立入金の逆順実行。`PoolAuthorization.t.sol` の不存在入力、別owner入力と出力ID衝突はストレージを人工設定したケースを含む |
+| A-06 証明器境界 | `PoolProofBoundary.t.sol` のfalse・revert・空・短長・2の戻り値、`PoolFlow.t.sol` の実v3検証器による変更後の非単位元X・出力位置・古いoperationIdの範囲証明の拒否、非ゼロblindingの正常例 |
+| A-07 出金と再入 | `PoolWithdrawal.t.sol` の3資産入口への再入拒否、再入捕捉・伝播・受領拒否・大きい戻り値 |
 | A-08 原子性と会計 | `PoolWithdrawal.t.sol` と `PoolInvariant.t.sol` の失敗後状態、通常・強制・返却ETH、`B=L+E` |
 | A-09 観測ABI | `PoolFlow.t.sol` の実event topic/data/順序、`PoolState.t.sol` の照会、`test-pool-abi.mjs` のselector |
 | A-10 不変条件 | `PoolInvariant.t.sol` の未使用額合計と帳簿、`PoolState.t.sol` の消費済み記録保持 |

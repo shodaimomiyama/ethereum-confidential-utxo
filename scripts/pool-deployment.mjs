@@ -119,7 +119,7 @@ export async function verifyDeployment(manifest, rpcUrl, artifacts = loadArtifac
   return { chainId, verifier: verifierEvidence, pool: poolEvidence };
 }
 
-export async function deployPool({ rpcUrl, expectedChainId, privateKey, hardfork }) {
+export async function deployPool({ rpcUrl, expectedChainId, privateKey, hardfork, onDeployment }) {
   if (!/^0x[0-9a-fA-F]{64}$/.test(privateKey ?? '')) throw new Error('explicit private key required');
   if (typeof hardfork !== 'string' || !hardfork) throw new Error('explicit hardfork label required');
   const { pool, verifier } = loadArtifacts();
@@ -129,21 +129,24 @@ export async function deployPool({ rpcUrl, expectedChainId, privateKey, hardfork
   const account = privateKeyToAccount(privateKey);
   const wallet = createWalletClient({ account, transport: http(rpcUrl) });
   const block = await client.getBlock();
-  const deploy = async (initcode, runtime) => {
+  const deploy = async (label, initcode, runtime) => {
     enforceCodeLimits(initcode, runtime, block.gasLimit);
     const gas = await client.estimateGas({ account: account.address, data: initcode });
     if (gas > block.gasLimit) throw new Error('deployment gas exceeds block limit');
     const hash = await wallet.sendTransaction({ to: undefined, data: initcode, gas });
+    if (onDeployment) onDeployment({ label, stage: 'broadcast', transactionHash: hash });
     const receipt = await client.waitForTransactionReceipt({ hash });
     if (receipt.status !== 'success' || !receipt.contractAddress) throw new Error('deployment failed');
     creationHashes.set(lower(receipt.contractAddress), hash);
+    if (onDeployment) onDeployment({ label, stage: 'mined', address: receipt.contractAddress, transactionHash: hash,
+      blockNumber: receipt.blockNumber.toString() });
     return receipt.contractAddress;
   };
   const verifierArgs = constructorArgs();
-  const verifierAddress = await deploy(`${verifier.creationBytecode}${verifierArgs.slice(2)}`,
+  const verifierAddress = await deploy('verifier', `${verifier.creationBytecode}${verifierArgs.slice(2)}`,
     verifier.runtimeBytecode);
   const poolArgs = encodeAbiParameters([{ type: 'address' }], [verifierAddress]);
-  const poolAddress = await deploy(`${pool.creationBytecode}${poolArgs.slice(2)}`, poolRuntimeFor(pool, verifierAddress));
+  const poolAddress = await deploy('pool', `${pool.creationBytecode}${poolArgs.slice(2)}`, poolRuntimeFor(pool, verifierAddress));
   const manifest = {
     schemaVersion: 1, chainId, hardfork, signer: account.address,
     tool: { node: process.version, forge: execFileSync('forge', ['--version'], { encoding: 'utf8' }).trim().split('\n')[0] },

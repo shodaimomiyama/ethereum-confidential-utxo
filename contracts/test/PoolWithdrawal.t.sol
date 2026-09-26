@@ -19,6 +19,8 @@ interface VmPoolWithdrawal {
     function chainId(uint256 chainId) external;
     function recordLogs() external;
     function getRecordedLogs() external returns (Log[] memory);
+    function snapshotState() external returns (uint256);
+    function revertToState(uint256 snapshotId) external returns (bool);
 }
 
 contract CallbackReceiver {
@@ -96,6 +98,21 @@ contract PoolWithdrawalTest {
         require(ok && target.rejectedReentry(), "caught reentry failed");
         (uint256 balance, uint256 liability,) = pool.getAccounting();
         require(balance == 0 && liability == 0 && CALLBACK.balance == 10, "withdraw accounting");
+    }
+
+    function test_allAssetEntrypointsRejectReentry() public {
+        string[3] memory attempts = ["DEPOSIT_TEN", "TRANSFER_FULL", "WITHDRAW_FULL"];
+        for (uint256 i; i < attempts.length; ++i) {
+            uint256 snapshot = vm.snapshotState();
+            Pool pool = deploy();
+            CallbackReceiver target = receiver(pool, 1);
+            target.configure(address(pool), PoolVectors.calldataFor(attempts[i]), 1);
+            (bool ok,) = address(pool).call(PoolVectors.calldataFor("WITHDRAW_CALLBACK_FULL"));
+            require(ok && target.rejectedReentry(), "asset entrypoint reentry not rejected");
+            (uint256 balance, uint256 liability,) = pool.getAccounting();
+            require(balance == 0 && liability == 0, "outer withdrawal accounting changed");
+            require(vm.revertToState(snapshot), "snapshot rollback failed");
+        }
     }
 
     function test_propagatedReentryAndRejectedReceiveRollback() public {

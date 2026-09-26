@@ -32,10 +32,11 @@ export async function makeCases(base, parameters) {
     const destination = item.destinationSymbol === 'ZERO' ? zero
       : item.destinationSymbol === 'POOL' ? pool
       : item.destinationSymbol === 'CALLBACK' ? callback : recipient;
+    const actualDestination = item.destinationSymbol === 'OWNER' ? owner : destination;
     const salt = `0x${number.toString(16).padStart(2, '0').repeat(32)}`;
     const input = { chainId: '31337', pool, kind: item.kind, owner, salt,
       inputIds: inputRefs.map(ref => ref.id), outputs,
-      d: item.d, w: item.w, destination };
+      d: item.d, w: item.w, destination: actualDestination };
     const inputValue = inputRefs.reduce((sum, ref) => sum + ref.value, 0n);
     const outputValue = outputs.reduce((sum, output) => sum + BigInt(output.value), 0n);
     if (inputValue + BigInt(item.d) !== outputValue + BigInt(item.w)) {

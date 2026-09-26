@@ -186,7 +186,7 @@
     },
     {
       "path": "cases/pool-operations.json",
-      "sha256": "ff7745274c87bcfe1c79beaa5ab6076d685562c2acb1f2dfb2d704f47e7645dc",
+      "sha256": "3b5513da82e1dd2dc7efb654e6d13551190fc2a48e2d68a02eef685b9ed16ecb",
       "source": "docs/design.md#操作の結合とabi; Issue #27",
       "generator": "tools/oracle_pool_base.py + tools/oracle-pool-operations.mjs + tools/oracle_pool_proofs.py",
       "independentCheck": "tools/test-pool-operation-fixtures.mjs + tools/oracle_range_prover.py#verify + tools/oracle_v3.py#replay_trace",
@@ -317,8 +317,8 @@
     "tools/verify-abi.mjs": "d2e5025d62258227d37bf1631b99c74a348b0631196bd2ac58393d1662fd5f90",
     "tools/verify_storage.py": "a0427bdb22d70139aba23d714e3dc9ed1d526c6ac80246123e582b3b29aa485f",
     "tools/test-pool-request-rules.mjs": "174144fec3f7c19990e9e1ed8aa7f13ca8c1d377f2eaff8677c08c1ef26746e0",
-    "tools/oracle-pool-operations.mjs": "6eef6598adeb445a9def37d22a9894d6cdeff0e3d93f3849265722ce0403d544",
-    "tools/oracle_pool_base.py": "1e7936c9c0152f2800951d936011773e66215d6a8ced728df23255ab932832d7",
+    "tools/oracle-pool-operations.mjs": "6bb367da933c69cc163fb504f78b0532d915f649b065f2e1eef8f315fd41f4c4",
+    "tools/oracle_pool_base.py": "62df4b936be0c85799567b31ba7addb69b19a4c9a4b3bcc02936820a42e50360",
     "tools/oracle_pool_proofs.py": "cd8bcac6850ca0361080ae9b8d0e08bcfe69687968a950466b6357bfbf0db136",
     "tools/test-pool-abi.mjs": "2c80de7e9450e114a7dc0030e2299eb5981eb81d11b261824ea5fc3555bd441b",
     "tools/test-pool-operation-fixtures.mjs": "b717cf846eb94aedbc62ee5d1e5c388645eb84b85c2ecd214acb356318743328",
@@ -326,7 +326,7 @@
   },
   "artifactHashes": {
     "schema.json": "ac56b6596eb687677ecc2305d696151f39ceab20787eb6e0a066d1541bbb5d7c",
-    "coverage.json": "7677f462a6e8897b34318ed4f0f1471a9bf47ff2deb2609be52ef8685bffca21",
+    "coverage.json": "610f78bb98a2d19fb87cac0071e6946591a77fc4f7d29dabfedbe3bde8f327e9",
     "package.json": "835831072d5b59534fd2c1fa72c35f096beaa410c8794e32e580a30061204700",
     "pnpm-lock.yaml": "cbede875e3027c6b32efc25201e44e9a59261abed5c4a06ccc6250382009e0fe",
     "tools/requirements.txt": "8af6d5cfebc5c65614d58aee1d40b734d61d9ce4741ef03bad97749a4aa24145"

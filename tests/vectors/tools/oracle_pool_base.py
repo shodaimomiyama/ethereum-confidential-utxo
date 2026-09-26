@@ -39,6 +39,11 @@ def make_base():
         ('RECIPIENT-REUSE', 1, ['TRANSFER-FULL:0'], [('A', 10)], 0, 0, 'ZERO'),
         ('DEPOSIT-BLIND', 0, [], [('A', 1)], 1, 0, 'ZERO'),
         ('TRANSFER-BLIND', 1, ['DEPOSIT-BLIND:0'], [('A', 1)], 0, 0, 'ZERO'),
+        ('TRANSFER-CHANGE-REUSE', 1, ['TRANSFER-PARTIAL:1'], [('A', 7)], 0, 0, 'ZERO'),
+        ('WITHDRAW-REMAINDER-REUSE', 1, ['WITHDRAW-PARTIAL:0'], [('A', 7)], 0, 0, 'ZERO'),
+        ('RECIPIENT-PARTIAL-REUSE', 1, ['TRANSFER-PARTIAL:0'], [('B', 3)], 0, 0, 'ZERO'),
+        ('DEPOSIT-TEN-ALT', 0, [], [('A', 10)], 10, 0, 'ZERO'),
+        ('WITHDRAW-OWNER', 2, ['DEPOSIT-TEN:0'], [], 0, 10, 'OWNER'),
     ]
     result = []
     for name, kind, inputs, outputs, d, w, destination in specs:
@@ -50,7 +55,7 @@ def make_base():
                         'Cx': str(cx), 'Cy': str(cy),
                         'receiptFormat': 1, 'packet': packet(name, index)})
         result.append({'name': name, 'kind': kind,
-                       'ownerSymbol': 'B' if name == 'RECIPIENT-REUSE' else 'A', 'inputs': inputs,
+                       'ownerSymbol': 'B' if name in ('RECIPIENT-REUSE', 'RECIPIENT-PARTIAL-REUSE') else 'A', 'inputs': inputs,
                        'outputs': out, 'd': str(d), 'w': str(w), 'destinationSymbol': destination})
     return result
 

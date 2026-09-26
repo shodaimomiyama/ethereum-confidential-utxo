@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -20,6 +20,12 @@ test('Pool and verifier deploy with a saved, independently rechecked manifest', 
     writeFileSync(path, `${JSON.stringify(manifest, null, 2)}\n`);
     const result = await verifyDeployment(JSON.parse(readFileSync(path, 'utf8')), url);
     assert.equal(result.pool.address.toLowerCase(), manifest.pool.address.toLowerCase());
+    const nonceBeforeExistingPath = await client.getTransactionCount({ address: manifest.signer });
+    assert.throws(() => execFileSync(process.execPath, ['scripts/deploy-pool.mjs', '--rpc', url,
+      '--chain-id', '31337', '--hardfork', 'cancun', '--out', path],
+    { env: { ...process.env, POOL_DEPLOY_PRIVATE_KEY: ANVIL_KEY }, stdio: 'pipe' }), /EEXIST/);
+    assert.equal(await client.getTransactionCount({ address: manifest.signer }), nonceBeforeExistingPath,
+      'existing destination must fail before broadcasting transactions');
     const cliPath = join(directory, 'pool-cli.json');
     execFileSync(process.execPath, ['scripts/deploy-pool.mjs', '--rpc', url, '--chain-id', '31337',
       '--hardfork', 'cancun',
@@ -27,6 +33,7 @@ test('Pool and verifier deploy with a saved, independently rechecked manifest', 
     execFileSync(process.execPath, ['scripts/verify-pool-deployment.mjs', '--rpc', url,
       '--manifest', cliPath]);
     assert.ok(JSON.parse(readFileSync(cliPath, 'utf8')).pool.transactionHash);
+    assert.equal(existsSync(`${cliPath}.pending.jsonl`), false, 'successful deployment must clear recovery journal');
     rmSync(directory, { recursive: true, force: true });
     const mutations = [
       copy => { copy.chainId = 11155111; },
