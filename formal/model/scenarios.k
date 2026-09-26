@@ -252,4 +252,45 @@ module UTXO-SCENARIOS
                   pContext(1, 1, 1, 1, 50, 8, .List), execContext(1, 1))
           => rejected(state(.Map, .Set, .Set, 0, 0, 0), invalidOperation) </k>
     [label(S-09-p-no-live-verifier-result)]
+  claim <k> runWithdrawal(execution(state(1 |-> utxo(100, 10), .Set, .Set, 10, 10, 0), .List), validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), rejectReceive, execContext(1, 1))
+          => rolledBack(execution(state(1 |-> utxo(100, 10), .Set, .Set, 10, 10, 0), .List), invalidOperation) </k>
+    [label(S-11-receive-rejected)]
+  claim <k> runWithdrawal(execution(state(1 |-> utxo(100, 10), .Set, .Set, 10, 10, 0), .List), validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), returnThenOuterRevert(2), execContext(1, 1))
+          => rolledBack(execution(state(1 |-> utxo(100, 10), .Set, .Set, 10, 10, 0), .List), invalidOperation) </k>
+    [label(S-11-return-then-outer-revert)]
+  claim <k> runWithdrawal(execution(state(1 |-> utxo(100, 10), .Set, .Set, 10, 10, 0), .List), validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), outerRevert, execContext(1, 1))
+          => rolledBack(execution(state(1 |-> utxo(100, 10), .Set, .Set, 10, 10, 0), .List), invalidOperation) </k>
+    [label(S-11-outer-revert)]
+  claim <k> runWithdrawal(execution(state(1 |-> utxo(100, 10), .Set, .Set, 10, 10, 0), .List), validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), returnETH(-1), execContext(1, 1))
+          => rolledBack(execution(state(1 |-> utxo(100, 10), .Set, .Set, 10, 10, 0), .List), invalidOperation) </k>
+    [label(S-11-negative-return)]
+  claim <k> runWithdrawal(execution(state(1 |-> utxo(100, 10), .Set, .Set, 10, 10, 0), .List), validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), receiveOK, execContext(1, 1))
+          => committed(execution(state((1 |-> utxo(100, 10)) (2 |-> utxo(100, 7)), SetItem(1), SetItem(7), 7, 7, 0), ListItem(successEvent(7)))) </k>
+    [label(S-11-failed-then-retry)]
+  claim <k> runWithdrawal(execution(state(1 |-> utxo(100, 10), .Set, .Set,
+                                            10, 10, 0), .List),
+                            validatedWithdraw(7, 100, ListItem(1), 3, 1, 2),
+                            receiveOK, execContext(1, 1))
+          => committed(execution(state((1 |-> utxo(100, 10)) (2 |-> utxo(100, 7)),
+                                       SetItem(1), SetItem(7), 10, 7, 3),
+                                 ListItem(successEvent(7)))) </k>
+    [label(S-11-pool-self-withdrawal)]
+
+  claim <k> runWithdrawal(execution(state((1 |-> utxo(100, 10))
+                                             (9 |-> utxo(300, 2)), .Set,
+                                             SetItem(5), 12, 12, 0),
+                                    ListItem(successEvent(5))),
+                            validatedWithdraw(7, 100, ListItem(1), 3, 200, 2),
+                            outerRevert, execContext(1, 1))
+          => rolledBack(execution(state((1 |-> utxo(100, 10))
+                                              (9 |-> utxo(300, 2)), .Set,
+                                              SetItem(5), 12, 12, 0),
+                                     ListItem(successEvent(5))),
+                        invalidOperation) </k>
+    [label(S-11-prior-success-survives-current-revert)]
+
+  claim <k> apply(state(1 |-> utxo(100, 10), .Set, SetItem(7), 10, 10, 0),
+                  validatedReceive(4), execContextLocked(1, 1))
+          => accepted(state(1 |-> utxo(100, 10), .Set, SetItem(7), 14, 10, 4)) </k>
+    [label(S-11-simple-receive-during-lock)]
 endmodule

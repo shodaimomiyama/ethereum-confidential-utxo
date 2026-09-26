@@ -32,23 +32,26 @@ module UTXO-PATHS
 
   rule execP(St:State, pRequest(Intent:AuthIntent, Cert:AuthCert,
                                 _Submitter:Int, _Nonce:Int),
-             LiveCtx:PContext, Ctx:Context)
-    => pVerify(St, Intent, Cert, LiveCtx, Ctx)
+             LiveCtx:PContext, execContext(Chain:Int, Pool:Int))
+    => pVerify(St, Intent, Cert, LiveCtx, execContextLocked(Chain, Pool))
   rule pVerify(St:State, Intent:AuthIntent, Cert:AuthCert,
-               LiveCtx:PContext, Ctx:Context)
-    => pCurrent(St, Intent, Ctx)
+               LiveCtx:PContext, execContextLocked(Chain:Int, Pool:Int))
+    => pCurrent(St, Intent, execContext(Chain, Pool))
     requires pProofValid(Cert, Intent, LiveCtx)
   rule pVerify(St:State, Intent:AuthIntent, Cert:AuthCert,
-               LiveCtx:PContext, _Ctx:Context)
+               LiveCtx:PContext, execContextLocked(_Chain:Int, _Pool:Int))
     => rejected(St, invalidOperation)
     requires notBool pProofValid(Cert, Intent, LiveCtx)
   rule pCurrent(St:State, Intent:AuthIntent, Ctx:Context)
     => apply(St, operationOf(Intent), Ctx)
+  rule execP(St:State, _Req:PRequest, _LiveCtx:PContext,
+             execContextLocked(_Chain:Int, _Pool:Int))
+    => rejected(St, invalidOperation)
 
   rule execQ(St:State, qRequest(Intent:AuthIntent, Cert:AuthCert,
                                 _ClaimedSuccess:Bool, _Submitter:Int, _Nonce:Int),
-             AuthCtx:AuthContext, Ctx:Context)
-    => qReceipt(St, Intent, Cert, AuthCtx, Ctx)
+             AuthCtx:AuthContext, execContext(Chain:Int, Pool:Int))
+    => qReceipt(St, Intent, Cert, AuthCtx, execContext(Chain, Pool))
   rule qReceipt(St:State, Intent:AuthIntent, Cert:AuthCert,
                 authContext(Chain:Int, Pool:Int, Rule:Int, Version:Int,
                             Now:Int, Issuer:Int, Registry:List), Ctx:Context)
@@ -70,6 +73,9 @@ module UTXO-PATHS
     requires notBool validCert(Cert, Intent, AuthCtx)
   rule qReady(St:State, Intent:AuthIntent, Ctx:Context)
     => apply(St, operationOf(Intent), Ctx)
+  rule execQ(St:State, _Req:QRequest, _AuthCtx:AuthContext,
+             execContextLocked(_Chain:Int, _Pool:Int))
+    => rejected(St, invalidOperation)
 
   rule assetView(accepted(St:State)) => assetAccepted(St)
   rule assetView(rejected(St:State, _Reason:RejectReason)) => assetRejected(St)

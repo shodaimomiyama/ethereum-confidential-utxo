@@ -9,12 +9,24 @@ module UTXO-MODEL
   syntax Utxo ::= utxo(Int, Int) | "missingUtxo"
   syntax State ::= state(Map, Set, Set, Int, Int, Int)
                  | initial(Int) [function]
-  syntax Context ::= execContext(Int, Int)
+  syntax Context ::= execContext(Int, Int) | execContextLocked(Int, Int)
   syntax ValidatedOperation ::= validatedDeposit(Int, Int, Int, Int, Int)
                               | validatedReceive(Int)
                               | validatedTransfer(Int, Int, List, Int, Int, Int, Int)
                               | validatedWithdraw(Int, Int, List, Int, Int, Int)
   syntax RejectReason ::= "insufficientDeposit" | "invalidOperation"
+  syntax Event ::= successEvent(Int)
+  syntax Execution ::= execution(State, List)
+  syntax RecipientBehavior ::= "receiveOK" | "catchReentry"
+                             | "propagateReentry" | "rejectReceive"
+                             | "outerRevert" | returnETH(Int)
+                             | returnThenOuterRevert(Int)
+  syntax Frame ::= frame(Execution, State, ValidatedOperation,
+                        RecipientBehavior, Context)
+  syntax List ::= events(Execution) [function]
+  syntax State ::= assetState(Execution) [function]
+  rule events(execution(_St:State, Events:List)) => Events
+  rule assetState(execution(St:State, _Events:List)) => St
   syntax Int ::= valueOf(KItem) [function]
                | ownerOf(KItem) [function]
                | inputTotal(Map, List) [function]

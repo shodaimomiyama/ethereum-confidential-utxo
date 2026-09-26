@@ -124,7 +124,7 @@ These five failures are easy to miss in a proof that only covers happy paths. Th
 
 - [ ] **Step 1: Write failing scenarios.** An authorized operation submitted by someone other than owner still works. Gas charged/refunded to envelope payer does not change U/S/H/A/L/E/B. Failed asset operation may consume outside gas while preserving the asset snapshot. ETH actually arriving at Pool is classified as authorized deposit or simple receive.
 - [ ] **Step 2: Run scenarios; expect a failing envelope separation check.**
-- [ ] **Step 3: Implement separation and finite-history relation.** Reuse the one-step invariant; do not infer arbitrary-history safety only from a finite trace example.
+- [ ] **Step 3: Implement separation and finite-history relation.** Integrate the frame-level withdrawal result and success events with the P/Q public execution paths; add deposit/transfer success events or prove their equivalent event abstraction. Close the MODEL-05 and MODEL-07 composition gap so failed recipient behavior cannot bypass rollback through the direct kernel path. Reuse the one-step invariant; do not infer arbitrary-history safety only from a finite trace example.
 - [ ] **Step 4: Prove MODEL-08 and induction base/step for MODEL-01/03/04/05.** Prove the map-update lemma connecting `A` to the sum of unspent UTXO values; do not assume it. State the initial-state and per-accepted-transition hypotheses explicitly and derive invariant for every finite accepted history.
 - [ ] **Step 5: Prove, run scenarios and commit** `feat(formal): prove envelope separation and finite-history safety`.
 

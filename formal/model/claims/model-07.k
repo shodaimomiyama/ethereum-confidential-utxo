@@ -5,8 +5,8 @@ module UTXO-MODEL-07
   claim <k> execP(St:State,
                   pRequest(Intent:AuthIntent, Cert:AuthCert,
                            Submitter:Int, Nonce:Int),
-                  LiveCtx:PContext, Ctx:Context)
-          => apply(St, operationOf(Intent), Ctx) </k>
+                  LiveCtx:PContext, execContext(Chain:Int, Pool:Int))
+          => apply(St, operationOf(Intent), execContext(Chain, Pool)) </k>
     requires pProofValid(Cert, Intent, LiveCtx)
     [label(MODEL-07-p-normalizes-to-kernel)]
 
@@ -14,8 +14,8 @@ module UTXO-MODEL-07
                   qRequest(Intent:AuthIntent, Cert:AuthCert, Claimed:Bool,
                            Submitter:Int, Nonce:Int),
                   authContext(Chain:Int, Pool:Int, Rule:Int, Version:Int,
-                              Now:Int, Issuer:Int, Registry:List), Ctx:Context)
-          => apply(St, operationOf(Intent), Ctx) </k>
+                              Now:Int, Issuer:Int, Registry:List), execContext(ExecChain:Int, ExecPool:Int))
+          => apply(St, operationOf(Intent), execContext(ExecChain, ExecPool)) </k>
     requires hasTrustedCert(Cert, Registry)
       andBool validCert(Cert, Intent,
                         authContext(Chain, Pool, Rule, Version, Now, Issuer, Registry))
