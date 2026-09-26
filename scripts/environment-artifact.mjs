@@ -4,7 +4,7 @@ import { keccak256, toHex } from 'viem';
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const hashText = (value) => hash(Buffer.from(value, 'utf8'));
 const hashJson = (value) => hashText(JSON.stringify(value));
-const expectedConfigSha256 = '13057369dae9d02c9822feb7335ffea5f2bbd51266da3caf67c9f5d081309072';
+const expectedConfigSha256 = '04a9bffe8e9652f4f56baf2f8deb76d59ebab006d3f734da5872ce2be1cfa3d1';
 
 function bytecode(value, name) {
   if (typeof value !== 'string' || !/^0x(?:[0-9a-fA-F]{2})+$/.test(value)) {
