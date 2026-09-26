@@ -10,6 +10,7 @@ export interface ServiceContext {
   readonly deploymentId?: string;
   readonly deployment?: DeploymentConfig;
   readonly env?: ServiceEnv;
+  readonly readRewardFunds?: (deploymentId: string) => Promise<bigint | undefined>;
   readonly storage: DurableObjectStorage;
   transactionSync<T>(callback: () => T): T;
   ensureWritable(): void;
