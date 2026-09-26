@@ -140,7 +140,7 @@ export interface ApiSuccessResponseMap {
     readonly records: readonly OperationResponse[];
     readonly nextCursor?: Bytes32;
   };
-  readonly 'GET /v1/operations/{id}': SavedReservation & { readonly scope: Scope };
+  readonly 'GET /v1/operations/{id}': OperationResponse;
   readonly 'POST /v1/operations/{id}/release': SavedReservation & { readonly scope: Scope };
   readonly 'POST /v1/rewards': { readonly reward: RewardRecord };
   readonly 'GET /v1/rewards': { readonly rewards: readonly RewardRecord[] };
@@ -511,10 +511,10 @@ function parseApiResponseValue(route: ApiRoute, status: number, body: unknown): 
   if (route === 'POST /v1/auth/verify') {
     return { sessionExpiresAt: parseTimestamp(object.sessionExpiresAt, 'sessionExpiresAt') };
   }
-  if (route === 'PUT /v1/operations/{id}') {
+  if (route === 'PUT /v1/operations/{id}' || route === 'GET /v1/operations/{id}') {
     return parseOperationResponse(object);
   }
-  if (route === 'GET /v1/operations/{id}' || route === 'POST /v1/operations/{id}/release') {
+  if (route === 'POST /v1/operations/{id}/release') {
     const scope = parseScope(object.scope);
     return {
       scope,

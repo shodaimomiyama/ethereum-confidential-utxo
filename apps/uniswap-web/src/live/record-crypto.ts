@@ -1,4 +1,4 @@
-import type { Address, Bytes32, DeploymentId, EncryptedBundle, OperationRecord, SavedOperation, WireOperationRecord } from '@confidential-utxo/uniswap';
+import type { Address, Bytes32, DeploymentId, EncryptedBundle, OperationRecord, OperationResponse, WireOperationRecord } from '@confidential-utxo/uniswap';
 import { HttpFailure, sameScope, type HttpClient } from './http.js';
 
 const encoder = new TextEncoder();
@@ -146,15 +146,15 @@ function sameRecord(a: OperationRecord, b: OperationRecord): boolean {
       && a.deadline === b.deadline));
 }
 
-function confirmed(saved: SavedOperation, record: OperationRecord, bundleRevision: number): SavedOperation {
+function confirmed(saved: OperationResponse, record: OperationRecord, bundleRevision: number): OperationResponse {
   if (saved.revision !== bundleRevision || !sameRecord(saved.record, record)) throw new Error('OPERATION_SAVE_UNCONFIRMED');
-  return { record: saved.record, revision: saved.revision };
+  return saved;
 }
 
 export async function saveBeforeAuthorization(
   http: HttpClient, record: OperationRecord, expectedRevision: number,
   options?: { readonly bundleRevision: number },
-): Promise<SavedOperation> {
+): Promise<OperationResponse> {
   if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0) throw new Error('INVALID_REVISION');
   // A new bundle targets the next revision. Replaying a byte-identical saved bundle
   // may target the current revision, but the caller must state that AAD revision.
@@ -180,10 +180,8 @@ export async function saveBeforeAuthorization(
   } catch (error) {
     if (error instanceof HttpFailure && (error.kind === 'api' || error.kind === 'scope')) throw error;
     if (error instanceof Error && error.message === 'OPERATION_SAVE_UNCONFIRMED') throw error;
-    const listed = await http.call('GET /v1/operations', { scope });
-    if (listed.availability !== 'healthy') throw new Error('OPERATION_SAVE_UNCONFIRMED');
-    const found = listed.records.find(saved => saved.record.recordId.toLowerCase() === record.recordId.toLowerCase());
-    if (!found || !sameScope(found.scope, scope)) throw new Error('OPERATION_SAVE_UNCONFIRMED');
+    const found = await http.call('GET /v1/operations/{id}', { scope, id: record.recordId });
+    if (!sameScope(found.scope, scope)) throw new Error('OPERATION_SAVE_UNCONFIRMED');
     return confirmed(found, record, bundleRevision);
   }
 }

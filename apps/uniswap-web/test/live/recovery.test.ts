@@ -1,4 +1,4 @@
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import type { Address, Bytes32, InputId, OperationId, OperationRecord, SavedOperation, Scope } from '@confidential-utxo/uniswap';
 import { HttpFailure, type HttpClient } from '../../src/live/http.js';
 import { sealRecord } from '../../src/live/record-crypto.js';
@@ -114,3 +114,57 @@ it('returns verified recovery while an optional cache write never settles', asyn
   expect(outcome.availability).toBe('healthy');
   expect(outcome.records).toHaveLength(1);
 });
+
+async function pagedFixture() {
+  const { key, saved } = await fixture();
+  const records = await Promise.all(Array.from({ length: 101 }, async (_, i) => {
+    const recordId = `0x${(i + 1).toString(16).padStart(64, '0')}` as Bytes32;
+    const encryptedBundle = await sealRecord(key, { ...scope, chainId: 11155111n, pool, recordId, revision: 1 }, plain);
+    return { ...saved, record: { ...saved.record, recordId, encryptedBundle },
+      status: 'reserved' as const, stateVersion: 7 };
+  }));
+  return { key, records };
+}
+
+it('recovers more than 100 records and preserves lifecycle metadata independently of AAD revision', async () => {
+  const { key, records } = await pagedFixture();
+  const call = vi.fn(async (_route: string, input: { cursor?: Bytes32 }) => ({ availability: 'healthy',
+    records: input.cursor === undefined ? records.slice(0, 100) : records.slice(100),
+    ...(input.cursor === undefined ? { nextCursor: records[99]!.record.recordId } : {}),
+  }));
+  const recovery = new Recovery({ http: { call } as HttpClient, chain: { readFinalized: async () => ({ outputs: [] }) }, chainId: 11155111n, pool });
+  const result = await recovery.load(scope, key);
+  expect(result.availability).toBe('healthy');
+  expect(result.records).toHaveLength(101);
+  expect(result.records[100]!.saved).toMatchObject({ revision: 1, stateVersion: 7, status: 'reserved' });
+  expect(call.mock.calls[1]![1].cursor).toBe(records[99]!.record.recordId);
+});
+
+it.each(['rollback', '503', 'cycle', 'duplicate', 'scope', 'aad', 'empty', 'empty-terminal', 'backward', 'skipped'] as const)(
+  'blocks authorization and cache publication on a later-page %s', async failure => {
+    const { key, records } = await pagedFixture();
+    const readFinalized = vi.fn(async () => ({ outputs: [] }));
+    const write = vi.fn(async () => {});
+    let page = 0;
+    const call = vi.fn(async () => {
+      if (page++ === 0) return { availability: 'healthy', records: records.slice(0, 100), nextCursor: records[99]!.record.recordId };
+      if (failure === '503') throw new HttpFailure('api', 'SERVICE_UNAVAILABLE');
+      const last = records[100]!;
+      return { availability: failure === 'rollback' ? 'rollback' : 'healthy',
+        records: failure === 'empty' || failure === 'empty-terminal' ? [] : [failure === 'duplicate' ? records[0]!
+          : failure === 'scope' ? { ...last, scope: { ...scope, deploymentId: 'other' } }
+          : failure === 'aad' ? { ...last, revision: 7 } : last],
+        ...(['cycle', 'empty', 'backward', 'skipped'].includes(failure) ? { nextCursor: failure === 'backward'
+          ? records[0]!.record.recordId : failure === 'skipped' ? id('f') : records[99]!.record.recordId } : {}),
+      };
+    });
+    const recovery = new Recovery({ http: { call } as HttpClient, chain: { readFinalized },
+      cache: { read: async () => undefined, write }, chainId: 11155111n, pool });
+    const result = await recovery.load(scope, key);
+    expect(result.availability).toBe(failure === 'rollback' ? 'rollback' : failure === '503' ? 'unavailable' : 'unknown');
+    expect(result.records).toEqual([]);
+    expect(result.allowedActions).toEqual([]);
+    expect(write).not.toHaveBeenCalled();
+    expect(readFinalized).not.toHaveBeenCalled();
+    expect(call).toHaveBeenCalledTimes(2);
+  });

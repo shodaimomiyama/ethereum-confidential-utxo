@@ -85,10 +85,10 @@ it('proves a lost PUT ACK by GET of the exact committed bundle without retrying 
       expect(input.body).toMatchObject({ expectedRevision: 0, record: { encryptedBundle: original.encryptedBundle } });
       throw new Error('ACK disappeared');
     }
-    return { availability: 'healthy', records: [{ ...saved, scope }] };
+    return { ...saved, scope };
   } } as HttpClient;
-  await expect(saveBeforeAuthorization(http, original, 0)).resolves.toEqual(saved);
-  expect(calls).toEqual(['PUT /v1/operations/{id}', 'GET /v1/operations']);
+  await expect(saveBeforeAuthorization(http, original, 0)).resolves.toEqual({ ...saved, scope });
+  expect(calls).toEqual(['PUT /v1/operations/{id}', 'GET /v1/operations/{id}']);
 });
 
 it('uses the real HTTP schema after ACK loss without exposing plaintext in the request', async () => {
@@ -108,10 +108,11 @@ it('uses the real HTTP schema after ACK loss without exposing plaintext in the r
     expect(request.method).toBe('GET');
     expect(committed).toBeDefined();
     const savedWire = { ...committed, deadline: '123' };
-    return Response.json({ availability: 'healthy', records: [{ scope, record: savedWire, revision: 1 }] });
+    expect(new URL(request.url).pathname).toBe(`/v1/operations/${original.recordId}`);
+    return Response.json({ scope, record: savedWire, revision: 1, stateVersion: 7, status: 'reserved' });
   } });
   const saved = await saveBeforeAuthorization(http, original, 0);
-  expect(saved.revision).toBe(1);
+  expect(saved).toMatchObject({ revision: 1, stateVersion: 7, status: 'reserved' });
   expect(saved.record.encryptedBundle).toEqual(original.encryptedBundle);
   expect(putBodies).toHaveLength(1);
   expect(putBodies[0]).not.toContain(marker);
@@ -126,7 +127,7 @@ it('blocks authorization when GET cannot prove the original bundle or revision',
   ]) {
     const http = { async call(route: string) {
       if (route === 'PUT /v1/operations/{id}') throw new Error('ACK disappeared');
-      return { availability: 'healthy', records: [{ ...returned, scope }] };
+      return { ...returned, scope };
     } } as HttpClient;
     await expect(saveBeforeAuthorization(http, original, 0)).rejects.toThrow();
   }
@@ -154,7 +155,7 @@ it('accepts a byte-identical idempotent ACK at its explicitly sealed existing re
     calls.push(route);
     return { ...saved, scope };
   } } as HttpClient;
-  await expect(saveBeforeAuthorization(http, original, 1, { bundleRevision: 1 })).resolves.toEqual(saved);
+  await expect(saveBeforeAuthorization(http, original, 1, { bundleRevision: 1 })).resolves.toEqual({ ...saved, scope });
   expect(calls).toEqual(['PUT /v1/operations/{id}']);
   await expect(saveBeforeAuthorization(http, original, 1)).rejects.toThrow();
 });
@@ -166,13 +167,27 @@ it('accepts a byte-identical existing revision after lost ACK, without retrying 
   const http = { async call(route: string) {
     calls.push(route);
     if (route === 'PUT /v1/operations/{id}') throw new Error('ACK disappeared');
-    return { availability: 'healthy', records: [{ scope, record: returned, revision: 1 }] };
+    return { scope, record: returned, revision: 1 };
   } } as HttpClient;
   await expect(saveBeforeAuthorization(http, original, 1, { bundleRevision: 1 }))
-    .resolves.toEqual({ record: original, revision: 1 });
-  expect(calls).toEqual(['PUT /v1/operations/{id}', 'GET /v1/operations']);
+    .resolves.toEqual({ scope, record: original, revision: 1 });
+  expect(calls).toEqual(['PUT /v1/operations/{id}', 'GET /v1/operations/{id}']);
   returned = { ...original, contentHash: id('9') };
   await expect(saveBeforeAuthorization(http, original, 1, { bundleRevision: 1 })).rejects.toThrow();
   returned = { ...original, encryptedBundle: { ...original.encryptedBundle, nonce: `0x${'ff'.repeat(12)}` } };
   await expect(saveBeforeAuthorization(http, original, 1, { bundleRevision: 1 })).rejects.toThrow();
+});
+
+it.each([404, 503])('blocks authorization when lost-ACK lookup returns %s', async status => {
+  const original = record(await sealRecord(await key(), context, plain));
+  const calls: string[] = [];
+  const http = createHttpClient({ origin: 'https://mock.invalid', transport: async request => {
+    calls.push(request.method);
+    if (request.method === 'PUT') throw new TypeError('ACK lost');
+    const code = status === 404 ? 'NOT_FOUND' : 'SERVICE_UNAVAILABLE';
+    return Response.json({ error: { code, message: code, allowedActions: [] } }, { status });
+  } });
+  await expect(saveBeforeAuthorization(http, original, 0)).rejects.toMatchObject({ kind: 'api',
+    code: status === 404 ? 'NOT_FOUND' : 'SERVICE_UNAVAILABLE' });
+  expect(calls).toEqual(['PUT', 'GET']);
 });

@@ -103,3 +103,28 @@ it('rejects an oversized release record before transport', async () => {
   await expect(client.call('POST /v1/operations/{id}/release', { scope, id, body }).then(() => 'sent')).rejects.toMatchObject({ kind: 'schema' });
   expect(transport).not.toHaveBeenCalled();
 });
+
+it('forwards a typed list cursor and rejects malformed or misplaced cursors before transport', async () => {
+  const transport = vi.fn(async (request: Request) => {
+    expect(new URL(request.url).searchParams.get('cursor')).toBe(id);
+    return Response.json({ availability: 'healthy', records: [] });
+  });
+  const client = createHttpClient({ origin, transport });
+  await client.call('GET /v1/operations', { scope, cursor: id });
+  await expect(client.call('GET /v1/operations', { scope, cursor: 'bad' as Bytes32 })).rejects.toMatchObject({ kind: 'schema' });
+  // Runtime boundary also rejects callers bypassing TypeScript.
+  await expect(client.call('GET /v1/rewards', { scope, cursor: id } as never)).rejects.toMatchObject({ kind: 'schema' });
+  expect(transport).toHaveBeenCalledTimes(1);
+});
+
+it('preserves rich GET metadata without inventing legacy reservation state', async () => {
+  const record = { recordId: id, kind: 'withdraw', inputId: id, operationId: id, contentHash: id,
+    encryptedBundle: { ciphertext: 'AQID', nonce: `0x${'00'.repeat(12)}`, tag: `0x${'00'.repeat(16)}` },
+    signatureStarted: true, attemptIds: [] };
+  const checkpoint = { blockNumber: '12', blockHash: id, blockTimestamp: '600' };
+  const client = createHttpClient({ origin, transport: async () => Response.json({ scope, record,
+    revision: 2, stateVersion: 9, status: 'finalized-success', checkpoint }) });
+  const result = await client.call('GET /v1/operations/{id}', { scope, id });
+  expect(result).toMatchObject({ revision: 2, stateVersion: 9, status: 'finalized-success', checkpoint });
+  expect(result).not.toHaveProperty('reservationState');
+});

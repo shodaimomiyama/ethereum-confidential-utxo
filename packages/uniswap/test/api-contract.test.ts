@@ -195,6 +195,7 @@ it.each([
 ])('rejects incomplete service lifecycle fields without falling back to legacy: %j', (fields) => {
   const record = { scope, record: payRecord, revision: 1, ...fields };
   expect(() => parseApiResponse('PUT /v1/operations/{id}', 200, record)).toThrowError();
+  expect(() => parseApiResponse('GET /v1/operations/{id}', 200, record)).toThrowError();
   expect(() => parseApiResponse('GET /v1/operations', 200, {
     availability: 'healthy', records: [record],
   })).toThrowError();
@@ -204,6 +205,7 @@ it('preserves complete service lifecycle and legacy reservation fields without i
   const legacy = { scope, record: payRecord, revision: 3, reservationState: 'active' };
   const parsedLegacy = parseApiResponse('PUT /v1/operations/{id}', 200, legacy);
   expect(parsedLegacy).toMatchObject({ revision: 3, reservationState: 'active' });
+  expect(parseApiResponse('GET /v1/operations/{id}', 200, legacy)).toEqual(parsedLegacy);
   expect(parsedLegacy).not.toHaveProperty('status');
   expect(parsedLegacy).not.toHaveProperty('stateVersion');
   const rich = {

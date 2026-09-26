@@ -17,6 +17,7 @@ export class HttpFailure extends Error {
 export interface HttpClient {
   call<Route extends ApiRoute>(route: Route, input: {
     scope: Scope; id?: Bytes32; body?: ApiRequestBodyMap[Route]; signal?: AbortSignal;
+    cursor?: Route extends 'GET /v1/operations' ? Bytes32 : never;
   }): Promise<ApiSuccessResponseMap[Route]>;
 }
 
@@ -34,10 +35,12 @@ export function createHttpClient({ origin, transport = request => fetch(request)
     async call(route, input) {
       const scope = { ...input.scope };
       const id = input.id;
+      const cursor = input.cursor;
       let request: Request;
       let parsedRequest: ReturnType<typeof parseApiRequest>;
       try {
         const [method, template] = route.split(' ');
+        if (cursor !== undefined && route !== 'GET /v1/operations') throw new HttpFailure('schema');
         if (!template || (template.includes('{id}') && (!id || !/^0x[0-9a-fA-F]{64}$/.test(id)))
           || (!template.includes('{id}') && id !== undefined)) throw new HttpFailure('schema');
         const url = new URL(template.replace('{id}', id ?? ''), base.origin);
@@ -46,6 +49,7 @@ export function createHttpClient({ origin, transport = request => fetch(request)
           if (input.body !== undefined) throw new HttpFailure('schema');
           url.searchParams.set('deploymentId', scope.deploymentId);
           url.searchParams.set('owner', scope.owner);
+          if (cursor !== undefined) url.searchParams.set('cursor', cursor);
         }
         const serialized = input.body === undefined ? undefined : JSON.stringify(input.body);
         parsedRequest = parseApiRequest(method!, url.href, serialized === undefined ? undefined : JSON.parse(serialized));

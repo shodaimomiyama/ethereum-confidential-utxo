@@ -1,4 +1,4 @@
-import type { Address, ApiSuccessResponseMap, Bytes32, SavedOperation, Scope } from '@confidential-utxo/uniswap';
+import type { Address, ApiSuccessResponseMap, Bytes32, OperationResponse, Scope } from '@confidential-utxo/uniswap';
 import { HttpFailure, sameScope, type HttpClient } from './http.js';
 import { openRecord, type PlainRecord } from './record-crypto.js';
 import type { CipherCache } from './cache.js';
@@ -12,7 +12,7 @@ export interface FinalizedOutput {
 export interface FinalizedHistory { readonly outputs: readonly FinalizedOutput[] }
 export interface ChainReader { readFinalized(scope: Scope): Promise<FinalizedHistory> }
 export interface RecoveredRecord {
-  readonly saved: SavedOperation & { readonly scope: Scope };
+  readonly saved: OperationResponse;
   readonly plaintext: PlainRecord;
 }
 export type RecoveryAvailability = 'healthy' | 'unavailable' | 'rollback' | 'unknown';
@@ -47,33 +47,47 @@ export class Recovery {
 
   /** Call only after the user's explicit authentication action has established a session. */
   async load(scope: Scope, key: CryptoKey): Promise<RecoveryResult> {
-    let listed: ApiSuccessResponseMap['GET /v1/operations'];
-    try { listed = await this.deps.http.call('GET /v1/operations', { scope }); }
-    catch (error) {
-      return blocked(error instanceof HttpFailure && (error.kind === 'network' || error.code === 'SERVICE_UNAVAILABLE')
-        ? 'unavailable' : 'unknown');
-    }
-    if (listed.availability === 'rollback') return blocked('rollback');
-    if (listed.availability !== 'healthy') return blocked('unknown');
     try {
       const seen = new Set<string>();
+      const cursors = new Set<string>();
       const records: RecoveredRecord[] = [];
-      for (const saved of listed.records) {
-        if (!sameScope(saved.scope, scope) || !sameScope(saved.record.scope, scope)
-          || !Number.isSafeInteger(saved.revision) || saved.revision < 1) throw new Error('INVALID_SAVED_RECORD');
-        const id = saved.record.recordId.toLowerCase();
-        if (seen.has(id)) throw new Error('DUPLICATE_SAVED_RECORD');
-        seen.add(id);
-        const plaintext = await openRecord(key, { deploymentId: scope.deploymentId,
-          chainId: this.deps.chainId, pool: this.deps.pool, owner: scope.owner,
-          recordId: saved.record.recordId, revision: saved.revision }, saved.record.encryptedBundle);
-        if (plaintext.operationId.toLowerCase() !== saved.record.operationId.toLowerCase()
-          || (saved.record.kind === 'pay'
-            ? plaintext.paymentId?.toLowerCase() !== saved.record.paymentId.toLowerCase()
-            : plaintext.paymentId !== undefined)) {
-          throw new Error('RECORD_INDEX_MISMATCH');
+      let cursor: Bytes32 | undefined;
+      for (;;) {
+        let listed: ApiSuccessResponseMap['GET /v1/operations'];
+        try { listed = await this.deps.http.call('GET /v1/operations', { scope, cursor }); }
+        catch (error) {
+          return blocked(error instanceof HttpFailure && (error.kind === 'network' || error.code === 'SERVICE_UNAVAILABLE')
+            ? 'unavailable' : 'unknown');
         }
-        records.push({ saved, plaintext });
+        if (listed.availability === 'rollback') return blocked('rollback');
+        if (listed.availability !== 'healthy') return blocked('unknown');
+        if (cursor !== undefined && listed.records.length === 0) throw new Error('INCOMPLETE_PAGE');
+        let lastId = '';
+        for (const saved of listed.records) {
+          if (!sameScope(saved.scope, scope) || !sameScope(saved.record.scope, scope)
+            || !Number.isSafeInteger(saved.revision) || saved.revision < 1) throw new Error('INVALID_SAVED_RECORD');
+          const id = saved.record.recordId.toLowerCase();
+          if (!hex32.test(id) || (cursor !== undefined && id <= cursor)) throw new Error('INVALID_PAGE_RECORD');
+          if (id > lastId) lastId = id;
+          if (seen.has(id)) throw new Error('DUPLICATE_SAVED_RECORD');
+          seen.add(id);
+          const plaintext = await openRecord(key, { deploymentId: scope.deploymentId,
+            chainId: this.deps.chainId, pool: this.deps.pool, owner: scope.owner,
+            recordId: saved.record.recordId, revision: saved.revision }, saved.record.encryptedBundle);
+          if (plaintext.operationId.toLowerCase() !== saved.record.operationId.toLowerCase()
+            || (saved.record.kind === 'pay'
+              ? plaintext.paymentId?.toLowerCase() !== saved.record.paymentId.toLowerCase()
+              : plaintext.paymentId !== undefined)) {
+            throw new Error('RECORD_INDEX_MISMATCH');
+          }
+          records.push({ saved, plaintext });
+        }
+        if (listed.nextCursor === undefined) break;
+        const next = listed.nextCursor.toLowerCase() as Bytes32;
+        if (!hex32.test(next) || next !== lastId || cursors.has(next)
+          || (cursor !== undefined && next <= cursor)) throw new Error('INVALID_PAGE_CURSOR');
+        cursors.add(next);
+        cursor = next;
       }
       const finalized = deduplicate(await this.deps.chain.readFinalized(scope));
       // Cache writes are hints only. Failure cannot turn verified server/chain state into failure.

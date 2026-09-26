@@ -5,7 +5,7 @@ import { parseApiRequest } from '@confidential-utxo/uniswap';
 import { createChallenge, readSessionIdentity, verifyChallenge } from './auth.js';
 import { parseDeploymentCatalog, resolveDeployment } from './config.js';
 import { apiError, apiSuccess, BodyTooLarge, readLimitedJson } from './http.js';
-import { listOperations, putOperation } from './store.js';
+import { getOperation, listOperations, putOperation } from './store.js';
 import { ensureWritable, getAvailability, initializeEnvironment, resolveRecoveryGate } from './recovery.js';
 import { getServiceExtensions, makeServiceContext } from './extensions.js';
 import { createCoreInputReader, getCoreHistoryProvider } from './core-reader.js';
@@ -57,6 +57,15 @@ export class UniswapServiceObject extends DurableObject<ServiceEnv> {
           ...item, scope: parsed.scope,
           record: { ...item.record, deadline: item.record.kind === 'pay' ? item.record.deadline.toString() : undefined },
         })), ...(page.nextCursor === undefined ? {} : { nextCursor: page.nextCursor }) });
+      }
+      if (parsed.route === 'GET /v1/operations/{id}') {
+        // A single-record reply has no availability field: never expose a rollback as a valid ACK.
+        if (getAvailability(this.ctx.storage, recoveryGate) !== 'healthy') return apiError(503, 'SERVICE_UNAVAILABLE');
+        const saved = getOperation(this.ctx.storage, parsed.scope, parsed.id!);
+        if (saved === undefined) return apiError(404, 'NOT_FOUND');
+        return apiSuccess({ ...saved, scope: parsed.scope,
+          record: { ...saved.record, deadline: saved.record.kind === 'pay' ? saved.record.deadline.toString() : undefined },
+        });
       }
       if (parsed.route === 'PUT /v1/operations/{id}') {
         ensureWritable(this.ctx.storage, recoveryGate);
