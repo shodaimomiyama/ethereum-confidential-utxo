@@ -28,6 +28,32 @@ it('atomically admits one pay or withdraw reservation per input and preserves hi
   expect(rows.records).toHaveLength(1);
 });
 
+it('treats mixed-case hex IDs as the same input reservation', async () => {
+  const ns = (env as unknown as { UNISWAP_STATE: DurableObjectNamespace }).UNISWAP_STATE;
+  const stub = ns.get(ns.idFromName('store-case-test'));
+  await stub.fetch('https://site.test/v1/operations');
+  const first = { ...record(11), inputId: `0x${'ab'.repeat(32)}` } as OperationRecord;
+  const second = { ...record(12, 'withdraw'), inputId: `0x${'AB'.repeat(32)}` } as OperationRecord;
+  await runInDurableObject(stub, (_obj, state) => putOperation(state.storage, scope, first, 0, reader));
+  await expect(runInDurableObject(stub, (_obj, state) => putOperation(state.storage, scope, second, 0, reader)))
+    .rejects.toThrow('RESERVATION_CONFLICT');
+});
+
+it('does not commit after the input reader stops the environment', async () => {
+  const ns = (env as unknown as { UNISWAP_STATE: DurableObjectNamespace }).UNISWAP_STATE;
+  const stub = ns.get(ns.idFromName('store-stop-test'));
+  await stub.fetch('https://site.test/v1/operations');
+  await expect(runInDurableObject(stub, (_obj, state) => putOperation(state.storage, scope, record(13), 0, {
+    readInput: async () => {
+      state.storage.sql.exec("INSERT INTO environment_state (id, status, generation) VALUES (1, 'stopped', 'g1')");
+      return 'owned-unspent';
+    },
+  }))).rejects.toThrow('SERVICE_UNAVAILABLE');
+  const count = await runInDurableObject(stub, (_obj, state) =>
+    state.storage.sql.exec<{ count: number }>('SELECT COUNT(*) AS count FROM operations').toArray()[0]?.count);
+  expect(count).toBe(0);
+});
+
 it('fails closed when input ownership cannot be checked', async () => {
   const ns = (env as unknown as { UNISWAP_STATE: DurableObjectNamespace }).UNISWAP_STATE;
   const stub = ns.get(ns.idFromName('store-test-2'));

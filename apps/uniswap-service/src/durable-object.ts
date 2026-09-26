@@ -51,7 +51,7 @@ export class UniswapServiceObject extends DurableObject<ServiceEnv> {
         ensureWritable(this.ctx.storage, recoveryGate);
         const saved = await putOperation(this.ctx.storage, parsed.scope, parsed.record!, parsed.expectedRevision!, {
           readInput: async () => 'unknown',
-        });
+        }, () => ensureWritable(this.ctx.storage, recoveryGate));
         return apiSuccess({ ...saved, scope: parsed.scope,
           record: { ...saved.record, deadline: saved.record.kind === 'pay' ? saved.record.deadline.toString() : undefined },
         });

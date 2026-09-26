@@ -27,13 +27,16 @@ function readState(storage: DurableObjectStorage): State | undefined {
 export function getAvailability(storage: DurableObjectStorage, gate: RecoveryGate): 'healthy' | 'rollback' {
   if (gate.stopped || gate.generation.length === 0) return 'rollback';
   const state = readState(storage);
-  if (state === undefined) {
-    if (gate.initialize !== true) return 'rollback';
-    // The external deployment setting may permit this only on the first deployment.
-    storage.sql.exec("INSERT INTO environment_state (id, status, generation) VALUES (1, 'healthy', ?)", gate.generation);
-    return 'healthy';
-  }
+  if (state === undefined) return 'rollback';
   return state.status === 'healthy' && state.generation === gate.generation ? 'healthy' : 'rollback';
+}
+
+// Operator-only bootstrap. Never call this from fetch/alarm; #60 must guard invocation externally.
+export function initializeEnvironment(storage: DurableObjectStorage, gate: RecoveryGate): void {
+  if (gate.stopped || gate.initialize !== true || gate.generation.length === 0 || readState(storage) !== undefined) {
+    throw new Error('INITIALIZATION_NOT_ALLOWED');
+  }
+  storage.sql.exec("INSERT INTO environment_state (id, status, generation) VALUES (1, 'healthy', ?)", gate.generation);
 }
 
 export function ensureWritable(storage: DurableObjectStorage, gate: RecoveryGate): void {

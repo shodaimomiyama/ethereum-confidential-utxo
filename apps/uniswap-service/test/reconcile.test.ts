@@ -57,9 +57,23 @@ it('keeps Withdraw reserved after expiry and never releases a consumed input or 
   await stub.fetch('https://site.test/v1/operations');
   await runInDurableObject(stub, (_obj, state) => putOperation(state.storage, scope, record(3, 'withdraw'), 0, inputReader));
   const withdraw = await runInDurableObject(stub, (_obj, state) => reconcileOperation(state.storage, scope, id(3),
-    { readFinalizedView: async () => view('9999') }));
+    { readFinalizedView: async () => view('9999', false, true) }));
   expect(withdraw.status).toBe('reserved');
   const consumed = await runInDurableObject(stub, (_obj, state) => reconcileOperation(state.storage, scope, id(3),
     { readFinalizedView: async () => view('9999', true) }));
   expect(consumed.status).toBe('consumed');
+});
+
+it('does not release a reservation after the finalized reader observes a stop', async () => {
+  const ns = (env as unknown as { UNISWAP_STATE: DurableObjectNamespace }).UNISWAP_STATE;
+  const stub = ns.get(ns.idFromName('reconcile-stop'));
+  await stub.fetch('https://site.test/v1/operations');
+  await runInDurableObject(stub, (_obj, state) => putOperation(state.storage, scope, record(4), 0, inputReader));
+  const result = await runInDurableObject(stub, (_obj, state) => reconcileOperation(state.storage, scope, id(4), {
+    readFinalizedView: async () => {
+      state.storage.sql.exec("INSERT INTO environment_state (id, status, generation) VALUES (1, 'stopped', 'g1')");
+      return view('601');
+    },
+  }));
+  expect(result.status).toBe('reserved');
 });

@@ -5,6 +5,7 @@ export interface FinalizedView {
   readonly checkpoint: FinalizedCheckpoint;
   readonly input: { readonly blockHash: string; readonly spent: boolean };
   readonly pay: { readonly blockHash: string; readonly succeeded: boolean };
+  readonly operation?: { readonly blockHash: string; readonly succeeded: boolean };
 }
 
 export interface FinalizedReader {
@@ -13,8 +14,10 @@ export interface FinalizedReader {
 
 function classify(record: StoredOperation['record'], view: FinalizedView): StoredOperation['status'] {
   const hash = view.checkpoint.blockHash.toLowerCase();
-  if (view.input.blockHash.toLowerCase() !== hash || view.pay.blockHash.toLowerCase() !== hash) return 'unknown';
-  if (view.pay.succeeded) return 'finalized-success';
+  if (view.input.blockHash.toLowerCase() !== hash || view.pay.blockHash.toLowerCase() !== hash
+    || (view.operation !== undefined && view.operation.blockHash.toLowerCase() !== hash)) return 'unknown';
+  if (record.kind === 'pay' && view.pay.succeeded) return 'finalized-success';
+  if (record.kind === 'withdraw' && view.operation?.succeeded) return 'finalized-success';
   if (view.input.spent) return 'consumed';
   if (record.kind === 'pay' && BigInt(view.checkpoint.blockTimestamp) > record.deadline) return 'released';
   return 'reserved';
@@ -22,13 +25,18 @@ function classify(record: StoredOperation['record'], view: FinalizedView): Store
 
 export async function reconcileOperation(
   storage: DurableObjectStorage, scope: Scope, recordId: string, reader: FinalizedReader,
+  assertWritable?: () => void,
 ): Promise<StoredOperation> {
+  recordId = recordId.toLowerCase();
   const before = getOperation(storage, scope, recordId);
   if (before === undefined) throw new Error('NOT_FOUND');
   let view: FinalizedView | undefined;
   try { view = await reader.readFinalizedView(scope, before.record); } catch { /* unavailable RPC */ }
   const nextStatus = view === undefined ? 'unknown' : classify(before.record, view);
   return storage.transactionSync(() => {
+    assertWritable?.();
+    const stopped = storage.sql.exec<{ status: string }>('SELECT status FROM environment_state WHERE id = 1').toArray()[0];
+    if (stopped?.status === 'stopped') return getOperation(storage, scope, recordId)!;
     const current = getOperation(storage, scope, recordId);
     if (current === undefined) throw new Error('NOT_FOUND');
     if (current.stateVersion !== before.stateVersion || current.revision !== before.revision) return current;

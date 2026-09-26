@@ -3,6 +3,7 @@ import { runInDurableObject } from 'cloudflare:test';
 import { expect, it } from 'vitest';
 import { registerServiceExtension, getServiceExtensions, makeServiceContext } from '../src/extensions.js';
 import type { UniswapServiceObject } from '../src/durable-object.js';
+import { initializeEnvironment } from '../src/recovery.js';
 
 it('uses the same SQLite transaction and rejects duplicate migration versions', async () => {
   const extension = {
@@ -20,6 +21,7 @@ it('uses the same SQLite transaction and rejects duplicate migration versions', 
   await stub.fetch('https://site.test/v1/operations');
   await runInDurableObject(stub, async (_obj, state) => {
     await state.storage.put('deploymentId', 'local-v1');
+    initializeEnvironment(state.storage, { generation: 'test-g1', stopped: false, initialize: true });
     const context = makeServiceContext(state.storage, { generation: 'test-g1', stopped: false, initialize: true });
     context.transactionSync(() => state.storage.sql.exec('INSERT INTO extension_test (id) VALUES (1)'));
     expect(state.storage.sql.exec<{ id: number }>('SELECT id FROM extension_test').toArray()).toEqual([{ id: 1 }]);

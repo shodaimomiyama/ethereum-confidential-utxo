@@ -48,7 +48,7 @@ function fromRow(storage: DurableObjectStorage, scope: Scope, row: Row): StoredO
 export function getOperation(storage: DurableObjectStorage, scope: Scope, recordId: string): StoredOperation | undefined {
   const row = storage.sql.exec<Row>(
     'SELECT * FROM operations WHERE deployment_id = ? AND owner = ? AND record_id = ?',
-    scope.deploymentId, normalize(scope), recordId,
+    scope.deploymentId, normalize(scope), recordId.toLowerCase(),
   ).toArray()[0];
   return row === undefined ? undefined : fromRow(storage, scope, row);
 }
@@ -58,7 +58,7 @@ export function listOperations(storage: DurableObjectStorage, scope: Scope, curs
 } {
   const rows = storage.sql.exec<Row>(
     'SELECT * FROM operations WHERE deployment_id = ? AND owner = ? AND record_id > ? ORDER BY record_id LIMIT 101',
-    scope.deploymentId, normalize(scope), cursor ?? '',
+    scope.deploymentId, normalize(scope), cursor?.toLowerCase() ?? '',
   ).toArray();
   const page = rows.slice(0, 100).map((row) => fromRow(storage, scope, row));
   return { records: page, ...(rows.length > 100 ? { nextCursor: page[99]!.record.recordId } : {}) };
@@ -78,8 +78,14 @@ function sameMutable(a: OperationRecord, b: OperationRecord): boolean {
 
 export async function putOperation(
   storage: DurableObjectStorage, scope: Scope, record: OperationRecord,
-  expectedRevision: number, inputReader: InputReader,
+  expectedRevision: number, inputReader: InputReader, assertWritable?: () => void,
 ): Promise<StoredOperation> {
+  record = {
+    ...record,
+    recordId: record.recordId.toLowerCase(), inputId: record.inputId.toLowerCase(),
+    operationId: record.operationId.toLowerCase(), contentHash: record.contentHash.toLowerCase(),
+    ...(record.kind === 'pay' ? { paymentId: record.paymentId.toLowerCase() } : {}),
+  } as OperationRecord;
   if (record.scope.deploymentId !== scope.deploymentId || normalize(record.scope) !== normalize(scope)) {
     throw new Error('SCOPE_MISMATCH');
   }
@@ -91,6 +97,9 @@ export async function putOperation(
     if (inputState !== 'owned-unspent') throw new Error('RESERVATION_CONFLICT');
   }
   return storage.transactionSync(() => {
+    assertWritable?.();
+    const stopped = storage.sql.exec<{ status: string }>('SELECT status FROM environment_state WHERE id = 1').toArray()[0];
+    if (stopped?.status === 'stopped') throw new Error('SERVICE_UNAVAILABLE');
     const current = getOperation(storage, scope, record.recordId);
     if (current !== undefined) {
       if (!sameImmutable(current.record, record)) throw new Error('RESERVATION_CONFLICT');
