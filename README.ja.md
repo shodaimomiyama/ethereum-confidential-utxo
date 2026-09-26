@@ -82,7 +82,7 @@ bash benchmarks/prior-eips/recipient/run.sh /tmp/eip8182-clean http://127.0.0.1:
 
 ## 文書索引
 
-macOS Apple Siliconでの環境構築、ローカルRPCスモークテスト、固定版K/Kontrolのスモーク証明は[開発環境ガイド](docs/development.md)を参照してください。
+macOS Apple Siliconでの環境構築、ローカルRPCスモークテスト、固定版K/Kontrolのスモーク証明は[開発環境ガイド](docs/guides/development.md)を参照してください。
 
 技術文書の正本は日本語です。両READMEから同じ正本を参照します。
 
