@@ -6,6 +6,7 @@ import { apiError, assertBundleSize, BodyTooLarge, readLimitedJson } from './htt
 export interface ServiceEnv {
   readonly UNISWAP_STATE: DurableObjectNamespace<UniswapServiceObject>;
   readonly DEPLOYMENTS_JSON: string;
+  readonly RECOVERY_JSON: string;
 }
 
 export { UniswapServiceObject };

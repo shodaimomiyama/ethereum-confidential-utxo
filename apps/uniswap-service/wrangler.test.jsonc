@@ -3,7 +3,8 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-09-25",
   "vars": {
-    "DEPLOYMENTS_JSON": "{\"local-v1\":{\"origin\":\"https://site.test\",\"siweUri\":\"https://site.test/\",\"chainId\":31337,\"pool\":\"0x0000000000000000000000000000000000000001\"}}"
+    "DEPLOYMENTS_JSON": "{\"local-v1\":{\"origin\":\"https://site.test\",\"siweUri\":\"https://site.test/\",\"chainId\":31337,\"pool\":\"0x0000000000000000000000000000000000000001\"}}",
+    "RECOVERY_JSON": "{\"local-v1\":{\"generation\":\"test-g1\",\"stopped\":false,\"initialize\":true}}"
   },
   "durable_objects": {
     "bindings": [
