@@ -41,7 +41,7 @@ export type SubmissionOutcome =
 
 export interface RecoveryPorts {
   readEvidence(saved: SavedReservation): Promise<{ readonly evidence: RecoveryEvidence; readonly currentInput: CurrentInput }>;
-  restoreOriginal(saved: SavedReservation, evidence: RecoveryEvidence): Promise<{ readonly prepared: PreparedBase; readonly signatures: AuthorizationSignatures }>;
+  restoreOriginal(saved: SavedReservation, evidence: RecoveryEvidence): Promise<{ readonly prepared: PreparedPay | PreparedFullWithdraw; readonly signatures?: AuthorizationSignatures }>;
   restoreForRetry(saved: SavedReservation, evidence: RecoveryEvidence): Promise<{ readonly prepared: PreparedBase; readonly signatures: AuthorizationSignatures }>;
   releaseAndPrepareChangedTerms(saved: SavedReservation, evidence: RecoveryEvidence, input: unknown): Promise<PreparedPay>;
 }
@@ -288,7 +288,7 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
     if (inspectOperation(saved, evidence, currentInput).action !== action) {
       throw new PaymentProcessError('RECOVERY_BLOCKED');
     }
-    if ((action === 'resume-original' || action === 'retry-attempt') && !saved.record.signatureStarted) {
+    if (action === 'retry-attempt' && !saved.record.signatureStarted) {
       throw new PaymentProcessError('RECOVERY_BLOCKED');
     }
     const result = await execute(recovery, saved, evidence);
@@ -301,17 +301,8 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
     restored: { readonly prepared: PreparedBase; readonly signatures: AuthorizationSignatures },
   ): Promise<SubmissionOutcome> {
     const { prepared, signatures } = restored;
-    assertScope(saved.record.scope);
-    if (!sameScope(prepared.record.scope, saved.record.scope)
-      || !sameHash(prepared.record.recordId, saved.record.recordId)
-      || !sameHash(prepared.record.inputId, saved.record.inputId)
-      || !sameHash(prepared.record.contentHash, saved.record.contentHash)
-      || !sameHash(prepared.record.operationId, saved.record.operationId)
-      || prepared.record.kind !== saved.record.kind
-      || (prepared.record.kind === 'pay' && saved.record.kind === 'pay'
-        && (!sameHash(prepared.record.paymentId, saved.record.paymentId)
-          || prepared.record.deadline !== saved.record.deadline
-          || signatures.payment === undefined))) {
+    assertRecoveredPrepared(saved, prepared);
+    if (prepared.record.kind === 'pay' && signatures.payment === undefined) {
       throw new PaymentProcessError('RECOVERY_BLOCKED');
     }
     await ports.validatePrepared(prepared);
@@ -337,6 +328,61 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
       await persistKnownHash(attempted, prepared, signatures, attemptId, outcome.txHash);
     }
     return outcome;
+  }
+
+  function assertRecoveredPrepared(saved: SavedReservation, prepared: PreparedBase): void {
+    assertScope(saved.record.scope);
+    if (!sameScope(prepared.record.scope, saved.record.scope)
+      || !sameHash(prepared.record.recordId, saved.record.recordId)
+      || !sameHash(prepared.record.inputId, saved.record.inputId)
+      || !sameHash(prepared.record.contentHash, saved.record.contentHash)
+      || !sameHash(prepared.record.operationId, saved.record.operationId)
+      || prepared.record.kind !== saved.record.kind
+      || (prepared.record.kind === 'pay' && saved.record.kind === 'pay'
+        && (!sameHash(prepared.record.paymentId, saved.record.paymentId)
+          || prepared.record.deadline !== saved.record.deadline))) {
+      throw new PaymentProcessError('RECOVERY_BLOCKED');
+    }
+  }
+
+  async function resumeOriginal(
+    saved: SavedReservation,
+    restored: { readonly prepared: PreparedPay | PreparedFullWithdraw; readonly signatures?: AuthorizationSignatures },
+  ): Promise<SubmissionOutcome> {
+    const { prepared } = restored;
+    assertRecoveredPrepared(saved, prepared);
+    if (!saved.record.signatureStarted && restored.signatures !== undefined) {
+      throw new PaymentProcessError('RECOVERY_BLOCKED');
+    }
+    let current = saved;
+    if (!current.record.signatureStarted) {
+      const revision = current.revision + 1;
+      const record = await encryptRecord({ ...current.record, signatureStarted: true }, prepared.privateBytes, revision);
+      current = await recoverAck(record, revision,
+        () => ports.reservations.update(record, saved.revision, revision));
+      assertScope(saved.record.scope);
+      assertSaved(current, record, revision);
+    }
+    let signatures = restored.signatures;
+    if (signatures === undefined) {
+      if (prepared.record.kind === 'pay') await assertPayTermsLive(prepared as PreparedPay);
+      const pool = await ports.signPool(prepared.poolAuthorization);
+      assertScope(saved.record.scope);
+      if (prepared.record.kind === 'pay') await assertPayTermsLive(prepared as PreparedPay);
+      const payment = prepared.record.kind === 'pay'
+        ? await ports.signPayment(prepared as PreparedPay) : undefined;
+      assertScope(saved.record.scope);
+      signatures = { pool, ...(payment === undefined ? {} : { payment }) };
+      const revision = current.revision + 1;
+      const bytes = ports.sealContent(prepared, signatures);
+      const record = await encryptRecord(current.record, bytes, revision);
+      const previousRevision = current.revision;
+      current = await recoverAck(record, revision,
+        () => ports.reservations.update(record, previousRevision, revision));
+      assertScope(saved.record.scope);
+      assertSaved(current, record, revision);
+    }
+    return submitRecovered(current, { prepared, signatures });
   }
 
   async function reconcile(recordId: Bytes32, ref: OperationRef): Promise<ReconciledPayment> {
@@ -370,7 +416,7 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
     authorizePay: (prepared, confirmation) => authorize(prepared, confirmation, true),
     authorizeFullWithdraw: (prepared, confirmation) => authorize(prepared, confirmation, false),
     resumeOriginal: (recordId) => recover(recordId, 'resume-original',
-      async (recovery, saved, evidence) => submitRecovered(saved, await recovery.restoreOriginal(saved, evidence))),
+      async (recovery, saved, evidence) => resumeOriginal(saved, await recovery.restoreOriginal(saved, evidence))),
     retryAttempt: (recordId) => recover(recordId, 'retry-attempt',
       async (recovery, saved, evidence) => submitRecovered(saved, await recovery.restoreForRetry(saved, evidence))),
     prepareChangedTerms: (recordId, input) => recover(recordId, 'change-terms',

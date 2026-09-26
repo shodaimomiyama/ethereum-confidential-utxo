@@ -301,3 +301,24 @@ it('reconciles only against the current scope and a healthy saved operation', as
   fixture.reservations.control.simulateRollback();
   await expect(client.reconcile(recordId as never, ref)).rejects.toMatchObject({ code: 'RECOVERY_BLOCKED' });
 });
+
+it('resumes a reserved unsigned operation only after saving the signature-start fact', async () => {
+  const fixture = setup();
+  await fixture.reservations.reserve(fixture.prepared.record, 0, 1);
+  fixture.ports.recovery = {
+    readEvidence: async () => ({
+      evidence: {
+        finalized: true, blockTime: 100n, paymentSucceeded: false,
+        submissionKnownAbsent: true, attempts: [], storageAvailability: 'healthy',
+      },
+      currentInput: { state: 'unspent' },
+    }),
+    restoreOriginal: async () => ({ prepared: fixture.prepared }),
+    restoreForRetry: async () => { throw new Error('unused'); },
+    releaseAndPrepareChangedTerms: async () => fixture.prepared,
+  };
+  const result = await createPaymentClient(fixture.ports).resumeOriginal(recordId as never);
+  expect(result.kind).toBe('submitted');
+  expect(fixture.calls.slice(0, 6)).toEqual(['get', 'encrypt:2', 'update', 'sign-pool', 'sign-payment', 'encrypt:3']);
+  expect((await fixture.reservations.get(scope, record.recordId))?.record.signatureStarted).toBe(true);
+});
