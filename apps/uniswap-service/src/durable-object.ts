@@ -60,12 +60,13 @@ export class UniswapServiceObject extends DurableObject<ServiceEnv> {
       }
       if (parsed.route === 'PUT /v1/operations/{id}') {
         ensureWritable(this.ctx.storage, recoveryGate);
+        const provider = getCoreHistoryProvider();
+        if (provider === undefined) return apiError(503, 'SERVICE_UNAVAILABLE');
         let history;
-        try { history = getCoreHistoryProvider()?.(parsed.scope.deploymentId, config); }
+        try { history = provider(parsed.scope.deploymentId, config); }
         catch { return apiError(503, 'SERVICE_UNAVAILABLE'); }
-        const saved = await putOperation(this.ctx.storage, parsed.scope, parsed.record!, parsed.expectedRevision!, {
-          ...(history === undefined ? { readInput: async () => 'unknown' as const } : createCoreInputReader(history, config)),
-        }, () => ensureWritable(this.ctx.storage, recoveryGate));
+        const saved = await putOperation(this.ctx.storage, parsed.scope, parsed.record!, parsed.expectedRevision!,
+          createCoreInputReader(history, config), () => ensureWritable(this.ctx.storage, recoveryGate));
         return apiSuccess({ ...saved, scope: parsed.scope,
           record: { ...saved.record, deadline: saved.record.kind === 'pay' ? saved.record.deadline.toString() : undefined },
         });

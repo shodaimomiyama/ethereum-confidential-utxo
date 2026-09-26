@@ -17,15 +17,16 @@ const context: Context = {
 const config: DeploymentConfig = { origin: 'https://site.test', siweUri: 'https://site.test/', chainId: 31337, pool };
 
 function history(overrides: {
-  owner?: string; consumedBy?: string; complete?: boolean; context?: Context;
+  owner?: string; consumedBy?: string; complete?: boolean; context?: Context; latestContext?: Context;
   latestConsumedBy?: string; ancestorHash?: string;
 } = {}): HistoryPort {
   const observed = <T>(value: T) => overrides.complete === false
     ? { complete: false as const, reason: 'GAP' as const }
     : { complete: true as const, blockHash: hash, value };
+  let contextReads = 0;
   return {
     getFinalizedCheckpoint: async () => point,
-    getContext: async () => observed(overrides.context ?? context),
+    getContext: async () => observed(contextReads++ === 0 ? overrides.context ?? context : overrides.latestContext ?? context),
     getUtxo: async () => observed({ exists: true, owner: overrides.owner ?? owner,
       commitment: { x: 1n, y: 2n },
       ...(overrides.consumedBy ? { consumedBy: overrides.consumedBy } : {}) }),
@@ -48,5 +49,7 @@ it('uses #29 finalized and latest observations to identify an owned unspent inpu
   expect(await createCoreInputReader(history({ ancestorHash: `0x${'ee'.repeat(32)}` }), config)
     .readInput(scope, inputId)).toBe('unknown');
   expect(await createCoreInputReader(history({ context: { ...context, chainId: 1n } }), config)
+    .readInput(scope, inputId)).toBe('unknown');
+  expect(await createCoreInputReader(history({ latestContext: { ...context, parametersHash: `0x${'ff'.repeat(32)}` } }), config)
     .readInput(scope, inputId)).toBe('unknown');
 });

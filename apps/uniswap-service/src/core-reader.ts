@@ -26,6 +26,12 @@ function matchesContext(context: Context, config: DeploymentConfig): boolean {
     && context.finalityMode === 'finalized' && context.deploymentBlock >= 0n;
 }
 
+function sameContext(left: Context, right: Context): boolean {
+  return left.chainId === right.chainId && same(left.pool, right.pool)
+    && left.deploymentBlock === right.deploymentBlock && same(left.verifier, right.verifier)
+    && same(left.parametersHash, right.parametersHash) && left.finalityMode === right.finalityMode;
+}
+
 function classify(state: UtxoState, scope: Scope): InputState {
   if (!state.exists) return 'other-owner';
   if (state.owner === undefined || !same(state.owner, scope.owner)) return 'other-owner';
@@ -54,7 +60,8 @@ export function createCoreInputReader(history: HistoryPort, config: DeploymentCo
         const finalState = classify(atFinalized, scope);
         if (finalState !== 'owned-unspent') return finalState;
         const latestContext = read(await history.getContext(latestPoint), latestPoint);
-        if (latestContext === undefined || !matchesContext(latestContext, config)) return 'unknown';
+        if (latestContext === undefined || !matchesContext(latestContext, config)
+          || !sameContext(context, latestContext)) return 'unknown';
         const atLatest = read(await history.getLatestUtxo(inputId as Hex, latest), latestPoint);
         if (atLatest === undefined) return 'unknown';
         const latestState = classify(atLatest, scope);
