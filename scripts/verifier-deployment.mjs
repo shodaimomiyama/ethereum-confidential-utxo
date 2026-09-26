@@ -91,3 +91,11 @@ export async function deployAndCheck(record, environment) {
     initialStateSha256: sha256(hexBytes(args, 'constructor arguments')),
   };
 }
+
+export function compareDeploymentRecord(recorded, actual) {
+  for (const key of ['chainId', 'hardfork', 'address', 'from', 'transactionHash', 'blockGasLimit',
+    'gasUsed', 'runtimeBytes', 'fullInitcodeBytes', 'runtimeSha256', 'initcodeSha256',
+    'constructorInputSha256', 'initialStateSha256']) {
+    if (recorded?.[key] !== actual?.[key]) throw new Error(`deployment ${key} mismatch`);
+  }
+}

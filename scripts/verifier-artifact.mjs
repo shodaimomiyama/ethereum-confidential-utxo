@@ -75,7 +75,7 @@ export function createVerifierRecord(artifact) {
   };
 }
 
-export function verifyVerifierRecord(record, artifact) {
+export function verifyVerifierRecord(record, artifact, { requireMeasurements = true } = {}) {
   const expected = createVerifierRecord(artifact);
   for (const key of Object.keys(expected)) {
     if (JSON.stringify(record?.[key]) !== JSON.stringify(expected[key])) throw new Error(`${key} mismatch`);
@@ -86,7 +86,20 @@ export function verifyVerifierRecord(record, artifact) {
       throw new Error('deployment binding mismatch');
     }
   }
-  if (record.measurements) validateMeasurements(record.measurements, expected.manifest.runtimeSha256);
+  if (requireMeasurements) {
+    if (!record.measurements) throw new Error('measurements missing');
+    if (!record.measurementEnvironment) throw new Error('measurement environment missing');
+    validateMeasurements(record.measurements, expected.manifest.runtimeSha256);
+    const environment = record.measurementEnvironment;
+    if (environment.chainId !== 31337 || environment.hardfork !== 'cancun' ||
+        typeof environment.node !== 'string' || typeof environment.forge !== 'string' ||
+        typeof environment.anvil !== 'string' || !/^[0-9]+$/.test(environment.blockGasLimit) ||
+        !Array.isArray(environment.commands) || environment.commands.length === 0 ||
+        typeof environment.interpretation !== 'string' ||
+        !environment.interpretation.includes('no Pool operation')) {
+      throw new Error('measurement environment invalid');
+    }
+  }
   return expected;
 }
 

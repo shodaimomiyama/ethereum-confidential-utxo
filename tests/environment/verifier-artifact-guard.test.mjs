@@ -2,9 +2,11 @@ import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { readFileSync } from 'node:fs';
 import { createVerifierRecord, verifyVerifierRecord, validateMeasurements, artifactPath } from '../../scripts/verifier-artifact.mjs';
+import { compareDeploymentRecord } from '../../scripts/verifier-deployment.mjs';
 
 const artifact = JSON.parse(readFileSync(artifactPath, 'utf8'));
 const original = createVerifierRecord(artifact);
+const published = JSON.parse(readFileSync('packages/ethereum/generated/verifier-v3.json', 'utf8'));
 
 test('published verifier guard rejects ABI, runtime and constructor mutations', () => {
   const abi = structuredClone(original);
@@ -41,4 +43,19 @@ test('measurement schema requires reproducible separate calls', () => {
   const combined = structuredClone(rows);
   combined[2].type = 'pool-operation';
   assert.throws(() => validateMeasurements(combined, original.manifest.runtimeSha256));
+});
+
+test('published guard rejects a record with no gas measurements', () => {
+  assert.throws(() => verifyVerifierRecord(original, artifact), /measurements missing/);
+  const environment = structuredClone(published);
+  delete environment.measurementEnvironment;
+  assert.throws(() => verifyVerifierRecord(environment, artifact), /measurement environment missing/);
+});
+
+test('deployment comparison rejects changed address, caller and transaction hash', () => {
+  for (const key of ['address', 'from', 'transactionHash']) {
+    const changed = structuredClone(published.deployment);
+    changed[key] = key === 'transactionHash' ? `0x${'00'.repeat(32)}` : `0x${'11'.repeat(20)}`;
+    assert.throws(() => compareDeploymentRecord(changed, published.deployment), /deployment .* mismatch/);
+  }
 });

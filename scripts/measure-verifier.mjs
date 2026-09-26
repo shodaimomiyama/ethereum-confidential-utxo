@@ -6,7 +6,7 @@ import { deployAndCheck, withAnvil } from './verifier-deployment.mjs';
 
 const artifact = JSON.parse(readFileSync(artifactPath, 'utf8'));
 const record = JSON.parse(readFileSync(outputPath, 'utf8'));
-verifyVerifierRecord(record, artifact);
+verifyVerifierRecord(record, artifact, { requireMeasurements: false });
 const rangeCase = JSON.parse(readFileSync('tests/vectors/cases/range-v3.json', 'utf8'))
   .find(item => item.id === 'VEC-04-VALID-MIN');
 const balanceCase = JSON.parse(readFileSync('tests/vectors/cases/balance.json', 'utf8'))
@@ -61,8 +61,7 @@ if (output.deployment.initialStateSha256 !== record.deployment.initialStateSha25
     output.deployment.runtimeSha256 !== record.deployment.runtimeSha256) {
   throw new Error('measurement deployment differs from published artifact');
 }
-record.measurements = output.rows;
-record.measurementEnvironment = {
+const measurementEnvironment = {
   node: process.version,
   forge: execFileSync('forge', ['--version'], { encoding: 'utf8' }).trim(),
   anvil: execFileSync('anvil', ['--version'], { encoding: 'utf8' }).trim(),
@@ -70,5 +69,14 @@ record.measurementEnvironment = {
   commands: ['pnpm build', 'pnpm artifact:verifier', 'pnpm measure:verifier', 'pnpm check:verifier'],
   interpretation: 'Individual verifier transactions only; no Pool operation or end-to-end gas claim.',
 };
-writeFileSync(outputPath, `${JSON.stringify(record, null, 2)}\n`);
+if (process.argv.includes('--check')) {
+  if (JSON.stringify(record.measurements) !== JSON.stringify(output.rows) ||
+      JSON.stringify(record.measurementEnvironment) !== JSON.stringify(measurementEnvironment)) {
+    throw new Error('recorded gas measurement mismatch');
+  }
+} else {
+  record.measurements = output.rows;
+  record.measurementEnvironment = measurementEnvironment;
+  writeFileSync(outputPath, `${JSON.stringify(record, null, 2)}\n`);
+}
 console.log(`Deployment ${output.rows[0].gasUsed}; range ${output.rows[1].gasUsed}; balance ${output.rows[2].gasUsed} gas`);
