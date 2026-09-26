@@ -33,6 +33,8 @@
 | [Uniswap接続のPRD](docs/integration/uniswap/PRD.md) | Confidential UTXOから公開交換へ接続する際の要求と対象範囲 |
 | [Uniswap接続の要件定義](docs/integration/uniswap/requirements.md) | 部分支払い、認可と取消、機密性、コストと追試の受入条件 |
 | [Uniswap接続の仕様](docs/integration/uniswap/specification.md) | 支払いの受理と取消、全量着金、同期、公開サイトとデモ報酬要求の振る舞い |
+| [Uniswap接続のアーキテクチャ](docs/integration/uniswap/architecture.md) | 接続・サイト・配布の構成、採用技術、配置と検証環境 |
+| [Uniswap接続の設計](docs/integration/uniswap/design.md) | 接続固有の詳細規則、方式選定、復旧と成立性の証拠 |
 
 ## 規約
 

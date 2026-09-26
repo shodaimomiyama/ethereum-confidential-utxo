@@ -1,0 +1,15 @@
+{
+  "id": "UX-04",
+  "question": "Can an environment-scoped SQLite Durable Object preserve one reservation and one reward intent across concurrency, lost acknowledgements, crashes, broadcasts, and chain reorganizations?",
+  "affected_rules": ["docs/integration/uniswap/design.md: UX-04", "docs/integration/uniswap/specification.md: reward request identity and recovery"],
+  "method": [
+    "Pin and run the local Cloudflare SQLite Durable Object runtime without deployment.",
+    "Model a unique input reservation, immutable request content, one operationId per request, signed raw transaction persisted before broadcast, and finalized-chain reconciliation.",
+    "Exercise concurrent same/different requests, lost save acknowledgement, lost broadcast acknowledgement, restart, reorg, and stale revision; record raw responses and DB snapshots.",
+    "Probe AES-256-GCM nonce generation, AAD revision binding, and ciphertext alteration rejection inside local workerd.",
+    "Start two independent Node processes sequentially against the same local SQLite persistence directory; verify reservation, request, raw transaction, uncertain phase, and duplicate rejection after restart."
+  ],
+  "acceptance": "In the target local runtime, atomic uniqueness must reject conflicting input and request writes; retry must return the original operation and raw transaction; uncertain broadcast/reorg must prevent new distribution and UTXO reuse. A model test only establishes these invariants for that model; chain integration and full production code remain separate.",
+  "pre_run_status": "planned",
+  "prohibitions": ["No external deployment", "No secrets", "No real funds"]
+}

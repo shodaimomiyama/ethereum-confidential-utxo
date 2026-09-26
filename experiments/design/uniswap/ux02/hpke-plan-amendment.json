@@ -1,0 +1,32 @@
+{
+  "id": "UX-02 Chrome recipient-key and HPKE local probe",
+  "createdBeforeExecution": "2026-09-27",
+  "scope": "Two isolated Chrome profiles with the same test-only MetaMask EOA. This amends the older Firefox plan after the user removed Firefox from initial scope.",
+  "question": "Does the actual MetaMask signature reproduce a recipient public key and decrypt a v1 HPKE receipt in a separate Chrome profile without transferring a secret key?",
+  "fixedBytes": {
+    "personalSignMessage": "The exact UTF-8 bytes are constructed by signature-probe.html: six newline-separated lines, no trailing newline; purpose ecu/uniswap/key-root/v1; decimal chainId; lowercase hex Pool and owner. This probe reuses that text unchanged.",
+    "signature": "65 bytes r||s||v decoded from 0x-prefixed personal_sign hex. Require canonical low-s and v=27 or 28; recover address from EIP-191 hash of the exact message and require owner match. No byte rewrite before HKDF.",
+    "hkdfHash": "SHA-256",
+    "hkdfSalt": "SHA-256 of UTF-8 ecu/uniswap/key-root/hkdf-salt/v1",
+    "hkdfRecipientInfo": "UTF-8 ecu/uniswap/recipient-ikm/v1",
+    "hkdfOutput": "32-byte IKM for RFC 9180 DHKEM DeriveKeyPair, not a raw X25519 scalar. The 32-byte derived IKM and private key remain in memory only.",
+    "hpkeMode": "Base",
+    "hpkeSuite": "DHKEM(X25519, HKDF-SHA256), HKDF-SHA256, ChaCha20-Poly1305",
+    "hpkeInfo": "D-08 info_i = Keccak-256(abi.encode(tag(ecu/hpke-info/v1), uint256 chainId, address pool, uint8 kind=1, bytes32 random salt, uint256 outputIndex=0, address owner, uint256 Cx=1, uint256 Cy=2, uint8 receiptFormat=1)). C=(1,2) is a valid curve point used only as a synthetic context; it is not derived from the receipt.",
+    "hpkeAad": "empty byte string",
+    "plaintext": "v||r, unsigned 32-byte big-endian each. Fresh random v in [1, 2^64] and r in [0, BN254 q) generated in profile A memory only.",
+    "packet": "enc (32 bytes) || ciphertext (80 bytes), 112 bytes total, hex encoded for manual public transfer"
+  },
+  "method": [
+    "Build a local bundle from exact npm-locked dependencies, host it on 127.0.0.1, and obtain personal_sign from the real MetaMask extension in each profile.",
+    "Profile A derives the public recipient key and encrypts one synthetic receipt. Copy only the public envelope into profile B.",
+    "Profile B derives the key, checks owner/chain/pool match and public key equality, decrypts the packet, validates exact length and v/r ranges, and confirms a one-byte ciphertext tamper is rejected.",
+    "Run a local mock-wallet signature test of deterministic keys, independent receiver, expected packet lengths and tamper rejection before manual use."
+  ],
+  "passCriteria": [
+    "Actual test-only MetaMask provides the same recipient public key in both independent Chrome profiles for the same chain, Pool and owner.",
+    "Profile B accepts an A-created 112-byte packet and rejects its one-byte tampering."
+  ],
+  "evidenceBoundary": "No actual BN254 commitment equality, RecipientInfo EIP-712 signature, on-chain event or finalized/unspent history is tested. A success is a partial UX-02 result, not full recipient acceptance. No real funds are involved.",
+  "sensitiveDataRule": "Never display, log, store or transmit raw signature, HKDF output, private key, plaintext amount, blinding, or seed. Only the public recipient key and public HPKE envelope may be copied."
+}

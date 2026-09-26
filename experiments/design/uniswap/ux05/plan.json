@@ -1,0 +1,31 @@
+{
+  "id": "UX-05",
+  "status": "planned",
+  "question": "In the mandatory 10u split / 3u payment history, which reward and remainder amounts are consistent with each observer's stated knowledge, and how can an active reward request narrow them?",
+  "requirements": ["UPRIV-01", "UPRIV-02", "UUI-03"],
+  "specification": ["docs/integration/uniswap/specification.md#公開情報と機密性の限界", "docs/integration/uniswap/specification.md#必須の推論履歴"],
+  "input": {
+    "uWei": "1000000000000000",
+    "depositUnits": 10,
+    "paymentUnits": 3,
+    "actualRewardUnits": 6,
+    "alternativeRewardUnits": 7,
+    "activeProbeUnits": 4,
+    "candidateGranularity": "integer multiples of u only; this deliberately undercounts the full wei-level candidate set"
+  },
+  "method": [
+    "Enumerate reward x with 0 < x < 10u, positive sender change 10u-x, and positive payer remainder x-3u.",
+    "Partition the candidates by passive public information, sender knowledge, receiver knowledge, a later full withdrawal of 3u, and a 4u affordability response from a single sender-change UTXO.",
+    "Compare public structured fields across the actual 6u history and a 7u counterfactual with the same graph and fixed 3u payment. Record public metadata fields whose actual implementation is unavailable."
+  ],
+  "acceptance": [
+    "Passive public equations admit both 6u and 7u; sender knowledge or a final 3u full withdrawal isolates 6u.",
+    "Active request result is evaluated as a separate observation and is not silently excluded from the privacy claim.",
+    "The experiment must report whether real cryptographic byte strings, gas, API logs, deployed public metadata, and complete public history were actually inspected. Without those, UPRIV-02 remains unresolved."
+  ],
+  "nonEvidence": [
+    "Arithmetic candidates do not prove cryptographic confidentiality or indistinguishability.",
+    "A proposed log schema does not show that the deployed service suppresses leaks.",
+    "No actual Uniswap swap, commitment, proof, or finalized chain history is present in this experiment."
+  ]
+}

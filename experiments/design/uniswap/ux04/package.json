@@ -1,0 +1,7 @@
+{
+  "name": "ux04-sqlite-do-model",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node run.mjs && node process-restart.mjs" },
+  "devDependencies": { "miniflare": "4.20260730.0" }
+}

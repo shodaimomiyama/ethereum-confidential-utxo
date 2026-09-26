@@ -1,0 +1,70 @@
+{
+  "id": "UX-02",
+  "status": "inconclusive",
+  "executed_at_local_date": "2026-09-27",
+  "host": {
+    "os": "macOS 26.5 (25F71)",
+    "node": "22.22.0",
+    "automation": "playwright-core 1.63.0",
+    "installed_google_chrome": "152.0.7977.83",
+    "test_chromium": "Chrome for Testing 153.0.8010.12, Playwright chromium v1243",
+    "firefox": "not installed"
+  },
+  "official_release": {
+    "tag": "v13.50.0",
+    "published_at_utc": "2026-09-25T17:41:34Z",
+    "release_api": "https://api.github.com/repos/MetaMask/metamask-extension/releases/tags/v13.50.0",
+    "checksum_manifest": "https://github.com/MetaMask/metamask-extension/releases/download/v13.50.0/SHA256SUMS",
+    "normal_chrome_zip": {
+      "url": "https://github.com/MetaMask/metamask-extension/releases/download/v13.50.0/metamask-chrome-13.50.0.zip",
+      "sha256": "b759caca275dec1a10edfebb9d1de1d26589a92104d8b0523ec442930e20e47c",
+      "manifest_version": "13.50.0.0",
+      "manifest_schema": 3,
+      "verified": "downloaded SHA-256 matched official SHA256SUMS"
+    },
+    "normal_firefox_zip": {
+      "url": "https://github.com/MetaMask/metamask-extension/releases/download/v13.50.0/metamask-firefox-13.50.0.zip",
+      "sha256": "507c36da825e2baa2b951c2647e8234f152a732b7723e1c5c2ca1300072f4304",
+      "manifest_version": "13.50.0.0",
+      "manifest_schema": 2,
+      "verified": "downloaded SHA-256 matched official SHA256SUMS"
+    }
+  },
+  "procedure_and_raw_observations": [
+    {
+      "step": "Launch unpacked official normal Chrome extension with Playwright persistent context and a fresh dedicated Google Chrome profile",
+      "result": "Only about:blank was open; no MetaMask extension service worker loaded. Both headless and headed attempts showed the same result.",
+      "interpretation": "Google Chrome 152 does not honor the legacy extension side-load flags in this setup; this is a harness obstacle, not evidence about personal_sign behavior."
+    },
+    {
+      "step": "Launch the same official Chrome extension in a fresh Playwright Chrome-for-Testing/Chromium profile",
+      "result": "MetaMask service worker loaded at chrome-extension://pdebdlnbohgnkhagdlicoggpdbkghhcb/service-worker.js, and onboarding opened at home.html#/onboarding/welcome.",
+      "interpretation": "Actual release extension code loaded in a test browser, but this is not the requested branded Google Chrome and Firefox pair."
+    },
+    {
+      "step": "Create a test-only normal wallet in the isolated extension; opt out of telemetry; close and reopen the browser",
+      "result": "Password, passkey, recovery-phrase verification, telemetry and unlock screens were reached. After a later restart, password unlock reached home.html#/.",
+      "interpretation": "A real extension wallet can be initialized and reopened in this test Chromium profile. No personal wallet or browser profile was used."
+    },
+    {
+      "step": "Request fixed personal_sign, derive HKDF and X25519 keys, decrypt a receipt, compare Chrome and Firefox, inspect network and storage",
+      "result": "Not executed. No signature, recipient public key, HPKE packet, commitment or storage/network inspection result was obtained.",
+      "interpretation": "The key-recovery design remains unproven."
+    }
+  ],
+  "pass_criteria_results": {
+    "signature_and_key_reproducibility_after_restart": "untested",
+    "cross_browser_same_key_and_hpke_receipt": "untested; Firefox browser unavailable",
+    "owner_chain_pool_separation_and_rejection": "untested",
+    "tamper_and_commitment_rejection": "untested",
+    "network_storage_and_log_secret_absence": "untested"
+  },
+  "limitations_and_next_execution": [
+    "Use a fresh isolated Firefox profile with the verified normal Firefox release. Use an extension installation path supported by a real Google Chrome build, or explicitly scope the claim to Chrome for Testing.",
+    "Freeze the exact message bytes, owner recovery and signature normalization, HKDF salt and info labels before obtaining any signature result.",
+    "Request actual MetaMask personal_sign on a test-only EOA, then repeat after restart and in Firefox. Keep mnemonic, signature and derived keys out of shared artifacts; record public keys or non-secret digests only.",
+    "Generate a v1 HPKE packet and independently reconstruct owner, amount commitment, finalized and unspent status; inspect the harness network/storage/log surfaces before asserting absence of leakage.",
+    "The disposable onboarding probe initially emitted test-only recovery-phrase words in transient diagnostics. No funded or personal account was involved. That wallet/profile is discarded. The probe now avoids outputting phrase screens, but this is not a completed leakage test."
+  ],
+  "source_for_chrome_flag_limitation": "https://github.com/microsoft/playwright/issues/37017"
+}
