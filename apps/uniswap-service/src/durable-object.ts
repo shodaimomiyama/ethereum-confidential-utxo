@@ -5,6 +5,7 @@ import { parseApiRequest } from '@confidential-utxo/uniswap';
 import { createChallenge, readSessionIdentity, verifyChallenge } from './auth.js';
 import { parseDeploymentCatalog, resolveDeployment } from './config.js';
 import { apiError, apiSuccess, BodyTooLarge, readLimitedJson } from './http.js';
+import { listOperations, putOperation } from './store.js';
 
 export class UniswapServiceObject extends DurableObject<ServiceEnv> {
   constructor(ctx: DurableObjectState, env: ServiceEnv) {
@@ -34,7 +35,19 @@ export class UniswapServiceObject extends DurableObject<ServiceEnv> {
       if (identity.deploymentId !== parsed.scope.deploymentId
         || identity.owner.toLowerCase() !== parsed.scope.owner.toLowerCase()) return apiError(403, 'SCOPE_MISMATCH');
       if (parsed.route === 'GET /v1/operations') {
-        return apiSuccess({ availability: 'healthy', records: [] });
+        const page = listOperations(this.ctx.storage, parsed.scope, parsed.cursor);
+        return apiSuccess({ availability: 'healthy', records: page.records.map((item) => ({
+          ...item, scope: parsed.scope,
+          record: { ...item.record, deadline: item.record.kind === 'pay' ? item.record.deadline.toString() : undefined },
+        })), ...(page.nextCursor === undefined ? {} : { nextCursor: page.nextCursor }) });
+      }
+      if (parsed.route === 'PUT /v1/operations/{id}') {
+        const saved = await putOperation(this.ctx.storage, parsed.scope, parsed.record!, parsed.expectedRevision!, {
+          readInput: async () => 'unknown',
+        });
+        return apiSuccess({ ...saved, scope: parsed.scope,
+          record: { ...saved.record, deadline: saved.record.kind === 'pay' ? saved.record.deadline.toString() : undefined },
+        });
       }
       return apiError(503, 'SERVICE_UNAVAILABLE');
     } catch (error) {
@@ -44,6 +57,10 @@ export class UniswapServiceObject extends DurableObject<ServiceEnv> {
         if (error.message === 'CHALLENGE_USED') return apiError(401, 'CHALLENGE_USED');
         if (error.message === 'CHALLENGE_EXPIRED') return apiError(401, 'CHALLENGE_EXPIRED');
         if (error.message === 'UNAUTHENTICATED') return apiError(401, 'UNAUTHENTICATED');
+        if (error.message === 'SCOPE_MISMATCH') return apiError(403, 'SCOPE_MISMATCH');
+        if (error.message === 'RESERVATION_CONFLICT') return apiError(409, 'RESERVATION_CONFLICT');
+        if (error.message === 'REVISION_CONFLICT') return apiError(409, 'REVISION_CONFLICT');
+        if (error.message === 'SERVICE_UNAVAILABLE') return apiError(503, 'SERVICE_UNAVAILABLE');
       }
       return apiError(400, 'INVALID_REQUEST');
     }
