@@ -7,8 +7,11 @@ import { createRequire } from 'node:module';
 
 const root = resolve(import.meta.dirname, '..');
 const { Interface } = createRequire(join(root, 'tests/vectors/package.json'))('ethers');
-const casesFile = join(root, 'tests/vectors/cases/pool-operations.json');
-const fixtureFile = join(root, 'contracts/test/fixtures/pool-calldata.json');
+const uniswap = process.argv.includes('--uniswap');
+const casesFile = join(root, uniswap ? 'tests/vectors/cases/uniswap-payment-operations.json'
+  : 'tests/vectors/cases/pool-operations.json');
+const fixtureFile = join(root, uniswap ? 'contracts/test/fixtures/uniswap-payment-calldata.json'
+  : 'contracts/test/fixtures/pool-calldata.json');
 const python = process.env.POOL_VECTOR_PYTHON || 'python3';
 const digest = value => createHash('sha256').update(value).digest('hex');
 const temp = mkdtempSync(join(tmpdir(), 'ecu-pool-fixtures-'));
@@ -21,10 +24,15 @@ try {
   const base = join(temp, 'base.json');
   const signed = join(temp, 'signed.json');
   const proved = join(temp, 'proved.json');
-  run(python, ['tests/vectors/tools/oracle_pool_base.py', '--out', base]);
+  run(python, ['tests/vectors/tools/oracle_pool_base.py', '--out', base,
+    ...(uniswap ? ['--uniswap'] : [])]);
   run(process.execPath, ['tests/vectors/tools/oracle-pool-operations.mjs', base, signed]);
   run(python, ['tests/vectors/tools/oracle_pool_proofs.py', '--in-base', signed, '--out', proved]);
-  const generated = readFileSync(proved);
+  const allCases = JSON.parse(readFileSync(proved));
+  const generated = uniswap
+    ? Buffer.from(`${JSON.stringify(allCases.filter(item =>
+      ['DEPOSIT-PAY', 'WITHDRAW-PAY', 'WITHDRAW-PAY-DUST'].some(name => item.id.endsWith(name))), null, 2)}\n`)
+    : readFileSync(proved);
   if (process.argv.includes('--refresh')) writeFileSync(casesFile, generated);
   if (!generated.equals(readFileSync(casesFile))) throw new Error('published Pool cases differ from regenerated oracle output');
   const cases = JSON.parse(generated);
