@@ -125,6 +125,21 @@ function refreshInteractive(runtime: Runtime): void {
         state = setCard(state, card, { phase: 'needs-preparation', reason: 'QUOTE_STALE' });
         continue;
       }
+      if (current.quote !== undefined) {
+        const minimum = current.input.minAmountOut === undefined
+          ? current.quote.minAmountOut : parseEthWei(current.input.minAmountOut);
+        if (minimum === undefined || minimum > current.quote.quoteOut) {
+          state = setCard(state, card, { phase: 'invalid-input', reason: 'MINIMUM_NOT_MET' });
+          continue;
+        }
+        const deadlineText = current.input.deadline;
+        const deadline = deadlineText === undefined ? current.quote.deadline : Number(deadlineText);
+        if (deadlineText !== undefined && (!/^[1-9]\d*$/.test(deadlineText) || !Number.isSafeInteger(deadline))) {
+          state = setCard(state, card, { phase: 'invalid-input', reason: 'TERMS_EXPIRED' });
+          continue;
+        }
+        state = setCard(state, card, { quote: { ...current.quote, minAmountOut: minimum, deadline } });
+      }
     }
     state = setCard(state, card, { phase: 'ready', reason: undefined });
   }

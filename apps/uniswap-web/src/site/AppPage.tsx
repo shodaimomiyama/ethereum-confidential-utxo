@@ -6,6 +6,10 @@ import { ControllerProvider, useController, useViewState } from './controller-co
 import { formatEth } from './format.js';
 import { Preparation } from './Preparation.js';
 import { OperationStatus } from './OperationStatus.js';
+import { Reward } from './cards/Reward.js';
+import { Pay } from './cards/Pay.js';
+import { Deposit } from './cards/Deposit.js';
+import { Withdraw } from './cards/Withdraw.js';
 
 const tabs: readonly { key: Card; label: string }[] = [
   { key: 'reward', label: 'Demo reward' },
@@ -35,7 +39,10 @@ function AppShell({ config }: { readonly config: SiteConfig }) {
           {tabs.map((tab) => <button key={tab.key} id={`tab-${tab.key}`} role="tab" aria-controls={`panel-${tab.key}`} aria-selected={active === tab.key} tabIndex={active === tab.key ? 0 : -1} type="button" onClick={() => setActive(tab.key)}>{tab.label}</button>)}
         </div>
         <div role="tabpanel" id={`panel-${active}`} aria-labelledby={`tab-${active}`} className="card-content">
-          <h2>{tabs.find((tab) => tab.key === active)?.label}</h2>
+          {active === 'reward' && <Reward view={view} controller={controller} />}
+          {active === 'pay' && <Pay view={view} controller={controller} />}
+          {active === 'deposit' && <Deposit view={view} controller={controller} />}
+          {active === 'withdraw' && <Withdraw view={view} controller={controller} />}
         </div>
       </section>
       <OperationStatus view={view} controller={controller} config={config} />

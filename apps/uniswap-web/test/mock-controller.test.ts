@@ -55,6 +55,24 @@ it('accepts quote age 30000ms and rejects 30001ms, negative age, or unknown age'
   expect((await ui.dispatch({ type: 'start', card: 'pay' })).kind).toBe('blocked');
 });
 
+it('validates edited payment minimum and deadline before authorization', async () => {
+  const { ui } = setup('interactive');
+  ui.control.inject({ type: 'utxos', utxos: [{ id: outputId, amountWei: 10n ** 16n, available: true }] });
+  await ui.dispatch({ type: 'edit', card: 'pay', field: 'amount', value: '0.003' });
+  await ui.dispatch({ type: 'edit', card: 'pay', field: 'recipient', value: owner });
+  ui.control.inject({ type: 'quote', startedAt: 0, quoteOut: 10n ** 18n, latestBlockTimestamp: 1_790_460_000 });
+  await ui.dispatch({ type: 'edit', card: 'pay', field: 'minAmountOut', value: '2' });
+  expect(await ui.dispatch({ type: 'start', card: 'pay' })).toEqual({ kind: 'blocked', reason: 'MINIMUM_NOT_MET' });
+  await ui.dispatch({ type: 'edit', card: 'pay', field: 'minAmountOut', value: '0.9' });
+  await ui.dispatch({ type: 'edit', card: 'pay', field: 'deadline', value: 'bad' });
+  expect(await ui.dispatch({ type: 'start', card: 'pay' })).toEqual({ kind: 'blocked', reason: 'TERMS_EXPIRED' });
+  await ui.dispatch({ type: 'edit', card: 'pay', field: 'deadline', value: '1790460300' });
+  expect(ui.snapshot().cards.pay.quote?.minAmountOut).toBe(9n * 10n ** 17n);
+  expect(ui.snapshot().cards.pay.quote?.deadline).toBe(1_790_460_300);
+  expect((await ui.dispatch({ type: 'start', card: 'pay' })).kind).toBe('accepted');
+  ui.dispose();
+});
+
 it('keeps finalized success separate from invalid receipt and counts valid change only once', () => {
   const { ui } = setup();
   ui.control.inject({ type: 'finalized-success', card: 'pay', operationId, amountWei: 7n });
