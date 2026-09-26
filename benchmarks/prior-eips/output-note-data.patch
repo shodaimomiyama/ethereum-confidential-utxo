@@ -1,0 +1,19 @@
+diff --git a/scripts/witness/gen_pool_witness_input.js b/scripts/witness/gen_pool_witness_input.js
+index 959df8e..08373c1 100644
+--- a/scripts/witness/gen_pool_witness_input.js
++++ b/scripts/witness/gen_pool_witness_input.js
+@@ -207,9 +207,11 @@ const outNoteBodyCommitment = [0,1,2].map(i =>
+   poseidon(T.NOTE_BODY_COMMITMENT_DOMAIN, outOwnerCommitment[i], outAmount[i], tokenAddress));
+ 
+ // ---- outputNoteData hashes + locked output bindings ----
+-const OUTPUT_NOTE_DATA = ['eip-8182-output-0', 'eip-8182-output-1', 'eip-8182-output-2'];
+-const outputNoteDataHash = OUTPUT_NOTE_DATA.map(s => {
+-  const h = keccak256(utf8ToBytes(s));
++const OUTPUT_NOTE_DATA = process.env.ISSUE10_DELIVERY_JSON
++  ? JSON.parse(fs.readFileSync(process.env.ISSUE10_DELIVERY_JSON, 'utf8')).outputNoteDataHex.map(hex => Buffer.from(hex.slice(2), 'hex'))
++  : ['eip-8182-output-0', 'eip-8182-output-1', 'eip-8182-output-2'].map(s => Buffer.from(s, 'utf8'));
++const outputNoteDataHash = OUTPUT_NOTE_DATA.map(bytes => {
++  const h = keccak256(bytes);
+   let v = 0n;
+   for (const b of h) v = (v << 8n) | BigInt(b);
+   return v % P;

@@ -1,0 +1,81 @@
+{
+  "configuration": "config.json",
+  "status": "measured_demo_auth_baseline_with_documented_limits",
+  "clean_replay": {
+    "raw": "raw/clean-replay/",
+    "repeated_raw": "raw/clean-replay-repeated/",
+    "repeated_result": "The same isolated checkout completed one warmup and three fresh formal trials with Anvil resets; recalculated receipt-gas median was 3708093 and all RPC recoveries succeeded.",
+    "pool_zkey_sha256": "4f404120a16c35d0685b9b09401d482d8120dd5bc6cbb21317b0ac711969a5fa",
+    "pool_wasm_sha256": "e4d7e0c921872c2f96d1d897c91ffed1c97a999381a1a2531116dacb1556c469",
+    "auth_demo_zkey_sha256": "c24ccd76e65bade1f888dc87ba2feb39aab0dfe6a0f18b4d1427b868ed32e2ae",
+    "formal_auth_demo_zkey_sha256": "600915fcd3c23cefd1c080ad55e815165fda474494a46548f12d1de433bd5c11",
+    "result": "fresh proofs, full transaction receipt, and RPC discovery/decryption reproduced; auth key bytes differ because setup performs a fresh local contribution, while the pinned pool WASM and zkey hashes match",
+    "claim_scope": "behavior and aggregation reproduce under the documented setup; proof and demo-auth-key bytes are not bit-identical"
+  },
+  "timing_scope_followup": {
+    "source": "raw/pilot-wall/",
+    "classification": "one additional pilot after the three formal trials; excluded from formal medians",
+    "delivery_prepare_process_wall_ms": 172,
+    "build_session_process_wall_ms": 4425,
+    "pool_prove_ms": 3698,
+    "auth_prove_ms": 228,
+    "interpretation": "The process wall includes input and witness generation, child-process overhead, both proof generations, local verification, and file output. The two proof times measure snarkjs proving calls only. The residual is not labeled as witness time because it also includes other work."
+  },
+  "additional_preparation_timing": {
+    "classification": "Single additional measurements, excluded from the three formal operation trials",
+    "setup": "raw/setup-timing/setup-timing.json",
+    "fresh_checkout_total_wall_ms": 64558.126041,
+    "scope": "Clone, dependencies, pool compile, development auth trusted setup, contract and Sepolia SDK build; existing npm download cache may affect timing",
+    "witness": "raw/setup-timing/witness-timing.json",
+    "pool_witness_process_wall_ms": 150.286917,
+    "auth_demo_witness_process_wall_ms": 54.589292,
+    "witness_scope": "Node startup, WASM load, witness computation and file write; input creation and proof generation excluded"
+  },
+  "excluded_pilot": {
+    "source": "raw/pilot-plain/receipts.json",
+    "reason": "This initial on-chain trial used the upstream fixed plaintext outputNoteData strings. It verified the receipt path but did not include encrypted delivery, and is excluded from formal aggregates."
+  },
+  "attempts": [
+    {
+      "path": "upstream Noir/UltraHonk authorization",
+      "command": "PATH=/tmp/eip8182-tools:$PATH node scripts/integration/build_honk_session.js",
+      "result": "failed_before_auth_proof",
+      "error": "nargo execute auth: Assertion failed: signature invalid at src/secp256k1.nr:43",
+      "cause": "At commit 639baaf7, scripts/noir/gen_prover_toml.js signs a 16-field EIP-712 intent including fee, locked output bindings, and blinding factor, while circuits-noir/auth/src/main.nr computes an older 7-field signing hash. Nargo beta.18 and beta.19 produce the same failure. The pool Groth16 proof was freshly generated before this failure.",
+      "scope_decision": "Circuit and protocol edits are outside issue scope; do not mix this failed Honk path with demo-auth gas."
+    },
+    {
+      "path": "upstream Groth16 demo authorization",
+      "command": "node scripts/integration/build_session.js",
+      "result": "fresh_pool_and_auth_proofs_generated_and_verified_locally_and_on_local_ethereum",
+      "limitation": "Demo authentication proves knowledge of a static demo secret, not an EIP-712 wallet signature. Its single-contributor trusted setup is local and development only.",
+      "raw_results": "raw/repeated/",
+      "aggregate": "raw/repeated/aggregate.json"
+    },
+    {
+      "path": "initial local demo trusted setup preflight",
+      "result": "failed_then_corrected_before_formal_measurement",
+      "error": "An uncontributed phase-1 pot12 file generated a verifier with invalid identity/point values; the first on-chain integration test reverted AuthProofRejected after ecMul precompile error.",
+      "correction": "Contributed to the local pot12 phase-1 ceremony, prepared phase 2, regenerated demo auth proving and verification keys, and reran the same test successfully. setup.sh includes this contribution step. No failed attempt is in the formal measurement set."
+    }
+  ],
+  "verified": [
+    "The pool and demo-auth proofs are generated fresh in each trial and both pass local and on-chain verification.",
+    "The Anvil receipt reports complete transaction gas including authorization, pool verification, state updates, and encrypted delivery bytes.",
+    "Changing the transaction intent digest produces a reverted transaction without changing pool roots or spent/replay state.",
+    "The registered sender deposits two notes, consumes both, and creates three notes; both nullifiers and replay ID are marked consumed.",
+    "The Sepolia demo envelope is prepared before the witness, hashed into pool output bindings, included in the actual transaction, discovered from public RPC logs, decrypted, and checked against note commitments and amounts 8/5/2.",
+    "One warmup and three formal trials completed with per-trial Anvil reset, raw receipts, proofs, inputs, timing, and RPC sync data.",
+    "A separate clean checkout reproduced setup, fresh proofs, an Anvil receipt, and RPC decryption in raw/clean-replay/, then completed a fresh warmup-plus-three-trial measurement and aggregation in raw/clean-replay-repeated/.",
+    "Supplemental cases/raw and cases/encrypted contain 17 successful single-run operation cases each, including exact S-02, S-03, and S-04 examples for MockERC20 and ETH, plus S-05 and S-06 examples; encrypted real outputs were recovered from RPC logs.",
+    "The encrypted ETH S-04 transfer has three independent reset-and-prove trials in cases/eth-repeat, with receipt gas median 3650301 and both real outputs recovered in each trial.",
+    "A separate recipient process used only pre-held test keys and public chain events after deleting sender session and input files, then registered its own policy and withdrew a decrypted 8-token note with fresh pool and demo-auth proofs. See recipient/reuse-result.json."
+  ],
+  "not_yet_verified": [
+    "The realistic Noir/Honk EIP-712 authorization path at pinned commit is blocked by a source-level signature-message mismatch.",
+    "Most operation-specific encrypted case results have one trial per case; the ETH S-04 case and the 10+5 MockERC20 to 8+5+2 main transfer have three trials.",
+    "ETH recipient-contract success and rejection, and recipient re-transfer are not executed.",
+    "Build, trusted-setup, and witness-generation times are outside the three formal proof-only timing figures; independent single-shot preparation timings are recorded separately.",
+    "The Anvil genesis state, 30 million block gas limit, and disabled code-size limit are special local conditions, so these measurements do not prove ordinary Ethereum deployability."
+  ]
+}

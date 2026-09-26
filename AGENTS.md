@@ -30,6 +30,7 @@
 | [Confidential UTXOの仕様](docs/specification.md) | 方式に依存しない状態遷移、認可、資産保存、受領と同期の規則 |
 | [Confidential UTXOの設計（草案）](docs/design.md) | 方式、認可、受領と同期、検証計画、採用判断のための実験 |
 | [Uniswap接続のPRD](docs/integration/uniswap/PRD.md) | Confidential UTXOから公開交換へ接続する際の要求と対象範囲 |
+| [Uniswap接続の要件定義](docs/integration/uniswap/requirements.md) | 部分支払い、認可と取消、機密性、コストと追試の受入条件 |
 
 ## 規約
 

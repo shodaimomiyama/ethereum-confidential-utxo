@@ -1,0 +1,787 @@
+{
+  "source": "case raw receipts and proof timings",
+  "runsPerCase": 1,
+  "successful": 17,
+  "cases": [
+    {
+      "name": "erc20_withdraw_full",
+      "status": "passed",
+      "asset": "MockERC20",
+      "inputs": [
+        "10",
+        "5"
+      ],
+      "inputIsReal": [
+        "1",
+        "1"
+      ],
+      "realInputCount": 2,
+      "outputs": [
+        "0",
+        "0",
+        "0"
+      ],
+      "outputIsReal": [
+        "0",
+        "0",
+        "0"
+      ],
+      "realOutputCount": 0,
+      "publicAmountOut": "15",
+      "depositGas": [
+        "1836074",
+        "1227713"
+      ],
+      "policyRegistrationGas": "2014817",
+      "verifierDeploymentGas": "364338",
+      "authWrapperDeploymentGas": "266947",
+      "tokenMintGas": "44188",
+      "transactGas": "3563664",
+      "poolProveMs": 3095.1687079999997,
+      "authProveMs": 349.92112499999985,
+      "recipientPublicAssetDelta": "15",
+      "finalPoolAssetBalance": "0",
+      "firstSpentNoteCommitment": null,
+      "createdNoteCommitments": null,
+      "selfControlledOutputs": null,
+      "receiptPath": "raw/erc20_withdraw_full/receipts.json",
+      "proofPath": "raw/erc20_withdraw_full/session.json"
+    },
+    {
+      "name": "erc20_withdraw_partial",
+      "status": "passed",
+      "asset": "MockERC20",
+      "inputs": [
+        "10",
+        "5"
+      ],
+      "inputIsReal": [
+        "1",
+        "1"
+      ],
+      "realInputCount": 2,
+      "outputs": [
+        "5",
+        "0",
+        "2"
+      ],
+      "outputIsReal": [
+        "1",
+        "0",
+        "1"
+      ],
+      "realOutputCount": 2,
+      "publicAmountOut": "8",
+      "depositGas": [
+        "1836074",
+        "1227713"
+      ],
+      "policyRegistrationGas": "2014817",
+      "verifierDeploymentGas": "364338",
+      "authWrapperDeploymentGas": "266947",
+      "tokenMintGas": "44188",
+      "transactGas": "3568464",
+      "poolProveMs": 3046.2076669999997,
+      "authProveMs": 257.0340839999999,
+      "recipientPublicAssetDelta": "8",
+      "finalPoolAssetBalance": "7",
+      "firstSpentNoteCommitment": null,
+      "createdNoteCommitments": null,
+      "selfControlledOutputs": null,
+      "receiptPath": "raw/erc20_withdraw_partial/receipts.json",
+      "proofPath": "raw/erc20_withdraw_partial/session.json"
+    },
+    {
+      "name": "eth_withdraw_full",
+      "status": "passed",
+      "asset": "ETH",
+      "inputs": [
+        "10",
+        "5"
+      ],
+      "inputIsReal": [
+        "1",
+        "1"
+      ],
+      "realInputCount": 2,
+      "outputs": [
+        "0",
+        "0",
+        "0"
+      ],
+      "outputIsReal": [
+        "0",
+        "0",
+        "0"
+      ],
+      "realOutputCount": 0,
+      "publicAmountOut": "15",
+      "depositGas": [
+        "1798919",
+        "1212458"
+      ],
+      "policyRegistrationGas": "2014817",
+      "verifierDeploymentGas": "364338",
+      "authWrapperDeploymentGas": "266947",
+      "tokenMintGas": null,
+      "transactGas": "3571321",
+      "poolProveMs": 3424.2725830000004,
+      "authProveMs": 318.2614999999996,
+      "recipientPublicAssetDelta": "15",
+      "finalPoolAssetBalance": "0",
+      "firstSpentNoteCommitment": null,
+      "createdNoteCommitments": null,
+      "selfControlledOutputs": null,
+      "receiptPath": "raw/eth_withdraw_full/receipts.json",
+      "proofPath": "raw/eth_withdraw_full/session.json"
+    },
+    {
+      "name": "eth_withdraw_partial",
+      "status": "passed",
+      "asset": "ETH",
+      "inputs": [
+        "10",
+        "5"
+      ],
+      "inputIsReal": [
+        "1",
+        "1"
+      ],
+      "realInputCount": 2,
+      "outputs": [
+        "5",
+        "0",
+        "2"
+      ],
+      "outputIsReal": [
+        "1",
+        "0",
+        "1"
+      ],
+      "realOutputCount": 2,
+      "publicAmountOut": "8",
+      "depositGas": [
+        "1798919",
+        "1212458"
+      ],
+      "policyRegistrationGas": "2014817",
+      "verifierDeploymentGas": "364338",
+      "authWrapperDeploymentGas": "266947",
+      "tokenMintGas": null,
+      "transactGas": "3571309",
+      "poolProveMs": 3987.963417,
+      "authProveMs": 241.0177909999993,
+      "recipientPublicAssetDelta": "8",
+      "finalPoolAssetBalance": "7",
+      "firstSpentNoteCommitment": null,
+      "createdNoteCommitments": null,
+      "selfControlledOutputs": null,
+      "receiptPath": "raw/eth_withdraw_partial/receipts.json",
+      "proofPath": "raw/eth_withdraw_partial/session.json"
+    },
+    {
+      "name": "merge",
+      "status": "passed",
+      "asset": "MockERC20",
+      "inputs": [
+        "10",
+        "5"
+      ],
+      "inputIsReal": [
+        "1",
+        "1"
+      ],
+      "realInputCount": 2,
+      "outputs": [
+        "15",
+        "0",
+        "0"
+      ],
+      "outputIsReal": [
+        "1",
+        "0",
+        "0"
+      ],
+      "realOutputCount": 1,
+      "publicAmountOut": "0",
+      "depositGas": [
+        "1836074",
+        "1227713"
+      ],
+      "policyRegistrationGas": "2014817",
+      "verifierDeploymentGas": "364338",
+      "authWrapperDeploymentGas": "266947",
+      "tokenMintGas": "44188",
+      "transactGas": "3536627",
+      "poolProveMs": 3954.5127920000004,
+      "authProveMs": 316.81616699999995,
+      "recipientPublicAssetDelta": "0",
+      "finalPoolAssetBalance": "15",
+      "firstSpentNoteCommitment": null,
+      "createdNoteCommitments": null,
+      "selfControlledOutputs": null,
+      "receiptPath": "raw/merge/receipts.json",
+      "proofPath": "raw/merge/session.json"
+    },
+    {
+      "name": "s02_eth_transfer_full_10",
+      "status": "passed",
+      "asset": "ETH",
+      "inputs": [
+        "10",
+        "0"
+      ],
+      "inputIsReal": [
+        "1",
+        "0"
+      ],
+      "realInputCount": 1,
+      "outputs": [
+        "10",
+        "0",
+        "0"
+      ],
+      "outputIsReal": [
+        "1",
+        "0",
+        "0"
+      ],
+      "realOutputCount": 1,
+      "publicAmountOut": "0",
+      "depositGas": [
+        "1798919"
+      ],
+      "policyRegistrationGas": "2014817",
+      "verifierDeploymentGas": "364338",
+      "authWrapperDeploymentGas": "266947",
+      "tokenMintGas": null,
+      "transactGas": "3536615",
+      "poolProveMs": 1598.4005,
+      "authProveMs": 128.71800000000007,
+      "recipientPublicAssetDelta": "0",
+      "finalPoolAssetBalance": "10",
+      "firstSpentNoteCommitment": "5113683940407049277743910086240528495385649011310587980125610534706511080593",
+      "createdNoteCommitments": [
+        "3071155170816779437506835602200882026163292984134552016902360349206020867403",
+        "17165790476801420955113013649939564295115189479633988784344490290703295095789",
+        "8397394285008017623250324924221546641112962026848811109673374285081797272989"
+      ],
+      "selfControlledOutputs": [
+        false,
+        false,
+        false
+      ],
+      "receiptPath": "raw/s02_eth_transfer_full_10/receipts.json",
+      "proofPath": "raw/s02_eth_transfer_full_10/session.json"
+    },
+    {
+      "name": "s02_transfer_full_10",
+      "status": "passed",
+      "asset": "MockERC20",
+      "inputs": [
+        "10",
+        "0"
+      ],
+      "inputIsReal": [
+        "1",
+        "0"
+      ],
+      "realInputCount": 1,
+      "outputs": [
+        "10",
+        "0",
+        "0"
+      ],
+      "outputIsReal": [
+        "1",
+        "0",
+        "0"
+      ],
+      "realOutputCount": 1,
+      "publicAmountOut": "0",
+      "depositGas": [
+        "1831274"
+      ],
+      "policyRegistrationGas": "2014817",
+      "verifierDeploymentGas": "364338",
+      "authWrapperDeploymentGas": "266947",
+      "tokenMintGas": "44188",
+      "transactGas": "3536615",
+      "poolProveMs": 7494.22225,
+      "authProveMs": 322.81054100000074,
+      "recipientPublicAssetDelta": "0",
+      "finalPoolAssetBalance": "10",
+      "firstSpentNoteCommitment": null,
+      "createdNoteCommitments": null,
+      "selfControlledOutputs": null,
+      "receiptPath": "raw/s02_transfer_full_10/receipts.json",
+      "proofPath": "raw/s02_transfer_full_10/session.json"
+    },
+    {
+      "name": "s03_eth_transfer_partial_3",
+      "status": "passed",
+      "asset": "ETH",
+      "inputs": [
+        "10",
+        "0"
+      ],
+      "inputIsReal": [
+        "1",
+        "0"
+      ],
+      "realInputCount": 1,
+      "outputs": [
+        "3",
+        "7",
+        "0"
+      ],
+      "outputIsReal": [
+        "1",
+        "1",
+        "0"
+      ],
+      "realOutputCount": 2,
+      "publicAmountOut": "0",
+      "depositGas": [
+        "1798919"
+      ],
+      "policyRegistrationGas": "2014817",
+      "verifierDeploymentGas": "364338",
+      "authWrapperDeploymentGas": "266947",
+      "tokenMintGas": null,
+      "transactGas": "3536603",
+      "poolProveMs": 1651.1765,
+      "authProveMs": 118.02187499999991,
+      "recipientPublicAssetDelta": "0",
+      "finalPoolAssetBalance": "10",
+      "firstSpentNoteCommitment": "5113683940407049277743910086240528495385649011310587980125610534706511080593",
+      "createdNoteCommitments": [
+        "7046247739174775310755745064544982148446917763297576859118390579062909272886",
+        "4839319372609708663313204591190509843974519596881528018136976821758236369458",
+        "8397394285008017623250324924221546641112962026848811109673374285081797272989"
+      ],
+      "selfControlledOutputs": [
+        false,
+        true,
+        false
+      ],
+      "receiptPath": "raw/s03_eth_transfer_partial_3/receipts.json",
+      "proofPath": "raw/s03_eth_transfer_partial_3/session.json"
+    },
+    {
+      "name": "s03_transfer_partial_3",
+      "status": "passed",
+      "asset": "MockERC20",
+      "inputs": [
+        "10",
+        "0"
+      ],
+      "inputIsReal": [
+        "1",
+        "0"
+      ],
+      "realInputCount": 1,
+      "outputs": [
+        "3",
+        "7",
+        "0"
+      ],
+      "outputIsReal": [
+        "1",
+        "1",
+        "0"
+      ],
+      "realOutputCount": 2,
+      "publicAmountOut": "0",
+      "depositGas": [
+        "1831274"
+      ],
+      "policyRegistrationGas": "2014817",
+      "verifierDeploymentGas": "364338",
+      "authWrapperDeploymentGas": "266947",
+      "tokenMintGas": "44188",
+      "transactGas": "3536639",
+      "poolProveMs": 5646.182709,
+      "authProveMs": 328.4069579999996,
+      "recipientPublicAssetDelta": "0",
+      "finalPoolAssetBalance": "10",
+      "firstSpentNoteCommitment": null,
+      "createdNoteCommitments": null,
+      "selfControlledOutputs": null,
+      "receiptPath": "raw/s03_transfer_partial_3/receipts.json",
+      "proofPath": "raw/s03_transfer_partial_3/session.json"
+    },
+    {
+      "name": "s04_eth_transfer_2_plus_3",
+      "status": "passed",
+      "asset": "ETH",
+      "inputs": [
+        "2",
+        "3"
+      ],
+      "inputIsReal": [
+        "1",
+        "1"
+      ],
+      "realInputCount": 2,
+      "outputs": [
+        "4",
+        "1",
+        "0"
+      ],
+      "outputIsReal": [
+        "1",
+        "1",
+        "0"
+      ],
+      "realOutputCount": 2,
+      "publicAmountOut": "0",
+      "depositGas": [
+        "1798919",
+        "1212458"
+      ],
+      "policyRegistrationGas": "2014817",
+      "verifierDeploymentGas": "364338",
+      "authWrapperDeploymentGas": "266947",
+      "tokenMintGas": null,
+      "transactGas": "3536615",
+      "poolProveMs": 1556.037583,
+      "authProveMs": 123.34962500000006,
+      "recipientPublicAssetDelta": "0",
+      "finalPoolAssetBalance": "5",
+      "firstSpentNoteCommitment": "17840936922357852573187498570193620456514912779616251625493754910683581923337",
+      "createdNoteCommitments": [
+        "19032470050433070647770089696870087480367831149822427589123317246730272579825",
+        "20880791836572524139069162199799679356595043526183991497127826348566845768258",
+        "18645402917643433042744109798614859268045495459535221659157776617522323999590"
+      ],
+      "selfControlledOutputs": [
+        false,
+        true,
+        false
+      ],
+      "receiptPath": "raw/s04_eth_transfer_2_plus_3/receipts.json",
+      "proofPath": "raw/s04_eth_transfer_2_plus_3/session.json"
+    },
+    {
+      "name": "s04_transfer_2_plus_3",
+      "status": "passed",
+      "asset": "MockERC20",
+      "inputs": [
+        "2",
+        "3"
+      ],
+      "inputIsReal": [
+        "1",
+        "1"
+      ],
+      "realInputCount": 2,
+      "outputs": [
+        "4",
+        "1",
+        "0"
+      ],
+      "outputIsReal": [
+        "1",
+        "1",
+        "0"
+      ],
+      "realOutputCount": 2,
+      "publicAmountOut": "0",
+      "depositGas": [
+        "1836074",
+        "1227713"
+      ],
+      "policyRegistrationGas": "2014817",
+      "verifierDeploymentGas": "364338",
+      "authWrapperDeploymentGas": "266947",
+      "tokenMintGas": "44188",
+      "transactGas": "3536603",
+      "poolProveMs": 3958.2638749999996,
+      "authProveMs": 382.30516700000044,
+      "recipientPublicAssetDelta": "0",
+      "finalPoolAssetBalance": "5",
+      "firstSpentNoteCommitment": null,
+      "createdNoteCommitments": null,
+      "selfControlledOutputs": null,
+      "receiptPath": "raw/s04_transfer_2_plus_3/receipts.json",
+      "proofPath": "raw/s04_transfer_2_plus_3/session.json"
+    },
+    {
+      "name": "s05_self_recreate_10",
+      "status": "passed",
+      "asset": "MockERC20",
+      "inputs": [
+        "10",
+        "0"
+      ],
+      "inputIsReal": [
+        "1",
+        "0"
+      ],
+      "realInputCount": 1,
+      "outputs": [
+        "10",
+        "0",
+        "0"
+      ],
+      "outputIsReal": [
+        "1",
+        "0",
+        "0"
+      ],
+      "realOutputCount": 1,
+      "publicAmountOut": "0",
+      "depositGas": [
+        "1831274"
+      ],
+      "policyRegistrationGas": "2014817",
+      "verifierDeploymentGas": "364338",
+      "authWrapperDeploymentGas": "266947",
+      "tokenMintGas": "44188",
+      "transactGas": "3536615",
+      "poolProveMs": 1728.416708,
+      "authProveMs": 141.307542,
+      "recipientPublicAssetDelta": "0",
+      "finalPoolAssetBalance": "10",
+      "firstSpentNoteCommitment": "4030930825031470223821903070750626991902827823222446838488463096407875444186",
+      "createdNoteCommitments": [
+        "11757218153642500180247874644750699017211711724793647296642884702472817942417",
+        "17165790476801420955113013649939564295115189479633988784344490290703295095789",
+        "8397394285008017623250324924221546641112962026848811109673374285081797272989"
+      ],
+      "selfControlledOutputs": [
+        true,
+        false,
+        false
+      ],
+      "receiptPath": "raw/s05_self_recreate_10/receipts.json",
+      "proofPath": "raw/s05_self_recreate_10/session.json"
+    },
+    {
+      "name": "s05_self_split_10",
+      "status": "passed",
+      "asset": "MockERC20",
+      "inputs": [
+        "10",
+        "0"
+      ],
+      "inputIsReal": [
+        "1",
+        "0"
+      ],
+      "realInputCount": 1,
+      "outputs": [
+        "3",
+        "7",
+        "0"
+      ],
+      "outputIsReal": [
+        "1",
+        "1",
+        "0"
+      ],
+      "realOutputCount": 2,
+      "publicAmountOut": "0",
+      "depositGas": [
+        "1831274"
+      ],
+      "policyRegistrationGas": "2014817",
+      "verifierDeploymentGas": "364338",
+      "authWrapperDeploymentGas": "266947",
+      "tokenMintGas": "44188",
+      "transactGas": "3536591",
+      "poolProveMs": 2100.7358329999997,
+      "authProveMs": 202.4625000000001,
+      "recipientPublicAssetDelta": "0",
+      "finalPoolAssetBalance": "10",
+      "firstSpentNoteCommitment": "4030930825031470223821903070750626991902827823222446838488463096407875444186",
+      "createdNoteCommitments": [
+        "5094463346570385053657613527394326295105314723646662118264118279339076509711",
+        "4199249987437234448689612847400238124755883693754194653635753366810349294158",
+        "8397394285008017623250324924221546641112962026848811109673374285081797272989"
+      ],
+      "selfControlledOutputs": [
+        true,
+        true,
+        false
+      ],
+      "receiptPath": "raw/s05_self_split_10/receipts.json",
+      "proofPath": "raw/s05_self_split_10/session.json"
+    },
+    {
+      "name": "s06_eth_withdraw_full_10",
+      "status": "passed",
+      "asset": "ETH",
+      "inputs": [
+        "10",
+        "0"
+      ],
+      "inputIsReal": [
+        "1",
+        "0"
+      ],
+      "realInputCount": 1,
+      "outputs": [
+        "0",
+        "0",
+        "0"
+      ],
+      "outputIsReal": [
+        "0",
+        "0",
+        "0"
+      ],
+      "realOutputCount": 0,
+      "publicAmountOut": "10",
+      "depositGas": [
+        "1798919"
+      ],
+      "policyRegistrationGas": "2014817",
+      "verifierDeploymentGas": "364338",
+      "authWrapperDeploymentGas": "266947",
+      "tokenMintGas": null,
+      "transactGas": "3571309",
+      "poolProveMs": 3864.964125,
+      "authProveMs": 272.3440420000006,
+      "recipientPublicAssetDelta": "10",
+      "finalPoolAssetBalance": "0",
+      "firstSpentNoteCommitment": null,
+      "createdNoteCommitments": null,
+      "selfControlledOutputs": null,
+      "receiptPath": "raw/s06_eth_withdraw_full_10/receipts.json",
+      "proofPath": "raw/s06_eth_withdraw_full_10/session.json"
+    },
+    {
+      "name": "s06_eth_withdraw_partial_3",
+      "status": "passed",
+      "asset": "ETH",
+      "inputs": [
+        "10",
+        "0"
+      ],
+      "inputIsReal": [
+        "1",
+        "0"
+      ],
+      "realInputCount": 1,
+      "outputs": [
+        "7",
+        "0",
+        "0"
+      ],
+      "outputIsReal": [
+        "1",
+        "0",
+        "0"
+      ],
+      "realOutputCount": 1,
+      "publicAmountOut": "3",
+      "depositGas": [
+        "1798919"
+      ],
+      "policyRegistrationGas": "2014817",
+      "verifierDeploymentGas": "364338",
+      "authWrapperDeploymentGas": "266947",
+      "tokenMintGas": null,
+      "transactGas": "3571345",
+      "poolProveMs": 4003.8339170000004,
+      "authProveMs": 233.00324999999975,
+      "recipientPublicAssetDelta": "3",
+      "finalPoolAssetBalance": "7",
+      "firstSpentNoteCommitment": null,
+      "createdNoteCommitments": null,
+      "selfControlledOutputs": null,
+      "receiptPath": "raw/s06_eth_withdraw_partial_3/receipts.json",
+      "proofPath": "raw/s06_eth_withdraw_partial_3/session.json"
+    },
+    {
+      "name": "transfer_full",
+      "status": "passed",
+      "asset": "MockERC20",
+      "inputs": [
+        "10",
+        "5"
+      ],
+      "inputIsReal": [
+        "1",
+        "1"
+      ],
+      "realInputCount": 2,
+      "outputs": [
+        "15",
+        "0",
+        "0"
+      ],
+      "outputIsReal": [
+        "1",
+        "0",
+        "0"
+      ],
+      "realOutputCount": 1,
+      "publicAmountOut": "0",
+      "depositGas": [
+        "1836074",
+        "1227713"
+      ],
+      "policyRegistrationGas": "2014817",
+      "verifierDeploymentGas": "364338",
+      "authWrapperDeploymentGas": "266947",
+      "tokenMintGas": "44188",
+      "transactGas": "3536603",
+      "poolProveMs": 3831.0249580000004,
+      "authProveMs": 416.14237500000036,
+      "recipientPublicAssetDelta": "0",
+      "finalPoolAssetBalance": "15",
+      "firstSpentNoteCommitment": null,
+      "createdNoteCommitments": null,
+      "selfControlledOutputs": null,
+      "receiptPath": "raw/transfer_full/receipts.json",
+      "proofPath": "raw/transfer_full/session.json"
+    },
+    {
+      "name": "transfer_partial",
+      "status": "passed",
+      "asset": "MockERC20",
+      "inputs": [
+        "10",
+        "5"
+      ],
+      "inputIsReal": [
+        "1",
+        "1"
+      ],
+      "realInputCount": 2,
+      "outputs": [
+        "8",
+        "5",
+        "2"
+      ],
+      "outputIsReal": [
+        "1",
+        "1",
+        "1"
+      ],
+      "realOutputCount": 3,
+      "publicAmountOut": "0",
+      "depositGas": [
+        "1836074",
+        "1227713"
+      ],
+      "policyRegistrationGas": "2014817",
+      "verifierDeploymentGas": "364338",
+      "authWrapperDeploymentGas": "266947",
+      "tokenMintGas": "44188",
+      "transactGas": "3536615",
+      "poolProveMs": 2899.756416,
+      "authProveMs": 250.81512499999963,
+      "recipientPublicAssetDelta": "0",
+      "finalPoolAssetBalance": "15",
+      "firstSpentNoteCommitment": null,
+      "createdNoteCommitments": null,
+      "selfControlledOutputs": null,
+      "receiptPath": "raw/transfer_partial/receipts.json",
+      "proofPath": "raw/transfer_partial/session.json"
+    }
+  ]
+}

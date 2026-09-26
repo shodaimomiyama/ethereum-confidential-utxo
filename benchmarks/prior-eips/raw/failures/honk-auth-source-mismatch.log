@@ -1,0 +1,48 @@
+==> mode: transfer
+==> 1) prover.toml round 1 (locked bindings = 0)
+wrote /private/tmp/eip-8182-reference-implementation/circuits-noir/auth/Prover.toml
+wrote /private/tmp/eip-8182-reference-implementation/build/noir_auth/session_sidecar.json
+  authorizing_address       = 0x70997970c51812dc3a010c7d01b50e0d17dc79c8
+  auth_data_commitment      = 15818560490204158849051744766167007020884205138947015591990674673628100579482
+  blinded_auth_commitment   = 13332415039234024286228052393816164993330771229548027210384572401868964589412
+  transaction_intent_digest = 16731695128271422765409125285958910744885634095066670362609064684978242017095
+==> 2) pool witness input round 1
+mode: transfer
+wrote /private/tmp/eip-8182-reference-implementation/build/integration_honk/pool_input.json
+  authorizingAddress       = 0x70997970c51812dc3a010c7d01b50e0d17dc79c8
+  authVerifier             = 0x8182aaaa8182aaaa8182aaaa8182aaaa8182aaaa
+  authDataCommitment       = 15818560490204158849051744766167007020884205138947015591990674673628100579482
+  blindedAuthCommitment    = 13332415039234024286228052393816164993330771229548027210384572401868964589412
+  transactionIntentDigest  = 12269431952814656857042746288409838884450243873370176482706416767699208928077
+==> 3) re-run prover.toml with the pool's computed locked bindings
+wrote /private/tmp/eip-8182-reference-implementation/circuits-noir/auth/Prover.toml
+wrote /private/tmp/eip-8182-reference-implementation/build/noir_auth/session_sidecar.json
+  authorizing_address       = 0x70997970c51812dc3a010c7d01b50e0d17dc79c8
+  auth_data_commitment      = 15818560490204158849051744766167007020884205138947015591990674673628100579482
+  blinded_auth_commitment   = 13332415039234024286228052393816164993330771229548027210384572401868964589412
+  transaction_intent_digest = 12269431952814656857042746288409838884450243873370176482706416767699208928077
+==> 4) regenerate pool witness with the same intent (nothing should change)
+mode: transfer
+wrote /private/tmp/eip-8182-reference-implementation/build/integration_honk/pool_input.json
+  authorizingAddress       = 0x70997970c51812dc3a010c7d01b50e0d17dc79c8
+  authVerifier             = 0x8182aaaa8182aaaa8182aaaa8182aaaa8182aaaa
+  authDataCommitment       = 15818560490204158849051744766167007020884205138947015591990674673628100579482
+  blindedAuthCommitment    = 13332415039234024286228052393816164993330771229548027210384572401868964589412
+  transactionIntentDigest  = 12269431952814656857042746288409838884450243873370176482706416767699208928077
+==> 5) pool witness binary + snarkjs prove
+    pool proved in 4.04s
+==> 6) auth witness + bb prove
+error: Assertion failed: signature invalid
+   ┌─ src/secp256k1.nr:43:16
+   │
+43 │         assert(ok, "signature invalid");
+   │                --
+   │
+   = Call stack:
+     1. src/main.nr:176:5
+     2. src/secp256k1.nr:43:16
+
+Failed assertion
+Error: nargo execute auth -> 1
+    at run (/private/tmp/eip-8182-reference-implementation/scripts/integration/build_honk_session.js:67:29)
+    at /private/tmp/eip-8182-reference-implementation/scripts/integration/build_honk_session.js:154:3

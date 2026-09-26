@@ -1,0 +1,5 @@
+wrote /private/tmp/eip-8182-recipient-issue10/build/pool/input.json
+{
+  "transactGas": "3708105",
+  "output": "/Users/momiyamashodai/orca/workspaces/ethereum-confidential-utxo/pri/benchmarks/prior-eips/recipient/raw/receipts.json"
+}

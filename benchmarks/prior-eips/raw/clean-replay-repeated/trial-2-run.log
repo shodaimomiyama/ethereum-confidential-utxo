@@ -1,0 +1,5 @@
+wrote /private/tmp/eip8182-clean-replay/build/pool/input.json
+{
+  "transactGas": "3708117",
+  "output": "/tmp/eip8182-timeout-check/trial-2/receipts.json"
+}

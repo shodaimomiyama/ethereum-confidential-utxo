@@ -1,0 +1,28 @@
+{
+  "classification": "additional single-shot process timing, excluded from three formal operation trials",
+  "scope": "Each wall time covers Node process startup, WASM loading, witness computation, and witness file write. It excludes witness input construction and proof generation.",
+  "reference": "/tmp/eip8182-clean-replay",
+  "os": "Darwin 25.5.0 arm64",
+  "rows": [
+    {
+      "name": "pool",
+      "command": "node build/pool/pool_js/generate_witness.js build/pool/pool_js/pool.wasm build/pool/input.json /tmp/issue10-pool-witness-timing.wtns",
+      "wallMs": 150.286917,
+      "exitCode": 0,
+      "inputSha256": "c190be294f636bb8ed49b132448a57d8ca1d99b97bc63e6e837ebfddc0e163ea",
+      "wasmSha256": "e4d7e0c921872c2f96d1d897c91ffed1c97a999381a1a2531116dacb1556c469",
+      "outputBytes": 1374188,
+      "stderr": ""
+    },
+    {
+      "name": "auth_demo",
+      "command": "node build/auth_demo/auth_demo_js/generate_witness.js build/auth_demo/auth_demo_js/auth_demo.wasm build/auth_demo/input.json /tmp/issue10-auth_demo-witness-timing.wtns",
+      "wallMs": 54.589292,
+      "exitCode": 0,
+      "inputSha256": "aa0f29489c0d3adae4ede74182cfb15f5373797250a468855911db068067d28d",
+      "wasmSha256": "6e039d13af8aa5a795525e410d3840bb56a93bbad3e1848dd8e0b36c4575c982",
+      "outputBytes": 68268,
+      "stderr": ""
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "authVerifier": "922752014157942626787424541440476730057275056545",
+  "authorizingAddress": "292300327466180583640736966543256603931186508595",
+  "operationKind": "1",
+  "tokenAddress": "194866884977453722427157977695504402620791005730",
+  "recipientOwnerNullifierKeyHash": "0",
+  "amount": "8",
+  "feeNoteRecipientOwnerNullifierKeyHash": "0",
+  "feeAmount": "0",
+  "publicRecipientAddress": "292300327466180583640736966543256603931186508595",
+  "executionConstraintsFlags": "0",
+  "lockedOutputBinding0": "0",
+  "lockedOutputBinding1": "0",
+  "lockedOutputBinding2": "0",
+  "nonce": "3133022211",
+  "validUntilSeconds": "1735689600",
+  "executionChainId": "1",
+  "authSecret": "2691699512",
+  "blindingFactor": "14745739429418749021888351099012636673"
+}

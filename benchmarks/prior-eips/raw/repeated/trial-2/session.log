@@ -1,0 +1,16 @@
+==> writing pool witness input
+wrote /private/tmp/eip-8182-reference-implementation/build/pool/input.json
+==> writing auth witness input (shared intent)
+wrote /private/tmp/eip-8182-reference-implementation/build/auth_demo/input.json
+  authDataCommitment        = 21840486684661556917382627761647535514449498464860157795102844770608153675761
+  blindedAuthCommitment     = 5021276856499553829481810759566016603376103514767773686690103597471221640411
+  transactionIntentDigest   = 338051239239537223667628864641980191444496277621360214826541483691473723433
+==> generating pool witness
+==> generating auth witness
+==> proving pool [snarkjs (WASM)]
+    pool proved in 5.652s
+==> proving auth [snarkjs (WASM)]
+    auth proved in 0.288s
+    local verify OK
+wrote /private/tmp/eip-8182-reference-implementation/build/integration/session.json
+wrote /private/tmp/eip-8182-reference-implementation/build/integration/timings.json
