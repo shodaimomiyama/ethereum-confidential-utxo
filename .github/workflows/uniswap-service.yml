@@ -1,0 +1,41 @@
+name: Uniswap service contracts
+
+on:
+  push:
+    paths:
+      - '.github/workflows/uniswap-service.yml'
+      - 'apps/uniswap-service/**'
+      - 'apps/uniswap-web/**'
+      - 'packages/uniswap/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'tsconfig.contracts.json'
+  pull_request:
+    paths:
+      - '.github/workflows/uniswap-service.yml'
+      - 'apps/uniswap-service/**'
+      - 'apps/uniswap-web/**'
+      - 'packages/uniswap/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'tsconfig.contracts.json'
+
+jobs:
+  contracts-and-service:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.21.0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
+          run_install: false
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check:contracts
+      - run: pnpm test:contracts
+      - run: pnpm check:service
+      - run: pnpm test:service

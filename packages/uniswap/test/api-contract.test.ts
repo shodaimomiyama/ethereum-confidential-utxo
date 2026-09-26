@@ -92,8 +92,8 @@ it('validates success response shape for every route', () => {
   const valid = [
     ['POST /v1/auth/challenge', { challengeId: id, nonce: hash, issuedAt: 0, expiresAt: 300000 }],
     ['POST /v1/auth/verify', { sessionExpiresAt: 1800000 }],
-    ['PUT /v1/operations/{id}', { scope, record: payRecord, revision: 1 }],
-    ['GET /v1/operations', { availability: 'healthy', records: [{ scope, record: payRecord, revision: 1 }] }],
+    ['PUT /v1/operations/{id}', { scope, record: payRecord, revision: 1, stateVersion: 1, status: 'reserved' }],
+    ['GET /v1/operations', { availability: 'healthy', records: [{ scope, record: payRecord, revision: 1, stateVersion: 1, status: 'reserved' }] }],
     ['POST /v1/rewards', { reward: rewardRecord }],
     ['GET /v1/rewards', { rewards: [rewardRecord] }],
     ['GET /v1/rewards/{id}', { reward: rewardRecord }],
@@ -155,4 +155,64 @@ it.each([
   expect(() => parseApiRequest(method!, path!, body)).not.toThrow();
   body.record.encryptedBundle.ciphertext += 'A';
   expect(() => parseApiRequest(method!, path!, body)).toThrowError('INVALID_FIELD');
+});
+
+it('parses operation lifecycle separately from encrypted revision', () => {
+  const parsed = parseApiResponse('GET /v1/operations', 200, {
+    availability: 'healthy',
+    records: [{
+      scope,
+      record: payRecord,
+      revision: 1,
+      stateVersion: 2,
+      status: 'released',
+      checkpoint: { blockNumber: '12', blockHash: id, blockTimestamp: '601' },
+    }],
+  });
+  if ('error' in parsed) throw new Error('unexpected error response');
+  expect(parsed.records[0]?.status).toBe('released');
+  expect(parsed.records[0]?.revision).toBe(1);
+  expect(parsed.records[0]?.stateVersion).toBe(2);
+});
+
+it('accepts a record ID cursor for the next operations page', () => {
+  const request = parseApiRequest('GET', `/v1/operations?deploymentId=local-v1&owner=${owner}&cursor=${id}`, undefined);
+  expect(request.cursor).toBe(id);
+  const response = parseApiResponse('GET /v1/operations', 200, {
+    availability: 'healthy', records: [], nextCursor: id,
+  });
+  if ('error' in response) throw new Error('unexpected error response');
+  expect(response.nextCursor).toBe(id);
+});
+
+it.each([
+  { status: 'reserved' },
+  { stateVersion: 2 },
+  { checkpoint: { blockNumber: '12', blockHash: id, blockTimestamp: '601' } },
+  { status: 'released', stateVersion: 2 },
+  { status: 'invalid', stateVersion: 2 },
+  { status: undefined, stateVersion: undefined },
+])('rejects incomplete service lifecycle fields without falling back to legacy: %j', (fields) => {
+  const record = { scope, record: payRecord, revision: 1, ...fields };
+  expect(() => parseApiResponse('PUT /v1/operations/{id}', 200, record)).toThrowError();
+  expect(() => parseApiResponse('GET /v1/operations', 200, {
+    availability: 'healthy', records: [record],
+  })).toThrowError();
+});
+
+it('preserves complete service lifecycle and legacy reservation fields without inventing state', () => {
+  const legacy = { scope, record: payRecord, revision: 3, reservationState: 'active' };
+  const parsedLegacy = parseApiResponse('PUT /v1/operations/{id}', 200, legacy);
+  expect(parsedLegacy).toMatchObject({ revision: 3, reservationState: 'active' });
+  expect(parsedLegacy).not.toHaveProperty('status');
+  expect(parsedLegacy).not.toHaveProperty('stateVersion');
+  const rich = {
+    ...legacy, reservationState: 'released', status: 'released', stateVersion: 7,
+    checkpoint: { blockNumber: '12', blockHash: id, blockTimestamp: '601' },
+  };
+  const parsed = parseApiResponse('PUT /v1/operations/{id}', 200, rich);
+  expect(parsed).toMatchObject({
+    revision: 3, status: 'released', stateVersion: 7,
+    checkpoint: rich.checkpoint, reservationState: 'released',
+  });
 });

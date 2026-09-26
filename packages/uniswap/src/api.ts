@@ -15,10 +15,12 @@ import {
 import type {
   EncryptedBundle,
   OperationRecord,
+  OperationStatus,
   ReservationBase,
   RewardRecord,
   RewardRequest,
   RewardStatus,
+  StoredOperation,
   SavedOperation,
   SignedRecipientInfo,
 } from './storage.js';
@@ -50,6 +52,7 @@ export type ErrorCode =
   | 'PENDING_REQUEST'
   | 'INSUFFICIENT_FUNDS'
   | 'NOT_FOUND'
+  | 'PAYLOAD_TOO_LARGE'
   | 'SERVICE_UNAVAILABLE';
 
 export interface ApiError {
@@ -111,6 +114,18 @@ export interface ApiRequestBodyMap {
   };
 }
 
+// Legacy reservation responses remain supported for the #55 reservation transport.
+// A service response carries the complete, independent lifecycle state.
+export type OperationResponse =
+  | (StoredOperation & { readonly scope: Scope; readonly reservationState?: SavedReservation['reservationState'] })
+  | (SavedOperation & {
+      readonly scope: Scope;
+      readonly reservationState?: SavedReservation['reservationState'];
+      readonly status?: never;
+      readonly stateVersion?: never;
+      readonly checkpoint?: never;
+    });
+
 export interface ApiSuccessResponseMap {
   readonly 'POST /v1/auth/challenge': {
     readonly challengeId: Bytes32;
@@ -119,10 +134,11 @@ export interface ApiSuccessResponseMap {
     readonly expiresAt: number;
   };
   readonly 'POST /v1/auth/verify': { readonly sessionExpiresAt: number };
-  readonly 'PUT /v1/operations/{id}': SavedOperation & { readonly scope: Scope; readonly reservationState?: SavedReservation['reservationState'] };
+  readonly 'PUT /v1/operations/{id}': OperationResponse;
   readonly 'GET /v1/operations': {
     readonly availability: 'healthy' | 'rollback';
-    readonly records: readonly (SavedOperation & { readonly scope: Scope; readonly reservationState?: SavedReservation['reservationState'] })[];
+    readonly records: readonly OperationResponse[];
+    readonly nextCursor?: Bytes32;
   };
   readonly 'GET /v1/operations/{id}': SavedReservation & { readonly scope: Scope };
   readonly 'POST /v1/operations/{id}/release': SavedReservation & { readonly scope: Scope };
@@ -136,6 +152,7 @@ export interface ParsedApiRequest {
   readonly route: ApiRoute;
   readonly scope: Scope;
   readonly id?: Bytes32;
+  readonly cursor?: Bytes32;
   readonly challengeId?: Bytes32;
   readonly siweMessage?: string;
   readonly signature?: `0x${string}`;
@@ -152,6 +169,9 @@ const UINT256_MAX = (1n << 256n) - 1n;
 const REWARD_STATUSES: readonly RewardStatus[] = [
   'accepted', 'queued', 'processing', 'pending', 'unknown',
   'finalized', 'received', 'ended-without-distribution',
+];
+const OPERATION_STATUSES: readonly OperationStatus[] = [
+  'reserved', 'unknown', 'released', 'consumed', 'finalized-success',
 ];
 
 function parseScope(value: unknown): Scope {
@@ -323,7 +343,11 @@ export function parseApiRequest(method: string, path: string, body: unknown): Pa
     return { route: 'GET /v1/operations/{id}', scope: parseQueryScope(url), id: parseBytes32(operationMatch[1], 'id') };
   }
   if (method === 'GET' && pathname === '/v1/operations') {
-    return { route: 'GET /v1/operations', scope: parseQueryScope(url) };
+    const cursor = url.searchParams.get('cursor');
+    return {
+      route: 'GET /v1/operations', scope: parseQueryScope(url),
+      ...(cursor === null ? {} : { cursor: parseBytes32(cursor, 'cursor') }),
+    };
   }
   if (method === 'POST' && pathname === '/v1/rewards') {
     const reward = parseRewardRequest(body);
@@ -359,6 +383,7 @@ const ERROR_CODES: readonly ErrorCode[] = [
   'SCOPE_MISMATCH', 'REVISION_CONFLICT', 'RESERVATION_CONFLICT',
   'REQUEST_CONFLICT', 'PENDING_REQUEST', 'INSUFFICIENT_FUNDS',
   'NOT_FOUND', 'SERVICE_UNAVAILABLE',
+  'PAYLOAD_TOO_LARGE',
 ];
 
 const ERROR_STATUS: Readonly<Record<ErrorCode, number>> = {
@@ -373,6 +398,7 @@ const ERROR_STATUS: Readonly<Record<ErrorCode, number>> = {
   PENDING_REQUEST: 409,
   INSUFFICIENT_FUNDS: 422,
   NOT_FOUND: 404,
+  PAYLOAD_TOO_LARGE: 413,
   SERVICE_UNAVAILABLE: 503,
 };
 
@@ -419,6 +445,51 @@ function parseReservationState(value: unknown): 'active' | 'released' {
   return value;
 }
 
+function parseStoredOperation(value: unknown): StoredOperation & { readonly scope: Scope } {
+  const object = parseJsonObject(value, 'operation');
+  const scope = parseScope(object.scope);
+  if (!OPERATION_STATUSES.includes(object.status as OperationStatus)) {
+    throw new SchemaError('INVALID_FIELD', 'operation.status');
+  }
+  let checkpoint: StoredOperation['checkpoint'];
+  if (object.checkpoint !== undefined) {
+    const item = parseJsonObject(object.checkpoint, 'operation.checkpoint');
+    checkpoint = {
+      blockNumber: parseUintString(item.blockNumber, 'operation.checkpoint.blockNumber').toString(),
+      blockHash: parseBytes32(item.blockHash, 'operation.checkpoint.blockHash'),
+      blockTimestamp: parseUintString(item.blockTimestamp, 'operation.checkpoint.blockTimestamp').toString(),
+    };
+  }
+  if (['released', 'consumed', 'finalized-success'].includes(object.status as string) && checkpoint === undefined) {
+    throw new SchemaError('INVALID_FIELD', 'operation.checkpoint');
+  }
+  return {
+    scope,
+    record: parseOperationRecord(object.record, scope),
+    revision: parseRevision(object.revision, 'operation.revision'),
+    stateVersion: parseRevision(object.stateVersion, 'operation.stateVersion'),
+    status: object.status as OperationStatus,
+    ...(checkpoint === undefined ? {} : { checkpoint }),
+  };
+}
+
+function parseOperationResponse(value: unknown): OperationResponse {
+  const object = parseJsonObject(value, 'operation');
+  const reservationState = object.reservationState === undefined ? {} : {
+    reservationState: parseReservationState(object.reservationState),
+  };
+  if ('status' in object || 'stateVersion' in object || 'checkpoint' in object) {
+    return { ...parseStoredOperation(object), ...reservationState };
+  }
+  const scope = parseScope(object.scope);
+  return {
+    scope,
+    record: parseOperationRecord(object.record, scope),
+    revision: parseRevision(object.revision, 'revision'),
+    ...reservationState,
+  };
+}
+
 function parseApiResponseValue(route: ApiRoute, status: number, body: unknown): unknown {
   const object = parseJsonObject(body);
   if (status >= 400) {
@@ -441,15 +512,7 @@ function parseApiResponseValue(route: ApiRoute, status: number, body: unknown): 
     return { sessionExpiresAt: parseTimestamp(object.sessionExpiresAt, 'sessionExpiresAt') };
   }
   if (route === 'PUT /v1/operations/{id}') {
-    const scope = parseScope(object.scope);
-    return {
-      scope,
-      record: parseOperationRecord(object.record, scope),
-      revision: parseRevision(object.revision, 'revision'),
-      ...(object.reservationState === undefined ? {} : {
-        reservationState: parseReservationState(object.reservationState),
-      }),
-    };
+    return parseOperationResponse(object);
   }
   if (route === 'GET /v1/operations/{id}' || route === 'POST /v1/operations/{id}/release') {
     const scope = parseScope(object.scope);
@@ -465,18 +528,11 @@ function parseApiResponseValue(route: ApiRoute, status: number, body: unknown): 
     if (object.availability !== 'healthy' && object.availability !== 'rollback') {
       throw new SchemaError('INVALID_FIELD', 'availability');
     }
-    return { availability: object.availability, records: object.records.map((item: unknown) => {
-      const saved = parseJsonObject(item, 'records');
-      const scope = parseScope(saved.scope);
-      return {
-        scope,
-        record: parseOperationRecord(saved.record, scope),
-        revision: parseRevision(saved.revision, 'revision'),
-        ...(saved.reservationState === undefined ? {} : {
-          reservationState: parseReservationState(saved.reservationState),
-        }),
-      };
-    }) };
+    return {
+      availability: object.availability,
+      records: object.records.map(parseOperationResponse),
+      ...(object.nextCursor === undefined ? {} : { nextCursor: parseBytes32(object.nextCursor, 'nextCursor') }),
+    };
   }
   if (route === 'POST /v1/rewards' || route === 'GET /v1/rewards/{id}' || route === 'POST /v1/rewards/{id}/received') {
     return { reward: parseRewardRecord(object.reward) };

@@ -44,12 +44,14 @@ export {
 } from './api.js';
 export type {
   ApiError, ApiRequestBodyMap, ApiRoute, ApiSuccessResponseMap,
-  ApiTransport, ErrorCode, ParsedApiRequest, WireOperationRecord, WireRewardRequest,
+  ApiTransport, ErrorCode, OperationResponse, ParsedApiRequest, WireOperationRecord, WireRewardRequest,
 } from './api.js';
 export { StoreError } from './storage.js';
 export type {
   EncryptedBundle,
+  FinalizedCheckpoint,
   OperationRecord,
+  OperationStatus,
   OperationStore,
   RewardRecord,
   RewardRequest,
@@ -58,4 +60,5 @@ export type {
   SavedOperation,
   SignedRecipientInfo,
   StoreErrorCode,
+  StoredOperation,
 } from './storage.js';

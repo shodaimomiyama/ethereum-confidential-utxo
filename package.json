@@ -26,7 +26,9 @@
     "artifact:pool": "node scripts/export-pool-artifact.mjs",
     "check:pool": "node scripts/verify-pool-artifact.mjs",
     "deploy:pool": "node scripts/deploy-pool.mjs",
-    "verify:pool": "node scripts/verify-pool-deployment.mjs"
+    "verify:pool": "node scripts/verify-pool-deployment.mjs",
+    "check:service": "pnpm --filter @confidential-utxo/crypto build && pnpm --filter @confidential-utxo/core build && pnpm --filter @confidential-utxo/uniswap-service build",
+    "test:service": "pnpm --filter @confidential-utxo/crypto build && pnpm --filter @confidential-utxo/core build && pnpm --filter @confidential-utxo/uniswap-service test"
   },
   "devDependencies": {
     "@types/node": "24.10.1",

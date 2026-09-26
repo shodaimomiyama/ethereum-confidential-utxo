@@ -144,7 +144,12 @@ export function createMockHttp({ store, clock, reservations }: {
           result = { scope, ...saved };
         } else if (route === 'GET /v1/operations') {
           if (reservations === undefined) {
-            result = { availability: store.availability(), records: store.operations.list(scope).map((saved) => ({ scope, ...saved })) };
+            const page = store.operations.listPage(scope, parsed.cursor);
+            result = {
+              availability: store.availability(),
+              records: page.records.map((saved) => ({ scope, ...saved })),
+              ...(page.nextCursor === undefined ? {} : { nextCursor: page.nextCursor }),
+            };
           } else {
             const listing = await reservations.list(scope);
             result = { availability: listing.availability, records: listing.records.map((saved) => ({ scope, ...saved })) };
