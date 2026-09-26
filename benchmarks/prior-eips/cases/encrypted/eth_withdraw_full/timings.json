@@ -1,0 +1,7 @@
+{
+  "poolProveMs": 5682.023292000001,
+  "authProveMs": 314.38316699999996,
+  "prover": "snarkjs WASM",
+  "auth": "Groth16 demo",
+  "localVerify": true
+}

@@ -1,0 +1,56 @@
+{
+  "purpose": "Fixed-slot supplemental operation checks for EIP-8182 issue 10",
+  "upstream_commit": "639baaf7b29c22eb43ba6150140902ea8dbbbc46",
+  "proving": {
+    "pool": "upstream Circom Groth16 pool circuit; unchanged",
+    "authorization": "upstream Groth16 demo secret circuit; this does not prove wallet-signature authorization",
+    "pool_zkey_sha256": "4f404120a16c35d0685b9b09401d482d8120dd5bc6cbb21317b0ac711969a5fa",
+    "pool_wasm_sha256": "e4d7e0c921872c2f96d1d897c91ffed1c97a999381a1a2531116dacb1556c469",
+    "auth_demo_zkey_sha256": "600915fcd3c23cefd1c080ad55e815165fda474494a46548f12d1de433bd5c11",
+    "auth_demo_vkey_sha256": "7a02ebfc7c016266f77c0e15286349f5fe2f9328c5f5bfcf4f2496bdc37fda25",
+    "key_trust": "Development keys; demo auth key was generated in local single-contributor setup"
+  },
+  "environment": {
+    "anvil": "1.7.1, Cancun, chainId 1, genesis timestamp 1735689000, block gas limit 30000000, code size limit disabled",
+    "genesis": "upstream assets/eip-8182/shielded-pool-state.json installed via Anvil RPC",
+    "transaction_sender": "local Anvil account; registered authorizer is impersonated fixture address",
+    "inputs": "The original seven fixed-slot cases use two real deposits, amounts 10 and 5, owned by one fixture owner. Exact S-02/S-03 cases use one real deposit of 10 and one phantom input; S-04 uses two real deposits of 2 and 3.",
+    "outputs": "The circuit always has three slots. Dummy slots still produce commitments but carry zero value and the mandated dummy owner hash.",
+    "output_note_data": "Three fixed plaintext upstream fixture byte strings, eip-8182-output-0/1/2; no encryption, recipient recovery, delivery or sync is tested here",
+    "secrets": "Deterministic public test secrets and Anvil accounts in witness/raw files; never use these keys or setup for funds",
+    "gas_scope": "eth_getTransactionReceipt.gasUsed; deployment, policy registration, minting, deposits and transact are separate rows",
+    "proof_time_scope": "snarkjs WASM groth16.prove only, excluding witness generation and local verification",
+    "repetitions": 1,
+    "chain_reset": "anvil_reset before every case, with genesis block captured",
+    "run": "anvil --port 18556 --chain-id 1 --hardfork cancun --timestamp 1735689000 --gas-limit 30000000 --disable-code-size-limit; bash benchmarks/prior-eips/cases/run.sh /tmp/eip-8182-cases-issue10 http://127.0.0.1:18556 all; bash benchmarks/prior-eips/cases/run-encrypted.sh /tmp/eip-8182-cases-issue10 http://127.0.0.1:18556 all",
+    "reference_setup": "bash benchmarks/prior-eips/setup.sh /tmp/eip-8182-cases-issue10 (use an isolated reference checkout)"
+  },
+  "case_meanings": {
+    "eth_withdraw_partial": "10+5 ETH inputs -> 8 public ETH + 5 sender change note + 2 fee note; output slot 1 dummy",
+    "eth_withdraw_full": "10+5 ETH inputs -> 15 public ETH; all three output slots dummy, fee zero",
+    "erc20_withdraw_partial": "10+5 MockERC20 inputs -> 8 public tokens + 5 sender change note + 2 fee note; output slot 1 dummy",
+    "erc20_withdraw_full": "10+5 MockERC20 inputs -> 15 public tokens; all three output slots dummy, fee zero",
+    "transfer_partial": "10+5 MockERC20 inputs -> 8 recipient note + 5 sender change note + 2 fee note; all output slots real",
+    "transfer_full": "10+5 MockERC20 inputs -> 15 recipient note; output slots 1 and 2 dummy, fee zero",
+    "merge": "10+5 MockERC20 inputs -> 15 owner-controlled note; output slots 1 and 2 dummy, fee zero",
+    "s02_transfer_full_10": "10 real MockERC20 input plus phantom -> 10 recipient note; change and fee dummy, fee zero",
+    "s03_transfer_partial_3": "10 real MockERC20 input plus phantom -> 3 recipient note + 7 sender change note; fee dummy, fee zero",
+    "s04_transfer_2_plus_3": "2+3 real MockERC20 inputs -> 4 recipient note + 1 sender change note; fee dummy, fee zero",
+    "s05_self_split_10": "10 real MockERC20 input plus phantom -> 3 and 7 owner-controlled notes; fee dummy, fee zero; newly emitted note commitments must differ from the consumed note",
+    "s05_self_recreate_10": "10 real MockERC20 input plus phantom -> new 10 owner-controlled note; change and fee dummy, fee zero; new note commitment must differ from the consumed note",
+    "s06_eth_withdraw_full_10": "10 real ETH input plus phantom -> 10 public ETH; all output slots dummy, fee zero",
+    "s06_eth_withdraw_partial_3": "10 real ETH input plus phantom -> 3 public ETH + 7 sender change note; slots 1 and 2 dummy, fee zero",
+    "s02_eth_transfer_full_10": "10 real ETH input plus phantom -> 10 recipient ETH note; change and fee dummy, fee zero",
+    "s03_eth_transfer_partial_3": "10 real ETH input plus phantom -> 3 recipient ETH note + 7 sender change ETH note; fee dummy, fee zero",
+    "s04_eth_transfer_2_plus_3": "2+3 real ETH inputs -> 4 recipient ETH note + 1 sender change ETH note; fee dummy, fee zero"
+  },
+  "encrypted_trial": {
+    "path": "encrypted/<case>/ with independent reset, fresh proof, receipt, delivery and sync records",
+    "output_data": "Each real transact output is encrypted with upstream Sepolia demo ML-KEM-768 plus X25519 recipient keys; each dummy slot publishes empty bytes with keccak256(empty) modulo field bound in the proof",
+    "recovery": "The upstream indexer fetches ShieldedPoolTransact logs and decrypts every real transact output with deterministic test keys",
+    "deposit_delivery": "Depositor retains the self-generated note secret, so deposits publish empty outputNoteData in these trials; later spend of the deposited note is verified. Recovery of a deposit by a distinct recipient is not measured.",
+    "full_withdrawal": "Full ETH/token withdrawal has zero real note outputs, so no output encryption is needed; all three dummy slots publish empty bytes.",
+    "gas_and_time": "Receipt gas includes encrypted output bytes where present; delivery encryption, pool/auth proving, RPC log fetching, trial decryption and index processing are measured separately. Each case is a single trial, not a median."
+  },
+  "scenario_mapping_limit": "The original transfer_full, transfer_partial and merge cases use two real inputs of 10+5 and are supplementary operation-path checks. Dedicated s02/s03/s04 cases for both MockERC20 and ETH, plus s05/s06 cases, match the specification's logical amounts and real-input counts. S-05 merge is covered by the two-input merge case, while split and recreation have dedicated one-input cases. Encrypted trials test log-based recovery for each real transact output, but do not test a subsequent spend by that recipient. ETH deposit receipts are followed by real consumption in ETH withdrawal cases, supporting the deposit-to-spend portion of S-01."
+}

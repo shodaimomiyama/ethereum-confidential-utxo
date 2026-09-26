@@ -1,0 +1,208 @@
+{
+  "classification": "additional fresh setup timing; excluded from three formal operation trials",
+  "sourceCommit": "639baaf7b29c22eb43ba6150140902ea8dbbbc46",
+  "setupScriptSha256": "ff82200992bf6a6d7a0a68ed0624eef6c5f8c632b7258ea9d9f3252bdd36beb5",
+  "checkout": "/tmp/eip8182-setup-timing-fresh",
+  "os": "Darwin 25.5.0 arm64",
+  "cpuModel": "Apple M4",
+  "logicalCpus": 10,
+  "totalMemoryBytes": 34359738368,
+  "steps": [
+    {
+      "name": "clone",
+      "command": "git",
+      "args": [
+        "clone",
+        "https://github.com/0xFacet/eip-8182-reference-implementation.git",
+        "/tmp/eip8182-setup-timing-fresh"
+      ],
+      "wallMs": 5727.98125,
+      "exitCode": 0
+    },
+    {
+      "name": "checkout_pinned_commit",
+      "command": "git",
+      "args": [
+        "checkout",
+        "--detach",
+        "639baaf7b29c22eb43ba6150140902ea8dbbbc46"
+      ],
+      "wallMs": 121.44204199999967,
+      "exitCode": 0
+    },
+    {
+      "name": "submodules",
+      "command": "git",
+      "args": [
+        "submodule",
+        "update",
+        "--init",
+        "--recursive"
+      ],
+      "wallMs": 1177.862666,
+      "exitCode": 0
+    },
+    {
+      "name": "npm_root_lockfile",
+      "command": "npm",
+      "args": [
+        "ci"
+      ],
+      "wallMs": 5580.814082999999,
+      "exitCode": 0
+    },
+    {
+      "name": "npm_missing_upstream_dependency",
+      "command": "npm",
+      "args": [
+        "install",
+        "--no-save",
+        "ethereum-cryptography@2.2.1"
+      ],
+      "wallMs": 1275.501957999999,
+      "exitCode": 0
+    },
+    {
+      "name": "domain_tags",
+      "command": "node",
+      "args": [
+        "scripts/circom/gen_domain_tags.js"
+      ],
+      "wallMs": 48.37812500000109,
+      "exitCode": 0
+    },
+    {
+      "name": "pool_circuit_compile",
+      "command": "/tmp/eip8182-setup-timing-fresh/vendor/circom",
+      "args": [
+        "circuits/pool/pool.circom",
+        "-l",
+        "circuits/common",
+        "-l",
+        "circuits/pool",
+        "--r1cs",
+        "--wasm",
+        "--sym",
+        "--O2",
+        "-o",
+        "build/pool"
+      ],
+      "wallMs": 4700.728083,
+      "exitCode": 0
+    },
+    {
+      "name": "auth_dev_ptau_new",
+      "command": "/tmp/eip8182-setup-timing-fresh/node_modules/.bin/snarkjs",
+      "args": [
+        "powersoftau",
+        "new",
+        "bn128",
+        "12",
+        "build/pot12_0000.ptau"
+      ],
+      "wallMs": 866.7336660000001,
+      "exitCode": 0
+    },
+    {
+      "name": "auth_dev_ptau_contribute",
+      "command": "/tmp/eip8182-setup-timing-fresh/node_modules/.bin/snarkjs",
+      "args": [
+        "powersoftau",
+        "contribute",
+        "build/pot12_0000.ptau",
+        "build/pot12_0001.ptau",
+        "--name=issue10-local-dev",
+        "-e=issue10-local-dev"
+      ],
+      "wallMs": 2583.3385420000013,
+      "exitCode": 0
+    },
+    {
+      "name": "auth_dev_ptau_phase2",
+      "command": "/tmp/eip8182-setup-timing-fresh/node_modules/.bin/snarkjs",
+      "args": [
+        "powersoftau",
+        "prepare",
+        "phase2",
+        "build/pot12_0001.ptau",
+        "build/pot12_final.ptau"
+      ],
+      "wallMs": 21714.403833,
+      "exitCode": 0
+    },
+    {
+      "name": "auth_demo_build",
+      "command": "bash",
+      "args": [
+        "scripts/circuit/build_auth_demo.sh"
+      ],
+      "wallMs": 6255.107582999997,
+      "exitCode": 0
+    },
+    {
+      "name": "delivery_input_patch_check",
+      "command": "git",
+      "args": [
+        "apply",
+        "--check",
+        "/Users/momiyamashodai/orca/workspaces/ethereum-confidential-utxo/pri/benchmarks/prior-eips/output-note-data.patch"
+      ],
+      "wallMs": 13.48475000000326,
+      "exitCode": 0
+    },
+    {
+      "name": "delivery_input_patch",
+      "command": "git",
+      "args": [
+        "apply",
+        "/Users/momiyamashodai/orca/workspaces/ethereum-confidential-utxo/pri/benchmarks/prior-eips/output-note-data.patch"
+      ],
+      "wallMs": 12.63037500000064,
+      "exitCode": 0
+    },
+    {
+      "name": "forge_build",
+      "command": "forge",
+      "args": [
+        "build"
+      ],
+      "wallMs": 3067.720125,
+      "exitCode": 0
+    },
+    {
+      "name": "npm_sepolia_demo_lockfile",
+      "command": "npm",
+      "args": [
+        "ci",
+        "--ignore-scripts"
+      ],
+      "wallMs": 10265.148833,
+      "exitCode": 0
+    },
+    {
+      "name": "sepolia_sdk_build",
+      "command": "npm",
+      "args": [
+        "run",
+        "build:sdk"
+      ],
+      "wallMs": 1115.036500000002,
+      "exitCode": 0
+    }
+  ],
+  "success": true,
+  "totalWallMs": 64558.126040999996,
+  "assetHashes": {
+    "build/pool/pool_final.zkey": "4f404120a16c35d0685b9b09401d482d8120dd5bc6cbb21317b0ac711969a5fa",
+    "build/pool/pool_js/pool.wasm": "e4d7e0c921872c2f96d1d897c91ffed1c97a999381a1a2531116dacb1556c469",
+    "build/auth_demo/auth_demo_final.zkey": "45572a2e336379ffab8864e6ff6c3a64d0391d93151c5f1cbee539f40a93c545",
+    "build/auth_demo/auth_demo_vkey.json": "0a373290a51b34f3061f0158fa8e98a3dda68c090cc312a5ab8cfa721e34c782"
+  },
+  "toolVersions": {
+    "node": "v22.22.0",
+    "npm": "10.9.4",
+    "forge": "forge Version: 1.7.1",
+    "circom": "vendored upstream vendor/circom 2.2.3"
+  },
+  "checkedOutCommit": "639baaf7b29c22eb43ba6150140902ea8dbbbc46"
+}

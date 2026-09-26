@@ -1,0 +1,8 @@
+{
+  "case": "merge",
+  "status": "passed",
+  "evidence": [
+    "receipts.json",
+    "sync.json"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "case": "s05_self_recreate_10",
+  "status": "passed",
+  "evidence": [
+    "receipts.json",
+    "sync.json"
+  ]
+}

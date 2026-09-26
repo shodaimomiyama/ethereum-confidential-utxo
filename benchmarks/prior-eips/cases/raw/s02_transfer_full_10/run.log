@@ -1,0 +1,8 @@
+wrote /private/tmp/eip-8182-cases-issue10/build/pool/input.json
+{"case":"s02_transfer_full_10","inputs":["10","0"],"outputs":["10","0","0"],"outputReal":["1","0","0"],"publicAmountOut":"0"}
+wrote /private/tmp/eip-8182-cases-issue10/build/auth_demo/input.json
+  authDataCommitment        = 21840486684661556917382627761647535514449498464860157795102844770608153675761
+  blindedAuthCommitment     = 5021276856499553829481810759566016603376103514767773686690103597471221640411
+  transactionIntentDigest   = 1645672957107620080343428320909474329010732192189307497601180034951464036922
+{"poolProveMs":7494.22225,"authProveMs":322.81054100000074,"localVerify":true}
+{"transactGas":"3536615","state":{"nullifier0Spent":true,"nullifier1Spent":true,"replayIdUsed":true,"noteRootChanged":true,"recipientAssetDelta":"0","poolAssetBalance":"10"}}

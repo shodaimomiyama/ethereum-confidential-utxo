@@ -1,0 +1,38 @@
+{
+  "case": "s04_eth_transfer_2_plus_3",
+  "repetitions": 3,
+  "measure": "eth_getTransactionReceipt.gasUsed",
+  "medianTransactGas": 3650301,
+  "trials": [
+    {
+      "name": "trial-1",
+      "transactGas": 3650313,
+      "recoveredAmounts": [
+        "4",
+        "1"
+      ],
+      "receiptPath": "eth-repeat/trial-1/receipts.json",
+      "syncPath": "eth-repeat/trial-1/sync.json"
+    },
+    {
+      "name": "trial-2",
+      "transactGas": 3650301,
+      "recoveredAmounts": [
+        "4",
+        "1"
+      ],
+      "receiptPath": "eth-repeat/trial-2/receipts.json",
+      "syncPath": "eth-repeat/trial-2/sync.json"
+    },
+    {
+      "name": "trial-3",
+      "transactGas": 3650277,
+      "recoveredAmounts": [
+        "4",
+        "1"
+      ],
+      "receiptPath": "eth-repeat/trial-3/receipts.json",
+      "syncPath": "eth-repeat/trial-3/sync.json"
+    }
+  ]
+}

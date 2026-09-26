@@ -1,0 +1,8 @@
+{
+  "case": "eth_withdraw_full",
+  "status": "passed",
+  "evidence": [
+    "receipts.json",
+    "sync.json"
+  ]
+}

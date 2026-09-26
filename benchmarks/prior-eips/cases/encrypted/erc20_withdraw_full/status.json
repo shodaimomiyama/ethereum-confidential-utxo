@@ -1,0 +1,8 @@
+{
+  "case": "erc20_withdraw_full",
+  "status": "passed",
+  "evidence": [
+    "receipts.json",
+    "sync.json"
+  ]
+}

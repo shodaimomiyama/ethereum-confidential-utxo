@@ -1,0 +1,8 @@
+{
+  "case": "s05_self_split_10",
+  "status": "passed",
+  "evidence": [
+    "receipts.json",
+    "sync.json"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "pool_prove_ms": 1616,
+  "auth_prove_ms": 115,
+  "prover": "snarkjs",
+  "auth_circuit": "groth16_demo"
+}

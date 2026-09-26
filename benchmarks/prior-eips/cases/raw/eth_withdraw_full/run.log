@@ -1,0 +1,8 @@
+wrote /private/tmp/eip-8182-cases-issue10/build/pool/input.json
+{"case":"eth_withdraw_full","inputs":["10","5"],"outputs":["0","0","0"],"outputReal":["0","0","0"],"publicAmountOut":"15"}
+wrote /private/tmp/eip-8182-cases-issue10/build/auth_demo/input.json
+  authDataCommitment        = 21840486684661556917382627761647535514449498464860157795102844770608153675761
+  blindedAuthCommitment     = 5021276856499553829481810759566016603376103514767773686690103597471221640411
+  transactionIntentDigest   = 12278187769162500506526118359955618754261021030433262113926903881996975138549
+{"poolProveMs":3424.2725830000004,"authProveMs":318.2614999999996,"localVerify":true}
+{"transactGas":"3571321","state":{"nullifier0Spent":true,"nullifier1Spent":true,"replayIdUsed":true,"noteRootChanged":true,"recipientAssetDelta":"15","poolAssetBalance":"0"}}
