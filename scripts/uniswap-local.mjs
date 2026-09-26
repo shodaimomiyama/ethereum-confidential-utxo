@@ -2,8 +2,9 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createPublicClient, createWalletClient, http } from 'viem';
+import { createPublicClient, createWalletClient, decodeFunctionData, encodeDeployData, http } from 'viem';
 import { createUniswapManifest, verifyUniswapManifest } from './uniswap-manifest.mjs';
+import { createUniswapArtifactBundle } from './uniswap-artifact.mjs';
 
 const localChainId = 31337;
 const wethWei = 100000000000000000n;
@@ -58,7 +59,64 @@ async function awaitTransaction(client, hash) {
 
 export async function verifyLocalAssets(manifest, publicClient) {
   if (manifest.chainId !== localChainId) throw new Error('local manifest chain ID mismatch');
-  return verifyUniswapManifest(manifest, publicClient);
+  const bundle = createUniswapArtifactBundle();
+  const published = JSON.parse(readFileSync(bundlePath, 'utf8'));
+  if (JSON.stringify(published) !== JSON.stringify(bundle)) throw new Error('published Uniswap artifact mismatch');
+  if (manifest.provenance.uniswapSourceLockSha256 !== bundle.provenance.sourceLockSha256 ||
+      manifest.provenance.uniswapArtifactPairHash?.toLowerCase() !== bundle.pairInitCodeHash.toLowerCase()) {
+    throw new Error('Uniswap source and artifact provenance mismatch');
+  }
+  await verifyUniswapManifest(manifest, publicClient);
+  const dusd = JSON.parse(readFileSync(dusdPath, 'utf8'));
+  const pinned = { weth9: [bundle.artifacts.weth9, []],
+    factory: [bundle.artifacts.factory, [manifest.assets.dUSD.initialHolder]],
+    router02: [bundle.artifacts.router02, [manifest.contracts.factory.address, manifest.contracts.weth9.address]],
+    dUSD: [{ abi: dusd.abi, creationBytecode: dusd.bytecode.object }, [manifest.assets.dUSD.initialHolder]] };
+  for (const [name, [artifact, args]] of Object.entries(pinned)) {
+    const record = manifest.contracts[name];
+    const transaction = await publicClient.getTransaction({ hash: record.txHash });
+    const receipt = await publicClient.getTransactionReceipt({ hash: record.txHash });
+    const expected = encodeDeployData({ abi: artifact.abi, bytecode: artifact.creationBytecode, args });
+    if (transaction.to !== null || transaction.input?.toLowerCase() !== expected.toLowerCase() ||
+        receipt.status !== 'success' || receipt.contractAddress?.toLowerCase() !== record.address.toLowerCase() ||
+        receipt.blockNumber !== BigInt(record.blockNumber) ||
+        receipt.blockHash?.toLowerCase() !== record.blockHash.toLowerCase()) {
+      throw new Error(`${name} deployment transaction mismatch`);
+    }
+  }
+  for (const name of ['weth9', 'factory', 'pair']) {
+    const expectedHash = bundle.artifacts[name].runtimeSha256;
+    if (manifest.contracts[name].runtimeSha256.toLowerCase() !== expectedHash.toLowerCase()) {
+      throw new Error(`${name} pinned runtime hash mismatch`);
+    }
+  }
+  const checkpoint = BigInt(manifest.assets.checkpoint.blockNumber);
+  const holderBalance = await publicClient.readContract({ address: manifest.contracts.dUSD.address,
+    abi: dusd.abi, functionName: 'balanceOf', args: [manifest.assets.dUSD.remainingHolder], blockNumber: checkpoint });
+  if (manifest.assets.dUSD.remainingHolder.toLowerCase() !== manifest.assets.dUSD.initialHolder.toLowerCase() ||
+      holderBalance !== 990000000000000000000000n) throw new Error('remaining dUSD holder balance mismatch');
+  const pair = bundle.artifacts.pair;
+  const lpBalance = await publicClient.readContract({ address: manifest.contracts.pair.address,
+    abi: pair.abi, functionName: 'balanceOf', args: [manifest.assets.liquidity.lpRecipient], blockNumber: checkpoint });
+  const lpSupply = await publicClient.readContract({ address: manifest.contracts.pair.address,
+    abi: pair.abi, functionName: 'totalSupply', blockNumber: checkpoint });
+  if (lpSupply <= 1000n || lpBalance !== lpSupply - 1000n) throw new Error('LP recipient balance mismatch');
+  const liquidityHash = manifest.assets.liquidity.transactionHash;
+  if (liquidityHash?.toLowerCase() !== manifest.contracts.pair.txHash.toLowerCase()) {
+    throw new Error('liquidity transaction mismatch');
+  }
+  const liquidity = await publicClient.getTransaction({ hash: liquidityHash });
+  const liquidityReceipt = await publicClient.getTransactionReceipt({ hash: liquidityHash });
+  const decoded = decodeFunctionData({ abi: bundle.artifacts.router02.abi, data: liquidity.input });
+  if (liquidity.to?.toLowerCase() !== manifest.contracts.router02.address.toLowerCase() ||
+      liquidity.value !== wethWei || decoded.functionName !== 'addLiquidityETH' ||
+      decoded.args[0].toLowerCase() !== manifest.contracts.dUSD.address.toLowerCase() ||
+      decoded.args[1] !== dusdUnits || decoded.args[2] !== dusdUnits || decoded.args[3] !== wethWei ||
+      decoded.args[4].toLowerCase() !== manifest.assets.liquidity.lpRecipient.toLowerCase() ||
+      liquidityReceipt.status !== 'success' || liquidityReceipt.blockNumber !== checkpoint ||
+      liquidityReceipt.blockHash?.toLowerCase() !== manifest.assets.checkpoint.blockHash.toLowerCase()) {
+    throw new Error('liquidity transaction or LP recipient mismatch');
+  }
 }
 
 export async function captureLocalSnapshot({ publicClient, manifest }) {

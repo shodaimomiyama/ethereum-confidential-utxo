@@ -38,6 +38,18 @@ test('local assets deploy with 0.1 WETH and 10000 dUSD, then verify without addi
     assert.equal(manifest.assets.liquidity.initialWethWei, '100000000000000000');
     assert.equal(manifest.assets.liquidity.initialDusdUnits, '10000000000000000000000');
     await verifyLocalAssets(manifest, client);
+    const wrongSource = structuredClone(manifest);
+    wrongSource.provenance.uniswapSourceLockSha256 = '0'.repeat(64);
+    await assert.rejects(verifyLocalAssets(wrongSource, client), /source|provenance/i);
+    const wrongDeployment = structuredClone(manifest);
+    wrongDeployment.contracts.factory.txHash = `0x${'12'.repeat(32)}`;
+    await assert.rejects(verifyLocalAssets(wrongDeployment, client), /transaction|receipt|deployment/i);
+    const wrongHolder = structuredClone(manifest);
+    wrongHolder.assets.dUSD.remainingHolder = manifest.contracts.factory.address;
+    await assert.rejects(verifyLocalAssets(wrongHolder, client), /holder|balance/i);
+    const wrongLpRecipient = structuredClone(manifest);
+    wrongLpRecipient.assets.liquidity.lpRecipient = manifest.contracts.factory.address;
+    await assert.rejects(verifyLocalAssets(wrongLpRecipient, client), /LP|liquidity|balance/i);
     const before = await client.readContract({ address: manifest.contracts.pair.address,
       abi: [{ type: 'function', name: 'totalSupply', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] }],
       functionName: 'totalSupply' });
