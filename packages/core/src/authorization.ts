@@ -15,6 +15,12 @@ export type RecipientInfo = {
   signature: Hex;
 };
 const SECP256K1_ORDER = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n;
+const domainTypes = [
+  { name: "name", type: "string" },
+  { name: "version", type: "string" },
+  { name: "chainId", type: "uint256" },
+  { name: "verifyingContract", type: "address" },
+] as const;
 function bytes(value: unknown, length: number): boolean {
   return typeof value === "string" && new RegExp(`^0x[0-9a-fA-F]{${length * 2}}$`).test(value);
 }
@@ -30,7 +36,7 @@ function operationTypedData(context: AuthorizationContext, id: Hex, owner: Addre
   requireInput(bytes(id, 32) && bytes(owner, 20) && owner.toLowerCase() !== zeroAddress);
   return {
     domain: domain(context), primaryType: "OperationAuthorization",
-    types: { OperationAuthorization: [
+    types: { EIP712Domain: domainTypes, OperationAuthorization: [
       { name: "operationId", type: "bytes32" }, { name: "owner", type: "address" },
       { name: "authScheme", type: "uint8" }, { name: "authVersion", type: "uint8" },
     ] },
@@ -58,7 +64,7 @@ export function recipientInfoTypedData(context: AuthorizationContext, info: Omit
   requireInput(info.receiptFormat === 1 && info.recipientInfoVersion === 1 && bytes(info.receivePublicKey, 32));
   const typed = {
     domain: recipientDomain, primaryType: "RecipientInfo",
-    types: { RecipientInfo: [
+    types: { EIP712Domain: domainTypes, RecipientInfo: [
       { name: "owner", type: "address" }, { name: "receivePublicKey", type: "bytes32" },
       { name: "receiptFormat", type: "uint8" }, { name: "recipientInfoVersion", type: "uint8" },
     ] },

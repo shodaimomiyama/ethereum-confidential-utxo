@@ -102,7 +102,12 @@ it('serializes payment typed data bigint values without losing precision', async
   expect(request?.method).toBe('eth_signTypedData_v4');
   const signed = JSON.parse((request?.params?.[1] as string)) as {
     domain: { chainId: string }; message: { ethAmount: string; minAmountOut: string; deadline: string };
+    types: { EIP712Domain: { name: string; type: string }[] };
   };
+  expect(signed.types.EIP712Domain).toEqual([
+    { name: 'name', type: 'string' }, { name: 'version', type: 'string' },
+    { name: 'chainId', type: 'uint256' }, { name: 'verifyingContract', type: 'address' },
+  ]);
   expect(signed.domain.chainId).toBe(largeChainId.toString());
   expect(signed.message.ethAmount).toBe(largeAmount.toString());
   expect(signed.message.minAmountOut).toBe((largeAmount - 1n).toString());

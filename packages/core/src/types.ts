@@ -107,7 +107,15 @@ export type OperationAuthorizationTypedData = {
     verifyingContract: Address;
   };
   primaryType: "OperationAuthorization";
-  types: { OperationAuthorization: readonly { name: string; type: string }[] };
+  types: {
+    EIP712Domain: readonly [
+      { readonly name: "name"; readonly type: "string" },
+      { readonly name: "version"; readonly type: "string" },
+      { readonly name: "chainId"; readonly type: "uint256" },
+      { readonly name: "verifyingContract"; readonly type: "address" },
+    ];
+    OperationAuthorization: readonly { name: string; type: string }[];
+  };
   message: { operationId: Hex; owner: Address; authScheme: 1; authVersion: 1 };
 };
 

@@ -31,6 +31,12 @@ export interface PaymentDeployment {
 export type WithdrawalBindingInput = Pick<LocalDraft, 'context' | 'request' | 'operationId' | 'rangeProofs'>;
 
 const paymentTypes = {
+  EIP712Domain: [
+    { name: 'name', type: 'string' },
+    { name: 'version', type: 'string' },
+    { name: 'chainId', type: 'uint256' },
+    { name: 'verifyingContract', type: 'address' },
+  ],
   PaymentAuthorization: [
     { name: 'operationId', type: 'bytes32' },
     { name: 'owner', type: 'address' },
