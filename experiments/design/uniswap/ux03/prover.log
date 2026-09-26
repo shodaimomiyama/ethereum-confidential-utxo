@@ -1,0 +1,4 @@
+amount-1-blinding-42: generated=true; verifierAccepted=true; transcriptMatches=true; attempts=1
+amount-max-blinding-42: generated=true; verifierAccepted=true; transcriptMatches=true; attempts=1
+amount-1-blinding-0: generated=true; verifierAccepted=true; transcriptMatches=true; attempts=1
+amount-over-max: generated=true; verifierAccepted=false; transcriptMatches=false; attempts=1

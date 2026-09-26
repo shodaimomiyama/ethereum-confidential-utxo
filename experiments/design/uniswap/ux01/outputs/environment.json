@@ -1,0 +1,18 @@
+{
+  "recorded_utc": "2026-09-26T16:37:49.465792+00:00",
+  "platform": "macOS-26.5-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "forge": "forge Version: 1.8.3\nCommit SHA: cae51ad458f6abb64852b7709eb784352429825d\nBuild Timestamp: 2026-09-15T10:34:23.361078000Z (1789468463)\nBuild Profile: dist",
+  "anvil": "anvil Version: 1.8.3\nCommit SHA: cae51ad458f6abb64852b7709eb784352429825d\nBuild Timestamp: 2026-09-15T10:34:23.361078000Z (1789468463)\nBuild Profile: dist",
+  "cast": "cast Version: 1.8.3\nCommit SHA: cae51ad458f6abb64852b7709eb784352429825d\nBuild Timestamp: 2026-09-15T10:34:23.361078000Z (1789468463)\nBuild Profile: dist",
+  "compiler_versions": [
+    "0.5.16",
+    "0.6.6",
+    "0.8.23"
+  ],
+  "evm_version": "paris",
+  "optimizer_runs": 200,
+  "anvil_chain_id": 31337,
+  "anvil_rpc": "http://127.0.0.1:18545 (local run only)",
+  "fixed_test_private_key": "0xA11CE, public non-production fixture"
+}

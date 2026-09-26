@@ -1,0 +1,16 @@
+{
+  "name": "ecu-ux02-chrome-hpke-probe",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild hpke-probe.mjs --bundle --format=iife --platform=browser --target=chrome120 --outfile=hpke-probe.bundle.js",
+    "test": "node --test hpke-probe.test.mjs"
+  },
+  "dependencies": {
+    "ethers": "6.17.0",
+    "hpke-js": "1.8.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "UX-03",
+  "question": "Can the complete v3 reward transfer proof, recipient packet, and authorization signature execute within Cloudflare Workers Free SQLite Durable Object CPU and memory limits?",
+  "affected_rules": ["docs/integration/uniswap/design.md: UX-03", "docs/integration/uniswap/architecture.md: Cloudflare Free deployment"],
+  "method": [
+    "Inventory the existing v3 prover, packet, signature, and Cloudflare-compatible implementations and record exact versions.",
+    "Run the available real v3 prover with fixed inputs and measure elapsed time and process peak memory, preserving raw output.",
+    "If a complete compatible implementation exists, execute it inside the target local Durable Object runtime with pinned Wrangler and compatibility date; record CPU, wall time, and peak memory. Keep local emulation separate from deployed Free evidence."
+  ],
+  "acceptance": "Pass only after the complete real reward operation runs inside an actual Cloudflare Free SQLite Durable Object with CPU and memory measurements below the documented limits and reproducible operation output. Local Java, Node, or Miniflare success alone is partial evidence.",
+  "pre_run_status": "planned",
+  "prohibitions": ["No external deployment", "No secrets", "No real funds"]
+}

@@ -47,7 +47,7 @@ Anvilの初期アカウントと鍵はローカルテスト専用。実鍵、RPC
 
 ## Poolと検証器の配置（Issue #27）
 
-`pnpm artifact:pool` は `contracts/out/Pool.sol/Pool.json` から公開ABI、bytecode、AST、storage layoutと入力hashを `packages/ethereum/generated/pool-v1.json` に出力する。`pnpm check:pool` は現在のソースとコンパイル結果に照合する。`pnpm fixture:pool` は公開seedから20件の操作、署名、実範囲証明を一時ディレクトリに再生成し、固定ケースとFoundry calldataをbyte単位で比較する。Python依存は `tests/vectors/README.md` に従って導入し、`POOL_VECTOR_PYTHON` にそのvenvのPythonを指定する。
+`pnpm artifact:pool` は `contracts/out/Pool.sol/Pool.json` から公開ABI、bytecode、AST、storage layoutと入力hashを `packages/ethereum/generated/pool-v1.json` に出力する。`pnpm check:pool` は現在のソースとコンパイル結果に照合する。`pnpm fixture:pool` は公開seedから25件の操作、署名、実範囲証明を一時ディレクトリに再生成し、固定ケースとFoundry calldataをbyte単位で比較する。Python依存は `tests/vectors/README.md` に従って導入し、`POOL_VECTOR_PYTHON` にそのvenvのPythonを指定する。
 
 通常のコードサイズ・gas制限で動くAnvilを起動した後、次のように**明示したRPC、chain ID、fork名、署名鍵**で金額検証器とPoolを配置する。`--chain-id 11155111` とSepolia RPC、対象ブロックのfork名を指定しても同じ経路を使う。fork名はmanifestへ申告値として記録し、RPCから自動判定した値として扱わない。実際のSepolia取引と確認記録はIssue #36の対象である。
 
@@ -78,3 +78,19 @@ manifestには両コントラクトのアドレス、デプロイ取引とブロ
 | A-11 配置とartifact | `pool-artifact-guard.test.mjs`、`pool-deployment.test.mjs`、`pnpm check:pool`、保存manifestの再検査 |
 
 通常のPool操作は実 verifier・公開試験鍵・固定のローカルchain ID/Poolアドレスで確認する。異常なverifier返値だけは合成コントラクトを使う。Pool専用packetの復号可能性、実Sepoliaの取引確定、実コードの形式証明はそれぞれ #36 と #33 に引き渡す。
+
+## Issue #28: 暗号ライブラリの検証入口
+
+`packages/crypto` は `@confidential-utxo/crypto` として、BN254コミットメント、v3範囲証明、Schnorr収支証明、HPKE受領packetを提供する。ルートの `pnpm build`、`pnpm test`、`pnpm check` はそれぞれライブラリのビルド、Vitest、型検査も実行する。個別確認は `pnpm --filter @confidential-utxo/crypto build`、`pnpm --filter @confidential-utxo/crypto test`、`pnpm --filter @confidential-utxo/crypto check` を使う。Node.js 24.21.0とlockfileの固定依存を使い、`pnpm install --frozen-lockfile` の後に実行する。
+
+公開入口は `commit`、`randomBlinding`、`generateRangeProof`、`computeBalancePoint`、`balanceWitness`、`generateBalanceProof`、`encryptReceipt`、`decryptReceipt`、定数 `M/P/Q`、対応する型、`CryptoFailure` に限る。内部の乱数源と固定seedは公開しない。生成順は、出力ごとに開示値 `(v,r)` とコミットメントを作り、受信者鍵とcoreが計算した32 byteの `info` で受領packetを暗号化し、操作ID確定後に出力番号を付けて範囲証明を生成し、入出力のコミットメントと公開入出金額から `X` を計算して収支証明を生成する。操作ID・出力番号・`info`・Poolアドレス・chain IDは後から差し替えず、再生成時は対応する証明を作り直す。`RangeProof` の `coords/scalars/ls/rs` は公開ABI語列、`BalanceProof` の `Rx/Ry/s` と `X` も公開値である。開示値、blinding、受領秘密鍵、収支witnessは秘密として扱い、検証器・ログ・例外causeへ渡さない。
+
+`CryptoFailure` のコードは `INPUT`、`RANDOM`、`SCALAR_EXHAUSTED`、`CHALLENGE_EXHAUSTED`、`DECRYPT`、`PLAINTEXT`、`COMMITMENT`、`INTERNAL`。メッセージはコードと公開stageのみを含む。HPKEはX25519/HKDF-SHA256/ChaCha20-Poly1305、packetは32 byteのencと80 byteの暗号文を連結した112 byteで、空AADを1回だけ使用する。復号後は64 byteの開示値を検査し、コミットメントを再計算して照合する。受信者鍵の保管、所有者認可、UTXO状態の確定は本ライブラリの責務外である。
+
+固定値と移植元は [v3 profile](../../experiments/design/crypto-profile-v3/exp08/profile.json)、[Javaの範囲証明実装](../../experiments/design/crypto-profile-v3/exp08/java/RevisedRangeProver.java)、[旧EVM検証器](../../experiments/design/crypto-profile-v3/exp08/solidity/RangeProofVerifier.sol)、[#35ベクトル](../../tests/vectors/README.md) を参照する。BN254固定パラメータhashは `0x0bfd116b8ef31332d31d3350ed24fa36d1e17865a7c1dc0758331da0755f8dae`。独立ベクトルの再検証には、`tests/vectors` で `pnpm install --ignore-workspace --frozen-lockfile` を実行し、ルートで `python3 -m venv tests/vectors/.cache/venv`、`tests/vectors/.cache/venv/bin/python -m pip install -r tests/vectors/tools/requirements.txt`、同READMEの読み取り専用コマンドを使う。実験・oracleのライセンスや生成根拠はそれぞれの元ファイルとベクトルmanifestで確認する。
+
+移植元の固定版は `5d9e378ed9d1e970723a198b244e74aa868d6c74` の `RevisedRangeProver.java`、`RevisedProtocol.java`、`RevisedRangeProof.java` とEXP-08の生成点である。これらは同一リポジトリ内の実験資料で、各ファイルに独立したSPDX/license表示はない。実装ではJavaの曲線演算をnobleのBN254アダプタへ置き換え、公開入力の正規性検査、256候補上限の乱数採取、v3 full-prefix、秘密を含まないエラー分類を加えた。Javaの試験用強制分岐と詳細な秘密traceは移植していない。採用した `@noble/curves`、`@noble/hashes` と4件の `@hpke/*` パッケージは、固定版のpackage manifest上いずれもMIT表記である。再配布条件の確認には各依存パッケージのライセンス原文を使う。
+
+検証器との相互運用では、#26の確定した `packages/ethereum/generated/verifier-v3.json` のcreation/runtime SHA-256をmanifestに照合してから一時Anvilへデプロイし、`verify(operationId,outputIndex,coords,scalars,ls,rs)` と `verifyBalance(operationId,Xx,Xy,Rx,Ry,s)` を呼ぶ。ライブラリをビルドしてから、ルートで `pnpm interop:crypto packages/ethereum/generated/verifier-v3.json` を実行する。このコマンドは秘密を保存せず、実行時に作る証明の受理と公開文脈の改変拒否を検査する。収支challengeのPoolアドレスには検証器への**呼出元**アドレス（Solidity側の `msg.sender`）を渡す。`X=(0,0),x=0` の有効な収支証明では `sG=R` となり、challengeの変更だけで式は破れない。operation ID・chain ID・Poolの改変拒否は `X≠(0,0)` のケースで試験し、単位元ケースは受理と非退化ケースの試験を分ける。この数学的限界を、操作認可や受領の検証へ読み替えない。
+
+実行環境、入力artifactのhash、ケース別結果、未実施範囲は [相互運用記録](../../packages/crypto/interop-result.json) に残す。macOSでの成功はUbuntuでの成功を意味しない。Ubuntuの判定には同じ固定版で `build/test/check` と独立oracleを実行し、OS/CPU/RAM、依存・artifactのhashと結果を別記録する。
