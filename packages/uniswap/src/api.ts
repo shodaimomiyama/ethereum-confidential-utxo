@@ -89,7 +89,7 @@ export interface ApiRequestBodyMap {
   readonly 'PUT /v1/operations/{id}': {
     readonly scope: Scope;
     readonly expectedRevision: number;
-    readonly sealedRevision?: number;
+    readonly sealedRevision: number;
     readonly record: WireOperationRecord;
   };
   readonly 'GET /v1/operations': undefined;
@@ -254,7 +254,12 @@ export function parseRewardRequest(value: unknown): RewardRequest {
   };
 }
 
-export function parseApiRequest(method: string, path: string, body: unknown): ParsedApiRequest {
+export function parseApiRequest(
+  method: string,
+  path: string,
+  body: unknown,
+  options: { readonly allowLegacyUnsealedPut?: boolean } = {},
+): ParsedApiRequest {
   const url = new URL(path, 'https://mock.invalid');
   const pathname = url.pathname;
   if (method === 'POST' && pathname === '/v1/auth/challenge') {
@@ -277,7 +282,7 @@ export function parseApiRequest(method: string, path: string, body: unknown): Pa
     const id = parseBytes32(operationMatch[1], 'id');
     const record = parseOperationRecord(object.record, scope);
     const expectedRevision = parseRevision(object.expectedRevision, 'expectedRevision');
-    const sealedRevision = object.sealedRevision === undefined
+    const sealedRevision = object.sealedRevision === undefined && options.allowLegacyUnsealedPut
       ? undefined : parseRevision(object.sealedRevision, 'sealedRevision');
     if (sealedRevision !== undefined && sealedRevision !== expectedRevision + 1) {
       throw new SchemaError('INVALID_REVISION', 'sealedRevision');

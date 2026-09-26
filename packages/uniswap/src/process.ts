@@ -44,7 +44,7 @@ export interface RecoveryPorts {
   readEvidence(saved: SavedReservation): Promise<{ readonly evidence: RecoveryEvidence; readonly currentInput: CurrentInput }>;
   restoreOriginal(saved: SavedReservation, evidence: RecoveryEvidence): Promise<{ readonly prepared: PreparedPay | PreparedFullWithdraw; readonly signatures?: AuthorizationSignatures }>;
   restoreForRetry(saved: SavedReservation, evidence: RecoveryEvidence): Promise<{ readonly prepared: PreparedBase; readonly signatures: AuthorizationSignatures }>;
-  releaseAndPrepareChangedTerms(saved: SavedReservation, evidence: RecoveryEvidence, input: unknown): Promise<PreparedPay>;
+  releaseOriginal(saved: SavedReservation, evidence: RecoveryEvidence): Promise<SavedReservation>;
 }
 
 export interface ReconciliationPorts {
@@ -243,6 +243,7 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
     const attempted = await recoverAck(attemptedRecord, 4, () => ports.reservations.update(attemptedRecord, 3, 4));
     assertScope(initialScope);
     assertSaved(attempted, attemptedRecord, 4);
+    if (isPay) await assertPayDeadlineLive(prepared as PreparedPay);
 
     let outcome: Awaited<ReturnType<PaymentPorts['submit']>>;
     try {
@@ -313,6 +314,7 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
     }
     await ports.validatePrepared(prepared);
     assertScope(saved.record.scope);
+    if (prepared.record.kind === 'pay') await assertPayDeadlineLive(prepared as PreparedPay);
     const attemptId = ports.createAttempt(prepared, signatures);
     if (saved.record.attemptIds.includes(attemptId)) throw new PaymentProcessError('RECOVERY_BLOCKED');
     const nextRevision = saved.revision + 1;
@@ -324,6 +326,7 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
       () => ports.reservations.update(attemptedRecord, saved.revision, nextRevision));
     assertScope(saved.record.scope);
     assertSaved(attempted, attemptedRecord, nextRevision);
+    if (prepared.record.kind === 'pay') await assertPayDeadlineLive(prepared as PreparedPay);
     let outcome: SubmissionOutcome;
     try {
       outcome = await ports.submit(prepared, signatures, attemptId);
@@ -392,6 +395,76 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
     return submitRecovered(current, { prepared, signatures });
   }
 
+  function sameReleased(a: SavedReservation, b: SavedReservation): boolean {
+    return a.reservationState === 'released' && b.reservationState === 'released'
+      && a.revision === b.revision
+      && sameScope(a.record.scope, b.record.scope)
+      && sameHash(a.record.recordId, b.record.recordId)
+      && sameHash(a.record.inputId, b.record.inputId)
+      && sameHash(a.record.operationId, b.record.operationId)
+      && sameHash(a.record.contentHash, b.record.contentHash)
+      && a.record.kind === b.record.kind
+      && a.record.signatureStarted === b.record.signatureStarted
+      && a.record.attemptIds.join('\u0000') === b.record.attemptIds.join('\u0000')
+      && a.record.encryptedBundle.ciphertext === b.record.encryptedBundle.ciphertext
+      && a.record.encryptedBundle.nonce === b.record.encryptedBundle.nonce
+      && a.record.encryptedBundle.tag === b.record.encryptedBundle.tag
+      && (a.record.kind !== 'pay' || (b.record.kind === 'pay'
+        && sameHash(a.record.paymentId, b.record.paymentId)
+        && a.record.deadline === b.record.deadline));
+  }
+
+  async function prepareChangedTerms(
+    recovery: RecoveryPorts,
+    saved: SavedReservation,
+    evidence: RecoveryEvidence,
+    input: unknown,
+  ): Promise<PreparedPay> {
+    let released: SavedReservation | undefined;
+    try {
+      released = await recovery.releaseOriginal(saved, evidence);
+    } catch {
+      released = await ports.reservations.get(saved.record.scope, saved.record.recordId);
+    }
+    assertScope(saved.record.scope);
+    const listed = await ports.reservations.list(saved.record.scope);
+    const current = await ports.reservations.get(saved.record.scope, saved.record.recordId);
+    assertScope(saved.record.scope);
+    if (listed.availability !== 'healthy' || released === undefined || current === undefined
+      || released.revision !== saved.revision + 1
+      || !sameReleased(released, current)
+      || !sameReleased(released, listed.records.find(({ record }) => sameHash(record.recordId, saved.record.recordId)) ?? saved)
+      || !sameScope(saved.record.scope, released.record.scope)
+      || !sameHash(saved.record.recordId, released.record.recordId)
+      || !sameHash(saved.record.inputId, released.record.inputId)
+      || !sameHash(saved.record.operationId, released.record.operationId)
+      || !sameHash(saved.record.contentHash, released.record.contentHash)
+      || saved.record.kind !== released.record.kind
+      || saved.record.signatureStarted !== released.record.signatureStarted
+      || saved.record.attemptIds.join('\u0000') !== released.record.attemptIds.join('\u0000')
+      || (saved.record.kind === 'pay' && released.record.kind === 'pay'
+        && (!sameHash(saved.record.paymentId, released.record.paymentId)
+          || saved.record.deadline !== released.record.deadline))) {
+      throw new PaymentProcessError('RECOVERY_BLOCKED');
+    }
+    const prepared = await ports.preparePay(input);
+    assertScope(saved.record.scope);
+    if (prepared.record.kind !== 'pay'
+      || !sameScope(prepared.record.scope, saved.record.scope)
+      || !sameHash(prepared.record.inputId, saved.record.inputId)
+      || sameHash(prepared.record.recordId, saved.record.recordId)
+      || sameHash(prepared.record.operationId, saved.record.operationId)
+      || sameHash(prepared.record.paymentId, saved.record.kind === 'pay' ? saved.record.paymentId : '')
+      || sameHash(prepared.record.contentHash, saved.record.contentHash)
+      || prepared.record.signatureStarted || prepared.record.attemptIds.length !== 0) {
+      throw new PaymentProcessError('RECOVERY_BLOCKED');
+    }
+    await assertPayTermsLive(prepared);
+    await ports.validatePrepared(prepared);
+    assertScope(saved.record.scope);
+    return prepared;
+  }
+
   async function reconcile(recordId: Bytes32, ref: OperationRef): Promise<ReconciledPayment> {
     const adapter = ports.reconciliation;
     if (adapter === undefined) throw new PaymentProcessError('RECOVERY_UNAVAILABLE');
@@ -427,7 +500,7 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
     retryAttempt: (recordId) => recover(recordId, 'retry-attempt',
       async (recovery, saved, evidence) => submitRecovered(saved, await recovery.restoreForRetry(saved, evidence))),
     prepareChangedTerms: (recordId, input) => recover(recordId, 'change-terms',
-      (recovery, saved, evidence) => recovery.releaseAndPrepareChangedTerms(saved, evidence, input)),
+      (recovery, saved, evidence) => prepareChangedTerms(recovery, saved, evidence, input)),
     reconcile,
   };
 }

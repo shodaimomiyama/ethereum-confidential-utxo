@@ -32,7 +32,7 @@ const reward = {
 it.each([
   ['POST', '/v1/auth/challenge', { scope }],
   ['POST', '/v1/auth/verify', { scope, challengeId: id, siweMessage: 'signed challenge', signature: `0x${'aa'.repeat(65)}` }],
-  ['PUT', `/v1/operations/${id}`, { scope, expectedRevision: 0, record: payRecord }],
+  ['PUT', `/v1/operations/${id}`, { scope, expectedRevision: 0, sealedRevision: 1, record: payRecord }],
   ['GET', `/v1/operations?deploymentId=local-v1&owner=${owner}`, undefined],
   ['POST', '/v1/rewards', reward],
   ['GET', `/v1/rewards?deploymentId=local-v1&owner=${owner}`, undefined],
@@ -70,12 +70,20 @@ it('keeps Pay deadline distinct from Withdraw without a deadline', () => {
   expect(() => parseApiRequest('PUT', `/v1/operations/${id}`, {
     scope,
     expectedRevision: 0,
+    sealedRevision: 1,
     record: { ...payRecord, kind: 'withdraw', paymentId: undefined, deadline: undefined },
   })).not.toThrow();
   expect(() => parseApiRequest('PUT', `/v1/operations/${id}`, {
     scope,
     expectedRevision: 0,
+    sealedRevision: 1,
     record: { ...payRecord, kind: 'withdraw' },
+  })).toThrowError();
+});
+
+it('requires an explicit sealed revision for the shared reservation wire contract', () => {
+  expect(() => parseApiRequest('PUT', `/v1/operations/${id}`, {
+    scope, expectedRevision: 0, record: payRecord,
   })).toThrowError();
 });
 

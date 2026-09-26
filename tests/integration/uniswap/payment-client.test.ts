@@ -149,7 +149,7 @@ async function runPayment(highMinimum: boolean) {
       const prepared = { record, privateBytes: new Uint8Array([1, 2, 3]),
         poolAuthorization: { operationId: draft.operationId }, quote };
       const reservations = createMemoryReservationPort();
-      const cipherKey = await webcrypto.subtle.importKey('raw', randomBytes(32), 'AES-GCM', false, ['encrypt']);
+      const cipherKey = await webcrypto.subtle.importKey('raw', randomBytes(32), 'AES-GCM', false, ['encrypt', 'decrypt']);
       let submittedHash: `0x${string}` | undefined;
       const ports: PaymentPorts = {
         reservations,
@@ -165,7 +165,7 @@ async function runPayment(highMinimum: boolean) {
         latestBlockTime: async () => (await rpc.getBlock()).timestamp,
         encrypt: async (plaintext: Uint8Array, metadata: { revision: number }) => {
           const nonce = randomBytes(12);
-          const aad = new TextEncoder().encode(`${scope.deploymentId}:${record.recordId}:${metadata.revision}`);
+          const aad = new TextEncoder().encode(`${scope.deploymentId}:${scope.owner}:${record.recordId}:${metadata.revision}`);
           const combined = new Uint8Array(await webcrypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce,
             additionalData: aad }, cipherKey, plaintext));
           return { ciphertext: Buffer.from(combined.subarray(0, -16)).toString('base64'),
@@ -243,6 +243,19 @@ async function runPayment(highMinimum: boolean) {
         functionName: 'balanceOf', args: [recipient] }) as bigint;
       const ref = await payment.authorizePay(await payment.preparePay(undefined), record.contentHash);
       expect(ref.chainOutcome).toBe('pending');
+      const saved = await reservations.get(scope, record.recordId);
+      expect(saved).toBeDefined();
+      const bundle = saved!.record.encryptedBundle;
+      const sealed = new Uint8Array(Buffer.concat([
+        Buffer.from(bundle.ciphertext, 'base64'), Buffer.from(bundle.tag.slice(2), 'hex'),
+      ]));
+      const iv = new Uint8Array(Buffer.from(bundle.nonce.slice(2), 'hex'));
+      const aad = new TextEncoder().encode(`${scope.deploymentId}:${scope.owner}:${record.recordId}:${saved!.revision}`);
+      await expect(webcrypto.subtle.decrypt({ name: 'AES-GCM', iv, additionalData: aad },
+        cipherKey, sealed)).resolves.toBeDefined();
+      const wrongOwnerAad = new TextEncoder().encode(`${scope.deploymentId}:${recipient}:${record.recordId}:${saved!.revision}`);
+      await expect(webcrypto.subtle.decrypt({ name: 'AES-GCM', iv, additionalData: wrongOwnerAad },
+        cipherKey, sealed)).rejects.toThrow();
       const receipt = await rpc.waitForTransactionReceipt({ hash: submittedHash! });
       const inputState = await rpc.readContract({ address: context.pool, abi: poolAbi,
         functionName: 'getUtxo', args: [chosen!.id] });
