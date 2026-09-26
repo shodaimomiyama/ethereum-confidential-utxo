@@ -1,9 +1,12 @@
 import { createEthereumRpc, createHistoryPort, verifyEthereumDeployment } from '@confidential-utxo/ethereum';
+import type { VerifiedDeployment } from '@confidential-utxo/ethereum';
 import type { HistoryPort } from '@confidential-utxo/core';
+import type { PublicClient } from 'viem';
 import type { DeploymentConfig } from './config.js';
 
 type RpcDeployment = { readonly url: string; readonly manifest: unknown };
-const verifiedHistories = new Map<string, Promise<HistoryPort>>();
+export type EthereumRuntime = { history: HistoryPort; verified: VerifiedDeployment; client: PublicClient };
+const verifiedHistories = new Map<string, Promise<EthereumRuntime>>();
 
 function rpcDeployment(source: string | undefined, deploymentId: string): RpcDeployment {
   if (source === undefined) throw new Error('RPC_DEPLOYMENT_UNAVAILABLE');
@@ -24,6 +27,11 @@ function rpcDeployment(source: string | undefined, deploymentId: string): RpcDep
 /** Verifies the deployment once per isolate; each HistoryPort read still pins its own chain observations. */
 export function loadEthereumHistory(deploymentId: string, config: DeploymentConfig,
   source: string | undefined): Promise<HistoryPort> {
+  return loadEthereumRuntime(deploymentId, config, source).then((runtime) => runtime.history);
+}
+
+export function loadEthereumRuntime(deploymentId: string, config: DeploymentConfig,
+  source: string | undefined): Promise<EthereumRuntime> {
   const binding = rpcDeployment(source, deploymentId);
   const key = JSON.stringify([deploymentId, config.chainId, config.pool.toLowerCase(), config.finalityMode, binding]);
   const existing = verifiedHistories.get(key);
@@ -36,7 +44,7 @@ export function loadEthereumHistory(deploymentId: string, config: DeploymentConf
       || verified.context.finalityMode !== config.finalityMode) {
       throw new Error('RPC_DEPLOYMENT_MISMATCH');
     }
-    return createHistoryPort(verified, client, policy);
+    return { history: createHistoryPort(verified, client, policy), verified, client };
   })();
   verifiedHistories.set(key, pending);
   void pending.catch(() => { if (verifiedHistories.get(key) === pending) verifiedHistories.delete(key); });

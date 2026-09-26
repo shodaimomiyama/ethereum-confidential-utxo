@@ -12,6 +12,7 @@
     "@confidential-utxo/crypto": "workspace:*",
     "@confidential-utxo/ethereum": "workspace:*",
     "@confidential-utxo/uniswap": "workspace:*",
+    "@noble/curves": "2.4.0",
     "viem": "2.56.9"
   },
   "devDependencies": {

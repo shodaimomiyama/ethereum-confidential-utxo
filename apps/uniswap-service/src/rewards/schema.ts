@@ -13,7 +13,7 @@ export const rewardMigrations: readonly Migration[] = [{
     )`,
     `CREATE UNIQUE INDEX reward_one_active_owner
       ON reward_requests(deployment_id, owner)
-      WHERE status NOT IN ('received', 'ended-without-distribution')`,
+      WHERE status IN ('accepted', 'queued', 'processing', 'pending')`,
     `CREATE TABLE reward_reservations (
       deployment_id TEXT NOT NULL, request_id TEXT NOT NULL, amount_wei TEXT NOT NULL,
       released INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (deployment_id, request_id)
