@@ -75,6 +75,23 @@ pnpm uniswap:sepolia:probe
 
 専用の新規walletによるfaucetの実受取、受取tx、必要gasは未実施。署名者とfaucetの条件が揃った時点で別途検査し、未実施を成功と扱わない。SepoliaへのdUSD/Pool/Adapterの配置も未実施である。
 
+### #60受入証拠の現状（2026-09-27）
+
+以下の「成功」は記載した範囲だけを指す。局所Anvilの資産試験を実Pool・実暗号・公開取引の合格へ読み替えない。各コマンドはこの節の固定版セットアップを前提とする。
+
+| 受入 | 対象commit・artifactと実行証拠 | 期待と実結果・状態 | 引渡し先 |
+| --- | --- | --- | --- |
+| A-01 資産 | `1b1af6d`、`DemoUSD.sol`、`forge test --root contracts` | 固定供給・名称・桁数・送付/承認のテスト成功。発行先・残余/LP先はローカルmanifestで照合済み | #56 |
+| A-02 Uniswap | `673c26d`、`vendor/uniswap-v2/source-lock.json`、`packages/ethereum/generated/uniswap-v2.json`、`pnpm artifact:uniswap && pnpm check:uniswap` | ソースhash、compiler、Pair init code hashの照合成功。Sepolia公式コードは下記A-06の別検査 | #56・#55 |
+| A-03 ローカル初期状態 | `92923a9`・`4607647`、`node --test tests/environment/uniswap-local.test.mjs`、上記Anvilコマンド | forkなし配置・初期reserve・実Router交換・資産snapshot復元に成功。正式Poolの結合は未実施 | #56・#45 |
+| A-04 再実行 | `92923a9`・`4607647`、同じローカルテストとdeploy→verify→deploy、snapshot→reset | 二重流動性投入を防ぎ、結果不明の再送を停止する局所試験は成功。DOを含む全体resetは #57 interface待ち | #57・#48 |
+| A-05 正式構成 | #27 Pool配置成果と #56 Adapter artifactを入力とする | 未実施。正式ABI・manifestを受領してから専用PoolとAdapterを配置・code/参照先を照合する | #27・#56・#45 |
+| A-06 公開準備 | `b74a3a5`、`pnpm uniswap:sepolia:probe`、checkpoint 11788121 | 公式Factory/Router/WETH、RPC履歴・logs・finalized・CORSは成功。faucet実受取、制限時挙動、公開配置は未実施 | #45〜#50 |
+| A-07 配信・保存設定 | #53/#54/#57/#58/#59 のbuild・DO・Worker interfaceが入力 | 未実施。受領後に同一origin、migration、Secrets欠落停止をローカルruntimeと実配置で照合する | #47・#50 |
+| A-08 復旧引渡し | #57/#58 の停止・保存・配布interfaceが入力 | 未実施。手動補充、DB巻戻り、停止/再開、バックアップ/復元を局所試験して #48へ渡す | #48 |
+| A-09 CI・追試 | `209792b`、`.github/workflows/uniswap-environment.yml`、`pnpm build/test/check`と19件のUniswap環境テスト | macOS 26.5 arm64で成功。GitHub macos-15 arm64の実runと第三者の独立追試は未実施 | #19・#20 |
+| A-10 証拠・引渡し | 本節、各commit・manifest・ローカル試験 | 進行中。公開URL/txと正式統合結果は存在せず、受領後に各検証Issueへ追加する | #45〜#50・#19・#20 |
+
 ## Issue #28: 暗号ライブラリの検証入口
 
 `packages/crypto` は `@confidential-utxo/crypto` として、BN254コミットメント、v3範囲証明、Schnorr収支証明、HPKE受領packetを提供する。ルートの `pnpm build`、`pnpm test`、`pnpm check` はそれぞれライブラリのビルド、Vitest、型検査も実行する。個別確認は `pnpm --filter @confidential-utxo/crypto build`、`pnpm --filter @confidential-utxo/crypto test`、`pnpm --filter @confidential-utxo/crypto check` を使う。Node.js 24.21.0とlockfileの固定依存を使い、`pnpm install --frozen-lockfile` の後に実行する。
