@@ -1,0 +1,17 @@
+{
+  "name": "ethereum-confidential-utxo",
+  "private": true,
+  "packageManager": "pnpm@10.34.5",
+  "engines": { "node": "24.21.0" },
+  "scripts": {
+    "build": "tsc --noEmit -p tsconfig.tools.json",
+    "test": "node --test tests/environment/*.test.mjs",
+    "check": "tsc --noEmit -p tsconfig.tools.json"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11",
+    "vite": "7.3.6"
+  }
+}

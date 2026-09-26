@@ -1,0 +1,14 @@
+{
+  "name": "@confidential-utxo/crypto",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@noble/curves": "2.4.0",
+    "@noble/hashes": "2.4.0",
+    "@hpke/core": "1.9.0",
+    "@hpke/dhkem-x25519": "1.8.0",
+    "@hpke/chacha20poly1305": "1.8.0",
+    "@hpke/common": "1.10.1"
+  }
+}
