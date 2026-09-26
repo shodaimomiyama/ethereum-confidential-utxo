@@ -36,6 +36,14 @@ it('fails closed when input ownership cannot be checked', async () => {
     { readInput: async () => 'unknown' as const }))).rejects.toThrow('SERVICE_UNAVAILABLE');
 });
 
+it('requires a reservation ACK before signature-started state', async () => {
+  const ns = (env as unknown as { UNISWAP_STATE: DurableObjectNamespace }).UNISWAP_STATE;
+  const stub = ns.get(ns.idFromName('store-test-4'));
+  await stub.fetch('https://site.test/v1/operations');
+  await expect(runInDurableObject(stub, (_obj, state) => putOperation(state.storage, scope,
+    { ...record(5), signatureStarted: true }, 0, reader))).rejects.toThrow('REVISION_CONFLICT');
+});
+
 it('accepts exact retries, rejects stale changes and keeps signatureStarted monotonic', async () => {
   const ns = (env as unknown as { UNISWAP_STATE: DurableObjectNamespace }).UNISWAP_STATE;
   const stub = ns.get(ns.idFromName('store-test-3'));

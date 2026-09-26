@@ -85,6 +85,7 @@ export async function putOperation(
   }
   const existing = getOperation(storage, scope, record.recordId);
   if (existing === undefined) {
+    if (record.signatureStarted || record.attemptIds.length !== 0) throw new Error('REVISION_CONFLICT');
     const inputState = await inputReader.readInput(scope, record.inputId);
     if (inputState === 'unknown') throw new Error('SERVICE_UNAVAILABLE');
     if (inputState !== 'owned-unspent') throw new Error('RESERVATION_CONFLICT');
