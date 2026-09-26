@@ -132,7 +132,7 @@ export async function generateCases() {
   const plaintext = Buffer.from(input.plaintext.slice(2), 'hex');
   const normal = await encryptEnvelope({ passphrase: input.passphrase, salt, nonce, plaintext, rawHeaderBytes: rawHeader(salt, nonce) });
   const reordered = await encryptEnvelope({ passphrase: input.passphrase, salt, nonce, plaintext, rawHeaderBytes: rawHeader(salt, nonce, true) });
-  const accepted = (id, result, headerBytes) => ({ id, profile: 'scrypt-aes256gcm-v1', source, stage: 'envelope-crypto', input: { ...input, rawHeaderBytes: hex(headerBytes) }, expected: { decision: 'accept', key: hex(result.key), ciphertext: hex(result.ciphertext), tag: hex(result.tag), outerBytes: hex(result.outerBytes) }, oracle: 'Node.js 24.21.0 crypto; RFC 7914 scrypt cross-check', consumers });
+  const accepted = (id, result, headerBytes, passphrase = input.passphrase) => ({ id, profile: 'scrypt-aes256gcm-v1', source, stage: 'envelope-crypto', input: { ...input, passphrase, rawHeaderBytes: hex(headerBytes) }, expected: { decision: 'accept', key: hex(result.key), ciphertext: hex(result.ciphertext), tag: hex(result.tag), outerBytes: hex(result.outerBytes) }, oracle: 'Node.js 24.21.0 crypto; RFC 7914 scrypt cross-check', consumers });
   const cases = [accepted('VEC-08-ENVELOPE', normal, rawHeader(salt, nonce)), accepted('VEC-08-HEADER-ORDER', reordered, rawHeader(salt, nonce, true))];
   cases[1].baseCase = cases[0].id;
   cases[1].mutatedField = 'input.rawHeaderBytes';
@@ -161,6 +161,19 @@ export async function generateCases() {
   mutate('SHORT-SALT', headerPatch({ salt: b64(Buffer.alloc(15)) }), 'salt length');
   mutate('SHORT-TAG', { ...outer, tag: b64(Buffer.alloc(15)) }, 'tag length');
   cases.push({ id: 'VEC-08-OVERSIZE', profile: 'scrypt-aes256gcm-v1', source, stage: 'envelope-preflight', baseCase: cases[0].id, mutatedField: 'input.totalBytes', input: { repeatByte: '0x20', totalBytes: String(MAX_FILE + 1), passphrase: input.passphrase }, expected: { decision: 'reject', reason: 'size limit exceeded' }, oracle: 'Node.js 24.21.0 crypto; strict preflight', consumers });
+  const headerBytes = rawHeader(salt, nonce);
+  for (const [suffix, passphrase] of [
+    ['WHITESPACE', ` ${input.passphrase} `],
+    ['NFC', 'caf\u00e9'],
+    ['NFD', 'cafe\u0301'],
+  ]) {
+    const result = await encryptEnvelope({ passphrase, salt, nonce, plaintext, rawHeaderBytes: headerBytes });
+    const c = accepted(`VEC-08-PASSPHRASE-${suffix}`, result, headerBytes, passphrase);
+    c.baseCase = cases[0].id;
+    c.mutatedField = 'input.passphrase';
+    cases.push(c);
+  }
+  mutate('OUTER-MALFORMED-JSON', Buffer.from('{"header":', 'utf8'), 'outer invalid UTF-8 or JSON');
   return cases;
 }
 

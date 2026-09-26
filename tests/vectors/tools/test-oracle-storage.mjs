@@ -41,6 +41,28 @@ test('changed raw header order is valid only after tag recomputation', async () 
   assert.deepEqual(await decryptEnvelope(result.outerBytes, input.passphrase), bytes(input.plaintext));
 });
 
+test('passphrase whitespace and Unicode normalization are byte-significant', async () => {
+  const whitespace = byId['VEC-08-PASSPHRASE-WHITESPACE'];
+  const nfc = byId['VEC-08-PASSPHRASE-NFC'];
+  const nfd = byId['VEC-08-PASSPHRASE-NFD'];
+  for (const c of [whitespace, nfc, nfd]) {
+    assert.equal(c.expected.decision, 'accept');
+    assert.deepEqual(await decryptEnvelope(bytes(c.expected.outerBytes), c.input.passphrase), bytes(c.input.plaintext));
+  }
+  assert.notEqual(whitespace.expected.key, good.expected.key);
+  assert.notEqual(nfc.expected.key, nfd.expected.key);
+  await assert.rejects(decryptEnvelope(bytes(whitespace.expected.outerBytes), whitespace.input.passphrase.trim()), /authentication failed/);
+  await assert.rejects(decryptEnvelope(bytes(nfc.expected.outerBytes), nfd.input.passphrase), /authentication failed/);
+  await assert.rejects(decryptEnvelope(bytes(nfd.expected.outerBytes), nfc.input.passphrase), /authentication failed/);
+});
+
+test('malformed outer JSON fails before key derivation', async () => {
+  const c = byId['VEC-08-OUTER-MALFORMED-JSON'];
+  let derivations = 0;
+  await assert.rejects(decryptEnvelope(bytes(c.input.outerBytes), c.input.passphrase, { deriveKey: async () => { derivations++; throw Error('KDF called'); } }), /outer invalid UTF-8 or JSON/);
+  assert.equal(derivations, 0);
+});
+
 test('all fixed rejection vectors reject at their assigned stage', async () => {
   for (const c of cases.filter(c => c.expected.decision === 'reject')) {
     const outer = c.input.totalBytes ? Buffer.alloc(Number(c.input.totalBytes), 0x20) : bytes(c.input.outerBytes);
