@@ -32,6 +32,8 @@
 
 接続コントラクトを `UniswapPaymentAdapter` と呼ぶ。Pool、Router02、Factory、WETH、dUSD、Pairは配置時に検査して固定し、管理者による差替え、upgrade、任意call、delegatecall、救済出金を設けない。異なる構成は別デプロイとして識別する。構成アドレス、runtime hash、配置ブロックhashと版は環境manifestに記録する。
 
+Adapterのconstructorは、六つの参照先にコードが存在し、Router02の`factory()`/`WETH()`、Factoryの`getPair(WETH,dUSD)`、Pairの`factory()`/`token0()`/`token1()`が固定構成と一致することを検査する。ゼロ・コードなし・不一致・照会失敗では配置を拒否する。Pairの二つのtokenはアドレスの昇順で照合する。六つの固定アドレスは公開getterから読み出せる。constructor自身の構成不一致は`InvalidConfiguration()`で表す。採用した実コードのhashと配置取引の照合は環境manifestの検証が担当し、constructorの返答整合だけで実コードの真正性を主張しない。
+
 本体の `OperationRequest`、`BalanceProof`、`RangeProofV3` は[本体のABI](../../design.md#操作の結合とabi)をそのまま使う。本体要求の `d` は公開入金額であり、接続仕様の期限 `d` と異なるため、接続ABIでは期限を `deadline` とする。本体のsaltは新しい32 byte乱数のままとし、接続条件hashへ置き換えない。
 
 ```solidity
