@@ -1,5 +1,8 @@
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
+import { execFile } from 'node:child_process';
+import { createServer } from 'node:http';
+import { promisify } from 'node:util';
 import { createPublicClient, createWalletClient, http } from 'viem';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -9,6 +12,8 @@ import {
   beginLocalDeployment, captureLocalSnapshot, completeLocalDeployment, deployLocalAssets,
   restoreLocalSnapshot, verifyLocalAssets,
 } from '../../scripts/uniswap-local.mjs';
+
+const execFileAsync = promisify(execFile);
 
 test('an interrupted deployment keeps an attempt record and cannot silently restart', () => {
   const root = mkdtempSync(join(tmpdir(), 'uniswap-local-attempt-'));
@@ -22,6 +27,31 @@ test('an interrupted deployment keeps an attempt record and cannot silently rest
     assert.equal(JSON.parse(readFileSync(path, 'utf8')).generation, 'test');
     assert.throws(() => beginLocalDeployment(path, { chainId: 31337, generation: 'test' }), /manifest|exists/i);
   } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('CLI rejects invalid holder and wrong RPC chain before recording an attempt', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'uniswap-local-preflight-'));
+  const path = join(root, 'manifest.json');
+  const server = createServer((_request, response) => {
+    response.setHeader('content-type', 'application/json');
+    response.end(JSON.stringify({ jsonrpc: '2.0', id: 1, result: '0xaa36a7' }));
+  });
+  try {
+    server.listen(0, '127.0.0.1');
+    await new Promise(resolve => server.once('listening', resolve));
+    const url = `http://127.0.0.1:${server.address().port}`;
+    const args = ['scripts/uniswap-local.mjs', 'deploy', '--rpc-url', url, '--chain-id', '31337',
+      '--manifest', path, '--generation', 'preflight', '--holder', 'invalid',
+      '--lp-recipient', '0x1111111111111111111111111111111111111111'];
+    await assert.rejects(execFileAsync(process.execPath, args), /holder and LP recipient addresses required/);
+    assert.equal(existsSync(`${path}.attempt.json`), false);
+    args[args.indexOf('invalid')] = '0x1111111111111111111111111111111111111111';
+    await assert.rejects(execFileAsync(process.execPath, args), /RPC chain ID mismatch/);
+    assert.equal(existsSync(`${path}.attempt.json`), false);
+  } finally {
+    server.close();
     rmSync(root, { recursive: true, force: true });
   }
 });

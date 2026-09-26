@@ -37,6 +37,13 @@ function validateInput(input) {
   }
 }
 
+export async function validateLocalDeploymentTarget(input) {
+  validateInput(input);
+  const client = createPublicClient({ transport: http(input.url) });
+  if (await client.getChainId() !== localChainId) throw new Error('RPC chain ID mismatch');
+  return client;
+}
+
 async function deploymentRecord(client, receipt) {
   if (receipt.status !== 'success' || !receipt.contractAddress) throw new Error('contract deployment failed');
   const code = await client.getCode({ address: receipt.contractAddress });
@@ -149,9 +156,7 @@ export async function restoreLocalSnapshot(snapshot, { publicClient, manifest, s
 }
 
 export async function deployLocalAssets(input) {
-  validateInput(input);
-  const client = createPublicClient({ transport: http(input.url) });
-  if (await client.getChainId() !== localChainId) throw new Error('RPC chain ID mismatch');
+  const client = await validateLocalDeploymentTarget(input);
   if (input.existingManifest) {
     if (input.existingManifest.generation !== input.generation ||
         input.existingManifest.assets.dUSD.initialHolder.toLowerCase() !== input.holder.toLowerCase() ||
@@ -308,6 +313,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       if (existsSync(file)) {
         input.existingManifest = JSON.parse(readFileSync(file, 'utf8'));
       } else {
+        await validateLocalDeploymentTarget(input);
         beginLocalDeployment(file, input);
       }
       const manifest = await deployLocalAssets(input);
