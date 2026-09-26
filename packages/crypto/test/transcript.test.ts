@@ -31,6 +31,7 @@ describe("v3 range transcript", () => {
     const candidates = [...Array<bigint>(255).fill(Q), 1n];
     expect(firstAcceptedCandidate(() => candidates.shift()!)).toEqual({ value: 1n, counter: 255 });
     expect(() => firstAcceptedCandidate(() => Q)).toThrowError("CHALLENGE_EXHAUSTED:challenge");
+    expect(() => firstAcceptedCandidate(() => Q, "round")).toThrowError("CHALLENGE_EXHAUSTED:round");
   });
 
   it("binds operation and output identities", () => {

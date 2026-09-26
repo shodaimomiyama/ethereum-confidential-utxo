@@ -10,12 +10,14 @@ export function acceptChallengeCandidate(candidate: bigint): boolean {
   return candidate > 0n && candidate < Q;
 }
 
-export function firstAcceptedCandidate(next: (counter: number) => bigint): { value: bigint; counter: number } {
+export function firstAcceptedCandidate(
+  next: (counter: number) => bigint, stage = "challenge",
+): { value: bigint; counter: number } {
   for (let counter = 0; counter < 256; counter++) {
     const value = next(counter);
     if (acceptChallengeCandidate(value)) return { value, counter };
   }
-  throw new CryptoFailure("CHALLENGE_EXHAUSTED", "challenge");
+  throw new CryptoFailure("CHALLENGE_EXHAUSTED", stage);
 }
 
 const stageTags: Record<ChallengeStage, Uint8Array> = {
@@ -46,8 +48,9 @@ export class RangeTranscript {
 
   challenge(stage: ChallengeStage, payload: Uint8Array): bigint {
     const segment = concat(stageTags[stage], word(BigInt(payload.length)), payload);
-    const { value, counter } = firstAcceptedCandidate((index) =>
-      bytesToBigInt(keccak_256(concat(this.prefix, segment, candidateTag, word(BigInt(index))))),
+    const { value, counter } = firstAcceptedCandidate(
+      (index) => bytesToBigInt(keccak_256(concat(this.prefix, segment, candidateTag, word(BigInt(index))))),
+      stage,
     );
     this.prefix = concat(this.prefix, segment, acceptedTag, word(value));
     this.lastCounter = counter;
