@@ -12,6 +12,7 @@ const input = `0x${'44'.repeat(32)}`;
 const change = `0x${'55'.repeat(32)}`;
 const block = `0x${'66'.repeat(32)}`;
 const otherBlock = `0x${'77'.repeat(32)}`;
+const checkpoint = { number: 10n, hash: block as never, mode: 'local-simulated' as const };
 const ref: OperationRef = {
   scope, operationId: op as never, paymentId: payment as never,
   attemptIds: [], txHashes: [], chainOutcome: 'pending', receiptState: 'pending',
@@ -23,13 +24,17 @@ const record = parseOperationRecord({
 }, scope);
 const history = (): FinalizedHistory => ({
   chainId: 31337n, deploymentId: scope.deploymentId,
+  checkpoint,
   blockHash: block as never, finalized: true, canonical: true, rpcConsistent: true,
   adapter: { blockHash: block as never, paymentId: payment as never, operationId: op as never, owner: scope.owner, amountOut: 99n },
   pool: { blockHash: block as never, operationId: op as never, inputId: input as never, changeOutputId: change as never },
   input: { blockHash: block as never, inputId: input as never, consumed: true },
   change: { blockHash: block as never, outputId: change as never, owner: scope.owner },
 });
-const receipt = (currentlyUnspent = true) => ({ state: 'confirmed' as const, outputId: change as never, currentlyUnspent });
+const receipt = (currentlyUnspent = true) => ({
+  state: 'confirmed' as const, outputId: change as never, currentlyUnspent,
+  creationCheckpoint: checkpoint, observationCheckpoint: checkpoint,
+});
 
 it('confirms a payment only when Adapter, Pool, input and change match one finalized block', () => {
   const result = reconcilePayment(ref, record, history(), receipt(), 31337n);
@@ -72,8 +77,8 @@ it('keeps chain success separate from invalid receipt and later-spent change', (
 });
 
 it('adapts core receipt outcomes without treating later spending as payment failure', () => {
-  const available = coreReceiptResult({ status: 'available', utxo: { id: change } } as never);
-  const spent = coreReceiptResult({ status: 'spent', utxo: { id: change } } as never);
+  const available = coreReceiptResult({ status: 'available', creationCheckpoint: checkpoint, utxo: { id: change, checkpoint } } as never);
+  const spent = coreReceiptResult({ status: 'spent', creationCheckpoint: checkpoint, utxo: { id: change, checkpoint } } as never);
   const unknown = coreReceiptResult({ status: 'unknown', reason: 'HISTORY_UNAVAILABLE' });
   const invalid = coreReceiptResult({ status: 'inconsistent', reason: 'DECRYPT' });
   expect(reconcilePayment(ref, record, history(), available, 31337n).changeUsable).toBe(true);
@@ -81,4 +86,14 @@ it('adapts core receipt outcomes without treating later spending as payment fail
   expect(reconcilePayment(ref, record, history(), spent, 31337n).changeUsable).toBe(false);
   expect(reconcilePayment(ref, record, history(), unknown, 31337n).operation.receiptState).toBe('pending');
   expect(reconcilePayment(ref, record, history(), invalid, 31337n).operation.receiptState).toBe('invalid');
+});
+
+it('rejects a core receipt from a different finalized checkpoint', () => {
+  const stale = coreReceiptResult({
+    status: 'available', creationCheckpoint: checkpoint,
+    utxo: { id: change, checkpoint: { ...checkpoint, hash: otherBlock } },
+  } as never);
+  const result = reconcilePayment(ref, record, history(), stale, 31337n);
+  expect(result.operation.chainOutcome).toBe('unknown');
+  expect(result.changeUsable).toBe(false);
 });

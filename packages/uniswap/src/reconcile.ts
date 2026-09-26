@@ -3,7 +3,7 @@ import type {
   PaymentId, ReceiptState,
 } from './domain.js';
 import type { OperationRecord } from './storage.js';
-import type { ReceiptFailure, ReceivedUtxo } from '@confidential-utxo/core';
+import type { Checkpoint, ReceiptFailure, ReceivedUtxo } from '@confidential-utxo/core';
 
 interface BlockRecord {
   readonly blockHash: Bytes32;
@@ -12,6 +12,7 @@ interface BlockRecord {
 export interface FinalizedHistory {
   readonly chainId: bigint;
   readonly deploymentId: DeploymentId;
+  readonly checkpoint: Checkpoint;
   readonly blockHash: Bytes32;
   readonly finalized: boolean;
   readonly canonical: boolean;
@@ -41,6 +42,8 @@ export interface CoreReceiptResult {
   readonly state: ReceiptState;
   readonly outputId?: Bytes32;
   readonly currentlyUnspent: boolean;
+  readonly creationCheckpoint?: Checkpoint;
+  readonly observationCheckpoint?: Checkpoint;
 }
 
 export function coreReceiptResult(result: ReceivedUtxo | ReceiptFailure): CoreReceiptResult {
@@ -48,6 +51,8 @@ export function coreReceiptResult(result: ReceivedUtxo | ReceiptFailure): CoreRe
     return {
       state: 'confirmed', outputId: result.utxo.id as Bytes32,
       currentlyUnspent: result.status === 'available',
+      creationCheckpoint: result.creationCheckpoint,
+      observationCheckpoint: result.utxo.checkpoint,
     };
   }
   return {
@@ -96,6 +101,18 @@ export function reconcilePayment(
     && sameHex(history.change.owner, record.scope.owner);
 
   if (!matched) {
+    return {
+      operation: { ...ref, chainOutcome: 'unknown', receiptState: 'pending' },
+      changeUsable: false,
+    };
+  }
+
+  if (receipt.state === 'confirmed'
+    && (!sameHex(receipt.creationCheckpoint?.hash, history.blockHash)
+      || receipt.creationCheckpoint?.mode !== history.checkpoint.mode
+      || !sameHex(receipt.observationCheckpoint?.hash, history.checkpoint.hash)
+      || receipt.observationCheckpoint?.number !== history.checkpoint.number
+      || receipt.observationCheckpoint?.mode !== history.checkpoint.mode)) {
     return {
       operation: { ...ref, chainOutcome: 'unknown', receiptState: 'pending' },
       changeUsable: false,

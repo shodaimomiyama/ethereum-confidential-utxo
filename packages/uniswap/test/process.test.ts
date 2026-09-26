@@ -137,11 +137,11 @@ it('keeps the wallet closed if a lost ACK cannot be verified by lookup', async (
   expect(fixture.calls).not.toContain('sign-pool');
 });
 
-it('does not sign when the quote becomes stale while waiting for the signature-start ACK', async () => {
+it('does not sign when the quote expires before recording signature start', async () => {
   const fixture = setup();
-  const update = fixture.ports.reservations.update;
-  fixture.ports.reservations.update = async (...args) => {
-    const saved = await update(...args);
+  const reserve = fixture.ports.reservations.reserve;
+  fixture.ports.reservations.reserve = async (...args) => {
+    const saved = await reserve(...args);
     fixture.setNow(30_001);
     return saved;
   };
@@ -150,12 +150,12 @@ it('does not sign when the quote becomes stale while waiting for the signature-s
   expect(fixture.calls).not.toContain('sign-pool');
 });
 
-it('does not request a payment signature when the quote expires during pool signing', async () => {
+it('keeps fixed conditions after signature start even if the quote ages during signing', async () => {
   const fixture = setup();
   fixture.ports.signPool = async () => { fixture.calls.push('sign-pool'); fixture.setNow(30_001); return '0x11'; };
-  await expect(createPaymentClient(fixture.ports).authorizePay(fixture.prepared, fixture.prepared.record.contentHash))
-    .rejects.toMatchObject({ code: 'QUOTE_STALE' });
-  expect(fixture.calls).not.toContain('sign-payment');
+  expect((await createPaymentClient(fixture.ports).authorizePay(fixture.prepared, fixture.prepared.record.contentHash)).chainOutcome)
+    .toBe('pending');
+  expect(fixture.calls).toContain('sign-payment');
 });
 
 it('rejects a full Withdraw that races with a Pay for the same input', async () => {
@@ -287,13 +287,18 @@ it('reconciles only against the current scope and a healthy saved operation', as
     readFinalized: async () => ({
       history: {
         chainId: 31337n, deploymentId: scope.deploymentId, blockHash: blockHash as never,
+        checkpoint: { number: 10n, hash: blockHash, mode: 'local-simulated' },
         finalized: true, canonical: true, rpcConsistent: true,
         adapter: { blockHash, paymentId: record.paymentId, operationId: record.operationId, owner: scope.owner, amountOut: 99n },
         pool: { blockHash, operationId: record.operationId, inputId: record.inputId, changeOutputId },
         input: { blockHash, inputId: record.inputId, consumed: true },
         change: { blockHash, outputId: changeOutputId, owner: scope.owner },
       } as never,
-      receipt: { status: 'available', utxo: { id: changeOutputId } } as never,
+      receipt: {
+        status: 'available',
+        creationCheckpoint: { number: 10n, hash: blockHash, mode: 'local-simulated' },
+        utxo: { id: changeOutputId, checkpoint: { number: 10n, hash: blockHash, mode: 'local-simulated' } },
+      } as never,
     }),
   };
   const client = createPaymentClient(fixture.ports);
@@ -321,4 +326,29 @@ it('resumes a reserved unsigned operation only after saving the signature-start 
   expect(result.kind).toBe('submitted');
   expect(fixture.calls.slice(0, 6)).toEqual(['get', 'encrypt:2', 'update', 'sign-pool', 'sign-payment', 'encrypt:3']);
   expect((await fixture.reservations.get(scope, record.recordId))?.record.signatureStarted).toBe(true);
+});
+
+it('resumes fixed Pay conditions after quote age passes 30 seconds when signature start was acknowledged', async () => {
+  const fixture = setup();
+  await fixture.reservations.reserve(fixture.prepared.record, 0, 1);
+  const bundle = await fixture.ports.encrypt(fixture.prepared.privateBytes, {
+    scope, recordId: record.recordId, revision: 2,
+  });
+  await fixture.reservations.update({ ...record, signatureStarted: true, encryptedBundle: bundle }, 1, 2);
+  fixture.calls.length = 0;
+  fixture.setNow(30_001);
+  fixture.ports.recovery = {
+    readEvidence: async () => ({
+      evidence: {
+        finalized: true, blockTime: 100n, paymentSucceeded: false,
+        submissionKnownAbsent: true, attempts: [], storageAvailability: 'healthy',
+      },
+      currentInput: { state: 'unspent' },
+    }),
+    restoreOriginal: async () => ({ prepared: fixture.prepared }),
+    restoreForRetry: async () => { throw new Error('unused'); },
+    releaseAndPrepareChangedTerms: async () => fixture.prepared,
+  };
+  expect((await createPaymentClient(fixture.ports).resumeOriginal(recordId as never)).kind).toBe('submitted');
+  expect(fixture.calls).toContain('sign-payment');
 });

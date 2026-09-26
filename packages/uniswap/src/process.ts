@@ -154,6 +154,10 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
     if (!isQuoteFresh(prepared.quote, ports.clock.now())) {
       throw new PaymentProcessError('QUOTE_STALE');
     }
+    await assertPayDeadlineLive(prepared);
+  }
+
+  async function assertPayDeadlineLive(prepared: PreparedPay): Promise<void> {
     if (prepared.record.kind !== 'pay' || await ports.latestBlockTime() >= prepared.record.deadline) {
       throw new PaymentProcessError('TERMS_EXPIRED');
     }
@@ -209,6 +213,7 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
       () => ports.reservations.reserve(reservedRecord, 0, 1));
     assertScope(initialScope);
     assertSaved(reserved, reservedRecord, 1);
+    if (isPay) await assertPayTermsLive(prepared as PreparedPay);
 
     const startedRecord = await encryptRecord({ ...reserved.record, signatureStarted: true }, prepared.privateBytes, 2);
     const started = await recoverAck(startedRecord, 2,
@@ -216,11 +221,11 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
     assertScope(initialScope);
     assertSaved(started, startedRecord, 2);
     if (isPay) {
-      await assertPayTermsLive(prepared as PreparedPay);
+      await assertPayDeadlineLive(prepared as PreparedPay);
     }
     const pool = await ports.signPool(prepared.poolAuthorization);
     assertScope(initialScope);
-    if (isPay) await assertPayTermsLive(prepared as PreparedPay);
+    if (isPay) await assertPayDeadlineLive(prepared as PreparedPay);
     const payment = isPay ? await ports.signPayment(prepared as PreparedPay) : undefined;
     assertScope(initialScope);
     const signatures: AuthorizationSignatures = { pool, ...(payment === undefined ? {} : { payment }) };
@@ -357,6 +362,7 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
     }
     let current = saved;
     if (!current.record.signatureStarted) {
+      if (prepared.record.kind === 'pay') await assertPayTermsLive(prepared as PreparedPay);
       const revision = current.revision + 1;
       const record = await encryptRecord({ ...current.record, signatureStarted: true }, prepared.privateBytes, revision);
       current = await recoverAck(record, revision,
@@ -366,10 +372,10 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
     }
     let signatures = restored.signatures;
     if (signatures === undefined) {
-      if (prepared.record.kind === 'pay') await assertPayTermsLive(prepared as PreparedPay);
+      if (prepared.record.kind === 'pay') await assertPayDeadlineLive(prepared as PreparedPay);
       const pool = await ports.signPool(prepared.poolAuthorization);
       assertScope(saved.record.scope);
-      if (prepared.record.kind === 'pay') await assertPayTermsLive(prepared as PreparedPay);
+      if (prepared.record.kind === 'pay') await assertPayDeadlineLive(prepared as PreparedPay);
       const payment = prepared.record.kind === 'pay'
         ? await ports.signPayment(prepared as PreparedPay) : undefined;
       assertScope(saved.record.scope);
