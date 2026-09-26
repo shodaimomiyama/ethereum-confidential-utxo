@@ -18,7 +18,10 @@ EVIDENCE = MODEL / "evidence"
 GROUPS = {f"MODEL-{n:02d}" for n in range(1, 9)}
 DEFINITION_SOURCES = [MODEL / name for name in ("model.k", "auth.k", "operations.k", "paths.k")]
 LABEL = re.compile(r"\[label\((MODEL-\d\d-[A-Za-z0-9-]+)\)\]")
-BAD_LOG = re.compile(r"(?i)\b(stuck|skipped|admitted|timeout|unresolved|error|partial)\b")
+BAD_LOG = re.compile(
+    r"(?i)\b(stuck|skipped|admitted|timeout|unresolved|error|partial|"
+    r"WarnTrivialClaim)\b|Functional claims not yet supported|Unexpected empty set of claims"
+)
 
 
 def clean_top(log):
@@ -62,7 +65,10 @@ def validate_manifest(claims):
             raise ValueError(f"{item['id']}: missing source")
         by_source.setdefault(str(resolve(item["source"])), set()).add(item["id"])
     for source, registered in by_source.items():
-        actual = LABEL.findall(Path(source).read_text())
+        source_text = Path(source).read_text()
+        if re.search(r"\[\s*trusted\s*\]|\[[^\]]*,\s*trusted\s*\]", source_text):
+            raise ValueError(f"{source}: trusted claim is not a proof")
+        actual = LABEL.findall(source_text)
         if len(actual) != len(set(actual)) or set(actual) != registered:
             raise ValueError(f"{source}: source labels differ from manifest")
 

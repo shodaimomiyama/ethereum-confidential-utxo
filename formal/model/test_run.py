@@ -70,6 +70,19 @@ class EvidenceValidationTest(unittest.TestCase):
         self.log.write_text("#Top\n[Warning] Compiler: unused variable\n")
         validate_results(self.claims, self.results, self.lock)
 
+    def test_trivial_or_unsupported_claim_warning_rejected(self):
+        for warning in ("WarnTrivialClaim", "Functional claims not yet supported",
+                        "Unexpected empty set of claims"):
+            self.log.write_text(f"#Top\n[Warning] Compiler: {warning}\n")
+            with self.assertRaises(ValueError):
+                validate_results(self.claims, self.results, self.lock)
+
+    def test_trusted_claim_rejected(self):
+        self.source.write_text(self.source.read_text().replace(
+            "[label(MODEL-01-sample)]", "[label(MODEL-01-sample), trusted]"))
+        with self.assertRaises(ValueError):
+            validate_manifest(self.claims)
+
     def test_missing_log_hash_and_wrong_lock_rejected(self):
         variants = [
             dict(self.results[0], log=str(self.root / "absent.log")),
