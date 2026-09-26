@@ -14,6 +14,7 @@ interface VmRollback {
 
     function recordLogs() external;
     function getRecordedLogs() external returns (Log[] memory);
+    function prank(address sender) external;
 }
 
 contract AdapterRollbackTest is AdapterPaymentTest {
@@ -74,6 +75,73 @@ contract AdapterRollbackTest is AdapterPaymentTest {
         require(fixture.pool.spent(bytes32(uint256(2))), "successful input unspent");
         require(_rejects(fixture), "duplicate payment accepted");
         require(fixture.pool.liability() == 97, "duplicate changed liability");
+    }
+
+    function test_sameSignedPaymentOnlyFirstSubmitterSucceeds() public {
+        Fixture memory fixture = _deploy();
+        (
+            PoolTypes.OperationRequest memory request,
+            PoolTypes.RangeProofV3[] memory ranges,
+            UniswapPaymentAdapter.PaymentTerms memory terms,
+            bytes memory signature
+        ) = _paymentCall(fixture, address(0xCAFE));
+        vmRollback.prank(address(0xA11CE));
+        (bytes32 paymentId,) =
+            fixture.adapter.pay(request, PoolTypes.BalanceProof(0, 0, 0), ranges, signature, terms, signature);
+        require(fixture.adapter.isPaymentExecuted(paymentId), "first submitter did not succeed");
+        uint256 poolEth = address(fixture.pool).balance;
+        uint256 recipientTokens = fixture.token.balanceOf(address(0xCAFE));
+        vmRollback.prank(address(0xB0B));
+        (bool accepted, bytes memory reason) = address(fixture.adapter)
+            .call(
+                abi.encodeCall(
+                    UniswapPaymentAdapter.pay,
+                    (request, PoolTypes.BalanceProof(0, 0, 0), ranges, signature, terms, signature)
+                )
+            );
+        require(
+            !accepted && bytes4(reason) == UniswapPaymentAdapter.PaymentAlreadyExecuted.selector,
+            "second submitter was not rejected as replay"
+        );
+        require(address(fixture.pool).balance == poolEth, "second submitter changed Pool ETH");
+        require(fixture.token.balanceOf(address(0xCAFE)) == recipientTokens, "second submitter changed delivery");
+        require(fixture.pool.liability() == 97, "second submitter changed Pool liability");
+    }
+
+    function test_differentOperationConsumesInputBeforePayment() public {
+        Fixture memory fixture = _deploy();
+        (
+            PoolTypes.OperationRequest memory request,
+            PoolTypes.RangeProofV3[] memory ranges,
+            UniswapPaymentAdapter.PaymentTerms memory terms,
+            bytes memory signature
+        ) = _paymentCall(fixture, address(0xCAFE));
+        bytes32 paymentId = fixture.adapter.paymentDigest(terms);
+        PoolTypes.OperationRequest memory competing = abi.decode(abi.encode(request), (PoolTypes.OperationRequest));
+        competing.salt = bytes32(uint256(99));
+        require(
+            this.operationId(competing, address(fixture.pool)) != terms.operationId,
+            "competing operation ID did not change"
+        );
+        fixture.pool.withdraw(competing, PoolTypes.BalanceProof(0, 0, 0), ranges, signature);
+        require(fixture.pool.spent(request.inputIds[0]), "competing operation did not consume input");
+        uint256 poolEth = address(fixture.pool).balance;
+        uint256 liability = fixture.pool.liability();
+        vmRollback.prank(address(0xBEEF));
+        (bool accepted,) = address(fixture.adapter)
+            .call(
+                abi.encodeCall(
+                    UniswapPaymentAdapter.pay,
+                    (request, PoolTypes.BalanceProof(0, 0, 0), ranges, signature, terms, signature)
+                )
+            );
+        require(!accepted, "payment spent competing operation input");
+        require(
+            address(fixture.pool).balance == poolEth && fixture.pool.liability() == liability,
+            "payment changed competing operation outcome"
+        );
+        require(!fixture.adapter.isPaymentExecuted(paymentId), "failed payment recorded");
+        require(fixture.token.balanceOf(address(0xCAFE)) == 0, "failed payment delivered tokens");
     }
 
     function test_reentryIsRejectedWhileOuterPaymentCanSucceed() public {

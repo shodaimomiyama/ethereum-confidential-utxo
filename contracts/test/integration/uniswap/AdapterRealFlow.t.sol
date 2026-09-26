@@ -71,6 +71,13 @@ contract AdapterRealFlowTest {
         bytes paymentSignature;
     }
 
+    struct CompetingSnapshot {
+        uint112 reserve0;
+        uint112 reserve1;
+        uint256 recipient;
+        uint256 poolEth;
+    }
+
     function _fixtureJson() private returns (string memory) {
         return vm.readFile("test/fixtures/uniswap-payment-calldata.json");
     }
@@ -237,6 +244,39 @@ contract AdapterRealFlowTest {
         require(status == 1, "dust remainder missing");
         (, uint256 liability,) = fixture.pool.getAccounting();
         require(liability == 1, "not one wei remainder");
+    }
+
+    function test_realCompetingOperationConsumesInputFirst() public {
+        Fixture memory fixture = _prepare();
+        (bool firstAccepted,, bytes32 firstPaymentId, bytes32 firstOutputId) = _pay(fixture, "WITHDRAW_PAY_DUST", 1);
+        require(firstAccepted, "competing payment failed");
+        CompetingSnapshot memory before;
+        (before.reserve0, before.reserve1,) = IPairReal(fixture.pair).getReserves();
+        before.recipient = fixture.token.balanceOf(address(0xCAFE));
+        before.poolEth = address(fixture.pool).balance;
+        (bool secondAccepted,, bytes32 secondPaymentId, bytes32 secondOutputId) = _pay(fixture, "WITHDRAW_PAY", 1);
+        require(!secondAccepted, "spent input accepted by second payment");
+        require(fixture.adapter.isPaymentExecuted(firstPaymentId), "first payment lost");
+        require(!fixture.adapter.isPaymentExecuted(secondPaymentId), "second payment recorded");
+        _assertCompetingUnchanged(fixture, firstOutputId, secondOutputId, before);
+    }
+
+    function _assertCompetingUnchanged(
+        Fixture memory fixture,
+        bytes32 firstOutputId,
+        bytes32 secondOutputId,
+        CompetingSnapshot memory before
+    ) private view {
+        (uint8 inputStatus,,,) = fixture.pool.getUtxo(fixture.inputId);
+        (uint8 firstOutputStatus,,,) = fixture.pool.getUtxo(firstOutputId);
+        (uint8 secondOutputStatus,,,) = fixture.pool.getUtxo(secondOutputId);
+        require(inputStatus == 2 && firstOutputStatus == 1 && secondOutputStatus == 0, "Pool state changed");
+        require(address(fixture.pool).balance == before.poolEth, "Pool ETH changed");
+        require(fixture.token.balanceOf(address(0xCAFE)) == before.recipient, "recipient balance changed");
+        (uint112 reserve0After, uint112 reserve1After,) = IPairReal(fixture.pair).getReserves();
+        require(before.reserve0 == reserve0After && before.reserve1 == reserve1After, "Pair reserves changed");
+        (, uint256 liability,) = fixture.pool.getAccounting();
+        require(liability == 1, "first payment liability changed");
     }
 
     function test_realMinimumFailureRollsBackPoolAndPair() public {

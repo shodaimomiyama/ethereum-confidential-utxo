@@ -122,6 +122,18 @@ contract AdapterAuthorizationTest {
         }
     }
 
+    function _revertSelector(
+        AdapterAuthorizationHarness adapter,
+        PoolTypes.OperationRequest memory request,
+        UniswapPaymentAdapter.PaymentTerms memory terms,
+        bytes memory signature
+    ) private view returns (bytes4 selector) {
+        (bool accepted, bytes memory result) = address(adapter)
+            .staticcall(abi.encodeCall(adapter.validate, (request, _ranges(), terms, signature)));
+        require(!accepted && result.length >= 4, "expected validation revert");
+        return bytes4(result);
+    }
+
     function test_validOwnerAuthorizationBindsOperationAndPayment() public {
         AdapterAuthorizationHarness adapter = _deploy();
         PoolTypes.OperationRequest memory request = _request(vm.addr(OWNER_KEY), address(adapter));
@@ -135,23 +147,40 @@ contract AdapterAuthorizationTest {
     function test_eachPaymentFieldMutationInvalidatesSignature() public {
         AdapterAuthorizationHarness adapter = _deploy();
         PoolTypes.OperationRequest memory request = _request(vm.addr(OWNER_KEY), address(adapter));
-        UniswapPaymentAdapter.PaymentTerms memory original = _terms(adapter, request);
-        bytes memory signature = _sign(adapter, original);
-        UniswapPaymentAdapter.PaymentTerms memory terms = original;
+        UniswapPaymentAdapter.PaymentTerms memory terms = _terms(adapter, request);
+        bytes memory signature = _sign(adapter, terms);
         terms.ethAmount++;
-        require(_rejects(adapter, request, _ranges(), terms, signature), "amount mutation accepted");
-        terms = original;
+        require(
+            _revertSelector(adapter, request, terms, signature) == UniswapPaymentAdapter.InvalidPayment.selector,
+            "amount rejected for wrong reason"
+        );
+        terms = _terms(adapter, request);
         terms.token = address(0xCAFE);
-        require(_rejects(adapter, request, _ranges(), terms, signature), "token mutation accepted");
-        terms = original;
+        require(
+            _revertSelector(adapter, request, terms, signature) == UniswapPaymentAdapter.UnsupportedToken.selector,
+            "token rejected for wrong reason"
+        );
+        terms = _terms(adapter, request);
         terms.minAmountOut++;
-        require(_rejects(adapter, request, _ranges(), terms, signature), "minimum mutation accepted");
-        terms = original;
+        require(
+            _revertSelector(adapter, request, terms, signature)
+                == UniswapPaymentAdapter.InvalidPaymentSignature.selector,
+            "minimum rejected for wrong reason"
+        );
+        terms = _terms(adapter, request);
         terms.recipient = address(0xDDDD);
-        require(_rejects(adapter, request, _ranges(), terms, signature), "recipient mutation accepted");
-        terms = original;
+        require(
+            _revertSelector(adapter, request, terms, signature)
+                == UniswapPaymentAdapter.InvalidPaymentSignature.selector,
+            "recipient rejected for wrong reason"
+        );
+        terms = _terms(adapter, request);
         terms.deadline++;
-        require(_rejects(adapter, request, _ranges(), terms, signature), "deadline mutation accepted");
+        require(
+            _revertSelector(adapter, request, terms, signature)
+                == UniswapPaymentAdapter.InvalidPaymentSignature.selector,
+            "deadline rejected for wrong reason"
+        );
     }
 
     function test_requestMutationAndDirectWithdrawalAreRejected() public {
@@ -180,6 +209,52 @@ contract AdapterAuthorizationTest {
         require(_rejects(adapter, request, _ranges(), terms, hex"00"), "short signature accepted");
         signature[64] = bytes1(uint8(29));
         require(_rejects(adapter, request, _ranges(), terms, signature), "invalid v accepted");
+    }
+
+    function test_wrongDomainAndPoolAreRejectedForOtherwiseValidTerms() public {
+        AdapterAuthorizationHarness adapter = _deploy();
+        PoolTypes.OperationRequest memory request = _request(vm.addr(OWNER_KEY), address(adapter));
+        vm.chainId(31338);
+        UniswapPaymentAdapter.PaymentTerms memory terms = _terms(adapter, request);
+        vm.chainId(31337);
+        bytes memory wrongChainSignature = _sign(adapter, terms);
+        vm.chainId(31338);
+        require(
+            _revertSelector(adapter, request, terms, wrongChainSignature)
+                == UniswapPaymentAdapter.InvalidPaymentSignature.selector,
+            "wrong EIP-712 chain domain accepted"
+        );
+        vm.chainId(31337);
+
+        AdapterAuthorizationHarness other = new AdapterAuthorizationHarness(
+            adapter.pool(), adapter.router02(), adapter.factory(), adapter.weth(), adapter.dUSD(), adapter.pair()
+        );
+        request.destination = address(other);
+        terms = _terms(other, request);
+        bytes memory wrongAdapterSignature = _sign(adapter, terms);
+        require(
+            _revertSelector(other, request, terms, wrongAdapterSignature)
+                == UniswapPaymentAdapter.InvalidPaymentSignature.selector,
+            "wrong EIP-712 adapter domain accepted"
+        );
+
+        ConfigCode differentPool = new ConfigCode();
+        AdapterAuthorizationHarness differentPoolAdapter = new AdapterAuthorizationHarness(
+            address(differentPool),
+            adapter.router02(),
+            adapter.factory(),
+            adapter.weth(),
+            adapter.dUSD(),
+            adapter.pair()
+        );
+        request.destination = address(differentPoolAdapter);
+        terms = _terms(differentPoolAdapter, request);
+        terms.operationId = differentPoolAdapter.operationIdFor(request, adapter.pool());
+        require(
+            _revertSelector(differentPoolAdapter, request, terms, _sign(differentPoolAdapter, terms))
+                == UniswapPaymentAdapter.InvalidPayment.selector,
+            "different Pool operation accepted"
+        );
     }
 
     function test_deadlineBoundaryAndForbiddenRecipient() public {
