@@ -4,6 +4,7 @@ import type { CryptoWorkerClient } from '../../src/live/worker-client.js';
 import rangeVectors from '../../../../tests/vectors/cases/range-deterministic.json' with { type: 'json' };
 import balanceVectors from '../../../../tests/vectors/cases/balance.json' with { type: 'json' };
 import hpkeVectors from '../../../../tests/vectors/cases/hpke.json' with { type: 'json' };
+import applicationVectors from '../../../../tests/vectors/cases/application-operation.json' with { type: 'json' };
 const bytes = (hex: string): Uint8Array => Uint8Array.from(hex.slice(2).match(/../g)!, x => parseInt(x, 16));
 const scope = { deploymentId: 'local', owner: `0x${'11'.repeat(20)}` } as Scope;
 async function client(): Promise<CryptoWorkerClient> {
@@ -81,6 +82,56 @@ it('builds a full Withdraw through published core in the production Worker and v
     expect(second.value.operationId).not.toBe(draft.operationId);
     expect(payload).toEqual(before);
   } finally { worker.dispose(); }
+});
+
+it('builds a Deposit and encrypts a receivable output through published core in the production Worker', async () => {
+  const vector = applicationVectors.find(v => v.id === 'VEC-07-APPLICATION-DEPOSIT')!;
+  const receipt = vector.expected.receipts[0]!;
+  const { commit } = await import('@confidential-utxo/crypto');
+  const { operationId, outputId, receiptInfo, validateOperationShape } = await import('@confidential-utxo/core');
+  const context: import('@confidential-utxo/core').Context = {
+    chainId: BigInt(vector.input.chainId), pool: vector.input.pool as `0x${string}`, deploymentBlock: 1n,
+    verifier: vector.input.pool as `0x${string}`, parametersHash: `0x${'00'.repeat(32)}`, finalityMode: 'finalized',
+  };
+  const recipient: import('@confidential-utxo/core').RecipientInfo = {
+    chainId: context.chainId, pool: context.pool, owner: receipt.recipientInfo.owner as `0x${string}`,
+    receivePublicKey: receipt.recipientInfo.receivePublicKey as `0x${string}`,
+    receiptFormat: 1, recipientInfoVersion: 1, signature: receipt.recipientInfo.signature as `0x${string}`,
+  };
+  const payload: import('../../src/live/worker-protocol.js').CryptoPayloads['build-operation'] = {
+    intent: { kind: 0, owner: vector.input.owner as `0x${string}`, amount: BigInt(vector.input.d),
+      recipient }, context, inputs: [],
+  };
+  const worker = await client();
+  const recipientPrivateKey = bytes(receipt.recipientPrivateKey);
+  try {
+    const result = await worker.run({ kind: 'build-operation', jobId: 'deposit', epoch: 0, scope, payload });
+    const draft = result.value;
+    const output = draft.request.outputs[0]!;
+    expect(result.jobKind).toBe('build-operation');
+    expect(draft.request).toMatchObject({ kind: 0, owner: payload.intent.owner, inputIds: [], d: 1n, w: 0n,
+      outputs: [{ owner: receipt.expectedOwner, receiptFormat: 1 }] });
+    expect(() => validateOperationShape(draft.request)).not.toThrow();
+    expect(draft.operationId).toBe(operationId(context, draft.request));
+    expect(draft.outputIds).toEqual([outputId(draft.operationId, 0)]);
+    expect(draft.openings).toHaveLength(1);
+    expect(output.commitment).toEqual(commit(draft.openings[0]!));
+    expect(output.packet).toMatch(/^0x[0-9a-f]{224}$/);
+    expect(output.packet).not.toBe(receipt.packet);
+    expect(draft.inputOpenings).toEqual([]);
+    expect(draft.rangeProofs).toEqual([]);
+    expect(draft.signature).toBeUndefined();
+
+    const received = await worker.run({ kind: 'receive', jobId: 'deposit-receipt', epoch: 0, scope,
+      payload: { recipientPrivateKey, info: bytes(receiptInfo(context, draft.request, 0)),
+        packet: bytes(output.packet), commitment: output.commitment } });
+    expect(received.value).toEqual(draft.openings[0]);
+    const wrongInfo = bytes(receiptInfo(context, draft.request, 0));
+    wrongInfo[0] = wrongInfo[0]! ^ 1;
+    await expect(worker.run({ kind: 'receive', jobId: 'deposit-wrong-info', epoch: 0, scope,
+      payload: { recipientPrivateKey, info: wrongInfo, packet: bytes(output.packet), commitment: output.commitment } }))
+      .rejects.toMatchObject({ code: 'CRYPTO_FAILED' });
+  } finally { recipientPrivateKey.fill(0); worker.dispose(); }
 });
 
 function withdrawPayload() {
