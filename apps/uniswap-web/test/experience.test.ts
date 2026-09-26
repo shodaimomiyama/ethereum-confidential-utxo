@@ -43,6 +43,7 @@ it('walks through reward, Pay, and full Withdraw without a network request', asy
   expect(await experience.dispatch({ type: 'start', card: 'withdraw' })).toEqual({ kind: 'accepted' });
   for (let step = 0; step < 3; step += 1) experience.advance();
   expect(experience.snapshot().availablePrivateWei).toBe(0n);
+  expect(experience.snapshot().publicEthWei).toBe(23n * 10n ** 15n);
   expect(experience.snapshot().cards.withdraw.phase).toBe('complete');
   experience.dispose();
 });
@@ -54,6 +55,15 @@ it('can receive a deposit as an alternative first private UTXO', async () => {
   expect(await experience.dispatch({ type: 'start', card: 'deposit' })).toEqual({ kind: 'accepted' });
   for (let step = 0; step < 4; step += 1) experience.advance();
   expect(experience.snapshot().availablePrivateWei).toBe(10n ** 16n);
+  expect(experience.snapshot().publicEthWei).toBe(10n ** 15n * 10n);
+  experience.dispose();
+});
+
+it('refuses a deposit that would use all public ETH needed for gas', async () => {
+  const experience = createMockExperience({ scope });
+  await prepare(experience);
+  await experience.dispatch({ type: 'edit', card: 'deposit', field: 'amount', value: '0.02' });
+  expect(await experience.dispatch({ type: 'start', card: 'deposit' })).toEqual({ kind: 'blocked', reason: 'INSUFFICIENT_FUNDS' });
   experience.dispose();
 });
 

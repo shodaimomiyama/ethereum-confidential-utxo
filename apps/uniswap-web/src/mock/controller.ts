@@ -55,6 +55,7 @@ interface Runtime {
   resumeEligible: Set<OperationId>;
   oldAuthorizationActive: boolean;
   countedOutputs: Map<string, { operationId: OperationId; amountWei: bigint }>;
+  publicEffects: Map<OperationId, bigint>;
 }
 
 function scopeKey(scope: Scope): string {
@@ -70,6 +71,7 @@ function makeRuntime(scope: Scope, scenario: string): Runtime {
     resumeEligible: new Set(),
     oldAuthorizationActive: false,
     countedOutputs: new Map(),
+    publicEffects: new Map(),
   };
   refreshInteractive(runtime);
   return runtime;
@@ -105,6 +107,10 @@ function refreshInteractive(runtime: Runtime): void {
     const amount = parseEthWei(current.input.amount);
     if (amount === undefined) {
       state = setCard(state, card, { phase: 'invalid-input', reason: 'INVALID_DECIMAL' });
+      continue;
+    }
+    if (card === 'deposit' && amount >= state.publicEthWei) {
+      state = setCard(state, card, { phase: 'invalid-input', reason: 'INSUFFICIENT_FUNDS' });
       continue;
     }
     if (card === 'pay') {
@@ -370,6 +376,13 @@ export function createMockUiController({ scope, store, clock, scenario }: {
         chainOutcome: 'finalized-success', receiptState: needsReceipt ? 'pending' : 'none',
       });
       state = appendAttempt(state, event.operationId, event.attemptId);
+      if (runtime.interactive && event.amountWei !== undefined
+        && (event.card === 'deposit' || event.card === 'withdraw')
+        && !runtime.publicEffects.has(event.operationId)) {
+        const delta = event.card === 'deposit' ? -event.amountWei : event.amountWei;
+        runtime.publicEffects.set(event.operationId, delta);
+        state = { ...state, publicEthWei: state.publicEthWei + delta };
+      }
       if (runtime.interactive && (event.card === 'pay' || event.card === 'withdraw')) {
         const selected = state.selectedInput[event.card];
         if (selected !== undefined && state.utxos.some((item) => item.id === selected.id && item.available)) {
@@ -406,6 +419,11 @@ export function createMockUiController({ scope, store, clock, scenario }: {
       }
       state = { ...state, availablePrivateWei: state.availablePrivateWei - removed, isStale: true,
         utxos: state.utxos.filter((item) => !removedOutputIds.has(item.id)) };
+      const publicEffect = runtime.publicEffects.get(event.operationId);
+      if (publicEffect !== undefined) {
+        state = { ...state, publicEthWei: state.publicEthWei - publicEffect };
+        runtime.publicEffects.delete(event.operationId);
+      }
       state = setCard(state, event.card, { phase: 'unknown', reason: 'RESULT_UNKNOWN' });
       state = setOperation(state, event.operationId, { chainOutcome: 'unknown', receiptState: 'none' });
     } else if (event.type === 'attempt-failed') {

@@ -12,7 +12,8 @@
   "exports": {
     "./contracts": "./src/contracts/index.ts",
     "./mock": "./src/mock/index.ts",
-    "./testing": "./src/mock/scenario-catalog.ts"
+    "./testing": "./src/mock/scenario-catalog.ts",
+    "./site": "./src/site/bootstrap.tsx"
   },
   "dependencies": {
     "@confidential-utxo/uniswap": "workspace:*",

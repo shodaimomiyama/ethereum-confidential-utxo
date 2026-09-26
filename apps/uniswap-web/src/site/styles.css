@@ -60,5 +60,14 @@ button { cursor: pointer; }
 .card-feedback { padding: .7rem 0; }
 .card-feedback [role="alert"] { color: #9a3a1e; }
 .status-line { font-weight: 700; }
+.workbench { grid-column: 1 / -1; display: grid; gap: .75rem; }
+.workbench h2, .workbench h3, .workbench p { margin: 0; }
+.workbench select, .workbench input { width: 100%; min-width: 0; padding: .65rem; border: 1px solid #a9c4df; border-radius: .5rem; }
+.workbench-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.workbench-actions button, .clock-control button { border: 1px solid #a9c4df; background: #edf5fc; color: #14365f; border-radius: .5rem; padding: .55rem .7rem; }
+.workbench-actions button:disabled { opacity: .5; cursor: not-allowed; }
+.clock-control { display: flex; gap: .5rem; }
+.workbench li { overflow-wrap: anywhere; }
+.transaction-page { max-width: 720px; margin: 2rem auto; overflow-wrap: anywhere; }
 @media (max-width: 780px) { .hero { grid-template-columns: 1fr; } .content-grid { grid-template-columns: 1fr; } .app-layout { grid-template-columns: minmax(0, 1fr); } .activity { grid-column: 1; grid-row: auto; } }
 @media (max-width: 480px) { .site-header { padding: .8rem 1rem; } .hero, .content-grid, .app-layout { padding-left: 1rem; padding-right: 1rem; } .balances { grid-template-columns: 1fr; } .surface { padding: 1.1rem; } }

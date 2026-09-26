@@ -96,9 +96,10 @@ it('shows distinct no-single-input, stale quote and service-unavailable recovery
   act(() => { ui.control.inject({ type: 'invalidate-quote' }); });
   expect(screen.getByRole('alert')).toHaveTextContent(/quote is stale/i);
   fireEvent.click(screen.getByRole('tab', { name: 'Deposit' }));
+  act(() => { ui.control.inject({ type: 'public-balance', amountWei: 10n ** 16n }); });
   await edit('Deposit amount in ETH', '0.003');
   store.control.setUnavailable(true);
-  act(() => { ui.control.inject({ type: 'public-balance', amountWei: 1n }); });
+  act(() => { ui.control.inject({ type: 'public-balance', amountWei: 10n ** 16n }); });
   expect(screen.getByRole('alert')).toHaveTextContent(/service is unavailable/i);
   expect(screen.getByRole('button', { name: 'Start deposit' })).toBeDisabled();
   expect(ui.control.journal().filter((entry) => entry.kind === 'start' || entry.kind === 'send')).toHaveLength(0);

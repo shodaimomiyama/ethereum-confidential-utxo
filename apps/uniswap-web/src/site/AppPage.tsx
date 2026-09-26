@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import type { UiController } from '../contracts/controller.js';
 import type { Card } from '../contracts/state.js';
 import type { SiteConfig } from './config.js';
@@ -18,7 +19,7 @@ const tabs: readonly { key: Card; label: string }[] = [
   { key: 'withdraw', label: 'Withdraw' },
 ];
 
-function AppShell({ config }: { readonly config: SiteConfig }) {
+function AppShell({ config, workbench }: { readonly config: SiteConfig; readonly workbench?: ReactNode }) {
   const view = useViewState();
   const controller = useController();
   const [active, setActive] = useState<Card>('reward');
@@ -36,7 +37,16 @@ function AppShell({ config }: { readonly config: SiteConfig }) {
       <Preparation view={view} controller={controller} config={config} />
       <section className="card-shell surface" aria-label="Dim actions">
         <div role="tablist" aria-label="Choose an action" className="card-tabs">
-          {tabs.map((tab) => <button key={tab.key} id={`tab-${tab.key}`} role="tab" aria-controls={`panel-${tab.key}`} aria-selected={active === tab.key} tabIndex={active === tab.key ? 0 : -1} type="button" onClick={() => setActive(tab.key)}>{tab.label}</button>)}
+          {tabs.map((tab, index) => <button key={tab.key} id={`tab-${tab.key}`} role="tab" aria-controls={`panel-${tab.key}`} aria-selected={active === tab.key} tabIndex={active === tab.key ? 0 : -1} type="button"
+            onClick={() => setActive(tab.key)} onKeyDown={(event) => {
+              const nextIndex = event.key === 'ArrowRight' ? (index + 1) % tabs.length
+                : event.key === 'ArrowLeft' ? (index + tabs.length - 1) % tabs.length
+                  : event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : undefined;
+              if (nextIndex === undefined) return;
+              event.preventDefault();
+              const next = tabs[nextIndex];
+              if (next) { setActive(next.key); document.getElementById(`tab-${next.key}`)?.focus(); }
+            }}>{tab.label}</button>)}
         </div>
         <div role="tabpanel" id={`panel-${active}`} aria-labelledby={`tab-${active}`} className="card-content">
           {active === 'reward' && <Reward view={view} controller={controller} />}
@@ -46,10 +56,11 @@ function AppShell({ config }: { readonly config: SiteConfig }) {
         </div>
       </section>
       <OperationStatus view={view} controller={controller} config={config} />
+      {config.mode === 'mock' && workbench}
     </main>
   </div>;
 }
 
-export function AppPage({ controller, config }: { readonly controller: UiController; readonly config: SiteConfig }) {
-  return <ControllerProvider controller={controller}><AppShell config={config} /></ControllerProvider>;
+export function AppPage({ controller, config, workbench }: { readonly controller: UiController; readonly config: SiteConfig; readonly workbench?: ReactNode }) {
+  return <ControllerProvider controller={controller}><AppShell config={config} workbench={workbench} /></ControllerProvider>;
 }

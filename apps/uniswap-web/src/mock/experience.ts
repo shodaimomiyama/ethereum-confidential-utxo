@@ -93,6 +93,7 @@ export function createMockExperience({ scope }: { readonly scope: Scope }): Mock
       }
       for (const listener of listeners) listener(snapshot());
     }
+    if (record) for (const listener of listeners) listener(snapshot());
     return result;
   }
 
@@ -110,7 +111,8 @@ export function createMockExperience({ scope }: { readonly scope: Scope }): Mock
         mock.control.inject({ type: 'reward-request', requestId: current.requestId, status: 'pending', operationId: current.operationId });
       }
     } else if (current.stage === 2) {
-      mock.control.inject({ type: 'finalized-success', card: current.card, operationId: current.operationId });
+      mock.control.inject({ type: 'finalized-success', card: current.card, operationId: current.operationId,
+        amountWei: current.card === 'deposit' || current.card === 'withdraw' ? current.amountWei : undefined });
       if (current.requestId !== undefined) {
         store.control.setRewardFinalized(scope, current.requestId, current.outputId, identifier(counter, 5) as Bytes32);
         mock.control.inject({ type: 'reward-request', requestId: current.requestId, status: 'finalized', operationId: current.operationId });

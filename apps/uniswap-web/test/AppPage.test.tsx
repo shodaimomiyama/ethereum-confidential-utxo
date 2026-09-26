@@ -44,3 +44,18 @@ it('releases controller listeners after StrictMode unmount', () => {
   expect(activeSubscriptions).toBe(0);
   controller.dispose();
 });
+
+it('moves keyboard focus between action tabs with arrow keys', () => {
+  const controller = createMockExperience({ scope: {
+    deploymentId: 'local-v1', owner: `0x${'11'.repeat(20)}`,
+  } as Scope });
+  render(<AppPage controller={controller} config={{ mode: 'mock', deploymentId: 'local-v1' }} />);
+  const reward = screen.getByRole('tab', { name: 'Demo reward' });
+  reward.focus();
+  fireEvent.keyDown(reward, { key: 'ArrowRight' });
+  expect(screen.getByRole('tab', { name: 'Pay' })).toHaveFocus();
+  expect(screen.getByRole('tab', { name: 'Pay' })).toHaveAttribute('aria-selected', 'true');
+  fireEvent.keyDown(screen.getByRole('tab', { name: 'Pay' }), { key: 'End' });
+  expect(screen.getByRole('tab', { name: 'Withdraw' })).toHaveFocus();
+  controller.dispose();
+});
