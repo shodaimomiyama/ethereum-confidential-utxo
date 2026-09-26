@@ -41,7 +41,23 @@ export function deriveKeyPair(ikm) {
   return { privateKey: hex(privateKey), publicKey: hex(x25519.getPublicKey(privateKey)) };
 }
 
+export function validateRecipientPublicKey(publicKey) {
+  if (typeof publicKey !== 'string' || !/^0x[0-9a-f]{64}$/.test(publicKey)) {
+    throw new Error('invalid X25519 recipient public key');
+  }
+  try {
+    const shared = x25519.getSharedSecret(Buffer.alloc(32, 1), b(publicKey));
+    if (shared.every(value => value === 0)) {
+      throw new Error('all-zero DH result');
+    }
+  } catch {
+    throw new Error('invalid X25519 recipient public key');
+  }
+  return true;
+}
+
 export function sealFixed({ recipientPublicKey, ikmE, info, plaintext, aad = '0x' }) {
+  validateRecipientPublicKey(recipientPublicKey);
   const ephemeral = deriveKeyPair(ikmE);
   const enc = b(ephemeral.publicKey);
   const sharedDH = Buffer.from(x25519.getSharedSecret(b(ephemeral.privateKey), b(recipientPublicKey)));
@@ -261,6 +277,16 @@ export async function generateHpkeCases() {
     invalid.push(rejection(label, stage, { ikmE: variantIkmE, plaintext: variantPlaintext },
       field, variant.packet));
   }
+  const invalidRecipientKeys = [
+    ['RECIPIENT-KEY-ZERO', '0x' + '00'.repeat(32)],
+    ['RECIPIENT-KEY-LOW-ORDER', '0x01' + '00'.repeat(31)],
+  ].map(([label, recipientPublicKey]) => ({
+    ...entry(label, 'sender-recipient-key', { recipientPublicKey, ikmE, info,
+      plaintext, aad: '0x' },
+    { decision: 'reject', packetCreated: false,
+      reason: 'invalid X25519 recipient public key' }),
+    baseCase: normal.id, mutatedField: 'recipientPublicKey',
+  }));
   const operationInput = { ...seed, outputs: [{ ...seed.outputs[0], packet: sealed.packet }] };
   const depositReceipt = await signReceiptInfo({ ...input, outputIndex: 0,
     value: '1', blinding: '0' }, ownerWallet, seed.chainId, seed.pool);
@@ -313,7 +339,7 @@ export async function generateHpkeCases() {
     source: transfer.id }];
   const withdrawal = await makeApplicationCase('WITHDRAW-FULL', withdrawalInput,
     ownerWallet, withdrawalContext, [], 'not-required-with-zero-outputs');
-  return { hpke: [rfc, normal, ...invalid],
+  return { hpke: [rfc, normal, ...invalid, ...invalidRecipientKeys],
     application: [deposit, transfer, withdrawal] };
 }
 
@@ -322,6 +348,9 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     throw new Error('Usage: node oracle-hpke.mjs --out <directory>');
   }
   const output = resolve(process.argv[3]);
+  if (output === resolve(fileURLToPath(new URL('../cases', import.meta.url)))) {
+    throw new Error('choose a separate output directory');
+  }
   mkdirSync(output, { recursive: true });
   const cases = await generateHpkeCases();
   writeFileSync(join(output, 'hpke.json'), JSON.stringify(cases.hpke, null, 2) + '\n');

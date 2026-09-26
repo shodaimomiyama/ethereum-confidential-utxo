@@ -413,5 +413,57 @@
     ],
     "baseCase": "VEC-07-RECEIPT-VALID",
     "mutatedField": "plaintext.r"
+  },
+  {
+    "id": "VEC-07-RECIPIENT-KEY-ZERO",
+    "profile": "hpke-receipt-v1",
+    "source": "docs/design.md#d-08-暗号化受領データと出力イベント",
+    "stage": "sender-recipient-key",
+    "input": {
+      "recipientPublicKey": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "ikmE": "0xb58032f1ea247e9ffc9a70ccefa5c72814101b3b2d53842bdcd460dc301284ca",
+      "info": "0x18bb869e828f7ebc62a5131c93bf35b9a6f865936b8213fb94c636cfff47084a",
+      "plaintext": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000",
+      "aad": "0x"
+    },
+    "expected": {
+      "decision": "reject",
+      "packetCreated": false,
+      "reason": "invalid X25519 recipient public key"
+    },
+    "oracle": "RFC 9180 labeled HKDF; Node 24 ChaCha20-Poly1305; @hpke/core 1.9.0 independent decryption",
+    "consumers": [
+      "#28",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-07-RECEIPT-VALID",
+    "mutatedField": "recipientPublicKey"
+  },
+  {
+    "id": "VEC-07-RECIPIENT-KEY-LOW-ORDER",
+    "profile": "hpke-receipt-v1",
+    "source": "docs/design.md#d-08-暗号化受領データと出力イベント",
+    "stage": "sender-recipient-key",
+    "input": {
+      "recipientPublicKey": "0x0100000000000000000000000000000000000000000000000000000000000000",
+      "ikmE": "0xb58032f1ea247e9ffc9a70ccefa5c72814101b3b2d53842bdcd460dc301284ca",
+      "info": "0x18bb869e828f7ebc62a5131c93bf35b9a6f865936b8213fb94c636cfff47084a",
+      "plaintext": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000",
+      "aad": "0x"
+    },
+    "expected": {
+      "decision": "reject",
+      "packetCreated": false,
+      "reason": "invalid X25519 recipient public key"
+    },
+    "oracle": "RFC 9180 labeled HKDF; Node 24 ChaCha20-Poly1305; @hpke/core 1.9.0 independent decryption",
+    "consumers": [
+      "#28",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-07-RECEIPT-VALID",
+    "mutatedField": "recipientPublicKey"
   }
 ]

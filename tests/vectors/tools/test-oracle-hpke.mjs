@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { CipherSuite, HkdfSha256 } from '@hpke/core';
 import { DhkemX25519HkdfSha256 } from '@hpke/dhkem-x25519';
 import { Chacha20Poly1305 } from '@hpke/chacha20poly1305';
 import { AbiCoder, Interface, TypedDataEncoder, id, keccak256 as ethersKeccak, recoverAddress } from 'ethers';
 import { bn254 } from '@noble/curves/bn254.js';
 import { buildOperation } from './oracle-abi.mjs';
-import { generateHpkeCases, validateReceipt } from './oracle-hpke.mjs';
+import { generateHpkeCases, validateReceipt, validateRecipientPublicKey, sealFixed } from './oracle-hpke.mjs';
 
 const root = new URL('../cases/', import.meta.url);
 const hpke = JSON.parse(readFileSync(new URL('hpke.json', root), 'utf8'));
@@ -53,7 +54,8 @@ test('fixed application packet derives info before operation ID', async () => {
 });
 
 test('cryptographic and post-decryption failures are distinct', async () => {
-  for (const entry of hpke.filter(item => item.expected.decision === 'reject')) {
+  for (const entry of hpke.filter(item => item.expected.decision === 'reject' &&
+    item.stage !== 'sender-recipient-key')) {
     const actual = await validateReceipt(entry.input, entry.input.packet);
     assert.equal(actual.decision, 'reject', entry.id);
     assert.equal(actual.stage, entry.stage, entry.id);
@@ -63,6 +65,29 @@ test('cryptographic and post-decryption failures are distinct', async () => {
   assert.equal(find('VEC-07-R-Q').stage, 'receipt-blinding');
   assert.equal(find('VEC-07-OWNER-CHANGED').stage, 'receipt-owner');
   assert.equal(find('VEC-07-COMMITMENT-CHANGED').stage, 'receipt-commitment');
+});
+
+test('sender rejects all-zero and low-order X25519 recipient keys before packet creation', async () => {
+  for (const id of ['VEC-07-RECIPIENT-KEY-ZERO', 'VEC-07-RECIPIENT-KEY-LOW-ORDER']) {
+    const entry = find(id);
+    assert.equal(entry.stage, 'sender-recipient-key');
+    assert.equal(entry.expected.decision, 'reject');
+    assert.equal(entry.expected.packetCreated, false);
+    assert.throws(() => validateRecipientPublicKey(entry.input.recipientPublicKey),
+      /invalid X25519 recipient public key/);
+    assert.throws(() => sealFixed(entry.input), /invalid X25519 recipient public key/);
+    const publicKey = await suite.kem.deserializePublicKey(bytes(entry.input.recipientPublicKey));
+    await assert.rejects(suite.createSenderContext({ recipientPublicKey: publicKey,
+      info: bytes(entry.input.info) }), /invalid private or public key received/);
+  }
+});
+
+test('HPKE generator CLI refuses the published cases directory', () => {
+  const result = spawnSync(process.execPath,
+    ['tests/vectors/tools/oracle-hpke.mjs', '--out', 'tests/vectors/cases'],
+    { encoding: 'utf8' });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /choose a separate output directory/);
 });
 
 test('application deposit has a valid balance proof for the same operation ID', () => {
