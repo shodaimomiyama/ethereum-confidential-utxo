@@ -36,7 +36,7 @@ it("AC-08: does not infer logical success or receipt ownership from outer receip
 });
 it("preserves failed and successful attempts while separately verifying operation success", () => {
   const first = trackAttempt(id, { txHash: hex(3), outer: "failed", failure: "OUTER_REVERT" }, []);
-  const result = trackAttempt(id, { txHash: hex(4), outer: "success", evidence: { context, checkpoint: point, event: success(), record: bound({ executed: true }), header: bound(point) } }, first.attempts);
+  const result = trackAttempt(id, { txHash: hex(4), outer: "success", evidence: { context, checkpoint: point, event: success(), record: bound({ executed: true }), header: bound(point) } }, first);
   expect(result.attempts.map(a => a.outer)).toEqual(["failed", "success"]);
   expect(result.operation).toBe("executed");
   expect(result.receipt).toBe("unconfirmed");
@@ -49,10 +49,10 @@ it("rejects incomplete or mismatched logical success evidence", () => {
 it("requires complete latest history even when isOperationExecuted is false", async () => {
   const h = history();
   vi.mocked(h.getOperations).mockResolvedValue({ complete: false, reason: "GAP" });
-  await expect(preflightSubmission(context, request, { history: h })).resolves.toBe("unconfirmed");
+  await expect(preflightSubmission(context, request, { history: h })).resolves.toMatchObject({ status: "unconfirmed" });
 });
 it("permits an explicit attempt only with complete pinned history and unspent inputs", async () => {
-  await expect(preflightSubmission(context, request, { history: history() })).resolves.toBe("ready");
+  await expect(preflightSubmission(context, request, { history: history() })).resolves.toMatchObject({ status: "ready" });
 });
 it.each(["missing", "hash", "spent", "same", "owner", "rpc"])("handles latest input %s", async mode => {
   const h = history();
@@ -61,16 +61,16 @@ it.each(["missing", "hash", "spent", "same", "owner", "rpc"])("handles latest in
   if (mode === "spent" || mode === "same") vi.mocked(h.getLatestUtxo).mockResolvedValue(bound({ exists: true, consumedBy: mode === "spent" ? hex(30) : id }));
   if (mode === "owner") vi.mocked(h.getLatestUtxo).mockResolvedValue(bound({ exists: true, owner: context.pool }));
   if (mode === "rpc") vi.mocked(h.getLatestUtxo).mockRejectedValue(new Error("secret"));
-  await expect(preflightSubmission(context, request, { history: h })).resolves.toBe(mode === "spent" ? "conflict" : "unconfirmed");
+  await expect(preflightSubmission(context, request, { history: h })).resolves.toMatchObject({ status: mode === "spent" ? "conflict" : "unconfirmed" });
 });
 it("requires event and record agreement for executed status", async () => {
   const h = history();
   vi.mocked(h.getLatestOperationSuccess).mockResolvedValue(bound({ executed: true }));
-  await expect(preflightSubmission(context, request, { history: h })).resolves.toBe("unconfirmed");
+  await expect(preflightSubmission(context, request, { history: h })).resolves.toMatchObject({ status: "unconfirmed" });
   vi.mocked(h.getOperations).mockResolvedValue(bound([success()]));
-  await expect(preflightSubmission(context, request, { history: h })).resolves.toBe("executed");
+  await expect(preflightSubmission(context, request, { history: h })).resolves.toMatchObject({ status: "executed" });
   vi.mocked(h.getLatestOperationSuccess).mockResolvedValue(bound({ executed: false }));
-  await expect(preflightSubmission(context, request, { history: h })).resolves.toBe("unconfirmed");
+  await expect(preflightSubmission(context, request, { history: h })).resolves.toMatchObject({ status: "unconfirmed" });
 });
 async function draft(): Promise<LocalDraft> {
   const recipient: RecipientInfo = { ...v.input, chainId: BigInt(v.input.chainId) };
@@ -113,7 +113,7 @@ it("AC-09: rejects restored draft ID, openings and signature tampering without l
 });
 it("stops restored drafts when synchronization is incomplete", async () => {
   const p = ports(); vi.mocked(p.history.getFinalizedCheckpoint).mockResolvedValue(null);
-  expect(await prepareSubmission(await draft(), p)).toEqual({ status: "unconfirmed" });
+  expect(await prepareSubmission(await draft(), p)).toMatchObject({ status: "unconfirmed" });
   expect(p.storage.saveDraft).not.toHaveBeenCalled();
 });
 it("matches restored input openings against fresh chain commitments", async () => {
@@ -121,16 +121,16 @@ it("matches restored input openings against fresh chain commitments", async () =
   const d = await buildOperation({ kind: 2, owner: account.address, amount: 10n, destination: account.address }, context, { randomSalt: () => new Uint8Array(32), inputs: [{ id: hex(2), owner: account.address, opening, commitment: commit(opening), checkpoint: point, status: "available", chainId: context.chainId, pool: context.pool }] });
   d.signature = await account.signTypedData(authorizationTypedData(context, d.request));
   const p = ports();
-  vi.spyOn(syncModule, "synchronize").mockResolvedValue({ status: "complete", checkpoint: point, availableWei: 10n, utxos: [{ id: hex(2), owner: account.address, opening, commitment: commit(opening), checkpoint: point, status: "available", chainId: context.chainId, pool: context.pool }] });
+  vi.spyOn(syncModule, "synchronize").mockResolvedValue({ status: "complete", receiptFailures: [], checkpoint: point, availableWei: 10n, utxos: [{ id: hex(2), owner: account.address, opening, commitment: commit(opening), checkpoint: point, status: "available", chainId: context.chainId, pool: context.pool }] });
   expect((await prepareSubmission(d, p)).status).toBe("ready");
   vi.mocked(p.history.getLatestUtxo).mockResolvedValue(bound({ exists: true, owner: account.address, commitment: commit({ ...opening, blinding: 3n }) }));
-  expect(await prepareSubmission(d, p)).toEqual({ status: "unconfirmed" });
+  expect(await prepareSubmission(d, p)).toMatchObject({ status: "unconfirmed" });
 });
 
 it("does not prepare from a synchronization checkpoint off the latest ancestry", async () => {
   const p = ports();
-  vi.spyOn(syncModule, "synchronize").mockResolvedValue({ status: "complete", checkpoint: { ...point, number: 9n, hash: hex(9) }, availableWei: 0n, utxos: [] });
-  expect(await prepareSubmission(await draft(), p)).toEqual({ status: "unconfirmed" });
+  vi.spyOn(syncModule, "synchronize").mockResolvedValue({ status: "complete", receiptFailures: [], checkpoint: { ...point, number: 9n, hash: hex(9) }, availableWei: 0n, utxos: [] });
+  expect(await prepareSubmission(await draft(), p)).toMatchObject({ status: "unconfirmed" });
 });
 it("rechecks the latest operation after a successful save before returning public data", async () => {
   const d = await draft(); const p = ports();
@@ -139,7 +139,7 @@ it("rechecks the latest operation after a successful save before returning publi
     vi.mocked(p.history.getOperations).mockResolvedValue(bound([success(d.request)]));
     return "saved";
   });
-  expect(await prepareSubmission(d, p)).toEqual({ status: "executed" });
+  expect(await prepareSubmission(d, p)).toEqual({ status: "executed", latest: { number: point.number, hash: point.hash } });
 });
 it.each(["no-header", "context", "success-hash", "reorg"])("fails closed for %s", async mode => {
   const h = history();
@@ -147,11 +147,11 @@ it.each(["no-header", "context", "success-hash", "reorg"])("fails closed for %s"
   if (mode === "context") vi.mocked(h.getContext).mockResolvedValue(bound({ ...context, chainId: 1n }));
   if (mode === "success-hash") vi.mocked(h.getLatestOperationSuccess).mockResolvedValue({ ...bound({ executed: false }), blockHash: hex(99) });
   if (mode === "reorg") vi.mocked(h.getCanonicalHeader).mockResolvedValue(bound({ number: point.number, hash: hex(99) }));
-  expect(await preflightSubmission(context, request, { history: h })).toBe("unconfirmed");
+  expect(await preflightSubmission(context, request, { history: h })).toMatchObject({ status: "unconfirmed" });
 });
 it("updates the same attempt without carrying prior logical success across uncertain history", () => {
   const before = trackAttempt(id, { txHash: hex(20), outer: "success", evidence: { context, checkpoint: point, event: success(), record: bound({ executed: true }), header: bound(point) } }, []);
-  const after = trackAttempt(id, { txHash: hex(20), outer: "unconfirmed" }, before.attempts);
+  const after = trackAttempt(id, { txHash: hex(20), outer: "unconfirmed", historyStatus: "uncertain" }, before);
   expect(after.operation).toBe("unconfirmed");
   expect(after.attempts).toHaveLength(1);
   expect(before.attempts[0]!.outer).toBe("success");
@@ -161,4 +161,26 @@ it("does not treat a mutated stored draft as confirmed persistence", async () =>
   const p = ports();
   p.storage.saveDraft.mockImplementation(async saved => { saved.request.salt = hex(999); return "saved"; });
   expect(await prepareSubmission(await draft(), p)).toEqual({ status: "storage-unknown" });
+});
+
+it("preserves adopted logical success when another outer attempt fails, and withdraws it on reorg", () => {
+  const before = trackAttempt(id, { txHash: hex(20), outer: "success", evidence: { context, checkpoint: point, event: success(), record: bound({ executed: true }), header: bound(point) } }, []);
+  const after = trackAttempt(id, { txHash: hex(21), outer: "failed" }, before);
+  expect(after.operation).toBe("executed");
+  expect(after.checkpoint).toEqual(point);
+  expect(after.successEvidence).toEqual(before.successEvidence);
+  expect(trackAttempt(id, { outer: "unconfirmed", historyStatus: "reorg" }, after).operation).toBe("unconfirmed");
+  expect(trackAttempt(id, { outer: "unconfirmed", historyStatus: "uncertain" }, after).operation).toBe("unconfirmed");
+});
+it("returns latest evidence separately from finality in preflight and preparation", async () => {
+  const p = ports();
+  const latest = { number: 11n, hash: hex(11) };
+  vi.mocked(p.history.getLatestHeader).mockResolvedValue(latest);
+  vi.mocked(p.history.getContext).mockImplementation(async cp => ({ complete: true, blockHash: cp.hash, value: context }));
+  vi.mocked(p.history.getOperations).mockImplementation(async (_from, cp) => ({ complete: true, blockHash: cp.hash, value: [] }));
+  vi.mocked(p.history.getLatestOperationSuccess).mockResolvedValue({ complete: true, blockHash: latest.hash, value: { executed: false } });
+  vi.mocked(p.history.getCanonicalHeader).mockImplementation(async (number, cp) => ({ complete: true, blockHash: cp.hash, value: { number, hash: number === 10n ? point.hash : latest.hash } }));
+  const d = await draft();
+  expect(await preflightSubmission(context, d.request, p)).toEqual({ status: "ready", latest });
+  expect(await prepareSubmission(d, p)).toMatchObject({ status: "ready", latest });
 });

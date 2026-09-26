@@ -8,10 +8,16 @@ import type { PublicSubmission } from "./operation.js";
 import { synchronize } from "./sync.js";
 import type { AttemptObservation, Checkpoint, Context, HistoryPort, LocalDraft, Observation, OperationRequest, OperationSuccessEvidence, OperationTracking, ReceiptKeyPort, StoragePort, SubmissionAttempt } from "./types.js";
 
-export type PreflightResult = "ready" | "executed" | "conflict" | "unconfirmed";
+export type LatestState = { number: bigint; hash: Hex };
+export type PreflightResult =
+  | { status: "ready"; latest: LatestState }
+  | { status: "executed" | "conflict"; latest: LatestState }
+  | { status: "unconfirmed"; latest?: LatestState };
 export type SubmissionPorts = { history: HistoryPort; storage: StoragePort; keys: ReceiptKeyPort };
-export type PreparedSubmission = { status: "ready"; submission: PublicSubmission } |
-  { status: Exclude<PreflightResult, "ready"> | "storage-unknown" | "invalid" };
+export type PreparedSubmission = { status: "ready"; latest: LatestState; submission: PublicSubmission } |
+  { status: "executed" | "conflict"; latest: LatestState } |
+  { status: "unconfirmed"; latest?: LatestState } |
+  { status: "storage-unknown" | "invalid" };
 const equal = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 function value<T>(observation: Observation<T>, point: Checkpoint): T {
   if (!observation.complete || !equal(observation.blockHash, point.hash)) throw new Error();
@@ -45,68 +51,74 @@ function publicAttempt(attempt: SubmissionAttempt): SubmissionAttempt {
     ...(attempt.blockHash === undefined ? {} : { blockHash: attempt.blockHash }),
     ...(attempt.failure === undefined ? {} : { failure: attempt.failure }) };
 }
-/** Re-evaluates logical success from current adopted evidence; prior attempts are historical only.
+/** Preserves adopted success independently of outer attempts until history invalidation.
  * Evidence observations rely on the HistoryPort completeness/canonical-ancestry contract.
  * The checkpoint carries finality mode; an outer receipt supplies no such assertion.
  */
-export function trackAttempt(id: Hex, observation: AttemptObservation, prior: SubmissionAttempt[]): OperationTracking {
-  const attempts = prior.map(publicAttempt);
+export function trackAttempt(id: Hex, observation: AttemptObservation, prior: SubmissionAttempt[] | OperationTracking): OperationTracking {
+  const previous = Array.isArray(prior) ? undefined : prior;
+  const attempts = (Array.isArray(prior) ? prior : prior.attempts).map(publicAttempt);
   const attempt = publicAttempt(observation);
   const index = attempt.txHash === undefined ? -1 : attempts.findIndex(a => a.txHash !== undefined && equal(a.txHash, attempt.txHash!));
   if (index < 0) attempts.push(attempt);
   else attempts[index] = attempt;
-  const confirmed = observation.evidence && verifiedSuccess(id, observation.evidence);
+  const evidence = observation.historyStatus ? undefined : observation.evidence ??
+    (previous && equal(previous.operationId, id) ? previous.successEvidence : undefined);
+  const confirmed = evidence && verifiedSuccess(id, evidence);
   return { operationId: id, attempts, operation: confirmed ? "executed" : "unconfirmed", receipt: "unconfirmed",
-    ...(confirmed ? { checkpoint: structuredClone(observation.evidence!.checkpoint) } : {}) };
+    ...(confirmed ? { checkpoint: structuredClone(evidence!.checkpoint), successEvidence: structuredClone(evidence!) } : {}) };
 }
 
 async function preflight(context: Context, request: OperationRequest, history: HistoryPort, openings?: Opening[], anchor?: Checkpoint): Promise<PreflightResult> {
+  let latestState: LatestState | undefined;
+  const unconfirmed = (): PreflightResult => ({ status: "unconfirmed", ...(latestState ? { latest: latestState } : {}) });
   try {
     const ctx = structuredClone(context);
     const req = structuredClone(request);
     validateOperationShape(req);
     const id = operationId(ctx, req);
     const latest = await history.getLatestHeader();
-    if (!latest || latest.number < ctx.deploymentBlock) return "unconfirmed";
+    if (!latest || latest.number < ctx.deploymentBlock) return unconfirmed();
+    latestState = { number: latest.number, hash: latest.hash };
     const point: Checkpoint = Object.freeze({ ...structuredClone(latest), mode: ctx.finalityMode });
     if (anchor) {
-      if (anchor.number > point.number) return "unconfirmed";
+      if (anchor.number > point.number) return unconfirmed();
       const canonical = value(await history.getCanonicalHeader(anchor.number, point), point);
-      if (canonical.number !== anchor.number || !equal(canonical.hash, anchor.hash)) return "unconfirmed";
+      if (canonical.number !== anchor.number || !equal(canonical.hash, anchor.hash)) return unconfirmed();
     }
-    if (!sameContext(ctx, value(await history.getContext(point), point))) return "unconfirmed";
+    if (!sameContext(ctx, value(await history.getContext(point), point))) return unconfirmed();
     const record = await history.getLatestOperationSuccess(id, point);
     const success = value(record, point);
     const operations = value(await history.getOperations(ctx.deploymentBlock, point), point);
     const matches = operations.filter(o => equal(operationId(ctx, o.request), id) || (o.success && equal(o.success.operationId, id)));
-    let result: PreflightResult = "ready";
+    let result: "ready" | "executed" | "conflict" = "ready";
     if (success.executed) {
-      if (matches.length !== 1) return "unconfirmed";
+      if (matches.length !== 1) return unconfirmed();
       const event = matches[0]!;
       if (!event.success || !verifiedSuccess(id, { context: ctx, checkpoint: point, event, record,
-        header: await history.getCanonicalHeader(event.success.blockNumber, point) })) return "unconfirmed";
+        header: await history.getCanonicalHeader(event.success.blockNumber, point) })) return unconfirmed();
       result = "executed";
     } else {
-      if (matches.length !== 0 || success.operation) return "unconfirmed";
+      if (matches.length !== 0 || success.operation) return unconfirmed();
       for (let i = 0; i < req.inputIds.length; i++) {
         const state = value(await history.getLatestUtxo(req.inputIds[i]!, point), point);
-        if (!state.exists) return "unconfirmed";
+        if (!state.exists) return unconfirmed();
         if (state.consumedBy) {
-          if (equal(state.consumedBy, id)) return "unconfirmed";
+          if (equal(state.consumedBy, id)) return unconfirmed();
           result = "conflict";
           continue;
         }
-        if (!state.owner || !equal(state.owner, req.owner) || !state.commitment) return "unconfirmed";
+        if (!state.owner || !equal(state.owner, req.owner) || !state.commitment) return unconfirmed();
         if (openings) {
           const c = commit(openings[i]!);
-          if (c.x !== state.commitment.x || c.y !== state.commitment.y) return "unconfirmed";
+          if (c.x !== state.commitment.x || c.y !== state.commitment.y) return unconfirmed();
         }
       }
     }
     const end = value(await history.getCanonicalHeader(point.number, point), point);
-    if (end.number !== point.number || !equal(end.hash, point.hash)) return "unconfirmed";
-    return result;
-  } catch { return "unconfirmed"; }
+    if (end.number !== point.number || !equal(end.hash, point.hash)) return unconfirmed();
+    return { status: result, latest: latestState };
+  } catch { return unconfirmed(); }
 }
 /** Ready permits an explicit attempt at this pinned state; it never proves non-submission.
  * Latest-state execution prevents resubmission but is not a finalized-success assertion.
@@ -153,7 +165,7 @@ export async function prepareSubmission(signedDraft: LocalDraft, ports: Submissi
     freezeTree(saved);
     if (await ports.storage.saveDraft(saved) !== "saved") return { status: "storage-unknown" };
   } catch { return { status: "storage-unknown" }; }
-  const status = await preflight(draft.context, draft.request, ports.history, draft.inputOpenings, synced.checkpoint);
-  if (status === "ready" && draft.request.inputIds.some(id => synced.utxos.find(u => equal(u.id, id))?.status !== "available")) return { status: "unconfirmed" };
-  return status === "ready" ? { status, submission } : { status };
+  const result = await preflight(draft.context, draft.request, ports.history, draft.inputOpenings, synced.checkpoint);
+  if (result.status === "ready" && draft.request.inputIds.some(id => synced.utxos.find(u => equal(u.id, id))?.status !== "available")) return { status: "unconfirmed", latest: result.latest };
+  return result.status === "ready" ? { ...result, submission } : result;
 }

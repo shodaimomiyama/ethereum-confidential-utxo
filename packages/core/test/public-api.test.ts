@@ -4,10 +4,10 @@ import { hexToBytes } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import {
   authorizeOperation, buildOperation, inspectReceipt, operationId, outputId,
-  preflightSubmission, prepareSubmission, synchronize,
+  preflightSubmission, prepareSubmission, synchronize, recipientInfoTypedData, verifyRecipientInfo,
   type Checkpoint, type Context, type HistoryPort, type LocalDraft,
   type ObservedOperation, type OperationRequest, type ReceiptKeyPort,
-  type RecipientInfo, type SignerPort, type StoragePort,
+  type RecipientInfo, type RecipientInfoSignerPort, type SignerPort, type StoragePort,
 } from "@confidential-utxo/core";
 
 // Public test keys and recipient signature from the independent #35 application vector.
@@ -87,7 +87,7 @@ it("AC-02/05/10: VEC-07-APPLICATION-DEPOSIT recipient supports public-only build
   const { draft, observed } = await deposit(f);
   expect(f.calls).toEqual(["sync", "save", "preflight"]);
   expect(f.saved).toEqual([draft]);
-  expect(await preflightSubmission(context, draft.request, f)).toBe("executed");
+  expect(await preflightSubmission(context, draft.request, f)).toMatchObject({ status: "executed" });
   const checkpoint = (await f.history.getFinalizedCheckpoint())!;
   // Receiver gets public history and its own key only; no draft/openings/storage.
   const received = await inspectReceipt(observed, 0, account.address, keys, {
@@ -101,7 +101,7 @@ it("AC-02/05/10: VEC-07-APPLICATION-DEPOSIT recipient supports public-only build
   expect(received.utxo.opening).toEqual(draft.openings[0]);
   expect(received.utxo.opening.amount).toBe(10n);
   const synced = await synchronize(context, { history: f.history, keys, owners: [account.address] });
-  expect(synced).toEqual({ status: "complete", checkpoint, availableWei: 10n, utxos: [received.utxo] });
+  expect(synced).toEqual({ status: "complete", checkpoint, receiptFailures: [], availableWei: 10n, utxos: [received.utxo] });
   expect(await synchronize(context, { history: f.history, keys, owners: [account.address] }, synced)).toEqual(synced);
   if (synced.status !== "complete") throw new Error("sync incomplete");
   const transfer = await sign(await buildOperation({ kind: 1, owner: account.address, amount: 3n,
@@ -133,8 +133,36 @@ it.each(["executed", "conflict"] as const)("AC-08/09/10: restored non-deposit pr
   const restored = structuredClone(f.saved.at(-1)!);
   expect((await prepareSubmission(restored, f)).status).toBe("ready");
   f.execute(outcome === "executed" ? draft.request : { ...draft.request, salt: hash(99) });
-  expect(await prepareSubmission(restored, f)).toEqual({ status: outcome });
+  expect(await prepareSubmission(restored, f)).toEqual({ status: outcome, latest: { number: 3n, hash: hash(3) } });
   expect(f.calls).toEqual(Array.from({ length: 3 }, () => ["sync", "save", "preflight"]).flat());
   const after = await synchronize(context, { history: f.history, keys, owners: [account.address] });
   expect(after).toMatchObject({ status: "complete", availableWei: 0n, utxos: [{ status: "spent" }] });
+});
+
+it("constructs and verifies RecipientInfo through public exports", async () => {
+  const typed = recipientInfoTypedData(context, recipient, account.address);
+  expect(typed.primaryType).toBe("RecipientInfo");
+  const recipientSigner: RecipientInfoSignerPort = { signTypedData: data => account.signTypedData(data) };
+  const signature = await recipientSigner.signTypedData(typed);
+  await expect(verifyRecipientInfo(context, { ...recipient, signature }, account.address)).resolves.toBeUndefined();
+  expect(() => recipientInfoTypedData(context, { ...recipient, receivePublicKey: "0x" }, account.address)).toThrow();
+  expect(() => recipientInfoTypedData(context, { ...recipient, recipientInfoVersion: 2 as 1 }, account.address)).toThrow();
+  expect(() => recipientInfoTypedData(context, recipient, context.pool)).toThrow();
+});
+it("keeps valid funds usable alongside undecryptable on-chain dust", async () => {
+  const f = fixture();
+  await deposit(f);
+  const dust = await buildOperation({ kind: 0, owner: account.address, amount: 1n, recipient }, context,
+    { inputs: [], randomSalt: () => new Uint8Array(32).fill(9) });
+  const malformed = structuredClone(dust.request);
+  malformed.outputs[0]!.packet = `0x${"00".repeat(112)}`;
+  const bad = f.execute(malformed);
+  const synced = await synchronize(context, { ...f, owners: [account.address] });
+  expect(synced.status).toBe("complete");
+  if (synced.status !== "complete") throw new Error("sync incomplete");
+  expect(synced.availableWei).toBe(10n);
+  expect(synced.receiptFailures).toEqual([{ outputId: bad.outputLogs[0]!.outputId, status: "inconsistent", reason: "DECRYPT" }]);
+  const withdrawal = await sign(await buildOperation({ kind: 2, owner: account.address, amount: 10n, destination: account.address }, context,
+    { inputs: synced.utxos, randomSalt: () => new Uint8Array(32).fill(8) }));
+  expect((await prepareSubmission(withdrawal, f)).status).toBe("ready");
 });

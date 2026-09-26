@@ -1,11 +1,13 @@
 import type { Address, Hex } from "viem";
 import { operationId, outputId, validateOperationShape } from "./encoding.js";
+import type { ReceiptFailure } from "./receipt.js";
 import { inspectReceipt } from "./receipt.js";
 import type { Checkpoint, Context, HistoryPort, Observation, ObservedOperation, OperationSuccess, OwnedUtxo, ReceiptKeyPort, UtxoState } from "./types.js";
 
+export type OutputReceiptFailure = ReceiptFailure & { outputId: Hex };
 export type StaleSnapshot = { status: "stale"; checkpoint: Checkpoint; utxos: OwnedUtxo[] };
 export type SyncResult =
-  | { status: "complete"; checkpoint: Checkpoint; utxos: OwnedUtxo[]; availableWei: bigint }
+  | { status: "complete"; checkpoint: Checkpoint; utxos: OwnedUtxo[]; receiptFailures: OutputReceiptFailure[]; availableWei: bigint }
   | { status: "unconfirmed"; checkpoint?: Checkpoint; previous?: StaleSnapshot; reason: "NO_FINALITY" | "CONTEXT" | "INCOMPLETE_HISTORY" | "INCONSISTENT_HISTORY" | "RECEIPT" | "RPC" };
 export type SyncPorts = { history: HistoryPort; keys: ReceiptKeyPort; owners: Address[] };
 type Reason = Extract<SyncResult, { status: "unconfirmed" }>["reason"];
@@ -107,6 +109,7 @@ export async function synchronize(context: Context, ports: SyncPorts, previous?:
     }
     const bound = <T>(v: T): Observation<T> => ({ complete: true, blockHash: point!.hash, value: v });
     const utxos: OwnedUtxo[] = [];
+    const receiptFailures: OutputReceiptFailure[] = [];
     for (const [id, entry] of created) {
       const { observed, index, consumedBy } = entry;
       const output = observed.request.outputs[index]!;
@@ -120,13 +123,16 @@ export async function synchronize(context: Context, ports: SyncPorts, previous?:
         utxo: bound(state),
         ...(consumedBy ? { consumingOperation: bound(successes.get(consumedBy.toLowerCase())!) } : {}),
       }, point);
-      if (receipt.status !== "available" && receipt.status !== "spent") reject("RECEIPT");
+      if ("reason" in receipt) {
+        if (receipt.reason !== "DECRYPT") reject("RECEIPT");
+        receiptFailures.push({ outputId: id as Hex, ...receipt });
+      }
       if ("utxo" in receipt) utxos.push(receipt.utxo);
     }
     // Recheck canonicality after asynchronous key access and all state reads.
     const end = value(await history.getCanonicalHeader(point.number, point), point);
     if (end.number !== point.number || !equal(end.hash, point.hash)) reject("INCONSISTENT_HISTORY");
-    return { status: "complete", checkpoint: point, utxos, availableWei: utxos.reduce((sum, coin) => sum + (coin.status === "available" ? coin.opening.amount : 0n), 0n) };
+    return { status: "complete", checkpoint: point, utxos, receiptFailures, availableWei: utxos.reduce((sum, coin) => sum + (coin.status === "available" ? coin.opening.amount : 0n), 0n) };
   } catch (error) {
     return { status: "unconfirmed", ...(point ? { checkpoint: point } : {}), ...(old ? { previous: old } : {}), reason: error instanceof SyncFailure ? error.reason : "RPC" };
   }

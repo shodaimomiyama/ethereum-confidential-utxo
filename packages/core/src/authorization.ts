@@ -50,7 +50,7 @@ async function verifySignature(typed: TypedDataDefinition, owner: Address, signa
     throw new CoreFailure("SIGNATURE_REJECTED", "authorization.signature");
   }
 }
-export async function verifyRecipientInfo(context: AuthorizationContext, info: RecipientInfo, expectedOwner: Address): Promise<void> {
+export function recipientInfoTypedData(context: AuthorizationContext, info: Omit<RecipientInfo, "signature">, expectedOwner: Address) {
   const recipientDomain = domain(context);
   requireInput(bytes(info.owner, 20) && bytes(expectedOwner, 20) && bytes(info.pool, 20));
   requireInput(info.owner.toLowerCase() !== zeroAddress && info.owner.toLowerCase() === expectedOwner.toLowerCase());
@@ -64,7 +64,14 @@ export async function verifyRecipientInfo(context: AuthorizationContext, info: R
     ] },
     message: { owner: info.owner, receivePublicKey: info.receivePublicKey, receiptFormat: info.receiptFormat, recipientInfoVersion: info.recipientInfoVersion },
   } as const;
-  await verifySignature(typed, info.owner, info.signature);
+  return typed;
+}
+export type RecipientInfoTypedData = ReturnType<typeof recipientInfoTypedData>;
+export interface RecipientInfoSignerPort {
+  signTypedData(data: RecipientInfoTypedData): Promise<Hex>;
+}
+export async function verifyRecipientInfo(context: AuthorizationContext, info: RecipientInfo, expectedOwner: Address): Promise<void> {
+  await verifySignature(recipientInfoTypedData(context, info, expectedOwner), info.owner, info.signature);
 }
 export function authorizationTypedData(context: AuthorizationContext, request: OperationRequest): OperationAuthorizationTypedData {
   try {

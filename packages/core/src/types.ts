@@ -154,10 +154,13 @@ export type AttemptObservation = SubmissionAttempt & {
   /** A label alone never establishes success. */
   operation?: "unconfirmed" | "executed";
   evidence?: OperationSuccessEvidence;
+  /** Explicitly withdraw adopted success when its history is no longer reliable. */
+  historyStatus?: "reorg" | "uncertain";
 };
 export type OperationTracking = {
   operationId: Hex;
   attempts: SubmissionAttempt[];
+  successEvidence?: OperationSuccessEvidence;
   operation: "executed" | "unconfirmed";
   checkpoint?: Checkpoint;
   /** Receipt ownership is established separately through inspectReceipt/synchronize. */

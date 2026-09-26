@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { hashDomain, hashTypedData, recoverTypedDataAddress, zeroAddress } from "viem";
 import type { Address, Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { authorizationTypedData, authorizeOperation, CoreFailure, verifyOperationAuthorization, verifyRecipientInfo } from "../src/index.js";
+import { recipientInfoTypedData, authorizationTypedData, authorizeOperation, CoreFailure, verifyOperationAuthorization, verifyRecipientInfo } from "../src/index.js";
 import type { OperationRequest, RecipientInfo } from "../src/index.js";
 
 type Vector = { id: string; input: { chainId: string; pool: Address; owner: Address; operationId: Hex; signature: Hex; receivePublicKey: Hex; receiptFormat: 1; recipientInfoVersion: 1; testOnlyPrivateKey: Hex }; expected: { decision: string; digest: Hex; domainSeparator: { hash: Hex }; recoveredOwner: Address } };
@@ -154,4 +154,8 @@ it("applies canonical signature constraints to recipient information too", async
   ] as Hex[]) {
     await expect(verifyRecipientInfo(context, { ...original, signature }, account.address)).rejects.toMatchObject({ code: "SIGNATURE_REJECTED" });
   }
+});
+
+it("constructs the independently fixed RecipientInfo digest for signing", () => {
+  expect(hashTypedData(recipientInfoTypedData(context, recipient(), recipientVector.input.owner))).toBe(recipientVector.expected.digest);
 });

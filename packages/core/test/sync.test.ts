@@ -93,7 +93,6 @@ const failures: [string, (f: Fixture) => void][] = [
   ["contradictory spend", f => { const get = f.history.getUtxo; f.history.getUtxo = async (...args) => { const state = await get(...args); if (state.complete) delete state.value.consumedBy; return state; }; }],
   ["unknown consuming operation", f => { const get = f.history.getUtxo; f.history.getUtxo = async (...args) => { const state = await get(...args); if (state.complete) state.value.consumedBy = hash("ff"); return state; }; }],
   ["missing key", f => { f.keys.getKey = async () => { throw new Error("private key detail"); }; }],
-  ["wrong key", f => { f.keys.getKey = async () => new Uint8Array(32).fill(1); }],
   ["missing ancestor creation", f => { f.operations.shift(); }],
   ["reorg during synchronization", f => { const get = f.history.getCanonicalHeader; f.history.getCanonicalHeader = async (number, point) => number === point.number ? { complete: false, reason: "HASH_MISMATCH" } : get(number, point); }],
 ];
@@ -188,4 +187,14 @@ it("rejects a second operation consuming an already consumed input", async () =>
 it("rejects an empty owner scope instead of claiming a zero wallet balance", async () => {
   const f = await fixture();
   expect(await synchronize(context, { ...f, owners: [] })).toEqual({ status: "unconfirmed", reason: "CONTEXT" });
+});
+
+it("preserves per-output failure when keys cannot decrypt, excluding those outputs from funds", async () => {
+  const f = await fixture();
+  f.keys.getKey = async () => new Uint8Array(32).fill(1);
+  const result = await synchronize(context, f);
+  expect(result).toMatchObject({ status: "complete", availableWei: 0n, utxos: [] });
+  if (result.status !== "complete") throw new Error("history incomplete");
+  expect(result.receiptFailures).toHaveLength(2);
+  expect(result.receiptFailures.every(r => r.reason === "DECRYPT")).toBe(true);
 });

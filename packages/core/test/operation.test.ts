@@ -139,3 +139,24 @@ it("normalizes secret-bearing CoreFailure from the salt callback", async () => {
     expect(JSON.stringify(error)).not.toContain(secret);
   });
 });
+
+it("AC-02: builds real M deposit, two-input 2M full withdrawal and partial withdrawal", async () => {
+  const M = 1n << 64n;
+  const deposit = await buildOperation({ kind: 0, owner: account.address, amount: M, recipient: recipient() }, context, { randomSalt: salt, inputs: [] });
+  expect(deposit.openings[0]!.amount).toBe(M);
+  expect(deposit.rangeProofs).toHaveLength(0);
+  const inputs = [coin(M), { ...coin(M), id: `0x${"02".repeat(32)}` as Hex }];
+  const full = await buildOperation({ kind: 2, owner: account.address, amount: 2n * M, destination: account.address }, context, { randomSalt: salt, inputs });
+  expect(full.request.w).toBe(2n * M);
+  expect(full.request.inputIds).toHaveLength(2);
+  expect(full.request.outputs).toEqual([]);
+  expect(full.rangeProofs).toEqual([]);
+  const partial = await buildOperation({ kind: 2, owner: account.address, amount: M + 1n, destination: account.address, changeRecipient: recipient() }, context, { randomSalt: salt, inputs });
+  expect(partial.request.w).toBe(M + 1n);
+  expect(partial.openings.map(o => o.amount)).toEqual([M - 1n]);
+  expect(partial.rangeProofs).toHaveLength(1);
+  for (const draft of [deposit, full, partial]) {
+    expect(draft.balanceProof).toHaveProperty("s");
+    expect(draft.operationId).toBe(operationId(context, draft.request));
+  }
+});

@@ -63,9 +63,9 @@ Anvilの初期アカウントと鍵はローカルテスト専用。実鍵、RPC
 
 ## Issue #29: 共通クライアント処理の検証入口
 
-`packages/core` の公開入口は `@confidential-utxo/core`。実行コードも型もこのルートからimportする。`buildOperation` で入力選択・受取情報照合・実暗号の出力と証明を作り、`authorizeOperation` に `SignerPort` を渡して署名する。署名済みの `LocalDraft` は秘密の開示値を含むため、公開要求や通常ログへ出さない。`prepareSubmission` は復元状態を同期し直し、`StoragePort.saveDraft` の保存確認後に最新履歴を照合し、`ready` のときだけ公開 `submission` を返す。初回と明示的な再提出の両方で呼ぶ。実際の送信は呼出側が行う。`preflightSubmission` 単独では保存を保証せず、`toPublicSubmission` 単独では保存・同期・最新状態の照合を保証しない。
+`packages/core` の公開入口は `@confidential-utxo/core`。実行コードも型もこのルートからimportする。`recipientInfoTypedData(context, unsignedInfo, expectedOwner)` が返す検証済みの署名対象を `RecipientInfoSignerPort.signTypedData` へ渡し、署名を付けた情報を `verifyRecipientInfo` で照合する。操作認可用の `SignerPort` とはprimary typeが異なる。`buildOperation` で入力選択・受取情報照合・実暗号の出力と証明を作り、`authorizeOperation` に `SignerPort` を渡して署名する。署名済みの `LocalDraft` は秘密の開示値を含むため、公開要求や通常ログへ出さない。`prepareSubmission` は復元状態を同期し直し、`StoragePort.saveDraft` の保存確認後に最新履歴を照合し、`ready` のときだけ公開 `submission` を返す。初回と明示的な再提出の両方で呼ぶ。`preflightSubmission` は `{ status, latest: { number, hash } }` を返し、`prepareSubmission` も最新照合後の結果へ同じ `latest` を付ける。`latest` は確定を主張せず、同期の確定点 `checkpoint` と区別する。確認不能でも最新点を取得済みなら、その点を返す。実際の送信は呼出側が行う。`preflightSubmission` 単独では保存を保証せず、`toPublicSubmission` 単独では保存・同期・最新状態の照合を保証しない。
 
-`inspectReceipt` は送信者の作成状態を受け取らず、公開履歴と `ReceiptKeyPort` で受領を確認する。`synchronize` は `HistoryPort` から採用した確定点の全履歴を再構築し、本人の利用可能残高を返す。履歴に欠落や不整合がある場合は `unconfirmed` とし、以前の状態は利用可能残高を持たない `stale` として保持する。履歴adapterは範囲全体の取得、ブロックhashへの固定、正準祖先の照合を保証する必要がある。`trackAttempt` では外側transactionの結果、論理操作の成功、受領を区別する。
+`inspectReceipt` は送信者の作成状態を受け取らず、公開履歴と `ReceiptKeyPort` で受領を確認する。`synchronize` は `HistoryPort` から採用した確定点の全履歴を再構築し、本人の利用可能残高を返す。履歴・状態が整合していてもpacketを復号・検証できない出力は、出力ID付きの `receiptFailures` に残し、`utxos` と利用可能残高から除外する。他の正常な資金の同期や提出準備は続けられる。履歴に欠落や不整合がある場合は `unconfirmed` とし、以前の状態は利用可能残高を持たない `stale` として保持する。履歴adapterは範囲全体の取得、ブロックhashへの固定、正準祖先の照合を保証する必要がある。`trackAttempt` では外側transactionの結果、論理操作の成功、受領を区別する。初回は第三引数に `[]`、次回からは前回の `OperationTracking` 全体を渡す。採用済みの `successEvidence` は別試行の失敗では消さず、再編成を検出したら `historyStatus: "reorg"`、採用履歴を確認できなければ `historyStatus: "uncertain"` を明示して成功判定を撤回する。
 
 Node.js 24.21.0 / pnpm 10.34.5で、ルートから次を実行する。coreのテストと型検査は公開パッケージを検証するため、実行前に自身をビルドする。
 
