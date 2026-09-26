@@ -5,3 +5,6 @@ export { createReservationPort, type LiveReservationPort, type LiveSavedReservat
 export { encodePaymentPrivateRecord, decodePaymentPrivateRecord, sealPaymentPrivateRecord, openPaymentPrivateRecord,
   appendPaymentAuthorization, createPaymentRecordEncryptor, type PaymentPrivateRecord } from './payment-record.js';
 export { createScopedPaymentClient, type ScopedPaymentDependencies, type PaymentManifestLocation } from './payment-ports.js';
+export { createDeploymentResolver, type BrowserDeployment, type ServiceDeploymentConfig,
+  type VerifiedConnectionEvidence } from './deployment.js';
+export { createScopedEthereumBridge, type ScopedEthereumBridge, type ScopedEthereumDependencies } from './ethereum.js';
