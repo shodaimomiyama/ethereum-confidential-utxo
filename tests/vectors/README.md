@@ -10,7 +10,7 @@ macOS ARM64 で Node.js 24.21.0、pnpm 10.34.5、Python 3.13.7 を使用しま�
 
 ```sh
 cd tests/vectors
-corepack pnpm install --frozen-lockfile
+corepack pnpm install --ignore-workspace --frozen-lockfile
 cd ../..
 python3 -m venv tests/vectors/.cache/venv
 tests/vectors/.cache/venv/bin/python -m pip install -r tests/vectors/tools/requirements.txt
@@ -57,7 +57,7 @@ node tests/vectors/tools/oracle-storage.mjs --out tests/vectors/.cache/regenerat
 - VEC-07 は [RFC 9180 Appendix A.2.1](https://www.rfc-editor.org/rfc/rfc9180.html#appendix-A.2.1) の既知値を基準に、別経路の HPKE 復号で packet を検査します。入金、釣銭付き送金、全額出金は同じ操作内で公開入力、packet、operationId、署名、必要な証明、イベントを追跡できます。公開試験用秘密は fixture 内だけで使います。
 - VEC-08 は [RFC 7914](https://www.rfc-editor.org/rfc/rfc7914.html) の scrypt 既知値と、Python `hashlib.scrypt`/PyCryptodome AES-GCM を独立照合に使います。生 header bytes を AAD に使います。内側 wallet schema と運用上の保存保証は #31 の責務です。
 
-Pool の `deposit`・`transfer`・`withdraw` は設計書では論理 ABI です。具体的な Solidity 宣言と selector は #27 が固定するため、このデータは現時点でその値を断定しません。`verify` と `verifyBalance` の宣言・selector・完全 calldata は固定済みです。ここでの成功は正式な Solidity/TypeScript 実装、状態遷移、同期や暗号学的健全性の証明を意味しません。
+Pool の `deposit`・`transfer`・`withdraw` の具体的な Solidity 宣言と selector は #27 の `IPool.sol` で固定し、`test-pool-abi.mjs` が独立したethers ABI宣言と比較します。`pool-operations.json` の25件は固定のローカルchain ID・Poolアドレスに対して、公開試験鍵による実署名とv3範囲証明を持ちます。非ゼロblindingによる収支証明、送金先・釣銭・出金残額の再使用、出金callbackとPool自己宛ても含みます。`POOL_VECTOR_PYTHON=tests/vectors/.cache/venv/bin/python pnpm fixture:pool` で全ケースを一時再生成し、保存済みJSONと `contracts/test/fixtures/pool-calldata.json` に照合します。Pool専用の追加packetは112 byteの公開試験データであり、HPKE復号可能性の証拠は既存の `application-operation.json` と #36 の結合試験で扱います。
 
 ## 引渡し
 
@@ -65,4 +65,4 @@ Pool の `deposit`・`transfer`・`withdraw` は設計書では論理 ABI です
 
 ## 実行記録
 
-2026-09-27、Darwin arm64、Node.js 24.21.0、pnpm 10.34.5、Python 3.13.7、pycryptodome 3.23.0。依存版・ライセンス・取得元と生成器の hash は `manifest.json` にあります。185 ケース・13 ファイルを対象に、Python の一括テスト 38 件、Node の一括テスト 31 件、`check.py`、`check_coverage.py`、`verify_storage.py`、上記の別出力再生成と全 13 ファイルの byte 比較を実施し、すべて終了コード 0・差分なしでした。Ubuntu と CI は未実行です。
+2026-09-27、Darwin arm64、Node.js 24.21.0、pnpm 10.34.5、Python 3.13.7、pycryptodome 3.23.0。依存版・ライセンス・取得元と生成器の hash は `manifest.json` にあります。#35 の初期記録では185 ケース・13 ファイルを対象に、Python の一括テスト 38 件、Node の一括テスト 31 件、`check.py`、`check_coverage.py`、`verify_storage.py`、上記の別出力再生成と全 13 ファイルの byte 比較を実施し、すべて終了コード 0・差分なしでした。#27 の追加後は214ケースとなり、Poolの25操作は `test_oracle_pool_proofs.py`、`test-pool-operation-fixtures.mjs`、`test-pool-abi.mjs` と `pnpm fixture:pool` で照合します。Ubuntu と CI は未実行です。

@@ -6,9 +6,11 @@
     "node": "24.21.0"
   },
   "scripts": {
+    "check:contracts": "tsc --noEmit -p tsconfig.contracts.json",
+    "test:contracts": "vitest run packages/uniswap apps/uniswap-web",
     "fixture:verifier": "node scripts/generate-verifier-fixtures.mjs",
     "build": "node scripts/check-tools.mjs && forge build --root contracts && node scripts/export-environment-artifact.mjs && tsc --noEmit -p tsconfig.tools.json && pnpm --filter @confidential-utxo/crypto build",
-    "test": "node scripts/check-tools.mjs && forge build --root contracts && node --test tests/environment/check-tools.test.mjs tests/environment/entrypoints.test.mjs tests/environment/verifier-artifact-guard.test.mjs && forge test --root contracts && vitest run tests/environment/artifact-guard.test.mjs && pnpm --filter @confidential-utxo/crypto test",
+    "test": "node scripts/check-tools.mjs && forge build --root contracts && node --test tests/environment/check-tools.test.mjs tests/environment/entrypoints.test.mjs tests/environment/verifier-artifact-guard.test.mjs tests/environment/pool-artifact-guard.test.mjs tests/environment/pool-deployment.test.mjs && forge test --root contracts && vitest run tests/environment/artifact-guard.test.mjs && pnpm --filter @confidential-utxo/crypto test",
     "check": "tsc --noEmit -p tsconfig.tools.json && forge fmt --check --root contracts && pnpm --filter @confidential-utxo/crypto check",
     "interop:crypto": "node scripts/crypto-interop.mjs",
     "artifact:environment": "node scripts/export-environment-artifact.mjs",
@@ -23,7 +25,12 @@
     "check:verifier": "node scripts/verify-verifier-artifact.mjs",
     "measure:verifier": "node scripts/measure-verifier.mjs",
     "smoke:rpc": "node scripts/check-tools.mjs && node scripts/run-environment-smoke.mjs",
-    "smoke:formal": "sh formal/environment/run-smoke.sh"
+    "smoke:formal": "sh formal/environment/run-smoke.sh",
+    "fixture:pool": "node scripts/generate-pool-fixtures.mjs",
+    "artifact:pool": "node scripts/export-pool-artifact.mjs",
+    "check:pool": "node scripts/verify-pool-artifact.mjs",
+    "deploy:pool": "node scripts/deploy-pool.mjs",
+    "verify:pool": "node scripts/verify-pool-deployment.mjs"
   },
   "devDependencies": {
     "@types/node": "24.10.1",
