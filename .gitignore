@@ -12,3 +12,6 @@
 # Regenerated setup fixture ABI; never treat it as the production ABI.
 packages/ethereum/generated/environment-smoke.json
 formal/environment/out/
+
+# Local planning artifacts are never committed.
+docs/superpowers/
