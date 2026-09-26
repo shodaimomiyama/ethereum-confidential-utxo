@@ -1,0 +1,10 @@
+{
+  "name": "@confidential-utxo/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@confidential-utxo/core": "workspace:*",
+    "@confidential-utxo/ethereum": "workspace:*"
+  }
+}

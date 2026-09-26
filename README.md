@@ -84,6 +84,8 @@ The [comparison report](docs/research/prior-eip-comparison.md) links the [record
 
 The technical source documents are in Japanese. Both READMEs link to the same sources.
 
+For the macOS Apple Silicon setup, local RPC smoke test, and pinned K/Kontrol smoke proofs, see the [development guide](docs/guides/development.md).
+
 | Document | Purpose |
 | --- | --- |
 | [Core PRD](docs/PRD.md) | Problem, intended users, initial scope, and standardization goals |

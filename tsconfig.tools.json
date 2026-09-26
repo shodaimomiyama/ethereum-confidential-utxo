@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.base.json",
+  "include": ["tests/environment/**/*.ts", "vitest.config.ts"],
+  "exclude": ["experiments", "benchmarks"]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "@confidential-utxo/ethereum",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@confidential-utxo/core": "workspace:*",
+    "viem": "2.56.9"
+  }
+}
