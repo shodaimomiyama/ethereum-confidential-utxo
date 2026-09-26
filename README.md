@@ -21,7 +21,7 @@ The core provides an ETH-only, public-graph UTXO system, as described in the [co
 
 The integration supports a partial payment from one UTXO into one selected public token. A failed payment rolls back that attempt's UTXO consumption, remainder creation, withdrawal, swap, and token delivery together. Earlier confirmed transfers and transaction gas costs are outside that rollback.
 
-This is research intended for local Ethereum and public testnets with test assets. Production use with real funds, a GUI, general confidential ERC-20 support, transaction-graph privacy, and exact-invoice settlement are outside the initial scope. Standard adoption and lower costs than prior approaches remain research goals.
+This is research intended for local Ethereum and public testnets with test assets. The [integration specification](docs/integration/uniswap/specification.md) defines the required public demo site, including demo rewards, payments, deposits, and full withdrawals; the specification does not establish implementation or deployment completion. Production use with real funds, a general-purpose confidential wallet GUI, general confidential ERC-20 support, transaction-graph privacy, and exact-invoice settlement are outside the initial scope. Standard adoption and lower costs than prior approaches remain research goals.
 
 ## How it's made
 
@@ -93,4 +93,5 @@ The technical source documents are in Japanese. Both READMEs link to the same so
 | [Core design (draft)](docs/design.md) | Protocol rules, authorization, receipt and synchronization, verification plans, and adoption evidence |
 | [Uniswap integration PRD](docs/integration/uniswap/PRD.md) | Partial public payments from confidential ETH and reuse of the remainder |
 | [Uniswap integration requirements](docs/integration/uniswap/requirements.md) | Authorization, rollback, confidentiality, cost, and reproducibility criteria |
+| [Uniswap integration specification](docs/integration/uniswap/specification.md) | Payment acceptance, full delivery, rollback, synchronization, public site, and demo reward request rules |
 | [Prior-EIP comparison](docs/research/prior-eip-comparison.md) | Comparison scope, measurement conditions, raw evidence, and limitations |
