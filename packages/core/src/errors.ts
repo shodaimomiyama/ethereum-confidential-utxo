@@ -6,6 +6,9 @@ export type CoreFailureCode =
   | "HISTORY_UNAVAILABLE"
   | "INCONSISTENT"
   | "SIGNATURE_REJECTED"
+  | "SIGNATURE_INVALID"
+  | "RPC"
+  | "UNSUPPORTED"
   | "CRYPTO"
   | "STORAGE_UNKNOWN"
   | "CONFLICT";
