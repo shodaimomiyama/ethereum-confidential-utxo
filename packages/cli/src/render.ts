@@ -96,6 +96,7 @@ export function classifyError(error: unknown): Extract<CliResult, {kind:"error"}
   if (error instanceof EthereumFailure) {
     if (["INVALID_CONFIG", "DEPLOYMENT_MISMATCH", "UNSUPPORTED", "SIGNATURE_REJECTED", "SIGNATURE_INVALID"].includes(error.code)) return { kind: "error", code: "CONFIG" };
     if (error.code === "OUTER_REVERT") return { kind: "error", code: "FAILED" };
+    if (error.code === "STORAGE_UNKNOWN") return { kind: "error", code: "STORAGE" };
     return { kind: "error", code: "RPC" };
   }
   const message = error instanceof Error ? error.message : "";

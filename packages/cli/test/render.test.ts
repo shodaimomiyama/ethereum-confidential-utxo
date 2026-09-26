@@ -37,6 +37,7 @@ it("maps failures to stable public classes without provider exception text", () 
   const variants = [
     [new CoreFailure("INVALID_INPUT", "private: password"), 2],
     [new CoreFailure("STORAGE_UNKNOWN", "private: password"), 3],
+    [new EthereumFailure("STORAGE_UNKNOWN", "private: journal"), 3],
     [new EthereumFailure("RPC", "private: token"), 4],
     [new EthereumFailure("OUTER_REVERT", "private: token"), 5],
   ] as const;
