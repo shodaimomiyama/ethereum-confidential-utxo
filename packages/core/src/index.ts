@@ -29,3 +29,6 @@ export { inspectReceipt } from "./receipt.js";
 export type { ReceivedUtxo, ReceiptFailure, ReceiptState } from "./receipt.js";
 export { synchronize } from "./sync.js";
 export type { SyncResult, SyncPorts, StaleSnapshot } from "./sync.js";
+export { preflightSubmission, prepareSubmission, trackAttempt } from "./tracking.js";
+export type { PreflightResult, PreparedSubmission, SubmissionPorts } from "./tracking.js";
+export type { AttemptObservation, OperationSuccessEvidence, OperationTracking, SubmissionAttempt } from "./types.js";

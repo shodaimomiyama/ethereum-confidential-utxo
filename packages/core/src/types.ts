@@ -134,3 +134,32 @@ export interface SignerPort {
 export interface StoragePort {
   saveDraft(draft: LocalDraft): Promise<"saved" | "unknown">;
 }
+
+/** Outer transaction evidence is independent of logical success and receipt ownership. */
+export type SubmissionAttempt = {
+  txHash?: Hex;
+  outer: "pending" | "success" | "failed" | "unconfirmed";
+  blockNumber?: bigint;
+  blockHash?: Hex;
+  failure?: "OUTER_REVERT" | "INTERNAL_REVERT";
+};
+export type OperationSuccessEvidence = {
+  context: Context;
+  checkpoint: Checkpoint;
+  event: ObservedOperation;
+  record: Observation<OperationSuccess>;
+  header: Observation<{ number: bigint; hash: Hex }>;
+};
+export type AttemptObservation = SubmissionAttempt & {
+  /** A label alone never establishes success. */
+  operation?: "unconfirmed" | "executed";
+  evidence?: OperationSuccessEvidence;
+};
+export type OperationTracking = {
+  operationId: Hex;
+  attempts: SubmissionAttempt[];
+  operation: "executed" | "unconfirmed";
+  checkpoint?: Checkpoint;
+  /** Receipt ownership is established separately through inspectReceipt/synchronize. */
+  receipt: "unconfirmed";
+};
