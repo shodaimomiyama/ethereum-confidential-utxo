@@ -8,6 +8,12 @@ importers:
 
   .:
     devDependencies:
+      '@confidential-utxo/core':
+        specifier: workspace:*
+        version: link:packages/core
+      '@confidential-utxo/ethereum':
+        specifier: workspace:*
+        version: link:packages/ethereum
       '@types/node':
         specifier: 24.10.1
         version: 24.10.1
@@ -145,7 +151,14 @@ importers:
         specifier: 2.56.9
         version: 2.56.9(typescript@6.0.3)(zod@4.4.3)
 
-  packages/uniswap: {}
+  packages/uniswap:
+    dependencies:
+      '@confidential-utxo/core':
+        specifier: workspace:*
+        version: link:../core
+      viem:
+        specifier: 2.56.9
+        version: 2.56.9(typescript@6.0.3)(zod@4.4.3)
 
 packages:
 

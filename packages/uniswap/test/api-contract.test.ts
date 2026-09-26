@@ -32,7 +32,7 @@ const reward = {
 it.each([
   ['POST', '/v1/auth/challenge', { scope }],
   ['POST', '/v1/auth/verify', { scope, challengeId: id, siweMessage: 'signed challenge', signature: `0x${'aa'.repeat(65)}` }],
-  ['PUT', `/v1/operations/${id}`, { scope, expectedRevision: 0, record: payRecord }],
+  ['PUT', `/v1/operations/${id}`, { scope, expectedRevision: 0, sealedRevision: 1, record: payRecord }],
   ['GET', `/v1/operations?deploymentId=local-v1&owner=${owner}`, undefined],
   ['POST', '/v1/rewards', reward],
   ['GET', `/v1/rewards?deploymentId=local-v1&owner=${owner}`, undefined],
@@ -70,12 +70,20 @@ it('keeps Pay deadline distinct from Withdraw without a deadline', () => {
   expect(() => parseApiRequest('PUT', `/v1/operations/${id}`, {
     scope,
     expectedRevision: 0,
+    sealedRevision: 1,
     record: { ...payRecord, kind: 'withdraw', paymentId: undefined, deadline: undefined },
   })).not.toThrow();
   expect(() => parseApiRequest('PUT', `/v1/operations/${id}`, {
     scope,
     expectedRevision: 0,
+    sealedRevision: 1,
     record: { ...payRecord, kind: 'withdraw' },
+  })).toThrowError();
+});
+
+it('requires an explicit sealed revision for the shared reservation wire contract', () => {
+  expect(() => parseApiRequest('PUT', `/v1/operations/${id}`, {
+    scope, expectedRevision: 0, record: payRecord,
   })).toThrowError();
 });
 
@@ -111,6 +119,38 @@ it('rejects response codes that disagree with conflict or unavailable status', (
   expect(() => parseApiResponse('POST /v1/rewards', 409, error)).not.toThrow();
 });
 
+it('parses reservation lookup and revision-bound release without trusting caller success flags', () => {
+  const lookup = parseApiRequest('GET', `/v1/operations/${id}?deploymentId=local-v1&owner=${owner}`, undefined);
+  expect(lookup.route).toBe('GET /v1/operations/{id}');
+  expect(lookup.id).toBe(id);
+
+  const release = parseApiRequest('POST', `/v1/operations/${id}/release`, {
+    scope, expectedRevision: 1, sealedRevision: 2, blockHash: hash,
+    record: { ...payRecord, encryptedBundle: { ...payRecord.encryptedBundle, nonce: `0x${'01'.repeat(12)}` } },
+  });
+  expect(release.route).toBe('POST /v1/operations/{id}/release');
+  expect(release.sealedRevision).toBe(2);
+  expect(() => parseApiRequest('POST', `/v1/operations/${id}/release`, {
+    scope, expectedRevision: 1, sealedRevision: 2, blockHash: hash,
+    paymentSucceeded: false, inputUnspent: true, record: payRecord,
+  })).toThrowError();
+  expect(() => parseApiRequest('POST', `/v1/operations/${id}/release`, {
+    scope, expectedRevision: 1, sealedRevision: 3, blockHash: hash, record: payRecord,
+  })).toThrowError();
+});
+
+it('rejects a PUT whose sealed revision disagrees with its compare-and-swap target', () => {
+  expect(() => parseApiRequest('PUT', `/v1/operations/${id}`, {
+    scope, expectedRevision: 1, sealedRevision: 3, record: payRecord,
+  })).toThrowError();
+});
+
+it('parses released records and rejects unknown reservation states', () => {
+  const response = { scope, record: payRecord, revision: 2, reservationState: 'released' };
+  expect(parseApiResponse('POST /v1/operations/{id}/release', 200, response)).toMatchObject({ reservationState: 'released', revision: 2 });
+  expect(() => parseApiResponse('POST /v1/operations/{id}/release', 200, { ...response, reservationState: 'missing' })).toThrowError();
+});
+
 it('parses operation lifecycle separately from encrypted revision', () => {
   const parsed = parseApiResponse('GET /v1/operations', 200, {
     availability: 'healthy',
@@ -127,6 +167,11 @@ it('parses operation lifecycle separately from encrypted revision', () => {
   expect(parsed.records[0]?.status).toBe('released');
   expect(parsed.records[0]?.revision).toBe(1);
   expect(parsed.records[0]?.stateVersion).toBe(2);
+  expect(parsed.records[0]?.reservationState).toBeUndefined();
+  expect(() => parseApiResponse('GET /v1/operations/{id}', 200, {
+    scope, record: payRecord, revision: 1, stateVersion: 2, status: 'released',
+    checkpoint: { blockNumber: '12', blockHash: id, blockTimestamp: '601' },
+  })).toThrowError();
 });
 
 it('accepts a record ID cursor for the next operations page', () => {

@@ -31,7 +31,8 @@ export class UniswapServiceObject extends DurableObject<ServiceEnv> {
     try {
       const url = new URL(request.url);
       const body = request.method === 'GET' ? undefined : await readLimitedJson(request);
-      const parsed = parseApiRequest(request.method, url.pathname + url.search, body);
+      const parsed = parseApiRequest(request.method, url.pathname + url.search, body,
+        { allowLegacyUnsealedPut: true });
       const config = resolveDeployment(parsed.scope.deploymentId, parseDeploymentCatalog(this.env.DEPLOYMENTS_JSON));
       const recoveryGate = resolveRecoveryGate(this.env.RECOVERY_JSON, parsed.scope.deploymentId);
       const boundDeployment = await this.ctx.storage.get<string>('deploymentId');
