@@ -11,6 +11,8 @@
     "test": "node scripts/check-tools.mjs && node --test tests/environment/check-tools.test.mjs tests/environment/entrypoints.test.mjs && forge test --root contracts && vitest run tests/environment/artifact-guard.test.mjs",
     "check": "tsc --noEmit -p tsconfig.tools.json && forge fmt --check --root contracts",
     "artifact:environment": "node scripts/export-environment-artifact.mjs",
+    "artifact:verifier": "node scripts/export-verifier-artifact.mjs",
+    "check:verifier": "node scripts/verify-verifier-artifact.mjs",
     "smoke:rpc": "node scripts/check-tools.mjs && node scripts/run-environment-smoke.mjs",
     "smoke:formal": "sh formal/environment/run-smoke.sh"
   },
