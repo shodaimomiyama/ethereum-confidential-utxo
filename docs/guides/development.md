@@ -60,7 +60,7 @@ pnpm uniswap:local:reset -- --rpc-url http://127.0.0.1:8545 --chain-id 31337 --m
 
 deployはdUSD、WETH、Uniswap v2 Factory/Router/Pairと初期流動性を作り、manifestを照合する。同じmanifestでの再deployは新しい流動性を投入せず照合に切り替わる。送信結果が不明な場合は `.attempt.json` を残して自動再送を拒否するため、nonce、receipt、code、Pair reserveを調べてから復旧する。snapshot/resetは資産単体に限り、reset後にはsnapshot IDが更新される。正式Pool/Adapter、配布サービス、サイトを含む環境のresetは、それぞれの成果物とDO停止・世代管理が揃ってから有効化する。
 
-`.github/workflows/uniswap-environment.yml` はmacOS 15 arm64上で同じ固定版、ソース/Artifact照合、build/test/check、Anvilへの資産単体配置・再照合・snapshot/resetを実行する。公開RPC、Secrets、実資金は使わない。2026-09-27時点ではGitHub Actionsの実runは未実施であり、ローカルmacOS 26.5 arm64での成功とは別に判定する。
+`.github/workflows/uniswap-environment.yml` はmacOS 15 arm64上で同じ固定版、ソース/Artifact照合、build/test/check、Anvilへの資産単体配置・再照合・snapshot/resetを実行する。公開RPC、Secrets、実資金は使わない。2026-09-27にcommit `10d2fcf` の[GitHub Actions実run](https://github.com/shodaimomiyama/ethereum-confidential-utxo/actions/runs/36267663500)で全工程が成功した。手元のmacOS 26.5 arm64での結果とは区別し、第三者の独立追試は別途確認する。
 
 2026-09-27に [Uniswap公式のv2配置一覧](https://developers.uniswap.org/docs/protocols/v2/deployments) のSepolia Factory `0xF62c03E08ada871A0bEb309762E260a7a6a880E6` とRouter02 `0xeE567Fe1712Faf6149d80dA1E6934E354124CfE3` を確認した。Routerの `WETH()` を実チェーンで読み、`0xfff9976782d46cc05630d1f6ebab18b2324d6b14` を得た。[PublicNode](https://ethereum.publicnode.com/)を候補にし、`https://ethereum-sepolia-rpc.publicnode.com` のread-only検査を実行した。これは実行時点の観測結果であり、公開配置時にも再検査する。
 
@@ -89,7 +89,7 @@ pnpm uniswap:sepolia:probe
 | A-06 公開準備 | `b74a3a5`、`pnpm uniswap:sepolia:probe`、checkpoint 11788121 | 公式Factory/Router/WETH、RPC履歴・logs・finalized・CORSは成功。faucet実受取、制限時挙動、公開配置は未実施 | #45〜#50 |
 | A-07 配信・保存設定 | #53/#54/#57/#58/#59 のbuild・DO・Worker interfaceが入力 | 未実施。受領後に同一origin、migration、Secrets欠落停止をローカルruntimeと実配置で照合する | #47・#50 |
 | A-08 復旧引渡し | #57/#58 の停止・保存・配布interfaceが入力 | 未実施。手動補充、DB巻戻り、停止/再開、バックアップ/復元を局所試験して #48へ渡す | #48 |
-| A-09 CI・追試 | `209792b`、`.github/workflows/uniswap-environment.yml`、`pnpm build/test/check`と19件のUniswap環境テスト | macOS 26.5 arm64で成功。GitHub macos-15 arm64の実runと第三者の独立追試は未実施 | #19・#20 |
+| A-09 CI・追試 | `209792b`・`10d2fcf`、`.github/workflows/uniswap-environment.yml`、`pnpm build/test/check`と20件のUniswap環境テスト、[CI実run](https://github.com/shodaimomiyama/ethereum-confidential-utxo/actions/runs/36267663500) | macOS 26.5 arm64とGitHub macos-15 arm64で成功。第三者の独立追試は未実施 | #19・#20 |
 | A-10 証拠・引渡し | 本節、各commit・manifest・ローカル試験 | 進行中。公開URL/txと正式統合結果は存在せず、受領後に各検証Issueへ追加する | #45〜#50・#19・#20 |
 
 ## Poolと検証器の配置（Issue #27）
