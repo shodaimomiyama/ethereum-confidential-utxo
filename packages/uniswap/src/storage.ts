@@ -81,8 +81,19 @@ export type RewardStatus =
   | 'received'
   | 'ended-without-distribution';
 
+export type RewardAvailability =
+  | 'healthy'
+  | 'rpc-unavailable'
+  | 'funds-short'
+  | 'gas-short'
+  | 'operator-stopped'
+  | 'quota-stopped'
+  | 'restore-stopped';
+
 export interface RewardRecord extends RewardRequest {
   readonly status: RewardStatus;
+  readonly availability?: RewardAvailability;
+  readonly checkedAtBlockHash?: Bytes32;
   readonly operationId?: OperationId;
   readonly attemptIds: readonly AttemptId[];
   readonly txHashes: readonly TxHash[];
