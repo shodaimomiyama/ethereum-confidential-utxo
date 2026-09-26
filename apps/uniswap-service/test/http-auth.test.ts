@@ -61,4 +61,21 @@ it('rejects cross-origin challenge and oversize JSON before creating state', asy
   expect(tooLarge.status).toBe(413);
   const missing = await worker.fetch(post('/v1/auth/challenge', { scope: { ...scope, deploymentId: 'unknown' } }), serviceEnv);
   expect(missing.status).toBe(503);
+  const oversizedBundle = await worker.fetch(post(`/v1/operations/0x${'01'.repeat(32)}`, {
+    scope, expectedRevision: 0,
+    record: { recordId: `0x${'01'.repeat(32)}`, encryptedBundle: {
+      ciphertext: 'A'.repeat(4 * Math.ceil(524_288 / 3) + 4),
+    } },
+  }), serviceEnv);
+  expect(oversizedBundle.status).toBe(413);
+  const id = `0x${'01'.repeat(32)}`;
+  const crossOriginPut = await worker.fetch(new Request(`https://site.test/v1/operations/${id}`, {
+    method: 'PUT', headers: { origin: 'https://evil.test' }, body: JSON.stringify({
+    scope, expectedRevision: 0, record: {
+      recordId: id, kind: 'withdraw', inputId: id, operationId: id, contentHash: id,
+      encryptedBundle: { ciphertext: 'AQID', nonce: `0x${'00'.repeat(12)}`, tag: `0x${'00'.repeat(16)}` },
+      signatureStarted: false, attemptIds: [],
+    },
+  }), }), serviceEnv);
+  expect(crossOriginPut.status).toBe(403);
 });

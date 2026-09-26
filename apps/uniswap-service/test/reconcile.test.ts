@@ -41,6 +41,14 @@ it('releases Pay only after strict deadline with one consistent finalized view',
     .resolves.toHaveProperty('status', 'released');
   const successor = await runInDurableObject(stub, (_obj, state) => putOperation(state.storage, scope, record(2), 0, inputReader));
   expect(successor.status).toBe('reserved');
+  const reorg = await runInDurableObject(stub, (_obj, state) => reconcileOperation(state.storage, scope, id(1),
+    { readFinalizedView: async () => ({ ...view('601', true, true), checkpoint: {
+      blockNumber: '10', blockHash: id(502) as FinalizedView['checkpoint']['blockHash'], blockTimestamp: '601',
+    }, input: { blockHash: id(502), spent: true }, pay: { blockHash: id(502), succeeded: true } }) }));
+  expect(reorg.status).toBe('unknown');
+  const environment = await runInDurableObject(stub, (_obj, state) =>
+    state.storage.sql.exec<{ status: string }>('SELECT status FROM environment_state WHERE id = 1').toArray()[0]);
+  expect(environment?.status).toBe('stopped');
 });
 
 it('keeps Withdraw reserved after expiry and never releases a consumed input or successful Pay', async () => {

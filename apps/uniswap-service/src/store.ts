@@ -101,6 +101,10 @@ export async function putOperation(
       if (current.revision !== expectedRevision) throw new Error('REVISION_CONFLICT');
       if (current.record.signatureStarted && !record.signatureStarted) throw new Error('REVISION_CONFLICT');
       if (current.record.attemptIds.some((id, i) => record.attemptIds[i] !== id)) throw new Error('REVISION_CONFLICT');
+      if (current.record.encryptedBundle.nonce === record.encryptedBundle.nonce
+        || JSON.stringify(current.record.encryptedBundle) === JSON.stringify(record.encryptedBundle)) {
+        throw new Error('REVISION_CONFLICT');
+      }
       storage.sql.exec(
         'UPDATE operations SET encrypted_bundle_json = ?, signature_started = ?, revision = revision + 1 WHERE deployment_id = ? AND owner = ? AND record_id = ?',
         JSON.stringify(record.encryptedBundle), Number(record.signatureStarted), scope.deploymentId, normalize(scope), record.recordId,

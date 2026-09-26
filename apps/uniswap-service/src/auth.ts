@@ -74,7 +74,8 @@ export async function verifyChallenge(
     || challenge.owner !== normalizedOwner(scope)) throw new Error('UNAUTHENTICATED');
   if (challenge.used_at_ms !== null) throw new Error('CHALLENGE_USED');
   if (nowMs >= challenge.expires_at_ms) throw new Error('CHALLENGE_EXPIRED');
-  const parsed = parseSiweMessage(message);
+  let parsed: ReturnType<typeof parseSiweMessage>;
+  try { parsed = parseSiweMessage(message); } catch { throw new Error('UNAUTHENTICATED'); }
   if (parsed.address === undefined || parsed.address.toLowerCase() !== normalizedOwner(scope)
     || parsed.chainId !== config.chainId || parsed.domain !== new URL(config.origin).host
     || parsed.uri !== config.siweUri || parsed.nonce !== challenge.nonce

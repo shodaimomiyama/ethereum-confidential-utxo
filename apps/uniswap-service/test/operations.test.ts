@@ -56,7 +56,11 @@ it('accepts exact retries, rejects stale changes and keeps signatureStarted mono
   const started = { ...initial, signatureStarted: true };
   await expect(runInDurableObject(stub, (_obj, state) => putOperation(state.storage, scope, started, 0, reader)))
     .rejects.toThrow('REVISION_CONFLICT');
-  const second = await runInDurableObject(stub, (_obj, state) => putOperation(state.storage, scope, started, 1, reader));
+  await expect(runInDurableObject(stub, (_obj, state) => putOperation(state.storage, scope, started, 1, reader)))
+    .rejects.toThrow('REVISION_CONFLICT');
+  const second = await runInDurableObject(stub, (_obj, state) => putOperation(state.storage, scope, {
+    ...started, encryptedBundle: { ...started.encryptedBundle, nonce: `0x${'01'.repeat(12)}` },
+  }, 1, reader));
   expect(second.revision).toBe(2);
   await expect(runInDurableObject(stub, (_obj, state) => putOperation(state.storage, scope,
     { ...initial, encryptedBundle: { ...initial.encryptedBundle, ciphertext: 'Ag==' } }, 2, reader)))

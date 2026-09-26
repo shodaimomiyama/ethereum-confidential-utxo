@@ -72,6 +72,7 @@ export class UniswapServiceObject extends DurableObject<ServiceEnv> {
         if (error.message === 'CHALLENGE_USED') return apiError(401, 'CHALLENGE_USED');
         if (error.message === 'CHALLENGE_EXPIRED') return apiError(401, 'CHALLENGE_EXPIRED');
         if (error.message === 'UNAUTHENTICATED') return apiError(401, 'UNAUTHENTICATED');
+        if (error.name === 'InvalidAddressError' || error.name === 'InvalidSiweMessageError') return apiError(401, 'UNAUTHENTICATED');
         if (error.message === 'SCOPE_MISMATCH') return apiError(403, 'SCOPE_MISMATCH');
         if (error.message === 'RESERVATION_CONFLICT') return apiError(409, 'RESERVATION_CONFLICT');
         if (error.message === 'REVISION_CONFLICT') return apiError(409, 'REVISION_CONFLICT');
