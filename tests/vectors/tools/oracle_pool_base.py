@@ -16,7 +16,7 @@ def packet(name, index):
     return '0x' + (seed * 4)[:112].hex()
 
 
-def make_base():
+def make_base(include_uniswap=False):
     h, g, _, _ = pts(json.loads(PARAMETERS.read_text()))
     specs = [
         ('DEPOSIT-TEN', 0, [], [('A', 10)], 10, 0, 'ZERO'),
@@ -45,6 +45,12 @@ def make_base():
         ('DEPOSIT-TEN-ALT', 0, [], [('A', 10)], 10, 0, 'ZERO'),
         ('WITHDRAW-OWNER', 2, ['DEPOSIT-TEN:0'], [], 0, 10, 'OWNER'),
     ]
+    if include_uniswap:
+        specs = [
+            ('DEPOSIT-PAY', 0, [], [('A', 6 * 10**15)], 6 * 10**15, 0, 'ZERO'),
+            ('WITHDRAW-PAY', 2, ['DEPOSIT-PAY:0'], [('A', 3 * 10**15)], 0, 3 * 10**15, 'ADAPTER'),
+            ('WITHDRAW-PAY-DUST', 2, ['DEPOSIT-PAY:0'], [('A', 1)], 0, 6 * 10**15 - 1, 'ADAPTER'),
+        ]
     result = []
     for name, kind, inputs, outputs, d, w, destination in specs:
         out = []
@@ -64,8 +70,9 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--out', type=Path, required=True)
+    parser.add_argument('--uniswap', action='store_true')
     args = parser.parse_args()
     if args.out.resolve() == (ROOT / 'tests/vectors/cases/pool-operations.json').resolve():
         raise SystemExit('generate through the full Pool fixture pipeline')
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(make_base(), indent=2) + '\n')
+    args.out.write_text(json.dumps(make_base(args.uniswap), indent=2) + '\n')

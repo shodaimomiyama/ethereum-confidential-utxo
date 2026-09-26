@@ -26,11 +26,15 @@
 
 初期流動性は0.1テストETH相当のWETHと1万dUSD。流動性の準備と配布元への入金は別の操作・資金である。必須推論例は `u = 10^15 wei` とし、配布元の公開入金は `10u = 0.01 ETH`、報酬は `6u = 0.006 ETH`、支払いは `3u = 0.003 ETH`、残額は `3u` とする。流動性提供用の履歴を必須例のUTXOへ混ぜない。公開サイトの報酬額・支払額の初期値は空欄のままとし、この例の額で固定しない。
 
+dUSDは配置時に指定したテスト専用保有者へ1,000,000単位を一度だけ発行し、10,000単位を流動性へ移す。残余保有者とLP受取人をmanifestで照合し、LPトークンの保有者には流動性を引き出す権限があることを運用時に示す。報酬配布元の鍵をこれらの資産保有者と兼用しない。公開デモの初期配布資金は配置時の別設定とし、残高不足なら新しい配布を停止して、手動補充とオンチェーン残高の再照合後に再開する。0.01 ETHは推論例の入力であり、公開運用の固定初期残高ではない。
+
 ### 支払い認可と公開ABI
 
 対応仕様: [認可対象と実行時の検査](specification.md#認可対象と実行時の検査)、[コピー提出・競合・再入](specification.md#コピー提出競合再入)。
 
 接続コントラクトを `UniswapPaymentAdapter` と呼ぶ。Pool、Router02、Factory、WETH、dUSD、Pairは配置時に検査して固定し、管理者による差替え、upgrade、任意call、delegatecall、救済出金を設けない。異なる構成は別デプロイとして識別する。構成アドレス、runtime hash、配置ブロックhashと版は環境manifestに記録する。
+
+Adapterのconstructorは、六つの参照先にコードが存在し、Router02の`factory()`/`WETH()`、Factoryの`getPair(WETH,dUSD)`、Pairの`factory()`/`token0()`/`token1()`が固定構成と一致することを検査する。ゼロ・コードなし・不一致・照会失敗では配置を拒否する。Pairの二つのtokenはアドレスの昇順で照合する。六つの固定アドレスは公開getterから読み出せる。constructor自身の構成不一致は`InvalidConfiguration()`で表す。採用した実コードのhashと配置取引の照合は環境manifestの検証が担当し、constructorの返答整合だけで実コードの真正性を主張しない。
 
 本体の `OperationRequest`、`BalanceProof`、`RangeProofV3` は[本体のABI](../../design.md#操作の結合とabi)をそのまま使う。本体要求の `d` は公開入金額であり、接続仕様の期限 `d` と異なるため、接続ABIでは期限を `deadline` とする。本体のsaltは新しい32 byte乱数のままとし、接続条件hashへ置き換えない。
 
@@ -336,6 +340,8 @@ S-01〜50の各ケースには、ローカル・公開テストネットの実�
 実行manifestはソースcommit、依存lockfile、compiler/EVM設定、runtime hash、chain/配置、ブロック、CPU/OS/ブラウザ、入力、反復番号、乱数の扱いを持つ。試験用秘密と公開観測用データを分離し、公開成果物には利用者や運営の秘密を混ぜない。第三者は自分の鍵・乱数で配置から再実行する。推論例の実額を公開する評価用fixtureと、観測者へ与える情報の集合を混同しない。
 
 ## 実装後の検証と見直し条件
+
+#56の局所実装では、`AdapterConfiguration`・`AdapterAuthorization`・`AdapterPayment`・`AdapterRollback` のFoundry単体試験、独立viem署名ベクトル、`AdapterRealFlow` の実Pool・Verifier・固定Uniswap/dUSD結合を使う。後者は部分出金、残額1 wei、最低受取額未達時のPool/Pairを含む取消、出金先改変の拒否、別の認可済み操作による入力先行消費を確認する。対象はchain 31337の固定アドレスharnessで、外部Anvilへの独立配置やSepolia実取引の成立を示さない。シナリオ別の局所結果と未検証条件は[開発手順](../../guides/development.md#56の局所受入記録)に記録する。
 
 本書は方式と規則を確定するが、UX-01〜05の局所実験から実装後の成立性は証明されない。実Pool・Uniswap・認可/取消は[#45](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/45)、Chrome間の実受領と鍵の安全性は[#46](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/46)、Cloudflare Freeでの実暗号処理は[#47](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/47)、予約・配布の実取引復旧は[#48](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/48)、公開情報と能動照会を含む機密性は[#49](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/49)、公開サイトと一連の利用者操作は[#50](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/50)で受入判定する。完全版・配置・RPCは[Architecture](architecture.md#実行前に固定する版と配置情報)の条件に従い各実行前に固定する。
 

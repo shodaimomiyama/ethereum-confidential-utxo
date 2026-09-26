@@ -30,7 +30,11 @@
 
 公開環境はEthereum Sepoliaとする。[Ethereumのネットワーク案内](https://ethereum.org/developers/docs/networks/)はSepoliaをアプリ開発向けとしている（確認日: 2026-09-27）。初回利用者が利用できるfaucet、RPC、Uniswap経路、流動性は公開配置前に確認し、不成立なら環境選択を見直す。ローカル検証と公開テストネット検証の区分は[接続仕様](specification.md#後続検証の対象となる環境)に従う。
 
+Uniswap公開デモには、本体 #36 の検証用とは別アドレスの専用Poolを配置する。正式Poolと検証器のコード・配置処理は #27 の成果物を再利用し、操作履歴は環境ごとに分離する。公開配置は運営者のコマンド操作とし、CIは固定版のビルド・テスト・ローカル配置検査を実行する。CIからSepoliaの取引を送らない。
+
 交換先は自前のデモ用ERC-20一銘柄とし、転送手数料、残高の自動増減、アップグレードを持たせない方針を合意した。Uniswap上に流動性を準備する。実在のドル資産との交換価値を持つとは表示しない。名称はDemo USD、symbolは`dUSD`、decimalsは18とする。配置時に1,000,000 dUSDを一度だけ発行し、追加発行を設けない。初期流動性は0.1 test ETHをラップしたWETHと10,000 dUSDで作る。名称のUSDは法定通貨への償還や価格維持を意味せず、この初期比率を実勢価格と説明しない。具体的なトークン実装とUniswapの固定artifactは[#45](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/45)で照合する。
+
+初回発行先、残余990,000 dUSDの保有先、LPトークンの受取先は運営者が指定するテスト専用アドレスとして配置記録に残し、報酬配布サービスの鍵から分離する。LP保有者は流動性を引き出せる。公開デモの配布資金は流動性資金と分けて配置時に指定し、不足時は新規配布を停止して手動で補充する。必須推論例の配布元入金0.01 ETHを公開運用の固定額としない。
 
 交換経路はUniswap v2 Router02の単一ペアとする。固定したWETHとデモトークンの経路を使う。公式配置・ローカルで使うソースの版とartifactを照合し、実Uniswapで全額交換と全量着金を[#45](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/45)で確認する。[公式配置一覧](https://developers.uniswap.org/docs/protocols/v2/deployments)と[Router02実装](https://github.com/Uniswap/v2-periphery/blob/master/contracts/UniswapV2Router02.sol)を候補調査の根拠とする（確認日: 2026-09-27）。可変ブランチの参照を実験の固定版の代わりにはしない。
 
@@ -92,6 +96,10 @@ flowchart LR
 | Uniswap v2 | WETH/dUSD単一pairで交換し、最終受取人へ出力を送付 | Router02・Factory・WETH・pairの実コード。Adapterが任意のRouterやpathを受け入れない |
 | 本体Pool・金額検証器 | 認可、UTXO状態、暗号検証、資産保存と公開出金 | 本体の既定の責務。接続設計だけでABI・保証を変更しない |
 | 本体core/crypto/ethereum | 操作・符号化、証明、受領・同期、署名とRPC接続 | 本体の公開境界を利用。接続側から実験コードを通常実行時にimportしない |
+
+Adapterのconstructorは六つの固定参照のコード存在とRouter・Factory・Pairの参照関係を検査し、不一致なら配置を拒否する。固定アドレスは公開getterから照合できる。採用artifactと実runtime、配置取引・環境の一致は配置処理とmanifestで照合する。constructorの参照整合検査だけを採用コードの証明と扱わない。具体的な検査式とABIは[接続の設計](design.md#支払い認可と公開abi)に従う。
+
+#56のAdapter実装は `contracts/src/integration/uniswap/UniswapPaymentAdapter.sol`、生成ABIとbytecodeは `packages/ethereum/generated/uniswap-payment-v1.json` に置く。#60の `uniswap-v2.json` と資産manifestは固定dUSD/Uniswapの正本であり、Adapter生成物を資産manifestへ取り込む配置処理は後続の全体配置に属する。局所結合はFoundryで固定Pool/Adapterアドレスへ実コードを配置し、実Verifierと固定Uniswap artifactを使う。独立Anvil配置・公開実取引の証拠はこの局所harnessと分けて扱う。
 
 ### 情報と信頼の境界
 
