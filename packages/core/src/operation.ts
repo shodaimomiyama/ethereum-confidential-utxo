@@ -70,7 +70,9 @@ export async function buildOperation(intent: BuildIntent, context: Context, depe
       const recipient = outputPlans[i]!.recipient;
       await verifyRecipientInfo(ctx, recipient, plan.kind === 1 && i === 0 ? recipient.owner : plan.owner);
     }
-    const saltBytes = dependencies.randomSalt();
+    let saltBytes: Uint8Array;
+    try { saltBytes = dependencies.randomSalt(); }
+    catch { throw new CoreFailure("CRYPTO", "operation.salt"); }
     if (!(saltBytes instanceof Uint8Array) || saltBytes.length !== 32) invalid();
     const openings = outputPlans.map(output => ({ amount: output.amount, blinding: randomBlinding() }));
     const request: OperationRequest = { kind: plan.kind, owner: plan.owner, salt: bytesToHex(saltBytes), inputIds: inputs.map(input => input.id),

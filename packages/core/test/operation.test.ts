@@ -4,7 +4,7 @@ import * as crypto from "@confidential-utxo/crypto";
 import { hashTypedData } from "viem";
 import type { Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { authorizationTypedData, buildOperation, operationId, regenerateProofs, toPublicSubmission } from "../src/index.js";
+import { authorizationTypedData, buildOperation, CoreFailure, operationId, regenerateProofs, toPublicSubmission } from "../src/index.js";
 import type { Context, OwnedUtxo, RecipientInfo } from "../src/index.js";
 
 const vectors = JSON.parse(readFileSync(new URL("../../../tests/vectors/cases/authorization.json", import.meta.url), "utf8"));
@@ -91,14 +91,17 @@ it("snapshots recipient, context and inputs before awaiting signature verificati
   const ctx = { ...context };
   const input = coin();
   const encryption = vi.spyOn(crypto, "encryptReceipt");
-  const promise = buildOperation({ kind: 0, owner: account.address, amount: 1n, recipient: info }, ctx, { randomSalt: salt, inputs: [input] });
+  const originalInput = structuredClone(input);
+  const promise = buildOperation({ kind: 1, owner: account.address, amount: 3n, recipient: info, changeRecipient: recipient() }, ctx, { randomSalt: salt, inputs: [input] });
   info.receivePublicKey = `0x${"00".repeat(32)}`;
   ctx.pool = account.address;
   input.opening = { amount: 99n, blinding: 99n };
   const draft = await promise;
   expect(draft.context).toEqual(context);
-  expect(encryption).toHaveBeenCalledTimes(1);
-  expect(draft.openings[0]!.amount).toBe(1n);
+  expect(encryption).toHaveBeenCalledTimes(2);
+  expect(draft.openings.map(o => o.amount)).toEqual([3n, 7n]);
+  expect(draft.inputOpenings).toEqual([originalInput.opening]);
+  expect(draft.request.inputIds).toEqual([originalInput.id]);
 });
 it("rejects altered or missing opening state and malformed adopted requests", async () => {
   const draft = await buildOperation({ kind: 0, owner: account.address, amount: 1n, recipient: recipient() }, context, { randomSalt: salt, inputs: [] });
@@ -120,4 +123,19 @@ it("retains the owner signature during full withdrawal regeneration", async () =
   const draft = await buildOperation({ kind: 2, owner: account.address, amount: 10n, destination: account.address }, context, { randomSalt: salt, inputs: [coin()] });
   const signature = await account.signTypedData(authorizationTypedData(context, draft.request));
   expect(regenerateProofs({ ...draft, signature }).signature).toBe(signature);
+});
+
+it("normalizes secret-bearing CoreFailure from the salt callback", async () => {
+  const secret = "secret value 987654";
+  const external = Object.assign(new CoreFailure("CRYPTO", secret), { opening: secret, cause: new Error(secret) });
+  const randomSalt = () => { throw external; };
+  const result = buildOperation({ kind: 0, owner: account.address, amount: 1n, recipient: recipient() }, context, { randomSalt, inputs: [] });
+  await expect(result).rejects.toMatchObject({ code: "CRYPTO", stage: "operation.salt", message: "CRYPTO:operation.salt" });
+  await result.catch(error => {
+    expect(error).not.toBe(external);
+    expect(error).not.toHaveProperty("cause");
+    expect(error).not.toHaveProperty("opening");
+    expect(String(error)).not.toContain(secret);
+    expect(JSON.stringify(error)).not.toContain(secret);
+  });
 });
