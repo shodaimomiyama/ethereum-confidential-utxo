@@ -1,0 +1,24 @@
+{
+  "id": "UX-02",
+  "revision": "2026-09-27 user scope clarification after initial experiment",
+  "initialPlan": "plan.json is retained unchanged as the pre-run plan; Firefox was previously listed there",
+  "supportedBrowserForInitialRelease": "Google Chrome with the normal MetaMask extension",
+  "outOfScope": ["Firefox", "mobile", "hardware wallets", "other wallet products"],
+  "independentStorageRequirement": "Two independent Chrome profiles using the same test-only wallet; no shared site storage or additional confidential key file",
+  "remainingAcceptance": [
+    "Same exact message produces the same signature fingerprint after Chrome restart and in a second independent Chrome profile",
+    "The recipient public key derived from the actual extension signature is identical in those profiles",
+    "A v1 HPKE receipt made in the first Chrome profile decrypts and passes commitment and history checks in the second",
+    "Different account, chain, or Pool is separated; refusal, tampering, and leakage cases are checked"
+  ],
+  "reportedObservation": {
+    "statement": "The user reported matching signature probe outputs in Chrome and, after the separate-profile instruction, reported a matching result there as well",
+    "rawFingerprintsProvided": false,
+    "browserAndExtensionVersionsProvided": false,
+    "secondIndependentChromeProfileMatchUserReported": true,
+    "profileIsolationIndependentlyVerified": false,
+    "recipientPublicKeyMatchUserReported": true,
+    "hpkeDecryptionAndTamperResultsExplicitlyReported": true,
+    "verdict": "Chrome signature and recipient public key consistency, HPKE decryption and tamper rejection user-reported; full UX-02 recipient acceptance remains unresolved"
+  }
+}

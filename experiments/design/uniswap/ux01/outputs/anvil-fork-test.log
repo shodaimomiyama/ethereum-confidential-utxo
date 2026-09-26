@@ -1,0 +1,15 @@
+No files changed, compilation skipped
+
+Ran 9 tests for test/UX01.t.sol:UX01Test
+[PASS] testDeadlineBoundaryAndExpiry() (gas: 715536)
+[PASS] testDirectEthReceiptIsRejected() (gas: 209475)
+[PASS] testMinOutputFailureRollsBackEverything() (gas: 519932)
+[PASS] testMutatingEverySignedFieldFailsAtomically() (gas: 1863940)
+[PASS] testPoolRequestMutationAndDetachedWithdrawalFail() (gas: 940170)
+[PASS] testReentrantPayAndOtherEntrypointsRejected() (gas: 1693576)
+[PASS] testReentrantProbeThenPoolAbortRollsBack() (gas: 1867720)
+[PASS] testReplayAndCopiedSubmission() (gas: 623974)
+[PASS] testSuccessFullSwapAndDelivery() (gas: 482787)
+Suite result: ok. 9 passed; 0 failed; 0 skipped; finished in 9.46ms (15.14ms CPU time)
+
+Ran 1 test suite in 11.68ms (9.46ms CPU time): 9 tests passed, 0 failed, 0 skipped (9 total tests)

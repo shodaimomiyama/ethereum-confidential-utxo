@@ -1,0 +1,77 @@
+{
+  "experiment": "UX-03",
+  "outcome": "partial-only",
+  "subject": "EXP-08 Java v3 range prover and local verifier, not complete reward operation",
+  "inputs": [
+    "v=1,r=42",
+    "v=2^64,r=42",
+    "v=1,r=0",
+    "v=2^64+1,r=42 (negative case)"
+  ],
+  "versions": {
+    "java": "openjdk version \"23\" 2024-09-17",
+    "sourceCommit": "b7ec38970636d47f6b6bc0db6a3df62b188a247c",
+    "gson": "2.8.1",
+    "bcprov": "1.57",
+    "platform": "macOS-26.5-arm64-arm-64bit-Mach-O"
+  },
+  "sourceHashes": {
+    "java/GenerateRevisedProofs.java": "deacc9013c9e920dd375c873b7f0e6345ceb1f4a030895a48dea9d8255c0fc4c",
+    "java/RevisedProtocol.java": "a25011bf233fc1ddaa36750614209560a7a24f3a684b24eab66c519046a71325",
+    "java/RevisedRangeProof.java": "406846ba3714d64ed4e3b5ead8fadcc5f8a32606bca4ac421b37aab058fb13d1",
+    "java/RevisedRangeProver.java": "354964f2b2fa665f45152c5ef5157f04d4c94f6c6fae3004cc366a5f47bb6890",
+    "java/RevisedRangeVerifier.java": "ac693263980b8871a2619ef8add246c143d23bf206d180377adf6d366eae0fc0"
+  },
+  "command": [
+    "java",
+    "-Xmx2g",
+    "-cp",
+    "/Users/momiyamashodai/orca/workspaces/ethereum-confidential-utxo/docs-40-uniswap-integration-arch-design/experiments/design/uniswap/ux03/.cache/classes:/Users/momiyamashodai/orca/workspaces/ethereum-confidential-utxo/docs-40-uniswap-integration-arch-design/experiments/design/uniswap/ux03/.cache/jars/gson-2.8.1.jar:/Users/momiyamashodai/orca/workspaces/ethereum-confidential-utxo/docs-40-uniswap-integration-arch-design/experiments/design/uniswap/ux03/.cache/jars/bcprov-jdk15on-1.57.jar",
+    "GenerateRevisedProofs",
+    "/Users/momiyamashodai/orca/workspaces/ethereum-confidential-utxo/docs-40-uniswap-integration-arch-design/experiments/design/uniswap/ux03/proof-output.json"
+  ],
+  "cwd": "/Users/momiyamashodai/orca/workspaces/ethereum-confidential-utxo/docs-40-uniswap-integration-arch-design/experiments/design/crypto-profile-v3/exp08",
+  "measurement": {
+    "wallSeconds": 5.011492999998154,
+    "userCpuSeconds": 5.6531839999999995,
+    "systemCpuSeconds": 0.182605,
+    "maxResidentBytes": 411959296,
+    "exitCode": 0
+  },
+  "proofChecks": {
+    "allExpectedJavaOutcomesSatisfied": true,
+    "cases": [
+      {
+        "label": "amount-1-blinding-42",
+        "proverMilliseconds": 775.646042,
+        "javaVerifierAccepted": true
+      },
+      {
+        "label": "amount-max-blinding-42",
+        "proverMilliseconds": 753.048125,
+        "javaVerifierAccepted": true
+      },
+      {
+        "label": "amount-1-blinding-0",
+        "proverMilliseconds": 632.580167,
+        "javaVerifierAccepted": true
+      },
+      {
+        "label": "amount-over-max",
+        "proverMilliseconds": 687.894875,
+        "javaVerifierAccepted": false
+      }
+    ]
+  },
+  "cloudflareLimitsSources": [
+    "https://developers.cloudflare.com/durable-objects/platform/limits/",
+    "https://developers.cloudflare.com/workers/platform/limits/"
+  ],
+  "unverified": [
+    "No TypeScript/WASM port of v3 prover in repository",
+    "No real reward operation implementation: packet, authorization signature, raw transaction, and Pool binding absent",
+    "Java execution is not Cloudflare workerd execution",
+    "JVM RSS includes runtime and cannot be compared directly to a V8 isolate memory limit",
+    "No deployed Workers Free measurement; external deployment prohibited"
+  ]
+}

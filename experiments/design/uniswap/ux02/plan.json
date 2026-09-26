@@ -1,0 +1,31 @@
+{
+  "id": "UX-02",
+  "status": "planned-before-execution",
+  "question": "Can a fresh, test-only MetaMask normal extension account reproduce the same recipient key after a browser restart and in independent Chrome and Firefox profiles, then decrypt a v1 HPKE receipt and validate its amount commitment without transferring a separate confidential key?",
+  "affected_rules": [
+    "docs/integration/uniswap/requirements.md UUI-02",
+    "docs/integration/uniswap/specification.md: Preparation, deposit, balance reuse, withdrawal; public data and recipient acceptance",
+    "docs/integration/uniswap/design.md: Key, authentication, and storage proposal; UX-02",
+    "docs/design.md D-08: HPKE receipt and recipient verification"
+  ],
+  "target": {
+    "wallet": "MetaMask normal extension account; newly created for this experiment only",
+    "extension_candidate": "v13.50.0 official complete release artifact, sha256 recorded before use",
+    "browsers": "Chrome and Firefox, full versions recorded",
+    "profiles": "fresh, mutually isolated experiment profiles; no personal browser profile, wallet, or key is accessed"
+  },
+  "method": [
+    "Record exact release artifact URL, full release version, sha256, browser versions, OS, test harness versions and isolated profile paths without publishing seed phrases, signatures or derived secret keys.",
+    "Fix a byte-exact UTF-8 personal_sign message bound to purpose, chainId, Pool and owner; do not add nonce, time or browser name. Fix a canonical signature normalization, owner recovery, HKDF-SHA256 salt and separate info labels for the X25519 recipient key and operation-record key before generating outcomes.",
+    "Sign through the actual MetaMask extension in Chrome, repeat after process restart, import the experiment-only account into a fresh Firefox extension profile, and repeat. Compare public recipient keys and non-secret digests of the normalized signatures and derived keys.",
+    "Encrypt one 64-byte v1 receipt with the specified HPKE suite in Chrome; in Firefox decrypt from the 112-byte public packet, validate value/range, owner, commitment and accepted public history inputs. Test a different owner, chainId and Pool, signing rejection, packet tampering and incorrect commitment.",
+    "Capture the test harness's outbound HTTP and RPC requests, URL, localStorage, IndexedDB and ordinary logs. Search for the dedicated signature, derivation material, recipient secret, value and blinding factor without writing those secrets into shared artifacts."
+  ],
+  "pass_criteria": [
+    "Actual MetaMask extension returns the same normalized signature for identical fixed message and account in both browsers and after restart; public recipient key is identical.",
+    "Independent Firefox profile decrypts the Chrome-created v1 HPKE packet and the parsed receipt passes amount, randomness, owner, commitment, confirmation and unspent checks.",
+    "Changing owner, chainId or Pool produces a distinct recipient key or is rejected before use; rejected signing never creates or exposes a recipient key.",
+    "Tampered packet or wrong commitment is rejected, and none of the inspected network requests or ordinary storage/logging contains the derivation signature or secret key material."
+  ],
+  "evidence_boundary": "A library-only signing simulation or Chrome-only trial does not establish actual cross-browser MetaMask behavior. A local HPKE and commitment check without real public-history reconstruction does not establish full UUI-02 or final implementation acceptance. If extension operation is unavailable, record the exact obstacle and only the completed evidence."
+}

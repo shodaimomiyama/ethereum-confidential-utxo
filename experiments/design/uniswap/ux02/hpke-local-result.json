@@ -1,0 +1,34 @@
+{
+  "id": "UX-02 Chrome HPKE probe local harness check",
+  "date": "2026-09-27",
+  "inputs": {
+    "wallet": "Random test EOA generated in process memory; no raw key or signature recorded",
+    "chainId": "11155111",
+    "pool": "0x0000000000000000000000000000000000000001",
+    "receipt": "Random in-memory v in [1,2^64] and r in [0,BN254 q), encoded as 64 bytes; no values recorded"
+  },
+  "versions": {
+    "node": "v22.22.0",
+    "npm": "10.9.4",
+    "ethers": "6.17.0",
+    "hpke-js": "1.8.0",
+    "esbuild": "0.28.2"
+  },
+  "commands": [
+    "npm ci",
+    "npm test",
+    "npm run build",
+    "npm audit --omit=dev"
+  ],
+  "results": {
+    "nodeCryptoTest": "pass: deterministic recipient public key, different-chain separation, wrong-context rejection, 112-byte packet, decrypt/range validation, one-bit tamper rejection",
+    "headlessChromeBundleWithMockProvider": "pass: local HTTP page created public envelope and decrypted it; 112-byte packet and tamper rejection",
+    "npmAudit": "0 reported vulnerabilities after pinning ethers 6.17.0",
+    "actualMetaMaskCrossProfile": "not yet run with this HPKE page"
+  },
+  "evidenceBoundary": "Mock-wallet and library checks do not prove actual MetaMask operation. The synthetic point C=(1,2) is not a commitment to the random receipt. RecipientInfo EIP-712, on-chain event reconstruction, finalized/unspent checks and network/storage inspection remain untested.",
+  "artifactHashesSha256": {
+    "hpke-probe.bundle.js": "34ba6ed7f1822974e9d5810c1604c01e4ad8604bfd88d26395385553ade0ddd3",
+    "package-lock.json": "36b5aacbdb69678e981c4e04809abb13bc62f34205efe6b589a09f5b97358b5b"
+  }
+}

@@ -1,0 +1,238 @@
+{
+  "experiment": "UX-04 separate-process restart",
+  "passed": true,
+  "runtime": {
+    "node": "v22.22.0",
+    "miniflare": "4.20260730.0",
+    "compatibilityDate": "2026-07-30",
+    "storage": "local SQLite Durable Object",
+    "deployment": false
+  },
+  "method": "Two sequential independent Node child processes, each creating and disposing its own Miniflare/workerd instance, opened the same persistent directory.",
+  "phases": [
+    {
+      "phase": "init",
+      "pid": 59007,
+      "passed": true,
+      "trace": [
+        {
+          "action": "reserve",
+          "params": {
+            "inputId": "restart-u1",
+            "owner": "alice",
+            "operationId": "restart-pay1",
+            "contentHash": "fixed-terms"
+          },
+          "status": 200,
+          "body": {
+            "ok": true,
+            "value": {
+              "input_id": "restart-u1",
+              "owner": "alice",
+              "operation_id": "restart-pay1",
+              "content_hash": "fixed-terms",
+              "revision": 0,
+              "phase": "reserved"
+            }
+          }
+        },
+        {
+          "action": "reward",
+          "params": {
+            "requestId": "restart-r1",
+            "owner": "alice",
+            "contentHash": "amount-recipient",
+            "operationId": "restart-transfer1"
+          },
+          "status": 200,
+          "body": {
+            "ok": true,
+            "value": {
+              "request_id": "restart-r1",
+              "owner": "alice",
+              "content_hash": "amount-recipient",
+              "operation_id": "restart-transfer1",
+              "raw_tx": null,
+              "tx_hash": null,
+              "phase": "accepted"
+            }
+          }
+        },
+        {
+          "action": "prepare",
+          "params": {
+            "requestId": "restart-r1",
+            "rawTx": "0x010203",
+            "txHash": "0xrestarttx1"
+          },
+          "status": 200,
+          "body": {
+            "ok": true,
+            "value": {
+              "request_id": "restart-r1",
+              "owner": "alice",
+              "content_hash": "amount-recipient",
+              "operation_id": "restart-transfer1",
+              "raw_tx": "0x010203",
+              "tx_hash": "0xrestarttx1",
+              "phase": "prepared"
+            }
+          }
+        },
+        {
+          "action": "broadcastUnknown",
+          "params": {
+            "requestId": "restart-r1"
+          },
+          "status": 200,
+          "body": {
+            "ok": true,
+            "value": {
+              "request_id": "restart-r1",
+              "owner": "alice",
+              "content_hash": "amount-recipient",
+              "operation_id": "restart-transfer1",
+              "raw_tx": "0x010203",
+              "tx_hash": "0xrestarttx1",
+              "phase": "uncertain"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "phase": "verify",
+      "pid": 59009,
+      "passed": true,
+      "trace": [
+        {
+          "action": "snapshot",
+          "params": {},
+          "status": 200,
+          "body": {
+            "ok": true,
+            "value": {
+              "reservations": [
+                {
+                  "input_id": "restart-u1",
+                  "owner": "alice",
+                  "operation_id": "restart-pay1",
+                  "content_hash": "fixed-terms",
+                  "revision": 0,
+                  "phase": "reserved"
+                }
+              ],
+              "rewards": [
+                {
+                  "request_id": "restart-r1",
+                  "owner": "alice",
+                  "content_hash": "amount-recipient",
+                  "operation_id": "restart-transfer1",
+                  "raw_tx": "0x010203",
+                  "tx_hash": "0xrestarttx1",
+                  "phase": "uncertain"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "action": "reserve",
+          "params": {
+            "inputId": "restart-u1",
+            "owner": "alice",
+            "operationId": "restart-pay1",
+            "contentHash": "fixed-terms"
+          },
+          "status": 200,
+          "body": {
+            "ok": true,
+            "value": {
+              "input_id": "restart-u1",
+              "owner": "alice",
+              "operation_id": "restart-pay1",
+              "content_hash": "fixed-terms",
+              "revision": 0,
+              "phase": "reserved"
+            }
+          }
+        },
+        {
+          "action": "reserve",
+          "params": {
+            "inputId": "restart-u1",
+            "owner": "alice",
+            "operationId": "different-pay",
+            "contentHash": "changed"
+          },
+          "status": 409,
+          "body": {
+            "ok": false,
+            "error": "input-conflict"
+          }
+        },
+        {
+          "action": "reward",
+          "params": {
+            "requestId": "restart-r1",
+            "owner": "alice",
+            "contentHash": "amount-recipient",
+            "operationId": "restart-transfer1"
+          },
+          "status": 200,
+          "body": {
+            "ok": true,
+            "value": {
+              "request_id": "restart-r1",
+              "owner": "alice",
+              "content_hash": "amount-recipient",
+              "operation_id": "restart-transfer1",
+              "raw_tx": "0x010203",
+              "tx_hash": "0xrestarttx1",
+              "phase": "uncertain"
+            }
+          }
+        },
+        {
+          "action": "reward",
+          "params": {
+            "requestId": "new-request",
+            "owner": "alice",
+            "contentHash": "new-terms",
+            "operationId": "new-transfer"
+          },
+          "status": 409,
+          "body": {
+            "ok": false,
+            "error": "owner-active-request"
+          }
+        },
+        {
+          "action": "prepare",
+          "params": {
+            "requestId": "restart-r1",
+            "rawTx": "0x010203",
+            "txHash": "0xrestarttx1"
+          },
+          "status": 200,
+          "body": {
+            "ok": true,
+            "value": {
+              "request_id": "restart-r1",
+              "owner": "alice",
+              "content_hash": "amount-recipient",
+              "operation_id": "restart-transfer1",
+              "raw_tx": "0x010203",
+              "tx_hash": "0xrestarttx1",
+              "phase": "uncertain"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "limits": [
+    "Synthetic operation model, no production authentication, actual broadcast, finalized-chain reconciliation, or deployed Cloudflare persistence",
+    "PID difference is only a process-independence check; durability conclusion is limited to this local storage runtime"
+  ]
+}

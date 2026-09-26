@@ -1,0 +1,14 @@
+[profile.default]
+src = "src"
+test = "test"
+out = "out"
+libs = ["vendor"]
+solc = "0.8.23"
+optimizer = true
+optimizer_runs = 200
+evm_version = "paris"
+remappings = [
+  "@uniswap/v2-core/=vendor/v2-core/",
+  "@uniswap/lib/=vendor/uniswap-lib/"
+]
+ffi = false

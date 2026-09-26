@@ -1,0 +1,81 @@
+{
+  "id": "UX-05",
+  "planSha256": "eaf00a1d9c5479644143618a7e4becd284b37d67f87af2ba761f485d2b33a3a8",
+  "runtime": {
+    "python": "3.13.7",
+    "implementation": "CPython"
+  },
+  "inputs": {
+    "uWei": "1000000000000000",
+    "depositUnits": 10,
+    "paymentUnits": 3,
+    "actualRewardUnits": 6,
+    "alternativeRewardUnits": 7,
+    "activeProbeUnits": 4,
+    "candidateGranularity": "integer multiples of u only; this deliberately undercounts the full wei-level candidate set"
+  },
+  "unitWei": "1000000000000000",
+  "equations": [
+    "reward + senderChange = 10u",
+    "reward = 3u + payerRemainder"
+  ],
+  "candidatesInWholeUnits": {
+    "passivePublicAfterPayment": [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "senderKnowsActualReward": [
+      6
+    ],
+    "recipientKnowsOnlyPublicSwapOutput": [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "publicAfterLaterFullWithdrawalOfActualRemainder": [
+      6
+    ],
+    "active4uProbeAffordable": [
+      4,
+      5,
+      6
+    ],
+    "active4uProbeInsufficient": [
+      7,
+      8,
+      9
+    ]
+  },
+  "actualHistory": {
+    "rewardUnits": 6,
+    "changeUnits": 4,
+    "remainderUnits": 3
+  },
+  "counterfactualHistory": {
+    "rewardUnits": 7,
+    "changeUnits": 3,
+    "remainderUnits": 4
+  },
+  "observationSeparation": {
+    "publicPaymentWei": "3000000000000000",
+    "activeProbeIsAPrivateResponseToARequester": true,
+    "successWouldCreateAnAdditionalDistributionAndChangeTheHistory": true,
+    "one4uProbeDistinguishesActualFromCounterfactual": true
+  },
+  "actualEvidence": {
+    "arithmeticConsistency": true,
+    "liveCryptography": false,
+    "realUniswap": false,
+    "deployedApiAndLogs": false,
+    "realGasAndCalldata": false,
+    "finalizedChainHistory": false
+  },
+  "decision": "partial: arithmetic and active-oracle effects reproduced; UPRIV-02 adoption question remains unresolved until real public metadata, crypto, API/logs and chain history are inspected"
+}

@@ -1,0 +1,17 @@
+{
+  "id": "UX-02 Chrome HPKE manual follow-up",
+  "date": "2026-09-27",
+  "source": "User report after running the hpke-probe page in a second Chrome profile",
+  "reported": {
+    "recipientPublicKeyMatchesAcrossProfiles": true,
+    "decryptedFormatAndRangeValid": true,
+    "tamperingRejected": true
+  },
+  "evidence": {
+    "rawPublicKeyOrEnvelopeProvided": false,
+    "browserAndExtensionVersionsProvided": false,
+    "profileIsolationIndependentlyVerified": false,
+    "secretMaterialRequestedOrStored": false
+  },
+  "verdict": "User-reported recipient public key consistency, HPKE decryption and tamper rejection across Chrome profiles; full UX-02 recipient acceptance remains unresolved"
+}
