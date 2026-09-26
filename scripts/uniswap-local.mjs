@@ -61,6 +61,35 @@ export async function verifyLocalAssets(manifest, publicClient) {
   return verifyUniswapManifest(manifest, publicClient);
 }
 
+export async function captureLocalSnapshot({ publicClient, manifest }) {
+  if (await publicClient.getChainId() !== localChainId || manifest.chainId !== localChainId) {
+    throw new Error('snapshot chain ID must be local Anvil');
+  }
+  if (manifest.site !== null) throw new Error('asset-only snapshot requires no active service');
+  await verifyLocalAssets(manifest, publicClient);
+  const block = await publicClient.getBlock();
+  const snapshotId = await publicClient.request({ method: 'evm_snapshot', params: [] });
+  return { snapshotId, generation: manifest.generation, chainId: localChainId,
+    reserveBlockHash: block.hash };
+}
+
+export async function restoreLocalSnapshot(snapshot, { publicClient, manifest, serviceState = null }) {
+  if (await publicClient.getChainId() !== localChainId || manifest.chainId !== localChainId ||
+      snapshot.chainId !== localChainId) throw new Error('reset chain ID must be local Anvil');
+  if (snapshot.generation !== manifest.generation) throw new Error('snapshot generation mismatch');
+  if (serviceState !== null || manifest.site !== null) {
+    throw new Error('service reservations require DO stop and reset before whole-environment restore');
+  }
+  const reverted = await publicClient.request({ method: 'evm_revert', params: [snapshot.snapshotId] });
+  if (reverted !== true) throw new Error('Anvil snapshot no longer exists');
+  const restoredBlock = await publicClient.getBlock();
+  if (restoredBlock.hash?.toLowerCase() !== snapshot.reserveBlockHash.toLowerCase()) {
+    throw new Error('restored block hash mismatch');
+  }
+  await verifyLocalAssets(manifest, publicClient);
+  return captureLocalSnapshot({ publicClient, manifest });
+}
+
 export async function deployLocalAssets(input) {
   validateInput(input);
   const client = createPublicClient({ transport: http(input.url) });
@@ -174,9 +203,11 @@ function parseArgs(argv) {
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const action = process.argv[2];
-  if (action === '--help' || !['deploy', 'verify'].includes(action)) {
-    console.log('usage: node scripts/uniswap-local.mjs deploy|verify --rpc-url URL --chain-id 31337 --generation ID --manifest PATH --holder ADDRESS --lp-recipient ADDRESS');
-    if (action !== '--help') process.exitCode = 1;
+  const help = action === '--help' || process.argv.slice(3).includes('--help');
+  if (help ||
+      !['deploy', 'verify', 'snapshot', 'reset'].includes(action)) {
+    console.log('usage: node scripts/uniswap-local.mjs deploy|verify|snapshot|reset --rpc-url URL --chain-id 31337 --manifest PATH [--generation ID --holder ADDRESS --lp-recipient ADDRESS] [--snapshot PATH]');
+    if (!help) process.exitCode = 1;
   } else {
     const options = parseArgs(process.argv.slice(3));
     const file = options.manifest;
@@ -188,6 +219,26 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       if (chainId !== manifest.chainId) throw new Error('requested chain differs from manifest');
       await verifyLocalAssets(manifest, createPublicClient({ transport: http(url) }));
       console.log(`Local assets verified: ${file}`);
+    } else if (action === 'snapshot' || action === 'reset') {
+      const snapshotPath = options.snapshot;
+      if (!snapshotPath) throw new Error('snapshot path required');
+      if (options.scope && options.scope !== 'assets') {
+        throw new Error('whole-environment reset requires DO integration');
+      }
+      const manifest = JSON.parse(readFileSync(file, 'utf8'));
+      if (chainId !== manifest.chainId) throw new Error('requested chain differs from manifest');
+      const publicClient = createPublicClient({ transport: http(url) });
+      if (action === 'snapshot') {
+        if (existsSync(snapshotPath)) throw new Error('snapshot file already exists');
+        const snapshot = await captureLocalSnapshot({ publicClient, manifest });
+        writeFileSync(snapshotPath, `${JSON.stringify(snapshot, null, 2)}\n`, { flag: 'wx' });
+        console.log(`Local snapshot captured: ${snapshotPath}`);
+      } else {
+        const snapshot = JSON.parse(readFileSync(snapshotPath, 'utf8'));
+        const next = await restoreLocalSnapshot(snapshot, { publicClient, manifest });
+        writeFileSync(snapshotPath, `${JSON.stringify(next, null, 2)}\n`);
+        console.log(`Local assets restored: ${snapshotPath}`);
+      }
     } else {
       const input = { url, chainId, generation: options.generation,
         holder: options.holder, lpRecipient: options['lp-recipient'],

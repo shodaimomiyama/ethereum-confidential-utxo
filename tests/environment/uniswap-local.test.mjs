@@ -6,7 +6,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { withAnvil } from '../../scripts/verifier-deployment.mjs';
 import {
-  beginLocalDeployment, completeLocalDeployment, deployLocalAssets, verifyLocalAssets,
+  beginLocalDeployment, captureLocalSnapshot, completeLocalDeployment, deployLocalAssets,
+  restoreLocalSnapshot, verifyLocalAssets,
 } from '../../scripts/uniswap-local.mjs';
 
 test('an interrupted deployment keeps an attempt record and cannot silently restart', () => {
@@ -53,6 +54,11 @@ test('local assets deploy with 0.1 WETH and 10000 dUSD, then verify without addi
       abi: bundle.artifacts.pair.abi, functionName: 'balanceOf', args: [lpRecipient] });
     assert.ok(lpBalance > 0n);
     const wallet = createWalletClient({ account: holder, transport: http(url) });
+    const snapshot = await captureLocalSnapshot({ publicClient: client, manifest });
+    await assert.rejects(restoreLocalSnapshot(snapshot, { publicClient: client, manifest,
+      serviceState: { status: 'active', pendingReservations: 1 } }), /service|reservation/i);
+    await assert.rejects(restoreLocalSnapshot(snapshot, { publicClient: { getChainId: async () => 11155111 },
+      manifest }), /chain/i);
     const latest = await client.getBlock();
     const swapArgs = [1n, [manifest.contracts.weth9.address, manifest.contracts.dUSD.address], holder,
       latest.timestamp + 300n];
@@ -69,6 +75,12 @@ test('local assets deploy with 0.1 WETH and 10000 dUSD, then verify without addi
       abi: dusd.abi, functionName: 'balanceOf', args: [holder] });
     assert.ok(holderBalanceAfter > holderBalanceBefore);
     await verifyLocalAssets(manifest, client);
+    const nextSnapshot = await restoreLocalSnapshot(snapshot, { publicClient: client, manifest });
+    assert.notEqual(nextSnapshot.snapshotId, snapshot.snapshotId);
+    const restored = await client.readContract({ address: manifest.contracts.pair.address,
+      abi: bundle.artifacts.pair.abi, functionName: 'getReserves' });
+    assert.equal(String(restored[0]), manifest.assets.checkpoint.reserve0);
+    assert.equal(String(restored[1]), manifest.assets.checkpoint.reserve1);
     await assert.rejects(deployLocalAssets({ ...input, chainId: 11155111 }), /chain/i);
     const corrupted = structuredClone(manifest);
     corrupted.contracts.pair.runtimeSha256 = '0'.repeat(64);

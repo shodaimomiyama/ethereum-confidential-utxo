@@ -17,6 +17,8 @@
     "check:uniswap": "node scripts/uniswap-source.mjs verify && node scripts/uniswap-artifact.mjs verify",
     "uniswap:local:deploy": "node scripts/uniswap-local.mjs deploy",
     "uniswap:local:verify": "node scripts/uniswap-local.mjs verify",
+    "uniswap:local:snapshot": "node scripts/uniswap-local.mjs snapshot",
+    "uniswap:local:reset": "node scripts/uniswap-local.mjs reset",
     "check:verifier": "node scripts/verify-verifier-artifact.mjs",
     "measure:verifier": "node scripts/measure-verifier.mjs",
     "smoke:rpc": "node scripts/check-tools.mjs && node scripts/run-environment-smoke.mjs",
