@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.base.json",
+  "include": ["packages/uniswap/src/**/*.ts", "packages/uniswap/test/**/*.ts", "apps/uniswap-web/src/**/*.ts", "apps/uniswap-web/test/**/*.ts"],
+  "exclude": ["experiments", "benchmarks"]
+}
