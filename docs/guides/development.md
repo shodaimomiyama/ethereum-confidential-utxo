@@ -82,8 +82,8 @@ pnpm uniswap:sepolia:probe
 | 受入 | 対象commit・artifactと実行証拠 | 期待と実結果・状態 | 引渡し先 |
 | --- | --- | --- | --- |
 | A-01 資産 | `1b1af6d`、`DemoUSD.sol`、`forge test --root contracts` | 固定供給・名称・桁数・送付/承認のテスト成功。発行先・残余/LP先はローカルmanifestで照合済み | #56 |
-| A-02 Uniswap | `673c26d`、`vendor/uniswap-v2/source-lock.json`、`packages/ethereum/generated/uniswap-v2.json`、`pnpm artifact:uniswap && pnpm check:uniswap` | ソースhash、compiler、Pair init code hashの照合成功。Sepolia公式コードは下記A-06の別検査 | #56・#55 |
-| A-03 ローカル初期状態 | `92923a9`・`4607647`、`node --test tests/environment/uniswap-local.test.mjs`、上記Anvilコマンド | forkなし配置・初期reserve・実Router交換・資産snapshot復元に成功。正式Poolの結合は未実施 | #56・#45 |
+| A-02 Uniswap | `673c26d`・`4efb68c`、`vendor/uniswap-v2/source-lock.json`、`packages/ethereum/generated/uniswap-v2.json`、`pnpm artifact:uniswap && pnpm check:uniswap` | ソースhash、compiler、Pair init code hash、ローカル配置tx入力・receiptと固定artifactの照合成功。Sepolia公式コードは下記A-06の別検査 | #56・#55 |
+| A-03 ローカル初期状態 | `92923a9`・`4607647`・`4efb68c`、`node --test tests/environment/uniswap-local.test.mjs`、上記Anvilコマンド | forkなし配置・初期reserve・実Router交換・資産snapshot復元とcheckpointでの余剰dUSD/LP残高照合に成功。正式Poolの結合は未実施 | #56・#45 |
 | A-04 再実行 | `92923a9`・`4607647`、同じローカルテストとdeploy→verify→deploy、snapshot→reset | 二重流動性投入を防ぎ、結果不明の再送を停止する局所試験は成功。DOを含む全体resetは #57 interface待ち | #57・#48 |
 | A-05 正式構成 | #27 Pool配置成果と #56 Adapter artifactを入力とする | 未実施。正式ABI・manifestを受領してから専用PoolとAdapterを配置・code/参照先を照合する | #27・#56・#45 |
 | A-06 公開準備 | `b74a3a5`、`pnpm uniswap:sepolia:probe`、checkpoint 11788121 | 公式Factory/Router/WETH、RPC履歴・logs・finalized・CORSは成功。faucet実受取、制限時挙動、公開配置は未実施 | #45〜#50 |
