@@ -21,7 +21,7 @@ Ethereum上で、UTXOの消費と生成の関係を公開しながら、ETHの�
 
 接続が扱うのは、単一UTXOから一種類の公開トークンへの部分支払いです。失敗した支払いでは、その試行による入力消費、残額生成、出金、交換、着金を一体に取り消します。先に確定した送金や外側のトランザクションのgas費用は、取消の対象に含めません。
 
-テスト用資産を使い、ローカルEthereumと公開テストネットで検証する研究を対象とします。実資金での本番運用、GUI、ERC-20の機密資産一般への対応、取引グラフの秘匿、厳密な請求額決済は初期範囲外です。標準としての採用や先行方式より低いコストは、今後検証する研究の目標です。
+テスト用資産を使い、ローカルEthereumと公開テストネットで検証する研究を対象とします。[接続仕様](docs/integration/uniswap/specification.md)では、デモ報酬、支払い、入金、全額出金を扱う公開デモサイトを必須としています。仕様の存在は実装・公開の完了を意味しません。実資金での本番運用、汎用的な機密ウォレットGUI、ERC-20の機密資産一般への対応、取引グラフの秘匿、厳密な請求額決済は初期範囲外です。標準としての採用や先行方式より低いコストは、今後検証する研究の目標です。
 
 ## 仕組み（How it's made）
 
@@ -93,4 +93,5 @@ bash benchmarks/prior-eips/recipient/run.sh /tmp/eip8182-clean http://127.0.0.1:
 | [本体設計（草案）](docs/design.md) | 方式、認可、受領と同期、検証計画、採用判断の根拠 |
 | [Uniswap接続PRD](docs/integration/uniswap/PRD.md) | 機密ETHからの公開部分支払いと残額の再利用 |
 | [Uniswap接続要件定義](docs/integration/uniswap/requirements.md) | 認可、取消、機密性、コストと追試の受入条件 |
+| [Uniswap接続仕様](docs/integration/uniswap/specification.md) | 支払いの受理、全量着金、取消、同期、公開サイトとデモ報酬要求の規則 |
 | [先行EIPの比較調査](docs/research/prior-eip-comparison.md) | 比較範囲、測定条件、生データと限界 |

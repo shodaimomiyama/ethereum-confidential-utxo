@@ -1,6 +1,7 @@
 # Uniswap接続のPRD（要求定義）
 
 - 利用する基盤: [Confidential UTXOのPRD](../../PRD.md)
+- 振る舞いの具体化: [Uniswap接続の仕様](specification.md)
 - 候補比較、合意と後続作業: [Issue #9](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/9)
 - 公開デモサイトとUIの要求の具体化: [Issue #16](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/16)
 
