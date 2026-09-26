@@ -2,18 +2,20 @@ import { expect, it, vi } from 'vitest';
 import type { Bytes32, Scope } from '@confidential-utxo/uniswap';
 import { createAuthSession } from '../../src/live/auth.js';
 import { createHttpClient } from '../../src/live/http.js';
+import type { DeploymentLocation } from '../../src/live/scope.js';
 import type { WalletPort, WalletEvent } from '../../src/live/wallet.js';
 
 const scope = { deploymentId: 'local-v1', owner: `0x${'ab'.repeat(20)}` } as Scope;
 const id = `0x${'33'.repeat(32)}` as Bytes32;
 function setup(challenge = { challengeId: id, nonce: id, issuedAt: 1000, expiresAt: 301000 }) {
   let now = 1000;
+  let deployment: DeploymentLocation | undefined = { chainId: 31337n, pool: `0x${'11'.repeat(20)}` };
   let listener: ((event: WalletEvent) => void) | undefined;
   const personalSign = vi.fn(async (_message: Uint8Array, _purpose: string) => ({ value: `0x${'aa'.repeat(65)}`, scope, epoch: 1 }));
   const wallet = { personalSign, subscribe: (fn: typeof listener) => { listener = fn; return () => { listener = undefined; }; } } as unknown as WalletPort;
   const transport = vi.fn(async (request: Request) => request.url.endsWith('/challenge') ? Response.json(challenge) : Response.json({ sessionExpiresAt: now + 1800000 }));
-  const auth = createAuthSession({ client: createHttpClient({ origin: 'https://mock.invalid', transport }), wallet, origin: 'https://mock.invalid', resolveDeployment: () => ({ chainId: 31337n, pool: `0x${'11'.repeat(20)}` }), connection: () => ({ scope, epoch: 1 }), now: () => now });
-  return { auth, personalSign, transport, setNow: (value: number) => { now = value; }, change: () => listener?.({ epoch: 2 }) };
+  const auth = createAuthSession({ client: createHttpClient({ origin: 'https://mock.invalid', transport }), wallet, origin: 'https://mock.invalid', resolveDeployment: () => deployment, connection: () => ({ scope, epoch: 1 }), now: () => now });
+  return { auth, personalSign, transport, setDeployment: (value: DeploymentLocation | undefined) => { deployment = value; }, setNow: (value: number) => { now = value; }, change: () => listener?.({ epoch: 2 }) };
 }
 
 it('only signs on explicit authenticate and uses a dedicated SIWE signature', async () => {
@@ -81,4 +83,19 @@ it('rejects a session longer than thirty minutes and disconnects on disposal', a
   auth.dispose();
   await expect(auth.authenticate(scope)).rejects.toMatchObject({ kind: 'scope' });
   expect(personalSign).toHaveBeenCalledTimes(1);
+});
+
+
+it.each([
+  { reason: 'chain changed', deployment: { chainId: 1n, pool: `0x${'11'.repeat(20)}` as const } },
+  { reason: 'Pool changed', deployment: { chainId: 31337n, pool: `0x${'22'.repeat(20)}` as const } },
+  { reason: 'mapping removed', deployment: undefined },
+])('rejects authenticated state when $reason without an epoch change', async ({ deployment }) => {
+  const { auth, personalSign, transport, setDeployment } = setup();
+  await auth.authenticate(scope);
+  expect(auth.isAuthenticated(scope)).toBe(true);
+  setDeployment(deployment);
+  expect(auth.isAuthenticated(scope)).toBe(false);
+  expect(personalSign).toHaveBeenCalledTimes(1);
+  expect(transport).toHaveBeenCalledTimes(2);
 });

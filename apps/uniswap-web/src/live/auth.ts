@@ -33,7 +33,7 @@ export function createAuthSession(options: {
     || url.pathname !== '/' || url.search || url.hash) throw new AuthFailure('challenge');
   let revision = 0;
   let disposed = false;
-  let authenticated: { scope: Scope; expiresAt: number; epoch: number } | undefined;
+  let authenticated: { scope: Scope; expiresAt: number; epoch: number; chainId: bigint; pool: string } | undefined;
   const invalidate = (): void => { revision++; authenticated = undefined; };
   const unsubscribe = wallet.subscribe(invalidate);
   return {
@@ -81,13 +81,16 @@ export function createAuthSession(options: {
       check();
       if (verified.sessionExpiresAt <= now() || verified.sessionExpiresAt > now() + 1800000
         || verified.sessionExpiresAt < startedAt) throw new AuthFailure('session');
-      authenticated = { scope, epoch, expiresAt: verified.sessionExpiresAt };
+      authenticated = { scope, epoch, chainId, pool, expiresAt: verified.sessionExpiresAt };
     },
     isAuthenticated(scope) {
       const current = connection();
+      const deployment = resolveDeployment(scope.deploymentId);
       return !disposed && authenticated !== undefined && authenticated.expiresAt > now()
         && current.epoch === authenticated.epoch && current.scope !== undefined
-        && sameScope(current.scope, scope) && sameScope(authenticated.scope, scope);
+        && sameScope(current.scope, scope) && sameScope(authenticated.scope, scope)
+        && deployment !== undefined && deployment.chainId === authenticated.chainId
+        && deployment.pool.toLowerCase() === authenticated.pool.toLowerCase();
     },
     invalidate,
     dispose() { disposed = true; invalidate(); unsubscribe(); },
