@@ -8,6 +8,7 @@ import { apiError, apiSuccess, BodyTooLarge, readLimitedJson } from './http.js';
 import { listOperations, putOperation } from './store.js';
 import { ensureWritable, getAvailability, initializeEnvironment, resolveRecoveryGate } from './recovery.js';
 import { getServiceExtensions, makeServiceContext } from './extensions.js';
+import { createCoreInputReader, getCoreHistoryProvider } from './core-reader.js';
 
 export class UniswapServiceObject extends DurableObject<ServiceEnv> {
   constructor(ctx: DurableObjectState, env: ServiceEnv) {
@@ -59,8 +60,11 @@ export class UniswapServiceObject extends DurableObject<ServiceEnv> {
       }
       if (parsed.route === 'PUT /v1/operations/{id}') {
         ensureWritable(this.ctx.storage, recoveryGate);
+        let history;
+        try { history = getCoreHistoryProvider()?.(parsed.scope.deploymentId, config); }
+        catch { return apiError(503, 'SERVICE_UNAVAILABLE'); }
         const saved = await putOperation(this.ctx.storage, parsed.scope, parsed.record!, parsed.expectedRevision!, {
-          readInput: async () => 'unknown',
+          ...(history === undefined ? { readInput: async () => 'unknown' as const } : createCoreInputReader(history, config)),
         }, () => ensureWritable(this.ctx.storage, recoveryGate));
         return apiSuccess({ ...saved, scope: parsed.scope,
           record: { ...saved.record, deadline: saved.record.kind === 'pay' ? saved.record.deadline.toString() : undefined },

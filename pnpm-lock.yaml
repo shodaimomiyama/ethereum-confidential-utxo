@@ -26,6 +26,9 @@ importers:
 
   apps/uniswap-service:
     dependencies:
+      '@confidential-utxo/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@confidential-utxo/uniswap':
         specifier: workspace:*
         version: link:../../packages/uniswap

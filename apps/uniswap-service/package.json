@@ -8,6 +8,7 @@
     "build": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@confidential-utxo/core": "workspace:*",
     "@confidential-utxo/uniswap": "workspace:*",
     "viem": "2.56.9"
   },

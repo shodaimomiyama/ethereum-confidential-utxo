@@ -56,6 +56,18 @@ it('authenticates through the Worker and returns only the owner records', async 
   expect(other.status).toBe(403);
   const missingCookie = await worker.fetch(new Request(`https://site.test${query}`), serviceEnv);
   expect(missingCookie.status).toBe(401);
+  const recordId = `0x${'71'.repeat(32)}`;
+  const unavailable = await worker.fetch(new Request(`https://site.test/v1/operations/${recordId}`, {
+    method: 'PUT', headers: { origin: 'https://site.test', cookie }, body: JSON.stringify({
+      scope, expectedRevision: 0, record: {
+        recordId, kind: 'withdraw', inputId: `0x${'72'.repeat(32)}`,
+        operationId: recordId, contentHash: recordId,
+        encryptedBundle: { ciphertext: 'AQID', nonce: `0x${'00'.repeat(12)}`, tag: `0x${'00'.repeat(16)}` },
+        signatureStarted: false, attemptIds: [],
+      },
+    }),
+  }), serviceEnv);
+  expect(unavailable.status).toBe(503);
 });
 
 it('rejects cross-origin challenge and oversize JSON before creating state', async () => {
