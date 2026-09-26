@@ -252,6 +252,8 @@ function operationSeeds(owner) {
       inputIds: [INPUT_A], outputs: [], w: '1', destination: RECIPIENT }],
     ['WITHDRAW-PARTIAL', { ...common, kind: 2, salt: '0x' + '07'.repeat(32),
       inputIds: [INPUT_A, INPUT_B], outputs: [changeOutput], w: '1', destination: RECIPIENT }],
+    ['WITHDRAW-SELF', { ...common, kind: 2, salt: '0x' + '08'.repeat(32),
+      inputIds: [INPUT_A], outputs: [], w: '1', destination: POOL }],
   ];
 }
 
@@ -268,6 +270,7 @@ export async function generateAbiCases() {
       ['#27', '#29', '#30'], 'viem 2.56.9; ethers 6.13.4 cross-check'));
   const depositInput = operations[0].input;
   const mergeInput = operations[3].input;
+  const fullWithdrawalInput = operations[5].input;
   const invalidOperations = [
     ['INPUT-ORDER', mergeInput, 'VEC-01-TRANSFER-MERGE', 'inputIds.order',
       value => { value.inputIds.reverse(); }],
@@ -285,6 +288,10 @@ export async function generateAbiCases() {
       value => { value.d = '0'; }],
     ['UNUSED-DESTINATION', depositInput, 'VEC-01-DEPOSIT', 'destination',
       value => { value.destination = RECIPIENT; }],
+    ['ZERO-OUTPUT-OWNER', depositInput, 'VEC-01-DEPOSIT', 'outputs[0].owner',
+      value => { value.outputs[0].owner = ZERO_ADDRESS; }],
+    ['ZERO-WITHDRAW-DESTINATION', fullWithdrawalInput, 'VEC-01-WITHDRAW-FULL', 'destination',
+      value => { value.destination = ZERO_ADDRESS; }],
   ].map(([name, baseInput, baseCase, mutatedField, mutate]) => {
     const input = structuredClone(baseInput);
     mutate(input);
