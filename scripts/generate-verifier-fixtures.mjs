@@ -5,6 +5,11 @@ import { execFileSync } from 'node:child_process';
 const source = 'experiments/design/crypto-profile-v3/exp08/parameters.json';
 const target = 'contracts/test/fixtures/VerifierVectors.sol';
 const params = JSON.parse(readFileSync(source, 'utf8'));
+const rangeCases = [
+  ...JSON.parse(readFileSync('tests/vectors/cases/range-v3.json', 'utf8')).slice(0, 4),
+  ...JSON.parse(readFileSync('tests/vectors/cases/range-deterministic.json', 'utf8')),
+];
+const trace = rangeCases[4].input.transcriptTrace;
 const word = value => BigInt(value).toString(10);
 if (params.base.length !== 4 || params.gs.length !== 128 || params.hs.length !== 128) {
   throw new Error('parameter shape');
@@ -22,7 +27,45 @@ const lines = [
 for (const [name, values] of [['base', params.base], ['gs', params.gs], ['hs', params.hs]]) {
   for (let i = 0; i < values.length; i++) lines.push(`        ${name}[${i}] = ${word(values[i])};`);
 }
-lines.push('    }', '}', '');
+lines.push('    }', '');
+lines.push('    function rangeProof(uint256 index) internal pure returns (');
+lines.push('        bytes32 operationId, uint256 outputIndex, uint256[10] memory coords,');
+lines.push('        uint256[5] memory scalars, uint256[] memory ls, uint256[] memory rs');
+lines.push('    ) {');
+rangeCases.forEach((entry, caseIndex) => {
+  const input = entry.input;
+  lines.push(`        if (index == ${caseIndex}) { // ${entry.id}`);
+  lines.push(`            operationId = ${input.operationId};`);
+  lines.push(`            outputIndex = ${word(input.outputIndex)};`);
+  for (const name of ['coords', 'scalars']) {
+    input[name].forEach((value, i) => lines.push(`            ${name}[${i}] = ${word(value)};`));
+  }
+  for (const name of ['ls', 'rs']) {
+    lines.push(`            ${name} = new uint256[](${input[name].length});`);
+    input[name].forEach((value, i) => lines.push(`            ${name}[${i}] = ${word(value)};`));
+  }
+  lines.push('            return (operationId, outputIndex, coords, scalars, ls, rs);');
+  lines.push('        }');
+});
+lines.push('        revert("unknown range case");', '    }', '');
+lines.push('    function rangeTraceStep(uint256 index) internal pure returns (');
+lines.push('        bytes32 tag, bytes memory payload, bytes32 nextHash,');
+lines.push('        uint256 challenge, uint256 counter, bool inner');
+lines.push('    ) {');
+trace.stages.forEach((stage, index) => {
+  lines.push(`        if (index == ${index}) { // ${stage.stage}${stage.roundIndex ?? ''}`);
+  if (stage.stage !== 'inner') lines.push(`            tag = keccak256("${stage.stage === 'round' ? 'ecu/bp/round/v3' : `ecu/bp/${stage.stage}/v3`}");`);
+  lines.push(`            payload = hex"${stage.payloadHex.slice(2)}";`);
+  lines.push(`            nextHash = ${stage.nextState};`);
+  if (stage.stage === 'inner') lines.push('            inner = true;');
+  else {
+    lines.push(`            challenge = ${word(stage.challenge)};`);
+    lines.push(`            counter = ${stage.counter};`);
+  }
+  lines.push('            return (tag, payload, nextHash, challenge, counter, inner);');
+  lines.push('        }');
+});
+lines.push('        revert("unknown trace step");', '    }', '}', '');
 mkdirSync(dirname(target), { recursive: true });
 writeFileSync(target, lines.join('\n'));
 execFileSync('forge', ['fmt', '--root', 'contracts', target]);

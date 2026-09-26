@@ -64,9 +64,22 @@ library Bn254 {
         return addmod(first, second, Q);
     }
 
+    function add(uint256 first, uint256 second) internal pure returns (uint256) {
+        return addScalar(first, second);
+    }
+
     function subScalar(uint256 first, uint256 second) internal pure returns (uint256) {
         if (!isScalar(first) || !isScalar(second)) revert InvalidScalar();
         return first >= second ? first - second : Q - (second - first);
+    }
+
+    function sub(uint256 first, uint256 second) internal pure returns (uint256) {
+        return subScalar(first, second);
+    }
+
+    function neg(uint256 scalar) internal pure returns (uint256) {
+        if (!isScalar(scalar)) revert InvalidScalar();
+        return scalar == 0 ? 0 : Q - scalar;
     }
 
     function mulScalar(uint256 first, uint256 second) internal pure returns (uint256) {
@@ -74,9 +87,17 @@ library Bn254 {
         return mulmod(first, second, Q);
     }
 
+    function mul(uint256 first, uint256 second) internal pure returns (uint256) {
+        return mulScalar(first, second);
+    }
+
     function invScalar(uint256 scalar) internal view returns (uint256) {
         if (scalar == 0 || !isScalar(scalar)) revert InvalidScalar();
         return expScalar(scalar, Q - 2);
+    }
+
+    function inv(uint256 scalar) internal view returns (uint256) {
+        return invScalar(scalar);
     }
 
     function expScalar(uint256 base, uint256 exponent) internal view returns (uint256 result) {
