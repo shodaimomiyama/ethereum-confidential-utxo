@@ -45,6 +45,21 @@ export async function decryptRewardState(key: Uint8Array, deploymentId: string,
   } catch { throw new Error('INVALID_REWARD_STATE'); }
 }
 
+export function encodeRewardSecret(value: unknown): string {
+  return JSON.stringify(value, (_name, part: unknown) => typeof part === 'bigint'
+    ? { __rewardBigint: part.toString() } : part);
+}
+
+export function decodeRewardSecret<T>(source: string): T {
+  return JSON.parse(source, (_name, part: unknown) => {
+    if (part !== null && typeof part === 'object' && !Array.isArray(part)
+      && Object.keys(part).length === 1 && typeof (part as Record<string, unknown>).__rewardBigint === 'string') {
+      return BigInt((part as { __rewardBigint: string }).__rewardBigint);
+    }
+    return part;
+  }) as T;
+}
+
 export type RewardFunds =
   | { status: 'complete'; available: OwnedUtxo[]; checkpoint: Checkpoint }
   | { status: 'unknown' };
