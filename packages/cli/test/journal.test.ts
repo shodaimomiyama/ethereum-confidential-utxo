@@ -81,18 +81,28 @@ it("stores only public attempts for two owners and rejects binding or secret fie
   await expect(listAttempts(dir, binding)).rejects.toThrow();
 });
 
-it("keeps whole journal generations around interrupted fsync and rename", async () => {
+it("keeps whole journal generations around every write stage in a fresh process", async () => {
   const root = await mkdtemp(join(tmpdir(), "cutxo-journal-")); roots.push(root);
   const dir = join(root, "submitter");
   const first = aliceIntent(); const second = await bobIntent();
   expect(await appendPrepared(dir, binding, first, hash("a1"))).toBe("saved");
   const original = await readFile(join(dir, "journal.json"));
-  for (const phase of ["after-file-sync", "after-rename"] as const) {
+  const reader = `import { listAttempts } from ${JSON.stringify(new URL("../dist/journal.js", import.meta.url).href)};
+    const binding = { chainId: 31337n, pool: ${JSON.stringify(binding.pool)}, submitter: ${JSON.stringify(binding.submitter)} };
+    process.stdout.write(JSON.stringify((await listAttempts(process.argv[1], binding)).map(item => item.operationId)));`;
+  for (const phase of ["after-temp-create", "after-write", "after-file-sync", "after-rename", "after-dir-sync"] as const) {
     await replacePrivateFile(join(dir, "journal.json"), original);
     const atomic = createAtomicFiles(async point => { if (point === phase) throw new Error("interrupted"); });
     expect(await appendPrepared(dir, binding, second, hash("b2"), atomic.replacePrivateFile)).toBe("unknown");
-    const attempts = await listAttempts(dir, binding);
-    expect(attempts.map(item => item.operationId)).toEqual(phase === "after-file-sync" ?
+    const child = spawn(process.execPath, ["--input-type=module", "-e", reader, dir], { stdio: ["ignore", "pipe", "pipe"] });
+    let output = ""; let stderr = "";
+    child.stdout.on("data", data => { output += String(data); });
+    child.stderr.on("data", data => { stderr += String(data); });
+    await new Promise<void>((resolve, reject) => {
+      child.once("exit", code => code === 0 ? resolve() : reject(new Error(stderr || `reader exit ${code}`)));
+      child.once("error", reject);
+    });
+    expect(JSON.parse(output)).toEqual(["after-temp-create", "after-write", "after-file-sync"].includes(phase) ?
       [first.operationId] : [first.operationId, second.operationId]);
   }
 });

@@ -6,6 +6,7 @@ export default defineConfig({
   root: resolve(dirname(fileURLToPath(import.meta.url)), "../.."),
   test: {
     include: ["packages/cli/test/**/*.test.ts"],
-    testTimeout: 30_000,
+    fileParallelism: false,
+    testTimeout: 120_000,
   },
 });

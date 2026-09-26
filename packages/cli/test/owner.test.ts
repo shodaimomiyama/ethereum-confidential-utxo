@@ -98,7 +98,17 @@ it("retains old receipt keys, fixes before proof, and restores as needs-resync",
   await expect(service.restore(backupBytes, restoredDir, newPass)).rejects.toThrow();
   online = false;
   const recoveredService = new OwnerService({ dir: restoredDir, manifestPath: "unused", rpcUrl: "unused", owner: account.address },
-    async () => { throw new Error("RPC unavailable"); });
-  expect((await recoveredService.balance(newPass)).kind).toBe("balance");
+    async () => { if (!online) throw new Error("RPC unavailable"); return { context, history }; });
+  expect(await recoveredService.balance(newPass)).toMatchObject({ kind: "balance", status: "stale" });
   await expect(recoveredService.exportPublic(created.operationId, newPass, join(restoredDir, "blocked.json"))).rejects.toThrow();
+  online = true;
+  expect(await recoveredService.sync(newPass)).toMatchObject({ kind: "sync", status: "complete" });
+  const once = await readOwnerState(restoredDir, newPass);
+  expect(once.sync?.status === "complete" && once.sync.availableWei).toBe(7n);
+  expect(once.receiptKeys).toHaveLength(2);
+  expect(once.operations[created.operationId]?.phase).toBe("authorized");
+  expect(await recoveredService.sync(newPass)).toMatchObject({ kind: "sync", status: "complete" });
+  const twice = await readOwnerState(restoredDir, newPass);
+  expect(twice.sync?.status === "complete" && twice.sync.availableWei).toBe(7n);
+  expect(twice.sync?.status === "complete" && twice.sync.utxos).toHaveLength(1);
 });

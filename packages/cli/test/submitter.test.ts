@@ -95,6 +95,21 @@ it("reports unknown after accepted send when result persistence fails and never 
   expect(sender.sent).toHaveLength(1);
 });
 
+it("does not mistake a successful outer receipt without a logical success event for execution", async () => {
+  const f = await fixture(); const sender = wallet();
+  const outerOnly = { getTransactionReceipt: async () => ({ status: "success", blockNumber: 1n,
+    blockHash: point.hash, gasUsed: 100000n, effectiveGasPrice: 100n }),
+    getBlock: async () => ({ hash: point.hash }) } as unknown as PublicClient;
+  const service = new SubmitterService(sender.mock, history(), outerOnly);
+  const submitted = await service.submit(publicFile, f.signerFile, f.journalDir, verified);
+  expect(submitted).toMatchObject({ status: "pending" });
+  const restarted = new SubmitterService(sender.mock, history(), outerOnly);
+  const id = operationId(context, request);
+  expect(await restarted.inspect(id, f.journalDir, verified)).toMatchObject({ kind: "operation", status: "unknown" });
+  expect(await restarted.retry(id, f.signerFile, f.journalDir, verified)).toMatchObject({ status: "unknown" });
+  expect(sender.sent).toHaveLength(1);
+});
+
 it("inspects a known pending hash and replaces its fee while retaining the earlier attempt", async () => {
   const f = await fixture(); const sender = wallet();
   const pendingClient = { getTransactionReceipt: async () => { throw new TransactionReceiptNotFoundError({ hash: hash("bb") }); },

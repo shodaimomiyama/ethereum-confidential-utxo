@@ -220,3 +220,60 @@ rg 'from .*packages/(ethereum|cli)|node:fs|tests/vectors/tools|experiments/' pac
 | AC-10 | `public-api` の公開ルートの実行・型importとbuild/test/check |
 
 これらはNode上の共通処理の検証である。実PoolのABI・RPC接続は#30/#36、CLIの暗号化保存と永続化は#31、ブラウザ実行は#46/#59で検証する。ここでの保存成功は偽adapterの応答に基づき、ディスク耐久性や実送信の成功を示さない。
+
+## Issue #31: CLIの操作・復旧
+
+Node 24.21.0、pnpm 10.34.5、Foundry 1.8.3を使い、リポジトリのルートで `pnpm install --frozen-lockfile && pnpm build` を実行する。操作入口は `node packages/cli/dist/bin.js help`。`--json` は公開状態を1個のJSON objectとして標準出力へ返し、非公開残高・UTXO額を含めない。非公開額は本人が解除した対話端末の通常表示だけに出る。解除は標準入力と標準エラーの双方がTTYである場合だけ許可し、リダイレクト入力や引数のパスフレーズは受け付けない。戻り値は0が完了・既知の成功、2が入力/設定、3が保存/ロック、4がRPC/結果不明、5が既知の失敗/競合である。
+
+所有者の署名ファイルと提出者の署名ファイルは別々に準備する。各ファイルの内容は対応する秘密鍵の `0x` + 64桁の16進数だけとし、末尾の改行は1個まで許す。親ディレクトリを0700、ファイルを0600に設定し、所有者アドレスと鍵から導くアドレスを照合する。鍵の値をコマンドライン、環境変数、shell履歴、Issue本文へ置かない。額は同じ権限の別ファイルに `{"amountWei":"10"}` のような正規JSONで保存し、`--amount-file` にその**パス**を渡す。ファイル名にも額を含めない。`--amount` は受け付けない。
+
+以下の変数は公開のパス、アドレス、RPC URLを指す。`POOL_MANIFEST` は上記#27の配置で生成・検証したmanifest、`ALICE_STORE` と `BOB_STORE` は互いに異なる新規ディレクトリ、`JOURNAL` は提出者専用の新規ディレクトリとする。RPC URLに認証情報を埋め込む運用では、そのURLを引数に載せることも避け、認証情報を含まないローカルRPC経由で接続する。
+
+```sh
+node packages/cli/dist/bin.js init --store "$ALICE_STORE" --owner "$ALICE" --manifest "$POOL_MANIFEST" --rpc "$POOL_RPC"
+node packages/cli/dist/bin.js key add --store "$ALICE_STORE" --owner "$ALICE"
+node packages/cli/dist/bin.js recipient --store "$ALICE_STORE" --owner "$ALICE" --signer "$ALICE_SIGNER" --out "$ALICE_RECIPIENT"
+node packages/cli/dist/bin.js sync --store "$ALICE_STORE" --owner "$ALICE" --manifest "$POOL_MANIFEST" --rpc "$POOL_RPC"
+node packages/cli/dist/bin.js create --store "$ALICE_STORE" --owner "$ALICE" --manifest "$POOL_MANIFEST" --rpc "$POOL_RPC" --kind deposit --amount-file "$PRIVATE_AMOUNT_FILE" --recipient "$ALICE_RECIPIENT" --json
+node packages/cli/dist/bin.js prove --store "$ALICE_STORE" --owner "$ALICE" --id "$OPERATION_ID"
+node packages/cli/dist/bin.js authorize --store "$ALICE_STORE" --owner "$ALICE" --id "$OPERATION_ID" --signer "$ALICE_SIGNER"
+node packages/cli/dist/bin.js export --store "$ALICE_STORE" --owner "$ALICE" --id "$OPERATION_ID" --out "$PUBLIC_REQUEST"
+node packages/cli/dist/bin.js submit --journal "$JOURNAL" --manifest "$POOL_MANIFEST" --rpc "$POOL_RPC" --signer "$SUBMITTER_SIGNER" --submitter "$SUBMITTER" --public "$PUBLIC_REQUEST" --json
+node packages/cli/dist/bin.js operation --journal "$JOURNAL" --manifest "$POOL_MANIFEST" --rpc "$POOL_RPC" --signer "$SUBMITTER_SIGNER" --submitter "$SUBMITTER" --id "$OPERATION_ID"
+node packages/cli/dist/bin.js sync --store "$ALICE_STORE" --owner "$ALICE" --manifest "$POOL_MANIFEST" --rpc "$POOL_RPC"
+node packages/cli/dist/bin.js balance --store "$ALICE_STORE" --owner "$ALICE"
+node packages/cli/dist/bin.js utxos --store "$ALICE_STORE" --owner "$ALICE"
+```
+
+Bobは独立の保存先で `init`、`key add`、`recipient` を行う。Aliceの`transfer`は `--recipient "$BOB_RECIPIENT"` と、部分送金なら `--change-recipient "$ALICE_RECIPIENT"` を指定する。`withdraw`は `--destination "$PUBLIC_DESTINATION"` を指定する。2入力を使う場合は `--input-id` を2回まで指定できる。受領・残高・使用済み入力はBob自身の `sync` で復元でき、Aliceの保存先や署名鍵を共有しない。公開ETH残高と機密UTXO残高は別に確認する。受領鍵を追加・選択しても旧鍵を消去しない。`key select --key-id "$KEY_ID"` は新しく発行する受取情報のactive鍵だけを変更する。
+
+バックアップは `backup --store "$ALICE_STORE" --owner "$ALICE" --out "$BACKUP"` で別のパスフレーズを二度入力して作る。`restore --store "$NEW_STORE" --owner "$ALICE" --backup "$BACKUP"` は**存在しない**保存先を要求し、バックアップ作成時のパスフレーズを使う。`passphrase change --store "$ALICE_STORE" --owner "$ALICE"` 後も古いバックアップには旧パスフレーズが必要である。復元直後は `needs-resync` で、オンラインの `sync` を完了するまで残高や提出可否を確定しない。結果不明の提出は `operation` で操作ID、成功イベント、入力状態、nonceと取引hashを照合する。`retry` と `replace-fee` は明示操作とし、準備済み記録だけから自動再送しない。
+
+更新がロックで止まった場合は、同じ保存先に書き込む全プロセスを停止し、保存先・端末・利用者を照合して実行中のwriterがないことを確認する。暗号化状態とジャーナルのバックアップを取ってから残留 `.writer-lock` を手動で扱う。記録されたPIDだけを根拠に削除しない。一時ファイルを最新版として自動採用せず、再起動後に操作IDとチェーン状態を照合する。ネットワークファイルシステム、複数ホストによる同一保存先の共有は検証対象外である。
+
+Sepoliaではchain ID 11155111のmanifest、実配置コード、RPCの`finalized`照会を使う。RPCが必要な履歴・状態を同一確定ブロックで返せない場合は結果不明として停止する。公開Sepoliaでの実資金・実送信・受領の記録はIssue #36へ渡す。#31のローカル再現は次のコマンドを使う。
+
+```sh
+pnpm build
+pnpm check
+pnpm test
+pnpm exec vitest run --config packages/cli/vitest.config.ts packages/cli/test/process.test.ts packages/cli/test/anvil-process.test.ts
+git rev-parse HEAD
+node --version
+pnpm --version
+forge --version
+```
+
+2026-09-27のmacOS 26.5 / arm64 / APFS（作業領域は `/System/Volumes/Data`、`apfs, local, journaled`）でNode 24.21.0、pnpm 10.34.5、Foundry 1.8.3を使用した。Anvil実取引と次の故障注入を実施した。故障注入では書込処理へ例外を渡した後、**別のNodeプロセス**でファイルを読み直した。旧/新はいずれも認証・schema検査に通る完全な世代である。
+
+同環境の `pnpm install --frozen-lockfile`、`pnpm build`、`pnpm check`、`pnpm test` は成功した。最終の `pnpm test` はFoundry 102/102、暗号32/32、共通処理249/249、Ethereum 51/51、CLI 40/40であった。CLI単独のテストはファイルを直列実行し、Anvilの別プロセス試験を含めて12ファイル40件が通過した。再実行時の対象commitは上の `git rev-parse HEAD` で採取する。
+
+| 注入位置 | 暗号化所有者状態 | 公開ジャーナル | 書込結果 |
+| --- | --- | --- | --- |
+| 一時ファイル作成後 | 旧 | 旧 | 失敗/不明 |
+| 書込後 | 旧 | 旧 | 失敗/不明 |
+| ファイル`fsync`後 | 旧 | 旧 | 失敗/不明 |
+| `rename`後 | 新 | 新 | 失敗/不明 |
+| 親ディレクトリ`fsync`後 | 新 | 新 | 失敗/不明 |
+
+Ubuntu 24.04 x86_64の結果と、隔離VMの電源を強制遮断またはブロックデバイスを切断して再起動するAC-08の試験は未取得である。SIGKILLや故障注入だけで電源断後の永続性を合格扱いしない。実施時は専用の破棄可能なボリュームで各段階を反復し、OS・FS・mount、Node/pnpm/Foundryとcommit、遮断位置、再起動後の旧/新世代と不明状態、未試験のハードウェア条件を記録する。AC-08が済むまでIssue #31の全受入を完了と記録しない。

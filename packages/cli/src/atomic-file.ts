@@ -3,7 +3,7 @@ import { constants as fsConstants } from "node:fs";
 import { mkdir, open, lstat, rename, rmdir } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 
-type Phase = "after-write" | "after-file-sync" | "after-rename" | "after-dir-sync";
+type Phase = "after-temp-create" | "after-write" | "after-file-sync" | "after-rename" | "after-dir-sync";
 type FaultHook = (phase: Phase) => Promise<void>;
 
 function fail(): never { throw new Error("PRIVATE_FILE_INVALID"); }
@@ -68,6 +68,7 @@ export function createAtomicFiles(fault: FaultHook = async () => {}) {
         const stat = await handle.stat();
         if (!stat.isFile() || (stat.mode & 0o777) !== 0o600 ||
             (typeof process.getuid === "function" && stat.uid !== process.getuid())) fail();
+        await fault("after-temp-create");
         let offset = 0;
         while (offset < bytes.length) {
           const { bytesWritten } = await handle.write(bytes, offset, bytes.length - offset, offset);

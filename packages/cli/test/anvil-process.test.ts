@@ -135,6 +135,8 @@ it("runs deposit, partial and whole transfers, aggregation, and withdrawal throu
 
       await operation(aliceArgs, aliceSigner, "deposit", "10", ["--recipient", aliceRecipient]);
       await cli(["sync", ...aliceArgs, ...onlineArgs]);
+      const oldBackup = join(root, "alice-old.backup");
+      await cli(["backup", ...aliceArgs, "--out", oldBackup]);
       await operation(aliceArgs, aliceSigner, "transfer", "3", ["--recipient", bobRecipient,
         "--change-recipient", aliceRecipient]);
       await cli(["sync", ...aliceArgs, ...onlineArgs]);
@@ -159,6 +161,15 @@ it("runs deposit, partial and whole transfers, aggregation, and withdrawal throu
       const publicBalance = await cli(["balance", ...bobArgs]);
       expect(publicBalance).toMatchObject({ kind: "balance", status: "available" });
       expect(JSON.stringify(publicBalance)).not.toContain("availableWei");
+      const recoveredStore = join(root, "alice-recovered");
+      const recoveredArgs = ["--store", recoveredStore, "--owner", alice.address];
+      expect(await cli(["restore", ...recoveredArgs, "--backup", oldBackup])).toMatchObject({ status: "needs-resync" });
+      const restoredState = await readOwnerState(recoveredStore, Buffer.from("secret"));
+      expect(restoredState.sync?.status === "complete" && restoredState.sync.availableWei).toBe(10n);
+      await cli(["sync", ...recoveredArgs, ...onlineArgs]);
+      const recovered = await readOwnerState(recoveredStore, Buffer.from("secret"));
+      expect(recovered.sync?.status === "complete" && recovered.sync.availableWei).toBe(0n);
+      expect(recovered.restoration).toBe("ready");
     });
   } finally { await rm(root, { recursive: true, force: true }); }
-}, 300_000);
+}, 600_000);
