@@ -8,6 +8,7 @@ import { CipherSuite, HkdfSha256 } from '@hpke/core';
 import { DhkemX25519HkdfSha256 } from '@hpke/dhkem-x25519';
 import { Chacha20Poly1305 } from '@hpke/chacha20poly1305';
 import { Wallet } from 'ethers';
+import { encodeAbiParameters, parseAbiParameters, keccak256, stringToHex } from 'viem';
 import { buildOperation, authorizationDigest, buildOperationLogs } from './oracle-abi.mjs';
 
 const b = hex => Buffer.from(hex.slice(2), 'hex');
@@ -69,6 +70,44 @@ function commitment(value, blinding) {
   const point = H.multiply(BigInt(value)).add(blinding === 0n ? bn254.G1.Point.ZERO : G.multiply(blinding));
   const affine = point.toAffine();
   return { Cx: String(affine.x), Cy: String(affine.y) };
+}
+
+const PARAMETERS_HASH = '0x0bfd116b8ef31332d31d3350ed24fa36d1e17865a7c1dc0758331da0755f8dae';
+const BALANCE_TAG = keccak256(stringToHex('ecu/balance-schnorr/bn254/v1'));
+const balanceChallengeTypes = parseAbiParameters(
+  'bytes32, uint256, address, bytes32, bytes32, uint256, uint256, uint256, uint256, uint256, uint256, uint256');
+
+export function depositBalanceProof(operationInput, operationId) {
+  if (operationInput.kind !== 0 || operationInput.inputIds.length !== 0 ||
+      operationInput.outputs.length !== 1 || operationInput.w !== '0') {
+    throw new Error('balance fixture requires a one-output deposit');
+  }
+  const output = operationInput.outputs[0];
+  const C = bn254.G1.Point.fromAffine({ x: BigInt(output.Cx), y: BigInt(output.Cy) });
+  const X = H.multiply(BigInt(operationInput.d)).subtract(C);
+  if (!X.equals(bn254.G1.Point.ZERO)) {
+    throw new Error('deposit witness has nonzero balance difference');
+  }
+  const R = parameters.base.slice(2);
+  const challengeTrace = [];
+  for (let counter = 0; counter < 256; counter++) {
+    const preimage = encodeAbiParameters(balanceChallengeTypes,
+      [BALANCE_TAG, BigInt(operationInput.chainId), operationInput.pool, PARAMETERS_HASH,
+        operationId, BigInt(R[0]), BigInt(R[1]), 0n, 0n,
+        BigInt(R[0]), BigInt(R[1]), BigInt(counter)]);
+    const candidate = BigInt(keccak256(preimage));
+    const accepted = candidate >= 1n && candidate < q;
+    challengeTrace.push({ counter: String(counter), preimage,
+      candidate: String(candidate), accepted });
+    if (accepted) {
+      return { parametersHash: PARAMETERS_HASH, X: ['0', '0'], R, s: '1',
+        encoded: encodeAbiParameters(parseAbiParameters('uint256, uint256, uint256'),
+          [BigInt(R[0]), BigInt(R[1]), 1n]),
+        acceptedCounter: String(counter), challenge: String(candidate),
+        challengeTrace, equationHolds: true };
+    }
+  }
+  throw new Error('256 balance challenge candidates exhausted');
 }
 
 const suite = new CipherSuite({ kem: new DhkemX25519HkdfSha256(),
@@ -177,6 +216,7 @@ export async function generateHpkeCases() {
   }
   const operationInput = { ...seed, outputs: [{ ...seed.outputs[0], packet: sealed.packet }] };
   const operationExpected = buildOperation(operationInput);
+  const balanceProof = depositBalanceProof(operationInput, operationExpected.operationId);
   const digest = authorizationDigest({ chainId: seed.chainId, pool: seed.pool },
     { operationId: operationExpected.operationId, owner });
   const signature = await ownerWallet.signTypedData({ name: 'Ethereum Confidential UTXO',
@@ -187,6 +227,7 @@ export async function generateHpkeCases() {
   ] }, { operationId: operationExpected.operationId, owner, authScheme: 1, authVersion: 1 });
   const operationCase = entry('APPLICATION-DEPOSIT', 'application-operation', operationInput,
     { ...operationExpected, authorizationDigest: digest, authorizationSignature: signature,
+      balanceProof, rangeProofs: [],
       logs: buildOperationLogs({ input: operationInput, expected: operationExpected }),
       receiptInfo: info, receiptValue: '1', receiptBlinding: '0' },
     'docs/design.md#操作の結合とabi');

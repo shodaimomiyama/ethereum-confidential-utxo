@@ -4,7 +4,8 @@ import { readFileSync } from 'node:fs';
 import { CipherSuite, HkdfSha256 } from '@hpke/core';
 import { DhkemX25519HkdfSha256 } from '@hpke/dhkem-x25519';
 import { Chacha20Poly1305 } from '@hpke/chacha20poly1305';
-import { recoverAddress } from 'ethers';
+import { AbiCoder, id, keccak256 as ethersKeccak, recoverAddress } from 'ethers';
+import { bn254 } from '@noble/curves/bn254.js';
 import { buildOperation } from './oracle-abi.mjs';
 import { generateHpkeCases, validateReceipt } from './oracle-hpke.mjs';
 
@@ -62,4 +63,43 @@ test('cryptographic and post-decryption failures are distinct', async () => {
   assert.equal(find('VEC-07-R-Q').stage, 'receipt-blinding');
   assert.equal(find('VEC-07-OWNER-CHANGED').stage, 'receipt-owner');
   assert.equal(find('VEC-07-COMMITMENT-CHANGED').stage, 'receipt-commitment');
+});
+
+test('application deposit has a valid balance proof for the same operation ID', () => {
+  const op = application[0];
+  const proof = op.expected.balanceProof;
+  const params = JSON.parse(readFileSync(new URL('../../../experiments/design/crypto-profile-v3/exp08/parameters.json', import.meta.url), 'utf8'));
+  const H = bn254.G1.Point.fromAffine({ x: BigInt(params.base[0]), y: BigInt(params.base[1]) });
+  const G = bn254.G1.Point.fromAffine({ x: BigInt(params.base[2]), y: BigInt(params.base[3]) });
+  const output = op.input.outputs[0];
+  const C = bn254.G1.Point.fromAffine({ x: BigInt(output.Cx), y: BigInt(output.Cy) });
+  const X = H.multiply(BigInt(op.input.d)).subtract(C);
+  assert.equal(X.equals(bn254.G1.Point.ZERO), true);
+  assert.deepEqual(proof.X, ['0', '0']);
+  assert.deepEqual(proof.R, params.base.slice(2));
+  assert.equal(proof.s, '1');
+  assert.deepEqual(op.expected.rangeProofs, []);
+  const abi = AbiCoder.defaultAbiCoder();
+  assert.equal(proof.encoded,
+    abi.encode(['uint256', 'uint256', 'uint256'], [...proof.R, proof.s]));
+  const order = BigInt('21888242871839275222246405745257275088548364400416034343698204186575808495617');
+  for (const [index, step] of proof.challengeTrace.entries()) {
+    assert.equal(Number(step.counter), index);
+    const preimage = abi.encode(
+      ['bytes32', 'uint256', 'address', 'bytes32', 'bytes32',
+        'uint256', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256'],
+      [id('ecu/balance-schnorr/bn254/v1'), op.input.chainId, op.input.pool,
+        proof.parametersHash, op.expected.operationId,
+        params.base[2], params.base[3], '0', '0', ...proof.R, step.counter]);
+    assert.equal(step.preimage, preimage);
+    assert.equal(step.candidate, BigInt(ethersKeccak(preimage)).toString());
+    assert.equal(step.accepted, 1n <= BigInt(step.candidate) && BigInt(step.candidate) < order);
+    if (index < proof.challengeTrace.length - 1) assert.equal(step.accepted, false);
+  }
+  const last = proof.challengeTrace.at(-1);
+  assert.equal(last.accepted, true);
+  assert.equal(proof.challenge, last.candidate);
+  assert.equal(proof.acceptedCounter, last.counter);
+  assert.equal(G.multiply(BigInt(proof.s)).equals(
+    G.add(X.multiply(BigInt(proof.challenge)))), true);
 });
