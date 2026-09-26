@@ -4,6 +4,7 @@ import { keccak256, toHex } from 'viem';
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const hashText = (value) => hash(Buffer.from(value, 'utf8'));
 const hashJson = (value) => hashText(JSON.stringify(value));
+const expectedConfigSha256 = '13057369dae9d02c9822feb7335ffea5f2bbd51266da3caf67c9f5d081309072';
 
 function bytecode(value, name) {
   if (typeof value !== 'string' || !/^0x(?:[0-9a-fA-F]{2})+$/.test(value)) {
@@ -33,6 +34,7 @@ function validateArtifact(artifact, source) {
 }
 
 export function createEnvironmentManifest(artifact, source, config) {
+  if (hashText(config) !== expectedConfigSha256) throw new Error('foundry config mismatch');
   validateArtifact(artifact, source);
   return {
     compiler: artifact.metadata.compiler.version,

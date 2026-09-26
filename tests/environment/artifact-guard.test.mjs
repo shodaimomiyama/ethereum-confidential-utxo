@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { keccak256, toHex } from 'viem';
 import { createEnvironmentManifest, verifyEnvironmentArtifact, verifyGeneratedEnvironmentFixture } from '../../scripts/environment-artifact.mjs';
 
 const source = 'contract EnvironmentSmoke {}';
-const config = 'solc_version = "0.8.37"';
+const config = readFileSync('contracts/foundry.toml', 'utf8');
 
 const artifact = {
   abi: [{ type: 'function', name: 'answer', stateMutability: 'pure', inputs: [], outputs: [{ type: 'uint256' }] }],
@@ -45,6 +46,7 @@ describe('official artifact guard', () => {
     expect(() => verifyEnvironmentArtifact(artifact, manifest, `${source} changed`, config)).toThrow(/source/i);
     expect(() => verifyEnvironmentArtifact(artifact, manifest, source, `${config} changed`)).toThrow(/config/i);
     expect(() => createEnvironmentManifest(artifact, `${source} changed`, config)).toThrow(/source/i);
+    expect(() => createEnvironmentManifest(artifact, source, 'optimizer_runs = 999')).toThrow(/config/i);
   });
 
   it('rejects viaIR enabled by an external Foundry override', () => {
