@@ -15,8 +15,8 @@
     },
     {
       "path": "cases/operation-rejected.json",
-      "sha256": "0595d25acfaa3d1a5554a94de0ec678ab5445275e79ca64e398fd74c34131023",
-      "source": "docs/design.md at baseline commit",
+      "sha256": "b7ddbb2dbe54e540e5fca0edda7039a60b895561b6f55e05b7589418c30772f4",
+      "source": "docs/design.md with Issue #27 zero-address rule",
       "generator": "tools/oracle-abi.mjs",
       "independentCheck": "tools/verify-abi.mjs",
       "dependencies": {
@@ -26,8 +26,8 @@
     },
     {
       "path": "cases/operation.json",
-      "sha256": "79427c735de86e2c79fd8ee80b0eb625ce5d07f306bf7e4a25622af14fa6f461",
-      "source": "docs/design.md at baseline commit",
+      "sha256": "e9887dfc6ed0ad97efd343323655876fbdd0cdd845e61cb3da8222b964a4207f",
+      "source": "docs/design.md with Issue #27 zero-address rule",
       "generator": "tools/oracle-abi.mjs",
       "independentCheck": "tools/verify-abi.mjs",
       "dependencies": {
@@ -183,13 +183,36 @@
         "viem": "2.56.9",
         "ethers": "6.13.4"
       }
+    },
+    {
+      "path": "cases/pool-operations.json",
+      "sha256": "ff7745274c87bcfe1c79beaa5ab6076d685562c2acb1f2dfb2d704f47e7645dc",
+      "source": "docs/design.md#操作の結合とabi; Issue #27",
+      "generator": "tools/oracle_pool_base.py + tools/oracle-pool-operations.mjs + tools/oracle_pool_proofs.py",
+      "independentCheck": "tools/test-pool-operation-fixtures.mjs + tools/oracle_range_prover.py#verify + tools/oracle_v3.py#replay_trace",
+      "dependencies": {
+        "viem": "2.56.9",
+        "ethers": "6.13.4",
+        "pycryptodome": "3.23.0",
+        "python": "3.13.7"
+      },
+      "sourceFiles": [
+        {
+          "path": "experiments/design/crypto-profile-v3/exp08/parameters.json",
+          "sha256": "884f531df7b30698d9a3d798ade2d26c5e985425d657d7c0f54bdec6a64d3755"
+        },
+        {
+          "path": "experiments/design/crypto-profile-v3/exp08/profile.json",
+          "sha256": "8d78e9d4ba05e62e0cb1f97df0873f57690223aa92e6a1544d1a5500aabd4836"
+        }
+      ]
     }
   ],
   "sources": [
     {
       "path": "docs/design.md",
-      "sha256": "8a19e9d21213d8efd9a41cf2321ea0ea8d2726bb189087bafa67a859484d46b8",
-      "commit": "5d9e378ed9d1e970723a198b244e74aa868d6c74"
+      "sha256": "343a3d323b68f800660304142e0235e69de78452d0af7696eb4d0464a169739a",
+      "changeIssue": "#27"
     },
     {
       "path": "docs/specification.md",
@@ -268,7 +291,7 @@
   "toolHashes": {
     "tools/check.py": "a2b66e7ffe2eda08b210c935984b354b39389388a9bf10250adb5582ec0cdca0",
     "tools/check_coverage.py": "d5d2cb07937790c077a0cbb8e6da3383c13781d7ae37f9f3e74dc645843dd52d",
-    "tools/oracle-abi.mjs": "f86718308d95bb5fc7620de1cdc4f7858d7e966d134d56e64d6b22afe28f1bc5",
+    "tools/oracle-abi.mjs": "6245a5fdf2cd8354b54b3e9cf2bf39c38134cac218998a825970dbf33110e090",
     "tools/oracle-hpke.mjs": "f14b963a5902660f7711e9dbfa6bc2187a6380e60098c5ce208fac004bc9167e",
     "tools/oracle-operation-binding.mjs": "75471c2136c9c14d7a74173cdf8245a2bf8ff630ad5c28c08a2a6bda70679ba0",
     "tools/oracle-storage.mjs": "3517cd361e8bf51fe31e5693ab2a7d3fa4c9836a701f7a399aeeb36d7bbf4f27",
@@ -278,7 +301,7 @@
     "tools/oracle_range_prover.py": "ff770768b52461354e41971158eef95e2ff5cb0f56a78064834a1a0baadf4873",
     "tools/oracle_v3.py": "1ee3bafe63455a57b6cf8f4d486e88b6860eeae0df6d299ae1507401203c788a",
     "tools/reference_bn254.py": "2c0d5de546edf3e3b292eb13d6012ebbf7db2384512140c5d158e21604c12407",
-    "tools/test-oracle-abi.mjs": "0df4c9101e851c4a02be3339e71462490eb595360a2d0e3e09767ed5f2bf5ae7",
+    "tools/test-oracle-abi.mjs": "bd619d9338e4a9e854df5fc0abc7051854cea29e10acda5daf1931caf1882821",
     "tools/test-oracle-events.mjs": "72539544d54029d828f2ac73801e43c3caacc79b40f1dff5114fa5b5e9f328d7",
     "tools/test-oracle-hpke.mjs": "43e2f0f191742a3ea5ff0f95bc9db1e657f8c54f7cd34048b57e69f2c978aa91",
     "tools/test-oracle-operation-binding.mjs": "02cca55456db981385d95c04513fc0e14ddc1644f86a766f13ac083f34b37f1f",
@@ -292,11 +315,18 @@
     "tools/test_range_prover.py": "9e0c9a2284dbd9b8b9d801aa4215718465143baff1d45ec2fe28d1a198ad8afa",
     "tools/test_storage_crosscheck.py": "94cf5b4cba1681a209913d2ba9ec6cee878193882a01d18141df81459cf99e63",
     "tools/verify-abi.mjs": "d2e5025d62258227d37bf1631b99c74a348b0631196bd2ac58393d1662fd5f90",
-    "tools/verify_storage.py": "a0427bdb22d70139aba23d714e3dc9ed1d526c6ac80246123e582b3b29aa485f"
+    "tools/verify_storage.py": "a0427bdb22d70139aba23d714e3dc9ed1d526c6ac80246123e582b3b29aa485f",
+    "tools/test-pool-request-rules.mjs": "174144fec3f7c19990e9e1ed8aa7f13ca8c1d377f2eaff8677c08c1ef26746e0",
+    "tools/oracle-pool-operations.mjs": "6eef6598adeb445a9def37d22a9894d6cdeff0e3d93f3849265722ce0403d544",
+    "tools/oracle_pool_base.py": "1e7936c9c0152f2800951d936011773e66215d6a8ced728df23255ab932832d7",
+    "tools/oracle_pool_proofs.py": "cd8bcac6850ca0361080ae9b8d0e08bcfe69687968a950466b6357bfbf0db136",
+    "tools/test-pool-abi.mjs": "2c80de7e9450e114a7dc0030e2299eb5981eb81d11b261824ea5fc3555bd441b",
+    "tools/test-pool-operation-fixtures.mjs": "b717cf846eb94aedbc62ee5d1e5c388645eb84b85c2ecd214acb356318743328",
+    "tools/test_oracle_pool_proofs.py": "c0af4f8235a0416cc0fe997089061a3894c805dda15044faa9d1f30346d2b55a"
   },
   "artifactHashes": {
     "schema.json": "ac56b6596eb687677ecc2305d696151f39ceab20787eb6e0a066d1541bbb5d7c",
-    "coverage.json": "24905e5a84af2197e5c64e281eb73d0b495767e7f63944ee43eda181ee41a1d5",
+    "coverage.json": "7677f462a6e8897b34318ed4f0f1471a9bf47ff2deb2609be52ef8685bffca21",
     "package.json": "835831072d5b59534fd2c1fa72c35f096beaa410c8794e32e580a30061204700",
     "pnpm-lock.yaml": "cbede875e3027c6b32efc25201e44e9a59261abed5c4a06ccc6250382009e0fe",
     "tools/requirements.txt": "8af6d5cfebc5c65614d58aee1d40b734d61d9ce4741ef03bad97749a4aa24145"

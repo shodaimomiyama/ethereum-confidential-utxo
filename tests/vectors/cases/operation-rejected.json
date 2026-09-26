@@ -314,5 +314,73 @@
     ],
     "baseCase": "VEC-01-DEPOSIT",
     "mutatedField": "destination"
+  },
+  {
+    "id": "VEC-01-ZERO-OUTPUT-OWNER",
+    "profile": "operation-v1",
+    "source": "docs/design.md#操作の結合とabi",
+    "stage": "pool-request",
+    "input": {
+      "chainId": "31337",
+      "pool": "0x1111111111111111111111111111111111111111",
+      "owner": "0x1a642f0e3c3af545e7acbd38b07251b3990914f1",
+      "d": "1",
+      "w": "0",
+      "destination": "0x0000000000000000000000000000000000000000",
+      "kind": 0,
+      "salt": "0x0101010101010101010101010101010101010101010101010101010101010101",
+      "inputIds": [],
+      "outputs": [
+        {
+          "owner": "0x0000000000000000000000000000000000000000",
+          "Cx": "1",
+          "Cy": "2",
+          "receiptFormat": 1,
+          "packet": "0x44444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444"
+        }
+      ]
+    },
+    "expected": {
+      "decision": "reject",
+      "reason": "InvalidRequest"
+    },
+    "oracle": "design request-shape rule",
+    "consumers": [
+      "#27",
+      "#29"
+    ],
+    "baseCase": "VEC-01-DEPOSIT",
+    "mutatedField": "outputs[0].owner"
+  },
+  {
+    "id": "VEC-01-ZERO-WITHDRAW-DESTINATION",
+    "profile": "operation-v1",
+    "source": "docs/design.md#操作の結合とabi",
+    "stage": "pool-request",
+    "input": {
+      "chainId": "31337",
+      "pool": "0x1111111111111111111111111111111111111111",
+      "owner": "0x1a642f0e3c3af545e7acbd38b07251b3990914f1",
+      "d": "0",
+      "w": "1",
+      "destination": "0x0000000000000000000000000000000000000000",
+      "kind": 2,
+      "salt": "0x0606060606060606060606060606060606060606060606060606060606060606",
+      "inputIds": [
+        "0x1010101010101010101010101010101010101010101010101010101010101010"
+      ],
+      "outputs": []
+    },
+    "expected": {
+      "decision": "reject",
+      "reason": "InvalidRequest"
+    },
+    "oracle": "design request-shape rule",
+    "consumers": [
+      "#27",
+      "#29"
+    ],
+    "baseCase": "VEC-01-WITHDRAW-FULL",
+    "mutatedField": "destination"
   }
 ]
