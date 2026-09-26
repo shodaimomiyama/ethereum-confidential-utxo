@@ -45,6 +45,21 @@ artifact全体のSHA-256はコンパイル対象の集合やAST採番によっ�
 
 Anvilの初期アカウントと鍵はローカルテスト専用。実鍵、RPC認証情報、秘密の環境変数をコミットしたり、ログ・manifestに記録したりしない。既存の[先行EIPベンチマーク](../../benchmarks/prior-eips/)はNode.js 22 / Foundry 1.7.1の独立した経路であり、この開発入口の検証結果には含めない。
 
+## Issue #60: Sepolia公開RPCの読取検査
+
+2026-09-27に [Uniswap公式のv2配置一覧](https://developers.uniswap.org/docs/protocols/v2/deployments) のSepolia Factory `0xF62c03E08ada871A0bEb309762E260a7a6a880E6` とRouter02 `0xeE567Fe1712Faf6149d80dA1E6934E354124CfE3` を確認した。Routerの `WETH()` を実チェーンで読み、`0xfff9976782d46cc05630d1f6ebab18b2324d6b14` を得た。[PublicNode](https://ethereum.publicnode.com/)を候補にし、`https://ethereum-sepolia-rpc.publicnode.com` のread-only検査を実行した。これは実行時点の観測結果であり、公開配置時にも再検査する。
+
+```sh
+export UNISWAP_SEPOLIA_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
+export UNISWAP_BROWSER_ORIGIN=https://demo.example
+export UNISWAP_SEPOLIA_BLOCK=11788121
+pnpm uniswap:sepolia:probe
+```
+
+この検査はchain ID 11155111、finalizedに含まれる指定blockのhashとcanonical照合、block hash指定の過去残高・code、指定blockのlogs、ブラウザのCORS preflight/POST、Factory・Router・WETHのcodeとRouterの参照先を確認する。結果にはRPC URLを含めない。2026-09-27の上記block hashは `0x51592207abe7ff93a65cfb5c7ed1d7393194508ddab2372f2833cf0994838e7c` で、検査は成功した。RPCの可用性と制限時の挙動は継続保証ではない。
+
+専用の新規walletによるfaucetの実受取、受取tx、必要gasは未実施。署名者とfaucetの条件が揃った時点で別途検査し、未実施を成功と扱わない。SepoliaへのdUSD/Pool/Adapterの配置も未実施である。
+
 ## Issue #28: 暗号ライブラリの検証入口
 
 `packages/crypto` は `@confidential-utxo/crypto` として、BN254コミットメント、v3範囲証明、Schnorr収支証明、HPKE受領packetを提供する。ルートの `pnpm build`、`pnpm test`、`pnpm check` はそれぞれライブラリのビルド、Vitest、型検査も実行する。個別確認は `pnpm --filter @confidential-utxo/crypto build`、`pnpm --filter @confidential-utxo/crypto test`、`pnpm --filter @confidential-utxo/crypto check` を使う。Node.js 24.21.0とlockfileの固定依存を使い、`pnpm install --frozen-lockfile` の後に実行する。
