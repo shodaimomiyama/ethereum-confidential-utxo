@@ -45,6 +45,12 @@ export interface CardState {
   readonly input: Readonly<Record<string, string>>;
   readonly reason?: ReasonCode;
   readonly approvalPurpose?: ApprovalPurpose;
+  readonly quote?: {
+    readonly startedAt: number;
+    readonly quoteOut: bigint;
+    readonly minAmountOut: bigint;
+    readonly deadline: number;
+  };
 }
 
 export interface ViewState {
