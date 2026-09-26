@@ -94,3 +94,41 @@ manifestには両コントラクトのアドレス、デプロイ取引とブロ
 検証器との相互運用では、#26の確定した `packages/ethereum/generated/verifier-v3.json` のcreation/runtime SHA-256をmanifestに照合してから一時Anvilへデプロイし、`verify(operationId,outputIndex,coords,scalars,ls,rs)` と `verifyBalance(operationId,Xx,Xy,Rx,Ry,s)` を呼ぶ。ライブラリをビルドしてから、ルートで `pnpm interop:crypto packages/ethereum/generated/verifier-v3.json` を実行する。このコマンドは秘密を保存せず、実行時に作る証明の受理と公開文脈の改変拒否を検査する。収支challengeのPoolアドレスには検証器への**呼出元**アドレス（Solidity側の `msg.sender`）を渡す。`X=(0,0),x=0` の有効な収支証明では `sG=R` となり、challengeの変更だけで式は破れない。operation ID・chain ID・Poolの改変拒否は `X≠(0,0)` のケースで試験し、単位元ケースは受理と非退化ケースの試験を分ける。この数学的限界を、操作認可や受領の検証へ読み替えない。
 
 実行環境、入力artifactのhash、ケース別結果、未実施範囲は [相互運用記録](../../packages/crypto/interop-result.json) に残す。macOSでの成功はUbuntuでの成功を意味しない。Ubuntuの判定には同じ固定版で `build/test/check` と独立oracleを実行し、OS/CPU/RAM、依存・artifactのhashと結果を別記録する。
+
+## Issue #29: 共通クライアント処理の検証入口
+
+`packages/core` の公開入口は `@confidential-utxo/core`。実行コードも型もこのルートからimportする。`recipientInfoTypedData(context, unsignedInfo, expectedOwner)` が返す検証済みの署名対象を `RecipientInfoSignerPort.signTypedData` へ渡し、署名を付けた情報を `verifyRecipientInfo` で照合する。操作認可用の `SignerPort` とはprimary typeが異なる。`buildOperation` で入力選択・受取情報照合・実暗号の出力と証明を作り、`authorizeOperation` に `SignerPort` を渡して署名する。署名済みの `LocalDraft` は秘密の開示値を含むため、公開要求や通常ログへ出さない。`prepareSubmission` は復元状態を同期し直し、`StoragePort.saveDraft` の保存確認後に最新履歴を照合し、`ready` のときだけ公開 `submission` を返す。初回と明示的な再提出の両方で呼ぶ。`preflightSubmission` は `{ status, latest: { number, hash } }` を返し、`prepareSubmission` も最新照合後の結果へ同じ `latest` を付ける。`latest` は確定を主張せず、同期の確定点 `checkpoint` と区別する。確認不能でも最新点を取得済みなら、その点を返す。実際の送信は呼出側が行う。`preflightSubmission` 単独では保存を保証せず、`toPublicSubmission` 単独では保存・同期・最新状態の照合を保証しない。
+
+`inspectReceipt` は送信者の作成状態を受け取らず、公開履歴と `ReceiptKeyPort` で受領を確認する。`synchronize` は `HistoryPort` から採用した確定点の全履歴を再構築し、本人の利用可能残高を返す。履歴・状態が整合していてもpacketを復号・検証できない出力は、出力ID付きの `receiptFailures` に残し、`utxos` と利用可能残高から除外する。他の正常な資金の同期や提出準備は続けられる。履歴に欠落や不整合がある場合は `unconfirmed` とし、以前の状態は利用可能残高を持たない `stale` として保持する。履歴adapterは範囲全体の取得、ブロックhashへの固定、正準祖先の照合を保証する必要がある。`trackAttempt` では外側transactionの結果、論理操作の成功、受領を区別する。初回は第三引数に `[]`、次回からは前回の `OperationTracking` 全体を渡す。採用済みの `successEvidence` は別試行の失敗では消さず、再編成を検出したら `historyStatus: "reorg"`、採用履歴を確認できなければ `historyStatus: "uncertain"` を明示して成功判定を撤回する。
+
+Node.js 24.21.0 / pnpm 10.34.5で、ルートから次を実行する。coreのテストと型検査は公開パッケージを検証するため、実行前に自身をビルドする。
+
+```sh
+pnpm install --frozen-lockfile
+pnpm --filter @confidential-utxo/crypto build
+pnpm --filter @confidential-utxo/core build
+pnpm --filter @confidential-utxo/core test
+pnpm --filter @confidential-utxo/core check
+pnpm --filter @confidential-utxo/core test public-api
+pnpm build
+pnpm test
+pnpm check
+rg 'from .*packages/(ethereum|cli)|node:fs|tests/vectors/tools|experiments/' packages/core/src
+```
+
+最後の検索は一致なし（終了コード1）が期待値。[公開APIの受入テスト](../../packages/core/test/public-api.test.ts) はcore内部をimportせず、実暗号と偽の署名・鍵取得・保存・履歴境界を組み合わせる。公開試験鍵で実署名し、入金、送金と釣銭、独立した受領、再同期、出金要求の保存からの復元を確認する。出金の再準備は、生成・消費イベントと状態を揃えた履歴で、実行済みと競合の両方を区別する。
+
+| 受入条件 | テストと独立ベクトルの関係 |
+| --- | --- |
+| AC-01 | `encoding` のVEC-01、`authorization` のVEC-02で符号化・EIP-712固定値を照合 |
+| AC-02 | `operation` のVEC-07-APPLICATION各ケースと実暗号の操作生成・境界試験 |
+| AC-03 | `selection` の合成状態で明示選択・自動選択・上限を検査（固定ベクトルの対象外） |
+| AC-04 | `encoding` の結合変更ベクトル、署名拒否・変更検出、VEC-02受取情報を使う実証明再生成 |
+| AC-05 | `receipt` のVEC-07-APPLICATION受領、VEC-06ログ拒否、他者出力・鍵の不一致 |
+| AC-06 | `sync` の反復・欠落試験。VEC-07-APPLICATION-DEPOSITの公開試験鍵から合成履歴を作成 |
+| AC-07 | `sync` の生成・消費を取り消す再編成試験（履歴adapterは偽物） |
+| AC-08 | `tracking` と `public-api` の外側結果・論理成功・最新状態照合（履歴adapterは偽物） |
+| AC-09 | `tracking` の保存応答不明・改変復元、`public-api` の保存済み出金再準備（保存adapterは偽物） |
+| AC-10 | `public-api` の公開ルートの実行・型importとbuild/test/check |
+
+これらはNode上の共通処理の検証である。実PoolのABI・RPC接続は#30/#36、CLIの暗号化保存と永続化は#31、ブラウザ実行は#46/#59で検証する。ここでの保存成功は偽adapterの応答に基づき、ディスク耐久性や実送信の成功を示さない。
