@@ -125,6 +125,7 @@ export type LocalDraft = {
 
 export interface ReceiptKeyPort {
   getKey(owner: Address): Promise<Uint8Array>;
+  getKeys?(owner: Address): Promise<readonly Uint8Array[]>;
 }
 
 export interface SignerPort {
