@@ -1,0 +1,452 @@
+[
+  {
+    "id": "VEC-01-BIND-CHAIN-ID",
+    "profile": "operation-v1",
+    "source": "docs/design.md#d-04-操作idによる順不同の実行と再使用防止",
+    "stage": "operation-id-binding",
+    "input": {
+      "operationCase": "VEC-01-TRANSFER-CHANGE",
+      "replacement": "31338",
+      "scope": "encoding only; referenced VEC-01 commitments and packets are opaque test values"
+    },
+    "expected": {
+      "baselineOperationId": "0x85df20a9ad1d9eefaf5ef8020dd09fb579a0c9eb00526ab7d052c2aecc2bb418",
+      "relation": "different",
+      "operationId": "0x30834441efa34b9a9ffc44f0ee1a610d146be190c231d9cd87068d4c758412cc",
+      "operationPreimage": "0x59c9e3d2039216b20d5840896f88522dfce1142ebbc3ca41bfdd2aa0eca50ed00000000000000000000000000000000000000000000000000000000000007a6a000000000000000000000000111111111111111111111111111111111111111100000000000000000000000000000000000000000000000000000000000000010000000000000000000000001a642f0e3c3af545e7acbd38b07251b3990914f10303030303030303030303030303030303030303030303030303030303030303fa279445294054acb4ae071b7485c6dc22a3db1072c7c8c28066f1e8c5a1beee4d3b96df83eb762cacf982ce4cdae497649d84c5221084f8b8cfe2868adb9d47000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "oracle": "tools/oracle-operation-binding.mjs#buildBindingCases; ethers 6.13.4 independent spot-check",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-01-TRANSFER-CHANGE",
+    "mutatedField": "chainId"
+  },
+  {
+    "id": "VEC-01-BIND-POOL",
+    "profile": "operation-v1",
+    "source": "docs/design.md#d-04-操作idによる順不同の実行と再使用防止",
+    "stage": "operation-id-binding",
+    "input": {
+      "operationCase": "VEC-01-TRANSFER-CHANGE",
+      "replacement": "0x2222222222222222222222222222222222222222",
+      "scope": "encoding only; referenced VEC-01 commitments and packets are opaque test values"
+    },
+    "expected": {
+      "baselineOperationId": "0x85df20a9ad1d9eefaf5ef8020dd09fb579a0c9eb00526ab7d052c2aecc2bb418",
+      "relation": "different",
+      "operationId": "0x8e7c18de449c60735e533f889e1e6e0fb8700a14cc24735d734ae4f1375e4dee",
+      "operationPreimage": "0x59c9e3d2039216b20d5840896f88522dfce1142ebbc3ca41bfdd2aa0eca50ed00000000000000000000000000000000000000000000000000000000000007a69000000000000000000000000222222222222222222222222222222222222222200000000000000000000000000000000000000000000000000000000000000010000000000000000000000001a642f0e3c3af545e7acbd38b07251b3990914f10303030303030303030303030303030303030303030303030303030303030303fa279445294054acb4ae071b7485c6dc22a3db1072c7c8c28066f1e8c5a1beee4d3b96df83eb762cacf982ce4cdae497649d84c5221084f8b8cfe2868adb9d47000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "oracle": "tools/oracle-operation-binding.mjs#buildBindingCases; ethers 6.13.4 independent spot-check",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-01-TRANSFER-CHANGE",
+    "mutatedField": "pool"
+  },
+  {
+    "id": "VEC-01-BIND-OWNER",
+    "profile": "operation-v1",
+    "source": "docs/design.md#d-04-操作idによる順不同の実行と再使用防止",
+    "stage": "operation-id-binding",
+    "input": {
+      "operationCase": "VEC-01-TRANSFER-CHANGE",
+      "replacement": "0x2222222222222222222222222222222222222222",
+      "scope": "encoding only; referenced VEC-01 commitments and packets are opaque test values"
+    },
+    "expected": {
+      "baselineOperationId": "0x85df20a9ad1d9eefaf5ef8020dd09fb579a0c9eb00526ab7d052c2aecc2bb418",
+      "relation": "different",
+      "operationId": "0x81651d1373e0904c0a57fcdfe9c2c8e702c676079b115c52241177f325a64c55",
+      "operationPreimage": "0x59c9e3d2039216b20d5840896f88522dfce1142ebbc3ca41bfdd2aa0eca50ed00000000000000000000000000000000000000000000000000000000000007a690000000000000000000000001111111111111111111111111111111111111111000000000000000000000000000000000000000000000000000000000000000100000000000000000000000022222222222222222222222222222222222222220303030303030303030303030303030303030303030303030303030303030303fa279445294054acb4ae071b7485c6dc22a3db1072c7c8c28066f1e8c5a1beee4d3b96df83eb762cacf982ce4cdae497649d84c5221084f8b8cfe2868adb9d47000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "oracle": "tools/oracle-operation-binding.mjs#buildBindingCases; ethers 6.13.4 independent spot-check",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-01-TRANSFER-CHANGE",
+    "mutatedField": "owner"
+  },
+  {
+    "id": "VEC-01-BIND-SALT",
+    "profile": "operation-v1",
+    "source": "docs/design.md#d-04-操作idによる順不同の実行と再使用防止",
+    "stage": "operation-id-binding",
+    "input": {
+      "operationCase": "VEC-01-TRANSFER-CHANGE",
+      "replacement": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "scope": "encoding only; referenced VEC-01 commitments and packets are opaque test values"
+    },
+    "expected": {
+      "baselineOperationId": "0x85df20a9ad1d9eefaf5ef8020dd09fb579a0c9eb00526ab7d052c2aecc2bb418",
+      "relation": "different",
+      "operationId": "0x7f0e7c0ee23627cc0fba5e2d1deb0c2d31a3c4adf0949bd5672296490372ed81",
+      "operationPreimage": "0x59c9e3d2039216b20d5840896f88522dfce1142ebbc3ca41bfdd2aa0eca50ed00000000000000000000000000000000000000000000000000000000000007a69000000000000000000000000111111111111111111111111111111111111111100000000000000000000000000000000000000000000000000000000000000010000000000000000000000001a642f0e3c3af545e7acbd38b07251b3990914f1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaafa279445294054acb4ae071b7485c6dc22a3db1072c7c8c28066f1e8c5a1beee4d3b96df83eb762cacf982ce4cdae497649d84c5221084f8b8cfe2868adb9d47000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "oracle": "tools/oracle-operation-binding.mjs#buildBindingCases; ethers 6.13.4 independent spot-check",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-01-TRANSFER-CHANGE",
+    "mutatedField": "salt"
+  },
+  {
+    "id": "VEC-01-BIND-KIND",
+    "profile": "operation-v1",
+    "source": "docs/design.md#d-04-操作idによる順不同の実行と再使用防止",
+    "stage": "operation-id-binding",
+    "input": {
+      "operationCase": "VEC-01-TRANSFER-CHANGE",
+      "replacement": 2,
+      "scope": "encoding only; referenced VEC-01 commitments and packets are opaque test values"
+    },
+    "expected": {
+      "baselineOperationId": "0x85df20a9ad1d9eefaf5ef8020dd09fb579a0c9eb00526ab7d052c2aecc2bb418",
+      "relation": "different",
+      "operationId": "0x09c7b793e7224b44d4aac89ccee729e4942ded261c6d00710fbf9bc288ab2cbb",
+      "operationPreimage": "0x59c9e3d2039216b20d5840896f88522dfce1142ebbc3ca41bfdd2aa0eca50ed00000000000000000000000000000000000000000000000000000000000007a69000000000000000000000000111111111111111111111111111111111111111100000000000000000000000000000000000000000000000000000000000000020000000000000000000000001a642f0e3c3af545e7acbd38b07251b3990914f10303030303030303030303030303030303030303030303030303030303030303fa279445294054acb4ae071b7485c6dc22a3db1072c7c8c28066f1e8c5a1beee4d3b96df83eb762cacf982ce4cdae497649d84c5221084f8b8cfe2868adb9d47000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "oracle": "tools/oracle-operation-binding.mjs#buildBindingCases; ethers 6.13.4 independent spot-check",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-01-TRANSFER-CHANGE",
+    "mutatedField": "kind"
+  },
+  {
+    "id": "VEC-01-BIND-DEPOSIT-AMOUNT",
+    "profile": "operation-v1",
+    "source": "docs/design.md#d-04-操作idによる順不同の実行と再使用防止",
+    "stage": "operation-id-binding",
+    "input": {
+      "operationCase": "VEC-01-TRANSFER-CHANGE",
+      "replacement": "1",
+      "scope": "encoding only; referenced VEC-01 commitments and packets are opaque test values"
+    },
+    "expected": {
+      "baselineOperationId": "0x85df20a9ad1d9eefaf5ef8020dd09fb579a0c9eb00526ab7d052c2aecc2bb418",
+      "relation": "different",
+      "operationId": "0x9479e0d78b5f094479435f4f5a0c49bdf2ec07706a500727264327ead4573b54",
+      "operationPreimage": "0x59c9e3d2039216b20d5840896f88522dfce1142ebbc3ca41bfdd2aa0eca50ed00000000000000000000000000000000000000000000000000000000000007a69000000000000000000000000111111111111111111111111111111111111111100000000000000000000000000000000000000000000000000000000000000010000000000000000000000001a642f0e3c3af545e7acbd38b07251b3990914f10303030303030303030303030303030303030303030303030303030303030303fa279445294054acb4ae071b7485c6dc22a3db1072c7c8c28066f1e8c5a1beee4d3b96df83eb762cacf982ce4cdae497649d84c5221084f8b8cfe2868adb9d47000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "oracle": "tools/oracle-operation-binding.mjs#buildBindingCases; ethers 6.13.4 independent spot-check",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-01-TRANSFER-CHANGE",
+    "mutatedField": "d"
+  },
+  {
+    "id": "VEC-01-BIND-WITHDRAW-AMOUNT",
+    "profile": "operation-v1",
+    "source": "docs/design.md#d-04-操作idによる順不同の実行と再使用防止",
+    "stage": "operation-id-binding",
+    "input": {
+      "operationCase": "VEC-01-TRANSFER-CHANGE",
+      "replacement": "1",
+      "scope": "encoding only; referenced VEC-01 commitments and packets are opaque test values"
+    },
+    "expected": {
+      "baselineOperationId": "0x85df20a9ad1d9eefaf5ef8020dd09fb579a0c9eb00526ab7d052c2aecc2bb418",
+      "relation": "different",
+      "operationId": "0x8d3d50f8965c7f94680b6a6f336c2dc151f0b595631adb6c6d40a94fdd69e73d",
+      "operationPreimage": "0x59c9e3d2039216b20d5840896f88522dfce1142ebbc3ca41bfdd2aa0eca50ed00000000000000000000000000000000000000000000000000000000000007a69000000000000000000000000111111111111111111111111111111111111111100000000000000000000000000000000000000000000000000000000000000010000000000000000000000001a642f0e3c3af545e7acbd38b07251b3990914f10303030303030303030303030303030303030303030303030303030303030303fa279445294054acb4ae071b7485c6dc22a3db1072c7c8c28066f1e8c5a1beee4d3b96df83eb762cacf982ce4cdae497649d84c5221084f8b8cfe2868adb9d47000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "oracle": "tools/oracle-operation-binding.mjs#buildBindingCases; ethers 6.13.4 independent spot-check",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-01-TRANSFER-CHANGE",
+    "mutatedField": "w"
+  },
+  {
+    "id": "VEC-01-BIND-DESTINATION",
+    "profile": "operation-v1",
+    "source": "docs/design.md#d-04-操作idによる順不同の実行と再使用防止",
+    "stage": "operation-id-binding",
+    "input": {
+      "operationCase": "VEC-01-TRANSFER-CHANGE",
+      "replacement": "0x2222222222222222222222222222222222222222",
+      "scope": "encoding only; referenced VEC-01 commitments and packets are opaque test values"
+    },
+    "expected": {
+      "baselineOperationId": "0x85df20a9ad1d9eefaf5ef8020dd09fb579a0c9eb00526ab7d052c2aecc2bb418",
+      "relation": "different",
+      "operationId": "0x688452a962f642920c9bcfc0abc29d421a6fceecc395811d70926e485b484eba",
+      "operationPreimage": "0x59c9e3d2039216b20d5840896f88522dfce1142ebbc3ca41bfdd2aa0eca50ed00000000000000000000000000000000000000000000000000000000000007a69000000000000000000000000111111111111111111111111111111111111111100000000000000000000000000000000000000000000000000000000000000010000000000000000000000001a642f0e3c3af545e7acbd38b07251b3990914f10303030303030303030303030303030303030303030303030303030303030303fa279445294054acb4ae071b7485c6dc22a3db1072c7c8c28066f1e8c5a1beee4d3b96df83eb762cacf982ce4cdae497649d84c5221084f8b8cfe2868adb9d47000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002222222222222222222222222222222222222222"
+    },
+    "oracle": "tools/oracle-operation-binding.mjs#buildBindingCases; ethers 6.13.4 independent spot-check",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-01-TRANSFER-CHANGE",
+    "mutatedField": "destination"
+  },
+  {
+    "id": "VEC-01-BIND-INPUT-IDS-0",
+    "profile": "operation-v1",
+    "source": "docs/design.md#d-04-操作idによる順不同の実行と再使用防止",
+    "stage": "operation-id-binding",
+    "input": {
+      "operationCase": "VEC-01-TRANSFER-CHANGE",
+      "replacement": "0x3030303030303030303030303030303030303030303030303030303030303030",
+      "scope": "encoding only; referenced VEC-01 commitments and packets are opaque test values"
+    },
+    "expected": {
+      "baselineOperationId": "0x85df20a9ad1d9eefaf5ef8020dd09fb579a0c9eb00526ab7d052c2aecc2bb418",
+      "relation": "different",
+      "operationId": "0x522b4d6f567bfed7dace6e1b31fa2a3d2776c67714363ebf35eedc460bb97436",
+      "operationPreimage": "0x59c9e3d2039216b20d5840896f88522dfce1142ebbc3ca41bfdd2aa0eca50ed00000000000000000000000000000000000000000000000000000000000007a69000000000000000000000000111111111111111111111111111111111111111100000000000000000000000000000000000000000000000000000000000000010000000000000000000000001a642f0e3c3af545e7acbd38b07251b3990914f103030303030303030303030303030303030303030303030303030303030303038733408704826b5c5e243ea6e38781768cde5d51363d0363a77d2be9de3d8da44d3b96df83eb762cacf982ce4cdae497649d84c5221084f8b8cfe2868adb9d47000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "oracle": "tools/oracle-operation-binding.mjs#buildBindingCases; ethers 6.13.4 independent spot-check",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-01-TRANSFER-CHANGE",
+    "mutatedField": "inputIds[0]"
+  },
+  {
+    "id": "VEC-01-BIND-OUTPUTS-0-OWNER",
+    "profile": "operation-v1",
+    "source": "docs/design.md#d-04-操作idによる順不同の実行と再使用防止",
+    "stage": "operation-id-binding",
+    "input": {
+      "operationCase": "VEC-01-TRANSFER-CHANGE",
+      "replacement": "0x2222222222222222222222222222222222222222",
+      "scope": "encoding only; referenced VEC-01 commitments and packets are opaque test values"
+    },
+    "expected": {
+      "baselineOperationId": "0x85df20a9ad1d9eefaf5ef8020dd09fb579a0c9eb00526ab7d052c2aecc2bb418",
+      "relation": "different",
+      "operationId": "0x66aa76cfec1bfbd55057e98539a47afd0692256a1315398c08b14463c469ef0f",
+      "operationPreimage": "0x59c9e3d2039216b20d5840896f88522dfce1142ebbc3ca41bfdd2aa0eca50ed00000000000000000000000000000000000000000000000000000000000007a69000000000000000000000000111111111111111111111111111111111111111100000000000000000000000000000000000000000000000000000000000000010000000000000000000000001a642f0e3c3af545e7acbd38b07251b3990914f10303030303030303030303030303030303030303030303030303030303030303fa279445294054acb4ae071b7485c6dc22a3db1072c7c8c28066f1e8c5a1beee78efb4118568bfe694087751ce7fb944c22ec2116a9ab16913f4bc149e793c64000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "oracle": "tools/oracle-operation-binding.mjs#buildBindingCases; ethers 6.13.4 independent spot-check",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-01-TRANSFER-CHANGE",
+    "mutatedField": "outputs[0].owner"
+  },
+  {
+    "id": "VEC-01-BIND-OUTPUTS-0-CX",
+    "profile": "operation-v1",
+    "source": "docs/design.md#d-04-操作idによる順不同の実行と再使用防止",
+    "stage": "operation-id-binding",
+    "input": {
+      "operationCase": "VEC-01-TRANSFER-CHANGE",
+      "replacement": "2",
+      "scope": "encoding only; referenced VEC-01 commitments and packets are opaque test values"
+    },
+    "expected": {
+      "baselineOperationId": "0x85df20a9ad1d9eefaf5ef8020dd09fb579a0c9eb00526ab7d052c2aecc2bb418",
+      "relation": "different",
+      "operationId": "0xe11252af265bca26ea92b905b1e95ccacf9851f9dee0ef60ee2221e7cf19d663",
+      "operationPreimage": "0x59c9e3d2039216b20d5840896f88522dfce1142ebbc3ca41bfdd2aa0eca50ed00000000000000000000000000000000000000000000000000000000000007a69000000000000000000000000111111111111111111111111111111111111111100000000000000000000000000000000000000000000000000000000000000010000000000000000000000001a642f0e3c3af545e7acbd38b07251b3990914f10303030303030303030303030303030303030303030303030303030303030303fa279445294054acb4ae071b7485c6dc22a3db1072c7c8c28066f1e8c5a1beee4c0fd42ea3637a6125a2fff7bc253ea3dd30bed2941701eea253aea96e35ea07000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "oracle": "tools/oracle-operation-binding.mjs#buildBindingCases; ethers 6.13.4 independent spot-check",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-01-TRANSFER-CHANGE",
+    "mutatedField": "outputs[0].Cx"
+  },
+  {
+    "id": "VEC-01-BIND-OUTPUTS-0-CY",
+    "profile": "operation-v1",
+    "source": "docs/design.md#d-04-操作idによる順不同の実行と再使用防止",
+    "stage": "operation-id-binding",
+    "input": {
+      "operationCase": "VEC-01-TRANSFER-CHANGE",
+      "replacement": "3",
+      "scope": "encoding only; referenced VEC-01 commitments and packets are opaque test values"
+    },
+    "expected": {
+      "baselineOperationId": "0x85df20a9ad1d9eefaf5ef8020dd09fb579a0c9eb00526ab7d052c2aecc2bb418",
+      "relation": "different",
+      "operationId": "0x36459ab4de9fe217dc70f320314d911990c2266a3d5f2ce08a21493ec2021431",
+      "operationPreimage": "0x59c9e3d2039216b20d5840896f88522dfce1142ebbc3ca41bfdd2aa0eca50ed00000000000000000000000000000000000000000000000000000000000007a69000000000000000000000000111111111111111111111111111111111111111100000000000000000000000000000000000000000000000000000000000000010000000000000000000000001a642f0e3c3af545e7acbd38b07251b3990914f10303030303030303030303030303030303030303030303030303030303030303fa279445294054acb4ae071b7485c6dc22a3db1072c7c8c28066f1e8c5a1beee423e138c2d30a5a3afe84b10fa7c65349389d2d4019760348ae17dc6bf935dad000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "oracle": "tools/oracle-operation-binding.mjs#buildBindingCases; ethers 6.13.4 independent spot-check",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-01-TRANSFER-CHANGE",
+    "mutatedField": "outputs[0].Cy"
+  },
+  {
+    "id": "VEC-01-BIND-OUTPUTS-0-FORMAT",
+    "profile": "operation-v1",
+    "source": "docs/design.md#d-04-操作idによる順不同の実行と再使用防止",
+    "stage": "operation-id-binding",
+    "input": {
+      "operationCase": "VEC-01-TRANSFER-CHANGE",
+      "replacement": 2,
+      "scope": "encoding only; referenced VEC-01 commitments and packets are opaque test values"
+    },
+    "expected": {
+      "baselineOperationId": "0x85df20a9ad1d9eefaf5ef8020dd09fb579a0c9eb00526ab7d052c2aecc2bb418",
+      "relation": "different",
+      "operationId": "0xb7e9990094b756cacca62271bd7e4d703129eab522633f1bae0bd6fedffac1df",
+      "operationPreimage": "0x59c9e3d2039216b20d5840896f88522dfce1142ebbc3ca41bfdd2aa0eca50ed00000000000000000000000000000000000000000000000000000000000007a69000000000000000000000000111111111111111111111111111111111111111100000000000000000000000000000000000000000000000000000000000000010000000000000000000000001a642f0e3c3af545e7acbd38b07251b3990914f10303030303030303030303030303030303030303030303030303030303030303fa279445294054acb4ae071b7485c6dc22a3db1072c7c8c28066f1e8c5a1beee49b725862336536b3896b0b9d7e514580830c153d3e098828c708cdfeff22517000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "oracle": "tools/oracle-operation-binding.mjs#buildBindingCases; ethers 6.13.4 independent spot-check",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-01-TRANSFER-CHANGE",
+    "mutatedField": "outputs[0].receiptFormat"
+  },
+  {
+    "id": "VEC-01-BIND-OUTPUTS-0-PACKET",
+    "profile": "operation-v1",
+    "source": "docs/design.md#d-04-操作idによる順不同の実行と再使用防止",
+    "stage": "operation-id-binding",
+    "input": {
+      "operationCase": "VEC-01-TRANSFER-CHANGE",
+      "replacement": "0x45454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545",
+      "scope": "encoding only; referenced VEC-01 commitments and packets are opaque test values"
+    },
+    "expected": {
+      "baselineOperationId": "0x85df20a9ad1d9eefaf5ef8020dd09fb579a0c9eb00526ab7d052c2aecc2bb418",
+      "relation": "different",
+      "operationId": "0x111b7bff14890c139066d3b48282d761853e2a7a2a6925a6bd365354aaac239a",
+      "operationPreimage": "0x59c9e3d2039216b20d5840896f88522dfce1142ebbc3ca41bfdd2aa0eca50ed00000000000000000000000000000000000000000000000000000000000007a69000000000000000000000000111111111111111111111111111111111111111100000000000000000000000000000000000000000000000000000000000000010000000000000000000000001a642f0e3c3af545e7acbd38b07251b3990914f10303030303030303030303030303030303030303030303030303030303030303fa279445294054acb4ae071b7485c6dc22a3db1072c7c8c28066f1e8c5a1beee940c8237179262e9a9becd8cf562605995dd5b911fc7526972faeb7854db98c6000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "oracle": "tools/oracle-operation-binding.mjs#buildBindingCases; ethers 6.13.4 independent spot-check",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-01-TRANSFER-CHANGE",
+    "mutatedField": "outputs[0].packet"
+  },
+  {
+    "id": "VEC-01-BIND-PROOF",
+    "profile": "operation-v1",
+    "source": "docs/design.md#d-04-操作idによる順不同の実行と再使用防止",
+    "stage": "operation-id-binding",
+    "input": {
+      "operationCase": "VEC-01-TRANSFER-CHANGE",
+      "replacement": "0xdeadbeef",
+      "scope": "encoding only; referenced VEC-01 commitments and packets are opaque test values"
+    },
+    "expected": {
+      "baselineOperationId": "0x85df20a9ad1d9eefaf5ef8020dd09fb579a0c9eb00526ab7d052c2aecc2bb418",
+      "relation": "same",
+      "operationId": "0x85df20a9ad1d9eefaf5ef8020dd09fb579a0c9eb00526ab7d052c2aecc2bb418",
+      "operationPreimage": "0x59c9e3d2039216b20d5840896f88522dfce1142ebbc3ca41bfdd2aa0eca50ed00000000000000000000000000000000000000000000000000000000000007a69000000000000000000000000111111111111111111111111111111111111111100000000000000000000000000000000000000000000000000000000000000010000000000000000000000001a642f0e3c3af545e7acbd38b07251b3990914f10303030303030303030303030303030303030303030303030303030303030303fa279445294054acb4ae071b7485c6dc22a3db1072c7c8c28066f1e8c5a1beee4d3b96df83eb762cacf982ce4cdae497649d84c5221084f8b8cfe2868adb9d47000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "oracle": "tools/oracle-operation-binding.mjs#buildBindingCases; ethers 6.13.4 independent spot-check",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-01-TRANSFER-CHANGE",
+    "mutatedField": "proof"
+  },
+  {
+    "id": "VEC-01-BIND-SIGNATURE",
+    "profile": "operation-v1",
+    "source": "docs/design.md#d-04-操作idによる順不同の実行と再使用防止",
+    "stage": "operation-id-binding",
+    "input": {
+      "operationCase": "VEC-01-TRANSFER-CHANGE",
+      "replacement": "0xababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababab",
+      "scope": "encoding only; referenced VEC-01 commitments and packets are opaque test values"
+    },
+    "expected": {
+      "baselineOperationId": "0x85df20a9ad1d9eefaf5ef8020dd09fb579a0c9eb00526ab7d052c2aecc2bb418",
+      "relation": "same",
+      "operationId": "0x85df20a9ad1d9eefaf5ef8020dd09fb579a0c9eb00526ab7d052c2aecc2bb418",
+      "operationPreimage": "0x59c9e3d2039216b20d5840896f88522dfce1142ebbc3ca41bfdd2aa0eca50ed00000000000000000000000000000000000000000000000000000000000007a69000000000000000000000000111111111111111111111111111111111111111100000000000000000000000000000000000000000000000000000000000000010000000000000000000000001a642f0e3c3af545e7acbd38b07251b3990914f10303030303030303030303030303030303030303030303030303030303030303fa279445294054acb4ae071b7485c6dc22a3db1072c7c8c28066f1e8c5a1beee4d3b96df83eb762cacf982ce4cdae497649d84c5221084f8b8cfe2868adb9d47000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "oracle": "tools/oracle-operation-binding.mjs#buildBindingCases; ethers 6.13.4 independent spot-check",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-01-TRANSFER-CHANGE",
+    "mutatedField": "signature"
+  },
+  {
+    "id": "VEC-01-BIND-SENDER",
+    "profile": "operation-v1",
+    "source": "docs/design.md#d-04-操作idによる順不同の実行と再使用防止",
+    "stage": "operation-id-binding",
+    "input": {
+      "operationCase": "VEC-01-TRANSFER-CHANGE",
+      "replacement": "0x5555555555555555555555555555555555555555",
+      "scope": "encoding only; referenced VEC-01 commitments and packets are opaque test values"
+    },
+    "expected": {
+      "baselineOperationId": "0x85df20a9ad1d9eefaf5ef8020dd09fb579a0c9eb00526ab7d052c2aecc2bb418",
+      "relation": "same",
+      "operationId": "0x85df20a9ad1d9eefaf5ef8020dd09fb579a0c9eb00526ab7d052c2aecc2bb418",
+      "operationPreimage": "0x59c9e3d2039216b20d5840896f88522dfce1142ebbc3ca41bfdd2aa0eca50ed00000000000000000000000000000000000000000000000000000000000007a69000000000000000000000000111111111111111111111111111111111111111100000000000000000000000000000000000000000000000000000000000000010000000000000000000000001a642f0e3c3af545e7acbd38b07251b3990914f10303030303030303030303030303030303030303030303030303030303030303fa279445294054acb4ae071b7485c6dc22a3db1072c7c8c28066f1e8c5a1beee4d3b96df83eb762cacf982ce4cdae497649d84c5221084f8b8cfe2868adb9d47000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "oracle": "tools/oracle-operation-binding.mjs#buildBindingCases; ethers 6.13.4 independent spot-check",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-01-TRANSFER-CHANGE",
+    "mutatedField": "sender"
+  },
+  {
+    "id": "VEC-01-BIND-TX-NONCE",
+    "profile": "operation-v1",
+    "source": "docs/design.md#d-04-操作idによる順不同の実行と再使用防止",
+    "stage": "operation-id-binding",
+    "input": {
+      "operationCase": "VEC-01-TRANSFER-CHANGE",
+      "replacement": "9",
+      "scope": "encoding only; referenced VEC-01 commitments and packets are opaque test values"
+    },
+    "expected": {
+      "baselineOperationId": "0x85df20a9ad1d9eefaf5ef8020dd09fb579a0c9eb00526ab7d052c2aecc2bb418",
+      "relation": "same",
+      "operationId": "0x85df20a9ad1d9eefaf5ef8020dd09fb579a0c9eb00526ab7d052c2aecc2bb418",
+      "operationPreimage": "0x59c9e3d2039216b20d5840896f88522dfce1142ebbc3ca41bfdd2aa0eca50ed00000000000000000000000000000000000000000000000000000000000007a69000000000000000000000000111111111111111111111111111111111111111100000000000000000000000000000000000000000000000000000000000000010000000000000000000000001a642f0e3c3af545e7acbd38b07251b3990914f10303030303030303030303030303030303030303030303030303030303030303fa279445294054acb4ae071b7485c6dc22a3db1072c7c8c28066f1e8c5a1beee4d3b96df83eb762cacf982ce4cdae497649d84c5221084f8b8cfe2868adb9d47000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "oracle": "tools/oracle-operation-binding.mjs#buildBindingCases; ethers 6.13.4 independent spot-check",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-01-TRANSFER-CHANGE",
+    "mutatedField": "txNonce"
+  }
+]

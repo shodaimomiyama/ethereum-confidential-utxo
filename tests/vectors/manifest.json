@@ -1,0 +1,304 @@
+{
+  "version": 1,
+  "baselineCommit": "5d9e378ed9d1e970723a198b244e74aa868d6c74",
+  "files": [
+    {
+      "path": "cases/authorization.json",
+      "sha256": "8bc5727161e0126066ac5d945eac7fcec1529c41fc9f8e85cf67aa6c8012f46f",
+      "source": "docs/design.md at baseline commit",
+      "generator": "tools/oracle-abi.mjs",
+      "independentCheck": "tools/verify-abi.mjs",
+      "dependencies": {
+        "viem": "2.56.9",
+        "ethers": "6.13.4"
+      }
+    },
+    {
+      "path": "cases/operation-rejected.json",
+      "sha256": "0595d25acfaa3d1a5554a94de0ec678ab5445275e79ca64e398fd74c34131023",
+      "source": "docs/design.md at baseline commit",
+      "generator": "tools/oracle-abi.mjs",
+      "independentCheck": "tools/verify-abi.mjs",
+      "dependencies": {
+        "viem": "2.56.9",
+        "ethers": "6.13.4"
+      }
+    },
+    {
+      "path": "cases/operation.json",
+      "sha256": "79427c735de86e2c79fd8ee80b0eb625ce5d07f306bf7e4a25622af14fa6f461",
+      "source": "docs/design.md at baseline commit",
+      "generator": "tools/oracle-abi.mjs",
+      "independentCheck": "tools/verify-abi.mjs",
+      "dependencies": {
+        "viem": "2.56.9",
+        "ethers": "6.13.4"
+      }
+    },
+    {
+      "path": "cases/group.json",
+      "sha256": "eea735633b0bd12d6f1dd292370f9fd1bd44c53c643497a9455198a27a674303",
+      "source": "EXP-07A vectors.json and EXP-08 java-result.json at baseline commit",
+      "generator": "tools/oracle_v3.py",
+      "independentCheck": "EXP-08 Java and EVM verifiers plus Python full-prefix replay",
+      "dependencies": {
+        "pycryptodome": "3.23.0"
+      },
+      "sourceFiles": [
+        {
+          "path": "experiments/design/crypto-profile-v2/vectors.json",
+          "sha256": "8f8eda0da4a0ee2be1dc081f22f4f41ef1331cdab991403510aae36017408601"
+        },
+        {
+          "path": "experiments/design/crypto-profile-v3/exp08/profile.json",
+          "sha256": "8d78e9d4ba05e62e0cb1f97df0873f57690223aa92e6a1544d1a5500aabd4836"
+        },
+        {
+          "path": "experiments/design/crypto-profile-v3/exp08/parameters.json",
+          "sha256": "884f531df7b30698d9a3d798ade2d26c5e985425d657d7c0f54bdec6a64d3755"
+        },
+        {
+          "path": "experiments/design/crypto-profile-v3/exp08/java-result.json",
+          "sha256": "1aedc650490a85430b4310821b146205943c9fb28d195965e0f7e89aa44d3bd8"
+        }
+      ]
+    },
+    {
+      "path": "cases/range-v3.json",
+      "sha256": "286f3929059f91e72c1083bf3813b5f2e97ac5220bea3b64f90e16b370ca4c51",
+      "source": "EXP-07A vectors.json and EXP-08 java-result.json at baseline commit",
+      "generator": "tools/oracle_v3.py",
+      "independentCheck": "EXP-08 Java and EVM verifiers plus Python full-prefix replay",
+      "dependencies": {
+        "pycryptodome": "3.23.0"
+      },
+      "sourceFiles": [
+        {
+          "path": "experiments/design/crypto-profile-v2/vectors.json",
+          "sha256": "8f8eda0da4a0ee2be1dc081f22f4f41ef1331cdab991403510aae36017408601"
+        },
+        {
+          "path": "experiments/design/crypto-profile-v3/exp08/profile.json",
+          "sha256": "8d78e9d4ba05e62e0cb1f97df0873f57690223aa92e6a1544d1a5500aabd4836"
+        },
+        {
+          "path": "experiments/design/crypto-profile-v3/exp08/parameters.json",
+          "sha256": "884f531df7b30698d9a3d798ade2d26c5e985425d657d7c0f54bdec6a64d3755"
+        },
+        {
+          "path": "experiments/design/crypto-profile-v3/exp08/java-result.json",
+          "sha256": "1aedc650490a85430b4310821b146205943c9fb28d195965e0f7e89aa44d3bd8"
+        }
+      ]
+    },
+    {
+      "path": "cases/abi-observation.json",
+      "source": "docs/design.md at baseline commit",
+      "generator": "tools/oracle-abi.mjs",
+      "independentCheck": "tools/test-oracle-events.mjs",
+      "dependencies": {
+        "viem": "2.56.9",
+        "ethers": "6.13.4"
+      },
+      "sha256": "3140f37253e1176d73d09dd18dcf29864bdbc812e8f8e41bd9cf990ea537d784"
+    },
+    {
+      "path": "cases/storage.json",
+      "sha256": "9d9b97f156b10fb03e4fdac94016402b4a1387d46b5ad454d40fa03cd12d4240",
+      "source": "docs/design.md#保存profile-v1 and RFC 7914",
+      "generator": "tools/oracle-storage.mjs",
+      "independentCheck": "tools/verify_storage.py (Python hashlib.scrypt/PyCryptodome AES-GCM); tools/test-oracle-storage.mjs (RFC 7914 and envelope rejection)",
+      "dependencies": {
+        "node": "24.21.0"
+      }
+    },
+    {
+      "path": "cases/verifier-abi.json",
+      "sha256": "bf1a2c729338b479087a64613b0eb06c75358d197426a03806f7940a3f6e8dc8",
+      "source": "docs/design.md#検証器の固定abi and EXP-08 java-result.json",
+      "generator": "tools/oracle-verifier-abi.mjs",
+      "independentCheck": "tools/test-verifier-abi.mjs (ethers decode)",
+      "dependencies": {
+        "viem": "2.56.9",
+        "ethers": "6.13.4"
+      }
+    },
+    {
+      "path": "cases/balance.json",
+      "sha256": "06fc494d270774805e13c3a4eda33ec9e77a1d10d35a27a7378d2177623a6b18",
+      "source": "docs/design.md#収支証明 at baseline commit",
+      "generator": "tools/oracle_balance.py",
+      "independentCheck": "tools/test_oracle_balance.py and ethers ABI/Keccak cross-check",
+      "dependencies": {
+        "pycryptodome": "3.23.0",
+        "ethers": "6.13.4"
+      }
+    },
+    {
+      "path": "cases/hpke.json",
+      "sha256": "3861591267e5a534d10882a144b3bf55e3cbd1e5a88f42fdb6da4abda4e66a2b",
+      "source": "RFC 9180 Appendix A.2.1 and docs/design.md#d-08-暗号化受領データと出力イベント",
+      "generator": "tools/oracle-hpke.mjs",
+      "independentCheck": "tools/test-oracle-hpke.mjs using @hpke/core",
+      "dependencies": {
+        "@hpke/core": "1.9.0",
+        "@hpke/dhkem-x25519": "1.8.0",
+        "@hpke/chacha20poly1305": "1.8.0",
+        "@noble/curves": "2.4.0",
+        "node": "24.21.0"
+      }
+    },
+    {
+      "path": "cases/application-operation.json",
+      "sha256": "8a54c47224befdb784a69a5d4d289a9f7a1117ca2646058175512e9788ab0a6e",
+      "source": "RFC 9180 Appendix A.2.1 and docs/design.md#d-08-暗号化受領データと出力イベント",
+      "generator": "tools/oracle-hpke.mjs + tools/oracle_application.py",
+      "independentCheck": "tools/test-oracle-hpke.mjs + tools/test_oracle_application.py + tools/oracle_range_prover.py#verify",
+      "dependencies": {
+        "@hpke/core": "1.9.0",
+        "@hpke/dhkem-x25519": "1.8.0",
+        "@hpke/chacha20poly1305": "1.8.0",
+        "@noble/curves": "2.4.0",
+        "node": "24.21.0"
+      }
+    },
+    {
+      "path": "cases/range-deterministic.json",
+      "sha256": "986dc9079366334ed128c9156ce42a11331b082d7b9c0e451af2ebf28d84728d",
+      "source": "docs/design.md v3 and EXP-08 profile/parameters at baseline commit",
+      "generator": "tools/oracle_range_prover.py",
+      "independentCheck": "tools/oracle_range_prover.py#verify and EXP-08 Java/EVM profile",
+      "dependencies": {
+        "pycryptodome": "3.23.0",
+        "python": "3.13.7"
+      }
+    },
+    {
+      "path": "cases/operation-binding.json",
+      "sha256": "450eaf1626041f72e263cc74ad60fde8002c11e7229401d934c459ff2e2f1d64",
+      "source": "docs/design.md#操作の結合とabi at baseline commit",
+      "generator": "tools/oracle-operation-binding.mjs",
+      "independentCheck": "tools/test-oracle-operation-binding.mjs (ethers ABI/Keccak)",
+      "dependencies": {
+        "viem": "2.56.9",
+        "ethers": "6.13.4"
+      }
+    }
+  ],
+  "sources": [
+    {
+      "path": "docs/design.md",
+      "sha256": "8a19e9d21213d8efd9a41cf2321ea0ea8d2726bb189087bafa67a859484d46b8",
+      "commit": "5d9e378ed9d1e970723a198b244e74aa868d6c74"
+    },
+    {
+      "path": "docs/specification.md",
+      "sha256": "3f24a82b758096e8db12d3b0313284fa4af683f9729d34effa50adcf24b9faa3",
+      "commit": "5d9e378ed9d1e970723a198b244e74aa868d6c74"
+    },
+    {
+      "path": "experiments/design/crypto-profile-v2/vectors.json",
+      "sha256": "8f8eda0da4a0ee2be1dc081f22f4f41ef1331cdab991403510aae36017408601",
+      "commit": "5d9e378ed9d1e970723a198b244e74aa868d6c74"
+    },
+    {
+      "path": "experiments/design/crypto-profile-v3/exp08/profile.json",
+      "sha256": "8d78e9d4ba05e62e0cb1f97df0873f57690223aa92e6a1544d1a5500aabd4836",
+      "commit": "5d9e378ed9d1e970723a198b244e74aa868d6c74"
+    },
+    {
+      "path": "experiments/design/crypto-profile-v3/exp08/parameters.json",
+      "sha256": "884f531df7b30698d9a3d798ade2d26c5e985425d657d7c0f54bdec6a64d3755",
+      "commit": "5d9e378ed9d1e970723a198b244e74aa868d6c74"
+    },
+    {
+      "path": "experiments/design/crypto-profile-v3/exp08/java-result.json",
+      "sha256": "1aedc650490a85430b4310821b146205943c9fb28d195965e0f7e89aa44d3bd8",
+      "commit": "5d9e378ed9d1e970723a198b244e74aa868d6c74"
+    },
+    {
+      "path": "experiments/design/crypto-profile-v3/exp08/evm-result.json",
+      "sha256": "4ee392d483a395298a121d20c60605dd311be8459b6fdf82777ce4378b530e3c",
+      "commit": "5d9e378ed9d1e970723a198b244e74aa868d6c74"
+    },
+    {
+      "path": "experiments/design/crypto-profile-v3/exp08/result.json",
+      "sha256": "68abf7cee5db7d277f9cc407ed8d0623ae70e9d4cc8e71e80cd9078a9a4f26a7",
+      "commit": "5d9e378ed9d1e970723a198b244e74aa868d6c74"
+    },
+    {
+      "url": "https://www.rfc-editor.org/rfc/rfc9180.txt",
+      "sha256": "f45a8b7c30231b26d668b1e8168074e5ab514b174d656b67e859895117f1f8f6",
+      "section": "Appendix A.2.1"
+    },
+    {
+      "url": "https://www.rfc-editor.org/rfc/rfc7914.txt",
+      "sha256": "df55932f8b6a5d271f36a634d91a25903724e189ba6c120bf7257cd47f10b197",
+      "section": "Appendix B"
+    }
+  ],
+  "generatorDependencies": {
+    "node": "24.21.0",
+    "pnpm": "10.34.5",
+    "python": "3.13.7",
+    "pycryptodome": "3.23.0",
+    "viem": "2.56.9",
+    "ethers": "6.13.4",
+    "@hpke/core": "1.9.0",
+    "@hpke/dhkem-x25519": "1.8.0",
+    "@hpke/chacha20poly1305": "1.8.0",
+    "@hpke/common": "1.10.1",
+    "@noble/curves": "2.4.0",
+    "@noble/hashes": "2.4.0"
+  },
+  "licenses": {
+    "node": "MIT",
+    "pnpm": "MIT",
+    "python": "PSF",
+    "pycryptodome": "BSD and Public Domain",
+    "viem": "MIT",
+    "ethers": "MIT",
+    "@hpke/core": "MIT",
+    "@hpke/dhkem-x25519": "MIT",
+    "@hpke/chacha20poly1305": "MIT",
+    "@hpke/common": "MIT",
+    "@noble/curves": "MIT",
+    "@noble/hashes": "MIT"
+  },
+  "toolHashes": {
+    "tools/check.py": "a2b66e7ffe2eda08b210c935984b354b39389388a9bf10250adb5582ec0cdca0",
+    "tools/check_coverage.py": "d5d2cb07937790c077a0cbb8e6da3383c13781d7ae37f9f3e74dc645843dd52d",
+    "tools/oracle-abi.mjs": "f86718308d95bb5fc7620de1cdc4f7858d7e966d134d56e64d6b22afe28f1bc5",
+    "tools/oracle-hpke.mjs": "f14b963a5902660f7711e9dbfa6bc2187a6380e60098c5ce208fac004bc9167e",
+    "tools/oracle-operation-binding.mjs": "75471c2136c9c14d7a74173cdf8245a2bf8ff630ad5c28c08a2a6bda70679ba0",
+    "tools/oracle-storage.mjs": "3517cd361e8bf51fe31e5693ab2a7d3fa4c9836a701f7a399aeeb36d7bbf4f27",
+    "tools/oracle-verifier-abi.mjs": "2116e58d08f6a08be04f62088ee6b88b3d095548e1e45ce6d7a4bba6c65ebcbb",
+    "tools/oracle_application.py": "6447d950fa733f78ed6693a80324b9de96f02daec1ce6d48ad8e1d9dbe09b109",
+    "tools/oracle_balance.py": "a881488125d0813add18b13f1e19455ae8e98f0001e87fef33de4f5b65dde61e",
+    "tools/oracle_range_prover.py": "d68a0e0ae2504b814f785ee983eb67502caf7a31326577ade0ca231f61f8707b",
+    "tools/oracle_v3.py": "1ee3bafe63455a57b6cf8f4d486e88b6860eeae0df6d299ae1507401203c788a",
+    "tools/reference_bn254.py": "2c0d5de546edf3e3b292eb13d6012ebbf7db2384512140c5d158e21604c12407",
+    "tools/test-oracle-abi.mjs": "0df4c9101e851c4a02be3339e71462490eb595360a2d0e3e09767ed5f2bf5ae7",
+    "tools/test-oracle-events.mjs": "72539544d54029d828f2ac73801e43c3caacc79b40f1dff5114fa5b5e9f328d7",
+    "tools/test-oracle-hpke.mjs": "43e2f0f191742a3ea5ff0f95bc9db1e657f8c54f7cd34048b57e69f2c978aa91",
+    "tools/test-oracle-operation-binding.mjs": "02cca55456db981385d95c04513fc0e14ddc1644f86a766f13ac083f34b37f1f",
+    "tools/test-oracle-storage.mjs": "7867b9c5a8773979785b7d520e494c6b98d36dc753e81aaeb9a921386caf8e61",
+    "tools/test-verifier-abi.mjs": "c7306176b644dd8491ac0518d1557fad3bfd89db0b15c25732480a0a13cb6a13",
+    "tools/test_check.py": "e37a2a268418c0812a749321279c2514b766d04611a4f382cc32acef98f53019",
+    "tools/test_check_coverage.py": "b304dd7c9e032e85a1218f3930f2e6af9cec91d5449414b04df65c5aafb8f41e",
+    "tools/test_oracle_application.py": "efb4464c85f4bc4af792e7e0ed09bfd53f84d948813c3676b90e8b0791875acc",
+    "tools/test_oracle_balance.py": "868d8ac5c2e70902d5d349c990b48078be91d9f64990eac1213532778392f40a",
+    "tools/test_oracle_v3.py": "b036036b53e131383c29ef5c138e5a5a7bbb519fbf75df15713845e6f0961be0",
+    "tools/test_range_prover.py": "7bf8595c862551a272d0a173aa90a8f083fe601b97eebec01a3d27711e2cb148",
+    "tools/test_storage_crosscheck.py": "94cf5b4cba1681a209913d2ba9ec6cee878193882a01d18141df81459cf99e63",
+    "tools/verify-abi.mjs": "d2e5025d62258227d37bf1631b99c74a348b0631196bd2ac58393d1662fd5f90",
+    "tools/verify_storage.py": "a0427bdb22d70139aba23d714e3dc9ed1d526c6ac80246123e582b3b29aa485f"
+  },
+  "artifactHashes": {
+    "schema.json": "ac56b6596eb687677ecc2305d696151f39ceab20787eb6e0a066d1541bbb5d7c",
+    "coverage.json": "7556ece0c0d7b42d39dd1fe4c3dfcffab6b75195c07c71c83f69393b5c056680",
+    "package.json": "835831072d5b59534fd2c1fa72c35f096beaa410c8794e32e580a30061204700",
+    "pnpm-lock.yaml": "cbede875e3027c6b32efc25201e44e9a59261abed5c4a06ccc6250382009e0fe",
+    "tools/requirements.txt": "8af6d5cfebc5c65614d58aee1d40b734d61d9ce4741ef03bad97749a4aa24145"
+  }
+}

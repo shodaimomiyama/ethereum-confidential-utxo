@@ -1,0 +1,21 @@
+{
+  "name": "@confidential-utxo/vectors",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.34.5",
+  "engines": {"node": "24.21.0"},
+  "scripts": {
+    "test": "node --test tools/test-*.mjs"
+  },
+  "devDependencies": {
+    "@hpke/core": "1.9.0",
+    "@hpke/dhkem-x25519": "1.8.0",
+    "@hpke/chacha20poly1305": "1.8.0",
+    "@hpke/common": "1.10.1",
+    "@noble/curves": "2.4.0",
+    "@noble/hashes": "2.4.0",
+    "ethers": "6.13.4",
+    "viem": "2.56.9"
+  }
+}

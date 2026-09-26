@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Confidential UTXO test vector case v1",
+  "type": "object",
+  "required": ["id", "profile", "source", "stage", "input", "expected", "oracle", "consumers"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {"type": "string", "pattern": "^VEC-0[1-8]-[A-Z0-9-]+$"},
+    "profile": {"type": "string", "minLength": 1},
+    "source": {"type": "string", "minLength": 1},
+    "stage": {"type": "string", "minLength": 1},
+    "input": {"type": "object"},
+    "expected": {"type": "object"},
+    "oracle": {"type": "string", "minLength": 1},
+    "consumers": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "baseCase": {"type": "string"},
+    "mutatedField": {"type": "string"}
+  }
+}
