@@ -69,6 +69,37 @@ describe('live coordinator', () => {
     await Promise.all([controller.dispatch({ type: 'start', card: 'reward' }), controller.dispatch({ type: 'start', card: 'reward' })]);
     expect(f.calls).toEqual(['reward', 'reward:request']);
   });
+  it.each(['received', 'ended-without-distribution'] as const)('starts a fresh same-amount reward after %s', async status => {
+    const f = setup(); f.deps.initialState = { ...view(), rewardRequests: [{ requestId: 'old-request' as never, status }], cards: { ...view().cards, reward: { phase: 'complete', input: { amount: '1' } } } };
+    let input: Readonly<Record<string, string>> | undefined; const start = f.operations.startReward;
+    f.operations.startReward = async (...args) => { input = args[1]; return start(...args); };
+    const controller = createLiveController(f.deps);
+    expect(await controller.dispatch({ type: 'start', card: 'reward' })).toEqual({ kind: 'accepted' });
+    expect(f.calls).toEqual(['reward']); expect(input).toEqual({ amount: '1' });
+  });
+  it.each(['disconnected', 'wrong-network'] as const)('allows draft editing while %s without enabling wallet effects', async mode => {
+    const f = setup(); f.change(); f.deps.initialState = { ...view(), connection: mode === 'disconnected' ? 'disconnected' : 'connected', currentScope: undefined, preparation: { ...view().preparation, network: false } };
+    f.operations.transition = async (_scope, action, previous, context) => {
+      context.check(); expect(() => context.recordKey()).toThrow();
+      await expect(context.typedSign({}, 'pool-authorization')).rejects.toThrow('SCOPE_CHANGED');
+      return { scope, view: { ...previous, cards: { ...previous.cards, pay: { ...previous.cards.pay, input: action.type === 'edit' ? { [action.field]: action.value } : {} } } } };
+    };
+    const controller = createLiveController(f.deps);
+    expect(await controller.dispatch({ type: 'edit', card: 'pay', field: 'amount', value: '2' })).toEqual({ kind: 'accepted' });
+    expect(controller.snapshot().cards.pay.input.amount).toBe('2'); expect(f.calls).not.toContain('sign');
+  });
+  it.each(['chain', 'pool'] as const)('invalidates prepared keys when the manifest %s changes between actions', async field => {
+    const f = setup(); const location = { chainId: 1n, pool: `0x${'44'.repeat(20)}` as `0x${string}` }; f.deps.resolveDeployment = () => location;
+    let disposed = 0; let keyReads = 0; const create = f.deps.createKeySession;
+    f.deps.createKeySession = connection => ({ ...create(connection), dispose() { disposed++; }, recordKey() { keyReads++; return {} as CryptoKey; } });
+    f.operations.startReward = async (_scope, _input, context) => { context.recordKey(); return f.decision(); };
+    const controller = createLiveController(f.deps); await controller.dispatch({ type: 'prepare-key' });
+    if (field === 'chain') location.chainId = 2n; else location.pool = `0x${'55'.repeat(20)}`;
+    expect((await controller.dispatch({ type: 'start', card: 'reward' })).kind).toBe('blocked');
+    expect(disposed).toBe(1); expect(keyReads).toBe(0);
+    await controller.dispatch({ type: 'prepare-key' });
+    expect(await controller.dispatch({ type: 'start', card: 'reward' })).toEqual({ kind: 'accepted' }); expect(keyReads).toBe(1);
+  });
   it('drops a pending Worker result after A→B→A and never signs', async () => {
     const f = setup(); const pending = deferred<any>(); f.deps.worker.run = () => pending.promise;
     const controller = createLiveController(f.deps); const result = controller.dispatch({ type: 'start', card: 'pay' });
@@ -160,12 +191,12 @@ describe('live coordinator', () => {
     const controller = createLiveController(f.deps);
     expect(await controller.dispatch({ type: 'start', card: 'pay' })).toEqual({ kind: 'blocked', reason: 'SCOPE_CHANGED' });
   });
-  it('allows an explicit new reward after the adapter permits new-operation', async () => {
+  it('keeps an unfinished reward even when the draft amount is changed', async () => {
     const f = setup(); f.deps.initialState = { ...view(), allowedActions: [...view().allowedActions, 'new-operation:reward'] };
     const start = f.operations.startReward; f.operations.startReward = async (...args) => { const result = await start(...args); return { ...result, view: { ...result.view, allowedActions: [...result.view.allowedActions, 'new-operation:reward'] } }; };
     const controller = createLiveController(f.deps); await controller.dispatch({ type: 'start', card: 'reward' });
     await controller.dispatch({ type: 'new-operation', card: 'reward' }); await controller.dispatch({ type: 'start', card: 'reward' });
-    expect(f.calls.filter(call => call === 'reward')).toHaveLength(2);
+    expect(f.calls.filter(call => call === 'reward')).toHaveLength(1); expect(f.calls).toContain('reward:request');
   });
   it('disposes subscriptions, rejects new actions, and suppresses in-flight notifications', async () => {
     const f = setup(); const waiting = deferred<OperationResult>(); f.operations.syncFinalized = () => waiting.promise;

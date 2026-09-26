@@ -39,16 +39,17 @@ export function createLiveController(deps: LiveControllerDependencies): UiContro
   let connection = immutable(deps.connection());
   let generation = 0;
   let scopeGeneration = 0;
-  let newRewardRequested = false;
   let disposed = false;
   let keys: KeySession | undefined;
+  let keyBinding: { scope: Scope; epoch: number; chainId: bigint; pool: string } | undefined;
   let queue: Promise<unknown> = Promise.resolve();
   const listeners = new Set<(value: ViewState) => void>();
   const publish = (next: ViewState): void => {
     state = immutable(next);
     for (const listener of listeners) { try { listener(state); } catch { /* A UI subscriber cannot interrupt an operation. */ } }
   };
-  const invalidate = (): void => { generation++; keys?.dispose(); keys = undefined; deps.auth.invalidate(); deps.worker.cancel(); };
+  const clearKeys = (): void => { keys?.dispose(); keys = undefined; keyBinding = undefined; };
+  const invalidate = (): void => { generation++; clearKeys(); deps.auth.invalidate(); deps.worker.cancel(); };
   const unsubscribe = deps.wallet.subscribe(event => {
     if (disposed) return;
     invalidate(); connection = immutable(event);
@@ -63,20 +64,32 @@ export function createLiveController(deps: LiveControllerDependencies): UiContro
     }
     return false;
   };
-  const context = (scope: Scope, captured: number): OperationContext => {
+  const context = (scope: Scope, captured: number, draft = false): OperationContext => {
     const epoch = connection.epoch;
     const location = deps.resolveDeployment(scope.deploymentId);
     const chainId = location?.chainId;
     const pool = location?.pool.toLowerCase();
+    const checkDraft = (): void => {
+      if (disposed || generation !== captured || deps.connection().epoch !== epoch || !sameScope(state.scope, scope)) throw new Error('SCOPE_CHANGED');
+    };
     const check = (): void => {
+      checkDraft();
       const current = deps.connection();
       const deployment = deps.resolveDeployment(scope.deploymentId);
       if (disposed || generation !== captured || current.epoch !== epoch || !sameScope(state.scope, scope)
         || !current.scope || !sameScope(current.scope, scope) || !location || !deployment
         || deployment.chainId !== chainId || deployment.pool.toLowerCase() !== pool) throw new Error('SCOPE_CHANGED');
     };
-    const currentKeys = (): KeySession => { check(); if (!keys) throw new Error('KEY_REQUIRED'); return keys; };
-    return { scope: immutable(scope), epoch, check,
+    const invalidateStaleKeys = (): void => {
+      const current = deps.connection();
+      const deployment = deps.resolveDeployment(scope.deploymentId);
+      if (keys && (!keyBinding || !current.scope || !sameScope(current.scope, keyBinding.scope)
+        || !sameScope(scope, keyBinding.scope) || current.epoch !== keyBinding.epoch
+        || deployment?.chainId !== keyBinding.chainId || deployment.pool.toLowerCase() !== keyBinding.pool)) clearKeys();
+    };
+    invalidateStaleKeys();
+    const currentKeys = (): KeySession => { check(); invalidateStaleKeys(); if (!keys) throw new Error('KEY_REQUIRED'); return keys; };
+    return { scope: immutable(scope), epoch, check: draft ? checkDraft : check,
       recordKey: () => currentKeys().recordKey(),
       recipientInfo: () => currentKeys().recipientInfo(),
       recipientPrivateKeyForWorker: () => currentKeys().recipientPrivateKeyForWorker(),
@@ -119,22 +132,23 @@ export function createLiveController(deps: LiveControllerDependencies): UiContro
   const run = async (action: Exclude<UiAction, { type: 'switch-scope' }>, ctx: OperationContext): Promise<OperationResult> => {
     const { scope } = ctx;
     if (action.type === 'prepare-key') {
-      const location = deps.resolveDeployment(scope.deploymentId)!;
+      const location = immutable(deps.resolveDeployment(scope.deploymentId)!);
       const session = deps.createKeySession({ scope, epoch: ctx.epoch });
       try {
         ctx.check();
         const signed = await deps.wallet.personalSign(recipientMessage(location.chainId, location.pool as Address, scope.owner), 'recipient-key'); ctx.check();
         if (signed.epoch !== ctx.epoch || !sameScope(signed.scope, scope)) throw new Error('SCOPE_CHANGED');
-        await session.prepare(signed.value as `0x${string}`); ctx.check(); keys?.dispose(); keys = session;
+        await session.prepare(signed.value as `0x${string}`); ctx.check(); clearKeys(); keys = session;
+        keyBinding = { scope: immutable(scope), epoch: ctx.epoch, chainId: location.chainId, pool: location.pool.toLowerCase() };
       } catch (error) { session.dispose(); throw error; }
     } else if (action.type === 'authenticate') {
       await deps.auth.authenticate(scope); ctx.check();
     } else if (action.type === 'resync') {
-      const recovered = deps.recovery && keys && deps.auth.isAuthenticated(scope) ? await deps.recovery.load(scope, keys.recordKey()) : undefined;
+      const recovered = deps.recovery && keys && deps.auth.isAuthenticated(scope) ? await deps.recovery.load(scope, ctx.recordKey()) : undefined;
       ctx.check(); return deps.operations.syncFinalized(scope, ctx, recovered);
     } else if (action.type === 'start') {
       if (action.card !== 'reward') return prepare(action.card, ctx);
-      const existing = newRewardRequested ? undefined : state.rewardRequests.at(-1);
+      const existing = state.rewardRequests.filter(request => request.status !== 'received' && request.status !== 'ended-without-distribution').at(-1);
       return existing ? deps.operations.recheckReward(scope, existing.requestId, ctx) : deps.operations.startReward(scope, state.cards.reward.input, ctx);
     } else if (action.type === 'recheck-reward') return deps.operations.recheckReward(scope, action.requestId, ctx);
     else if (action.type === 'recheck') return deps.operations.recheck(scope, action.operationId, ctx);
@@ -152,7 +166,7 @@ export function createLiveController(deps: LiveControllerDependencies): UiContro
       if (action.type === 'switch-scope') {
         if (!allowed(action)) return Promise.resolve(blocked('NOT_ALLOWED'));
         // Scope selection is an invalidation barrier, like a wallet event, even while work is pending.
-        scopeGeneration++; newRewardRequested = false;
+        scopeGeneration++;
         invalidate(); publish(deps.operations.switchScope(state, action.scope));
         return Promise.resolve({ kind: 'accepted' });
       }
@@ -162,7 +176,7 @@ export function createLiveController(deps: LiveControllerDependencies): UiContro
       const task = async (): Promise<DispatchResult> => {
         if (disposed || captured !== generation || !sameScope(scope, state.scope)) return blocked('SCOPE_CHANGED');
         if (!allowed(action)) return { kind: 'blocked', reason: state.reasons[actionKey(action)] ?? 'NOT_ALLOWED' };
-        let ctx = context(scope, captured);
+        let ctx = context(scope, captured, action.type === 'edit' || action.type === 'new-operation');
         try {
           if (action.type === 'connect' || action.type === 'switch-network') {
             const location = deps.resolveDeployment(scope.deploymentId);
@@ -175,8 +189,6 @@ export function createLiveController(deps: LiveControllerDependencies): UiContro
           ctx.check(); const result = await run(action, ctx); ctx.check();
           if ('operationId' in action && result.operation && result.operation.operationId !== action.operationId) throw new Error('SCOPE_CHANGED');
           const next = mapDecisionToView(state, result);
-          if (action.type === 'new-operation' && action.card === 'reward') newRewardRequested = true;
-          if (action.type === 'start' && action.card === 'reward') newRewardRequested = false;
           publish(next); return { kind: 'accepted' };
         } catch (error) {
           try { ctx.check(); } catch { return blocked('SCOPE_CHANGED'); }
