@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@confidential-utxo/core": "workspace:*",
+    "@confidential-utxo/crypto": "workspace:*",
     "@confidential-utxo/ethereum": "workspace:*",
     "viem": "2.56.9"
   },

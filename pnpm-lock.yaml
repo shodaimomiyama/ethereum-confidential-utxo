@@ -57,6 +57,9 @@ importers:
       '@confidential-utxo/core':
         specifier: workspace:*
         version: link:../core
+      '@confidential-utxo/crypto':
+        specifier: workspace:*
+        version: link:../crypto
       '@confidential-utxo/ethereum':
         specifier: workspace:*
         version: link:../ethereum
