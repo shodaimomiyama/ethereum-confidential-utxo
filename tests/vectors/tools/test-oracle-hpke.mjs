@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { CipherSuite, HkdfSha256 } from '@hpke/core';
 import { DhkemX25519HkdfSha256 } from '@hpke/dhkem-x25519';
 import { Chacha20Poly1305 } from '@hpke/chacha20poly1305';
-import { AbiCoder, id, keccak256 as ethersKeccak, recoverAddress } from 'ethers';
+import { AbiCoder, Interface, TypedDataEncoder, id, keccak256 as ethersKeccak, recoverAddress } from 'ethers';
 import { bn254 } from '@noble/curves/bn254.js';
 import { buildOperation } from './oracle-abi.mjs';
 import { generateHpkeCases, validateReceipt } from './oracle-hpke.mjs';
@@ -102,4 +102,107 @@ test('application deposit has a valid balance proof for the same operation ID', 
   assert.equal(proof.acceptedCounter, last.counter);
   assert.equal(G.multiply(BigInt(proof.s)).equals(
     G.add(X.multiply(BigInt(proof.challenge)))), true);
+});
+
+test('transfer with change and full withdrawal share coherent input state', async () => {
+  assert.deepEqual(application.map(item => item.id), [
+    'VEC-07-APPLICATION-DEPOSIT', 'VEC-07-APPLICATION-TRANSFER-CHANGE',
+    'VEC-07-APPLICATION-WITHDRAW-FULL',
+  ]);
+  const transfer = application[1];
+  const withdrawal = application[2];
+  assert.equal(transfer.input.inputIds.length, 1);
+  assert.equal(transfer.input.outputs.length, 2);
+  assert.equal(transfer.expected.receipts.length, 2);
+  assert.equal(transfer.expected.rangeProofStatus, 'pending-v3-two-outputs');
+  assert.deepEqual(transfer.expected.rangeProofs, []);
+  assert.equal(withdrawal.input.inputIds[0], transfer.expected.outputIds[1].hash);
+  assert.equal(withdrawal.input.outputs.length, 0);
+  assert.deepEqual(withdrawal.expected.receipts, []);
+  assert.deepEqual(withdrawal.expected.rangeProofs, []);
+  const params = JSON.parse(readFileSync(new URL('../../../experiments/design/crypto-profile-v3/exp08/parameters.json', import.meta.url), 'utf8'));
+  const H = bn254.G1.Point.fromAffine({ x: BigInt(params.base[0]), y: BigInt(params.base[1]) });
+  const G = bn254.G1.Point.fromAffine({ x: BigInt(params.base[2]), y: BigInt(params.base[3]) });
+  const point = value => bn254.G1.Point.fromAffine({ x: BigInt(value.Cx), y: BigInt(value.Cy) });
+  const eventAbi = new Interface([
+    'event InputConsumed(bytes32 indexed inputId,bytes32 indexed operationId)',
+    'event OutputCreated(address indexed owner,bytes32 indexed utxoId,bytes32 indexed operationId,uint256 outputIndex,uint256 Cx,uint256 Cy,uint8 receiptFormat,bytes packet)',
+    'event OperationSucceeded(bytes32 indexed operationId,uint8 kind,address indexed owner,bytes32[] inputIds,bytes32[] outputIds,uint256 d,uint256 w,address destination,bytes32 salt)',
+  ]);
+  for (const op of [transfer, withdrawal]) {
+    const built = buildOperation(op.input);
+    assert.equal(built.operationId, op.expected.operationId);
+    assert.equal(recoverAddress(op.expected.authorizationDigest,
+      op.expected.authorizationSignature).toLowerCase(), op.input.owner);
+    assert.equal(op.expected.logs.at(-1).topics[1], built.operationId);
+    assert.equal(op.expected.logs.length,
+      op.input.inputIds.length + op.input.outputs.length + 1);
+    op.expected.logs.forEach((log, index) => {
+      const parsed = eventAbi.parseLog({ topics: log.topics, data: log.data });
+      if (index < op.input.inputIds.length) {
+        assert.equal(parsed.name, 'InputConsumed');
+        assert.equal(parsed.args.inputId, op.input.inputIds[index]);
+      } else if (index < op.input.inputIds.length + op.input.outputs.length) {
+        const outputIndex = index - op.input.inputIds.length;
+        assert.equal(parsed.name, 'OutputCreated');
+        assert.equal(parsed.args.utxoId, built.outputIds[outputIndex].hash);
+        assert.equal(parsed.args.packet, op.input.outputs[outputIndex].packet);
+      } else {
+        assert.equal(parsed.name, 'OperationSucceeded');
+        assert.equal(parsed.args.operationId, built.operationId);
+        assert.deepEqual([...parsed.args.inputIds], op.input.inputIds);
+        assert.deepEqual([...parsed.args.outputIds], built.outputIds.map(item => item.hash));
+      }
+    });
+    assert.deepEqual(op.expected.inputContext.map(item => item.inputId), op.input.inputIds);
+    let X = bn254.G1.Point.ZERO;
+    for (const item of op.expected.inputContext) {
+      assert.equal(item.owner, op.input.owner);
+      assert.equal(point(item).equals(H.multiply(BigInt(item.amount))), true);
+      X = X.add(point(item));
+    }
+    if (BigInt(op.input.d) > 0n) X = X.add(H.multiply(BigInt(op.input.d)));
+    for (const output of op.input.outputs) X = X.subtract(point(output));
+    if (BigInt(op.input.w) > 0n) X = X.subtract(H.multiply(BigInt(op.input.w)));
+    assert.equal(X.equals(bn254.G1.Point.ZERO), true);
+    const proof = op.expected.balanceProof;
+    assert.deepEqual(proof.X, ['0', '0']);
+    assert.deepEqual(proof.R, params.base.slice(2));
+    assert.equal(proof.s, '1');
+    assert.equal(proof.challengeTrace.at(-1).accepted, true);
+    assert.equal(proof.challenge, proof.challengeTrace.at(-1).candidate);
+    for (const [counter, step] of proof.challengeTrace.entries()) {
+      const preimage = AbiCoder.defaultAbiCoder().encode(
+        ['bytes32', 'uint256', 'address', 'bytes32', 'bytes32',
+          'uint256', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256'],
+        [id('ecu/balance-schnorr/bn254/v1'), op.input.chainId, op.input.pool,
+          proof.parametersHash, built.operationId,
+          params.base[2], params.base[3], '0', '0', ...proof.R, counter]);
+      assert.equal(step.preimage, preimage);
+      assert.equal(step.candidate, BigInt(ethersKeccak(preimage)).toString());
+      if (counter < proof.challengeTrace.length - 1) assert.equal(step.accepted, false);
+    }
+    assert.equal(G.multiply(1n).equals(G.add(X.multiply(BigInt(proof.challenge)))), true);
+    for (const receipt of op.expected.receipts) {
+      assert.equal(receipt.info, built.info[receipt.outputIndex].hash);
+      assert.equal(receipt.packet, op.input.outputs[receipt.outputIndex].packet);
+      assert.equal((await validateReceipt(receipt, receipt.packet)).decision, 'accept');
+      const signed = receipt.recipientInfo;
+      assert.equal(signed.owner, receipt.outputOwner);
+      assert.equal(signed.receivePublicKey, receipt.recipientPublicKey);
+      assert.equal(recoverAddress(signed.digest, signed.signature).toLowerCase(), signed.owner);
+      assert.equal(signed.digest, TypedDataEncoder.hash({
+        name: 'Ethereum Confidential UTXO', version: '1',
+        chainId: Number(op.input.chainId), verifyingContract: op.input.pool,
+      }, { RecipientInfo: [
+        { name: 'owner', type: 'address' }, { name: 'receivePublicKey', type: 'bytes32' },
+        { name: 'receiptFormat', type: 'uint8' },
+        { name: 'recipientInfoVersion', type: 'uint8' },
+      ] }, { owner: signed.owner, receivePublicKey: signed.receivePublicKey,
+        receiptFormat: 1, recipientInfoVersion: 1 }));
+    }
+  }
+  assert.equal(transfer.expected.inputContext[0].amount, '2');
+  assert.equal(withdrawal.expected.inputContext[0].amount, '1');
+  assert.equal(withdrawal.expected.inputContext[0].inputId, transfer.expected.outputIds[1].hash);
 });

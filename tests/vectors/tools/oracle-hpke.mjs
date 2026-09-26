@@ -9,7 +9,7 @@ import { DhkemX25519HkdfSha256 } from '@hpke/dhkem-x25519';
 import { Chacha20Poly1305 } from '@hpke/chacha20poly1305';
 import { Wallet } from 'ethers';
 import { encodeAbiParameters, parseAbiParameters, keccak256, stringToHex } from 'viem';
-import { buildOperation, authorizationDigest, buildOperationLogs } from './oracle-abi.mjs';
+import { buildOperation, authorizationDigest, recipientInfoParts, buildOperationLogs } from './oracle-abi.mjs';
 
 const b = hex => Buffer.from(hex.slice(2), 'hex');
 const hex = bytes => '0x' + Buffer.from(bytes).toString('hex');
@@ -77,14 +77,22 @@ const BALANCE_TAG = keccak256(stringToHex('ecu/balance-schnorr/bn254/v1'));
 const balanceChallengeTypes = parseAbiParameters(
   'bytes32, uint256, address, bytes32, bytes32, uint256, uint256, uint256, uint256, uint256, uint256, uint256');
 
-export function depositBalanceProof(operationInput, operationId) {
-  if (operationInput.kind !== 0 || operationInput.inputIds.length !== 0 ||
-      operationInput.outputs.length !== 1 || operationInput.w !== '0') {
-    throw new Error('balance fixture requires a one-output deposit');
+export function zeroBalanceProof(operationInput, operationId, inputContext = []) {
+  if (inputContext.length !== operationInput.inputIds.length ||
+      inputContext.some((item, index) => item.inputId !== operationInput.inputIds[index])) {
+    throw new Error('input commitments do not match input IDs');
   }
-  const output = operationInput.outputs[0];
-  const C = bn254.G1.Point.fromAffine({ x: BigInt(output.Cx), y: BigInt(output.Cy) });
-  const X = H.multiply(BigInt(operationInput.d)).subtract(C);
+  let X = bn254.G1.Point.ZERO;
+  for (const item of inputContext) {
+    const C = bn254.G1.Point.fromAffine({ x: BigInt(item.Cx), y: BigInt(item.Cy) });
+    X = X.add(C);
+  }
+  if (BigInt(operationInput.d) > 0n) X = X.add(H.multiply(BigInt(operationInput.d)));
+  for (const output of operationInput.outputs) {
+    const C = bn254.G1.Point.fromAffine({ x: BigInt(output.Cx), y: BigInt(output.Cy) });
+    X = X.subtract(C);
+  }
+  if (BigInt(operationInput.w) > 0n) X = X.subtract(H.multiply(BigInt(operationInput.w)));
   if (!X.equals(bn254.G1.Point.ZERO)) {
     throw new Error('deposit witness has nonzero balance difference');
   }
@@ -109,6 +117,8 @@ export function depositBalanceProof(operationInput, operationId) {
   }
   throw new Error('256 balance challenge candidates exhausted');
 }
+
+export const depositBalanceProof = zeroBalanceProof;
 
 const suite = new CipherSuite({ kem: new DhkemX25519HkdfSha256(),
   kdf: new HkdfSha256(), aead: new Chacha20Poly1305() });
@@ -144,6 +154,43 @@ const entry = (id, stage, input, expected, source = 'docs/design.md#d-08-暗号�
   oracle: 'RFC 9180 labeled HKDF; Node 24 ChaCha20-Poly1305; @hpke/core 1.9.0 independent decryption',
   consumers: ['#28', '#29', '#30'],
 });
+
+async function makeApplicationCase(name, operationInput, ownerWallet, inputContext,
+    receipts, rangeProofStatus) {
+  const result = buildOperation(operationInput);
+  const owner = ownerWallet.address.toLowerCase();
+  const digest = authorizationDigest({ chainId: operationInput.chainId, pool: operationInput.pool },
+    { operationId: result.operationId, owner });
+  const signature = await ownerWallet.signTypedData({ name: 'Ethereum Confidential UTXO',
+    version: '1', chainId: Number(operationInput.chainId),
+    verifyingContract: operationInput.pool },
+  { OperationAuthorization: [
+    { name: 'operationId', type: 'bytes32' }, { name: 'owner', type: 'address' },
+    { name: 'authScheme', type: 'uint8' }, { name: 'authVersion', type: 'uint8' },
+  ] }, { operationId: result.operationId, owner, authScheme: 1, authVersion: 1 });
+  return entry(`APPLICATION-${name}`, 'application-operation', operationInput,
+    { ...result, authorizationDigest: digest, authorizationSignature: signature,
+      inputContext, balanceProof: zeroBalanceProof(operationInput, result.operationId, inputContext),
+      rangeProofs: [], rangeProofStatus,
+      logs: buildOperationLogs({ input: operationInput, expected: result }), receipts },
+    'docs/design.md#操作の結合とabi');
+}
+
+async function signReceiptInfo(receipt, wallet, chainId, pool) {
+  const recipient = { owner: wallet.address.toLowerCase(),
+    receivePublicKey: receipt.recipientPublicKey, receiptFormat: 1,
+    recipientInfoVersion: 1 };
+  if (recipient.owner !== receipt.outputOwner) throw new Error('recipient owner mismatch');
+  const digest = recipientInfoParts({ chainId, pool }, recipient).digest;
+  const signature = await wallet.signTypedData({ name: 'Ethereum Confidential UTXO',
+    version: '1', chainId: Number(chainId), verifyingContract: pool },
+  { RecipientInfo: [
+    { name: 'owner', type: 'address' }, { name: 'receivePublicKey', type: 'bytes32' },
+    { name: 'receiptFormat', type: 'uint8' },
+    { name: 'recipientInfoVersion', type: 'uint8' },
+  ] }, recipient);
+  return { ...receipt, recipientInfo: { ...recipient, digest, signature } };
+}
 
 export async function generateHpkeCases() {
   const rfc = entry('RFC-A2-BASE', 'hpke-rfc', {
@@ -215,23 +262,59 @@ export async function generateHpkeCases() {
       field, variant.packet));
   }
   const operationInput = { ...seed, outputs: [{ ...seed.outputs[0], packet: sealed.packet }] };
-  const operationExpected = buildOperation(operationInput);
-  const balanceProof = depositBalanceProof(operationInput, operationExpected.operationId);
-  const digest = authorizationDigest({ chainId: seed.chainId, pool: seed.pool },
-    { operationId: operationExpected.operationId, owner });
-  const signature = await ownerWallet.signTypedData({ name: 'Ethereum Confidential UTXO',
-    version: '1', chainId: 31337, verifyingContract: seed.pool },
-  { OperationAuthorization: [
-    { name: 'operationId', type: 'bytes32' }, { name: 'owner', type: 'address' },
-    { name: 'authScheme', type: 'uint8' }, { name: 'authVersion', type: 'uint8' },
-  ] }, { operationId: operationExpected.operationId, owner, authScheme: 1, authVersion: 1 });
-  const operationCase = entry('APPLICATION-DEPOSIT', 'application-operation', operationInput,
-    { ...operationExpected, authorizationDigest: digest, authorizationSignature: signature,
-      balanceProof, rangeProofs: [],
-      logs: buildOperationLogs({ input: operationInput, expected: operationExpected }),
-      receiptInfo: info, receiptValue: '1', receiptBlinding: '0' },
-    'docs/design.md#操作の結合とabi');
-  return { hpke: [rfc, normal, ...invalid], application: [operationCase] };
+  const depositReceipt = await signReceiptInfo({ ...input, outputIndex: 0,
+    value: '1', blinding: '0' }, ownerWallet, seed.chainId, seed.pool);
+  const deposit = await makeApplicationCase('DEPOSIT', operationInput, ownerWallet, [],
+    [depositReceipt], 'not-required-for-deposit');
+
+  const recipientWallet = new Wallet('0x' + '02'.repeat(32));
+  const recipientOwner = recipientWallet.address.toLowerCase();
+  const recipientIkmR = hex(sha(Buffer.from('ecu/vectors/receipt-recipient/transfer/v1')));
+  const recipientKey = deriveKeyPair(recipientIkmR);
+  const transferInputId = '0x' + '10'.repeat(32);
+  const transferSeed = { ...seed, kind: 1, salt: '0x' + 'a8'.repeat(32),
+    inputIds: [transferInputId], d: '0',
+    outputs: [
+      { owner: recipientOwner, ...commitment(1n, 0n), receiptFormat: 1,
+        packet: '0x' + '00'.repeat(112) },
+      { owner, ...commitment(1n, 0n), receiptFormat: 1,
+        packet: '0x' + '00'.repeat(112) },
+    ] };
+  const transferInfos = buildOperation(transferSeed).info.map(item => item.hash);
+  const transferRecipients = [recipientKey, recipient];
+  const transferIkms = [recipientIkmR, ikmR];
+  const unsignedTransferReceipts = transferSeed.outputs.map((output, outputIndex) => {
+    const key = transferRecipients[outputIndex];
+    const outputIkmE = hex(sha(Buffer.from(`ecu/vectors/receipt-ephemeral/transfer-${outputIndex}/v1`)));
+    const packet = sealFixed({ recipientPublicKey: key.publicKey,
+      ikmE: outputIkmE, info: transferInfos[outputIndex], plaintext });
+    transferSeed.outputs[outputIndex].packet = packet.packet;
+    return { outputIndex, info: transferInfos[outputIndex], aad: '0x', plaintext,
+      recipientPrivateKey: key.privateKey, recipientPublicKey: key.publicKey,
+      ikmR: transferIkms[outputIndex], ikmE: outputIkmE, expectedOwner: output.owner,
+      outputOwner: output.owner, Cx: output.Cx, Cy: output.Cy,
+      packet: packet.packet, value: '1', blinding: '0' };
+  });
+  const transferReceipts = await Promise.all(unsignedTransferReceipts.map((receipt, index) =>
+    signReceiptInfo(receipt, index === 0 ? recipientWallet : ownerWallet,
+      seed.chainId, seed.pool)));
+  const transferInputContext = [{ inputId: transferInputId, owner,
+    ...commitment(2n, 0n), amount: '2', blinding: '0', status: 1,
+    source: 'pre-existing test-only UTXO state' }];
+  const transfer = await makeApplicationCase('TRANSFER-CHANGE', transferSeed,
+    ownerWallet, transferInputContext, transferReceipts, 'pending-v3-two-outputs');
+
+  const withdrawalInputId = transfer.expected.outputIds[1].hash;
+  const withdrawalInput = { ...seed, kind: 2, salt: '0x' + 'a9'.repeat(32),
+    inputIds: [withdrawalInputId], outputs: [], d: '0', w: '1',
+    destination: recipientOwner };
+  const withdrawalContext = [{ inputId: withdrawalInputId, owner,
+    ...commitment(1n, 0n), amount: '1', blinding: '0', status: 1,
+    source: transfer.id }];
+  const withdrawal = await makeApplicationCase('WITHDRAW-FULL', withdrawalInput,
+    ownerWallet, withdrawalContext, [], 'not-required-with-zero-outputs');
+  return { hpke: [rfc, normal, ...invalid],
+    application: [deposit, transfer, withdrawal] };
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
