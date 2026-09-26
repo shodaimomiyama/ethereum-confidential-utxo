@@ -22,3 +22,4 @@ export type {
 export { receiptInfo, operationPreimage, operationId, outputId, validateOperationShape } from "./encoding.js";
 export { authorizationTypedData, authorizeOperation, verifyOperationAuthorization, verifyRecipientInfo } from "./authorization.js";
 export type { RecipientInfo } from "./authorization.js";
+export { selectInputs } from "./selection.js";
