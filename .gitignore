@@ -8,3 +8,7 @@
 **/*proof-snapshot*/
 *.pyc
 .DS_Store
+
+# Regenerated setup fixture ABI; never treat it as the production ABI.
+packages/ethereum/generated/environment-smoke.json
+formal/environment/out/

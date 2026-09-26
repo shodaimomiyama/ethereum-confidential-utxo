@@ -2,11 +2,14 @@
   "name": "ethereum-confidential-utxo",
   "private": true,
   "packageManager": "pnpm@10.34.5",
-  "engines": { "node": "24.21.0" },
+  "engines": {
+    "node": "24.21.0"
+  },
   "scripts": {
-    "build": "tsc --noEmit -p tsconfig.tools.json",
-    "test": "node --test tests/environment/*.test.mjs",
-    "check": "tsc --noEmit -p tsconfig.tools.json"
+    "build": "node scripts/check-tools.mjs && forge build --root contracts && node scripts/export-environment-artifact.mjs && tsc --noEmit -p tsconfig.tools.json",
+    "test": "node --test tests/environment/check-tools.test.mjs && forge test --root contracts && vitest run tests/environment",
+    "check": "tsc --noEmit -p tsconfig.tools.json && forge fmt --check --root contracts",
+    "artifact:environment": "node scripts/export-environment-artifact.mjs"
   },
   "devDependencies": {
     "@types/node": "24.10.1",
