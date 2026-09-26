@@ -4,7 +4,7 @@ import type {
 import type { ManualClock, MemoryStore } from '@confidential-utxo/uniswap/testing';
 import { actionKey } from '../contracts/controller.js';
 import type { DispatchResult, UiAction, UiController } from '../contracts/controller.js';
-import type { ApprovalPurpose, Card, CardState, ReasonCode, ViewState } from '../contracts/state.js';
+import type { ApprovalPurpose, Card, CardState, ReasonCode, ValidationReason, ViewState } from '../contracts/state.js';
 import { initialScenario } from './scenarios.js';
 
 export type ScenarioEvent = (
@@ -21,6 +21,7 @@ export type ScenarioEvent = (
   | { readonly type: 'attempt-failed'; readonly card: Card; readonly operationId: OperationId; readonly attemptId?: string; readonly otherAttemptPending: boolean; readonly inputUnspent: boolean; readonly deadlineValid: boolean }
   | { readonly type: 'original-unsent'; readonly card: Card; readonly operationId: OperationId; readonly inputUnspent: boolean; readonly deadlineValid: boolean }
   | { readonly type: 'terms-changed'; readonly card: 'pay'; readonly oldAuthorizationActive: boolean }
+  | { readonly type: 'validation-result'; readonly card: Card; readonly phase: 'ready' | 'invalid-input' | 'needs-preparation'; readonly reason?: ValidationReason; readonly input?: Readonly<Record<string, string>> }
 ) & { readonly scope?: Scope };
 
 export interface ScenarioJournalEntry {
@@ -124,6 +125,7 @@ function derive(runtime: Runtime, now: number): ViewState {
         allowed.add(`start:${card}`);
       }
     }
+    if (card === 'reward' && phase === 'complete') allowed.add('start:reward');
     if (phase === 'confirm-terms') {
       if (card === 'pay' && !runtime.oldAuthorizationActive) allowed.add('confirm-terms');
       else reasons['confirm-terms'] = 'AUTHORIZATION_ACTIVE';
@@ -158,7 +160,25 @@ export function createMockUiController({ scope, store, clock, scenario }: {
   const entries: ScenarioJournalEntry[] = [];
   let activeScope = scope;
   let disposed = false;
-  scopes.set(scopeKey(scope), makeRuntime(scope, scenario));
+
+  function hydrate(runtime: Runtime): Runtime {
+    try {
+      for (const saved of store.operations.list(runtime.state.scope)) {
+        if (runtime.state.operations.some((operation) => operation.operationId === saved.record.operationId)) continue;
+        const card = saved.record.kind === 'pay' ? 'pay' : 'withdraw';
+        runtime.state = setCard(runtime.state, card, { phase: 'unknown', reason: 'RESULT_UNKNOWN' });
+        runtime.state = setOperation(runtime.state, saved.record.operationId, {
+          chainOutcome: 'unknown', attemptIds: saved.record.attemptIds,
+          ...(saved.record.kind === 'pay' ? { paymentId: saved.record.paymentId } : {}),
+        });
+      }
+    } catch {
+      runtime.state = { ...runtime.state, isStale: true };
+    }
+    return runtime;
+  }
+
+  scopes.set(scopeKey(scope), hydrate(makeRuntime(scope, scenario)));
 
   function active(): Runtime {
     const runtime = scopes.get(scopeKey(activeScope));
@@ -182,7 +202,7 @@ export function createMockUiController({ scope, store, clock, scenario }: {
     const key = scopeKey(eventScope);
     let runtime = scopes.get(key);
     if (runtime === undefined) {
-      runtime = makeRuntime(eventScope, 'ready');
+      runtime = hydrate(makeRuntime(eventScope, 'ready'));
       scopes.set(key, runtime);
     }
     let state = runtime.state;
@@ -214,8 +234,11 @@ export function createMockUiController({ scope, store, clock, scenario }: {
       state = setCard(state, event.card, { phase: 'unknown', reason: 'RESULT_UNKNOWN' });
       state = setOperation(state, event.operationId, { chainOutcome: 'unknown' });
     } else if (event.type === 'finalized-success') {
-      state = setCard(state, event.card, { phase: 'confirmed-receipt-pending' });
-      state = setOperation(state, event.operationId, { chainOutcome: 'finalized-success', receiptState: 'pending' });
+      const needsReceipt = event.card !== 'withdraw';
+      state = setCard(state, event.card, { phase: needsReceipt ? 'confirmed-receipt-pending' : 'complete' });
+      state = setOperation(state, event.operationId, {
+        chainOutcome: 'finalized-success', receiptState: needsReceipt ? 'pending' : 'none',
+      });
       state = appendAttempt(state, event.operationId, event.attemptId);
     } else if (event.type === 'receipt-invalid') {
       state = setCard(state, event.card, { phase: 'receipt-invalid', reason: 'RECEIPT_INVALID' });
@@ -255,6 +278,12 @@ export function createMockUiController({ scope, store, clock, scenario }: {
     } else if (event.type === 'terms-changed') {
       runtime.oldAuthorizationActive = event.oldAuthorizationActive;
       state = setCard(state, event.card, { phase: 'confirm-terms', reason: event.oldAuthorizationActive ? 'AUTHORIZATION_ACTIVE' : undefined });
+    } else if (event.type === 'validation-result') {
+      state = setCard(state, event.card, {
+        phase: event.phase,
+        reason: event.reason,
+        input: event.input ?? state.cards[event.card].input,
+      });
     }
     runtime.state = state;
     if (key === scopeKey(activeScope)) notify();
@@ -271,7 +300,7 @@ export function createMockUiController({ scope, store, clock, scenario }: {
       if (disposed) return { kind: 'blocked', reason: 'NOT_ALLOWED' };
       if (action.type === 'switch-scope') {
         activeScope = action.scope;
-        if (!scopes.has(scopeKey(activeScope))) scopes.set(scopeKey(activeScope), makeRuntime(activeScope, 'ready'));
+        if (!scopes.has(scopeKey(activeScope))) scopes.set(scopeKey(activeScope), hydrate(makeRuntime(activeScope, 'ready')));
         entries.push({ kind: 'scope-switch', scope: activeScope });
         notify();
         return { kind: 'accepted' };
@@ -301,7 +330,7 @@ export function createMockUiController({ scope, store, clock, scenario }: {
         entries.push({ kind: 'send', scope: activeScope, operationId: action.operationId });
       } else if (action.type === 'recheck') {
         try {
-          store.operations.list(activeScope);
+          hydrate(runtime);
           runtime.state = { ...runtime.state, checkedAt: clock.now() };
         } catch {
           runtime.state = { ...runtime.state, isStale: true };
@@ -325,7 +354,7 @@ export function createMockUiController({ scope, store, clock, scenario }: {
         .map(([card]) => card),
       reset(nextScenario) {
         scopes.clear();
-        scopes.set(scopeKey(scope), makeRuntime(scope, nextScenario));
+        scopes.set(scopeKey(scope), hydrate(makeRuntime(scope, nextScenario)));
         activeScope = scope;
         entries.length = 0;
         notify();

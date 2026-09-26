@@ -68,3 +68,12 @@ it('preserves request identity across retries and permits a new request only aft
   store.rewards.markReceived(scope, first.requestId, inputId as never, id as never);
   expect(store.rewards.create(reward(`0x${'66'.repeat(32)}`)).status).toBe('accepted');
 });
+
+it('keeps authorization stopped after a partially rolled back operation record', () => {
+  const store = createMemoryStore();
+  store.operations.put(record('pay'), 0);
+  store.control.simulateRollback('partial');
+  expect(store.operations.list(scope)).toHaveLength(0);
+  expect(store.control.health()).toBe('rollback');
+  expect(() => store.operations.put(record('pay'), 0)).toThrowError(/UNAVAILABLE/);
+});

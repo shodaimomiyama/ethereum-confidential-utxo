@@ -4,3 +4,7 @@ export { createMemoryStore } from './store.js';
 export type { MemoryStore, StoreControl, StoreSeed } from './store.js';
 export { createMockHttp } from './http.js';
 export type { MockHttp, MockHttpControl } from './http.js';
+export { httpScenarios } from './fixtures.js';
+export type { HttpScenario, HttpStep } from './fixtures.js';
+export { assertHttpConformance, runHttpScenario } from './conformance.js';
+export type { HttpScenarioHarness } from './conformance.js';

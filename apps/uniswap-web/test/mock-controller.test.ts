@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest';
 import { createManualClock, createMemoryStore } from '@confidential-utxo/uniswap/testing';
+import { parseOperationRecord } from '@confidential-utxo/uniswap';
 import type { OperationId, Scope } from '@confidential-utxo/uniswap';
 import { createMockUiController } from '../src/mock/controller.js';
 
@@ -145,4 +146,49 @@ it('exposes the fixed automatic minimum and deadline with the quote', () => {
   });
   ui.control.inject({ type: 'quote', startedAt: 1, quoteOut: 1n, latestBlockTimestamp: 11 });
   expect(ui.snapshot().cards.pay.quote?.minAmountOut).toBe(1n);
+});
+
+it('passes a validation reason to the UI and prevents an invalid Pay start', async () => {
+  const { ui } = setup();
+  ui.control.inject({ type: 'validation-result', card: 'pay', phase: 'invalid-input', reason: 'INPUT_INVALID', input: { amount: '0' } });
+  expect(ui.snapshot().cards.pay.input.amount).toBe('0');
+  expect(ui.snapshot().cards.pay.reason).toBe('INPUT_INVALID');
+  expect((await ui.dispatch({ type: 'start', card: 'pay' })).kind).toBe('blocked');
+});
+
+it('shows finalized full Withdraw as complete without waiting for a change output', () => {
+  const { ui } = setup();
+  ui.control.inject({ type: 'finalized-success', card: 'withdraw', operationId });
+  expect(ui.snapshot().cards.withdraw.phase).toBe('complete');
+  expect(ui.snapshot().operations[0]?.receiptState).toBe('none');
+});
+
+it('permits an explicit new reward start after owner receipt is confirmed', async () => {
+  const { ui } = setup();
+  ui.control.inject({ type: 'finalized-success', card: 'reward', operationId });
+  ui.control.inject({ type: 'receipt-confirmed', card: 'reward', operationId, outputId, amountWei: 7n });
+  expect(await ui.dispatch({ type: 'start', card: 'reward' })).toEqual({ kind: 'accepted' });
+});
+
+it('restores a shared pending reservation when a second client is created', async () => {
+  const store = createMemoryStore();
+  store.operations.put(parseOperationRecord({
+    recordId: operationId,
+    kind: 'pay',
+    inputId: outputId,
+    operationId,
+    paymentId: operationId,
+    deadline: '600',
+    contentHash: operationId,
+    encryptedBundle: { ciphertext: 'AQID', nonce: `0x${'00'.repeat(12)}`, tag: `0x${'00'.repeat(16)}` },
+    signatureStarted: true,
+    attemptIds: [],
+  }, scope), 0);
+  const clock = createManualClock(0);
+  const first = createMockUiController({ scope, store, clock, scenario: 'ready' });
+  first.dispose();
+  const second = createMockUiController({ scope, store, clock, scenario: 'ready' });
+  expect(second.snapshot().operations[0]?.operationId).toBe(operationId);
+  expect(second.snapshot().cards.pay.phase).toBe('unknown');
+  expect((await second.dispatch({ type: 'start', card: 'pay' })).kind).toBe('blocked');
 });

@@ -40,10 +40,25 @@ export type ReasonCode =
   | 'UNSUPPORTED'
   | 'NOT_ALLOWED';
 
+export type ValidationReason =
+  | ReasonCode
+  | 'NO_SINGLE_INPUT'
+  | 'GAS_REQUIRED'
+  | 'WRONG_NETWORK'
+  | 'KEY_REQUIRED'
+  | 'REWARD_PENDING'
+  | 'REWARD_DUPLICATE'
+  | 'TERMS_EXPIRED'
+  | 'UNSUPPORTED_RECIPIENT'
+  | 'INSUFFICIENT_FUNDS'
+  | 'INVALID_DECIMAL'
+  | 'MINIMUM_NOT_MET'
+  | 'INPUT_USED';
+
 export interface CardState {
   readonly phase: CardPhase;
   readonly input: Readonly<Record<string, string>>;
-  readonly reason?: ReasonCode;
+  readonly reason?: ValidationReason;
   readonly approvalPurpose?: ApprovalPurpose;
   readonly quote?: {
     readonly startedAt: number;

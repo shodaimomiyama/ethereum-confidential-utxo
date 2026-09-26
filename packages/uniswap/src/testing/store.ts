@@ -19,7 +19,7 @@ export interface StoreJournalEntry {
 export interface StoreControl {
   reset(seed?: StoreSeed): void;
   setUnavailable(value: boolean): void;
-  simulateRollback(): void;
+  simulateRollback(mode?: 'flag' | 'partial'): void;
   loseNextAck(route: string): void;
   consumeLostAck(route: string): boolean;
   setRewardFinalized(scope: Scope, requestId: RequestId, outputId: Bytes32, blockHash: Bytes32): void;
@@ -185,7 +185,13 @@ export function createMemoryStore(seed: StoreSeed = {}): MemoryStore {
     control: {
       reset,
       setUnavailable(value) { health = value ? 'unavailable' : 'healthy'; },
-      simulateRollback() { health = 'rollback'; },
+      simulateRollback(mode = 'flag') {
+        health = 'rollback';
+        if (mode === 'partial') {
+          const mostRecentKey = [...operations.keys()].at(-1);
+          if (mostRecentKey !== undefined) operations.delete(mostRecentKey);
+        }
+      },
       loseNextAck(route) { lostAcks.set(route, (lostAcks.get(route) ?? 0) + 1); },
       consumeLostAck(route) {
         const count = lostAcks.get(route) ?? 0;
