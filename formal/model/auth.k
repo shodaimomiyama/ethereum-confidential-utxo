@@ -8,6 +8,7 @@ module UTXO-AUTH
   syntax AuthCert ::= authCert(Int, Int, Int, LogicalId, Domain, Int, Int, Int)
   syntax AuthContext ::= authContext(Int, Int, Int, Int, Int, Int, List)
   syntax Int ::= ownerOfOperation(ValidatedOperation) [function]
+               | operationId(ValidatedOperation) [function]
   syntax ValidatedOperation ::= operationOf(AuthIntent) [function]
   syntax Bool ::= validCert(AuthCert, AuthIntent, AuthContext) [function]
                  | isAssetOperation(ValidatedOperation) [function]
@@ -29,6 +30,14 @@ module UTXO-AUTH
   rule ownerOfOperation(validatedWithdraw(_Op:Int, Owner:Int, _Inputs:List,
                                           _W:Int, _Destination:Int, _ChangeId:Int)) => Owner
   rule ownerOfOperation(validatedReceive(_R:Int)) => -1
+  rule operationId(validatedDeposit(_Id:Int, _Owner:Int, _D:Int,
+                                    _R:Int, Op:Int)) => Op
+  rule operationId(validatedTransfer(Op:Int, _Owner:Int, _Inputs:List,
+                                     _Recipient:Int, _T:Int, _NewId:Int,
+                                     _ChangeId:Int)) => Op
+  rule operationId(validatedWithdraw(Op:Int, _Owner:Int, _Inputs:List,
+                                     _W:Int, _Destination:Int, _ChangeId:Int)) => Op
+  rule operationId(validatedReceive(_R:Int)) => -1
   rule isAssetOperation(validatedDeposit(_, _, _, _, _)) => true
   rule isAssetOperation(validatedTransfer(_, _, _, _, _, _, _)) => true
   rule isAssetOperation(validatedWithdraw(_, _, _, _, _, _)) => true

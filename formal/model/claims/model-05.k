@@ -97,4 +97,16 @@ module UTXO-MODEL-05
       andBool excess(assetState(?Next)) ==Int E
       andBool ledger(assetState(?Next)) ==Int V -Int W
     [label(MODEL-05-caught-reentry-preserves-accounting)]
+
+  claim <k> settleP(Exec:Execution, Req:PRequest, LiveCtx:PContext,
+                    Behavior:RecipientBehavior,
+                    execContextLocked(Chain:Int, Pool:Int))
+          => rolledBack(Exec, invalidOperation) </k>
+    [label(MODEL-05-public-p-entry-locked)]
+
+  claim <k> settleQ(Exec:Execution, Req:QRequest, AuthCtx:AuthContext,
+                    Behavior:RecipientBehavior,
+                    execContextLocked(Chain:Int, Pool:Int))
+          => rolledBack(Exec, invalidOperation) </k>
+    [label(MODEL-05-public-q-entry-locked)]
 endmodule

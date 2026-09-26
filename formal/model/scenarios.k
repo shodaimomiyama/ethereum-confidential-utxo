@@ -293,4 +293,47 @@ module UTXO-SCENARIOS
                   validatedReceive(4), execContextLocked(1, 1))
           => accepted(state(1 |-> utxo(100, 10), .Set, SetItem(7), 14, 10, 4)) </k>
     [label(S-11-simple-receive-during-lock)]
+  claim <k> settleP(execution(state(1 |-> utxo(100, 10), .Set, .Set, 10, 10, 0), .List), pRequest(authIntent(validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), 0, 77, 500), authCert(8, 1, 100, logicalId(authIntent(validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), 0, 77, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), 300, 1), pContext(1, 1, 1, 1, 50, 8, ListItem(authCert(8, 1, 100, logicalId(authIntent(validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), 0, 77, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))), rejectReceive,
+                     execContext(1, 1))
+          => rolledBack(execution(state(1 |-> utxo(100, 10), .Set, .Set, 10, 10, 0), .List), invalidOperation) </k>
+    [label(S-11-p-recipient-failure)]
+  claim <k> settleQ(execution(state(1 |-> utxo(100, 10), .Set, .Set, 10, 10, 0), .List), qRequest(authIntent(validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), 0, 77, 500), authCert(8, 1, 100, logicalId(authIntent(validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), 0, 77, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), true, 400, 2), authContext(1, 1, 1, 1, 50, 8, ListItem(authCert(8, 1, 100, logicalId(authIntent(validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), 0, 77, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))), rejectReceive,
+                     execContext(1, 1))
+          => rolledBack(execution(state(1 |-> utxo(100, 10), .Set, .Set, 10, 10, 0), .List), invalidOperation) </k>
+    [label(S-11-q-recipient-failure)]
+  claim <k> applyEnvelope(packed(execution(initial(7), .List),
+                                    envelope(300, 400, 1, 0, 0)), 5, 2)
+          => packed(execution(initial(7), .List),
+                    envelope(300, 400, 2, 5, 2)) </k>
+    [label(S-14-gas-is-outside-assets)]
+  claim <k> settleP(execution(state(.Map, .Set, .Set, 0, 0, 0), .List), pRequest(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), authCert(8, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), 300, 1), pContext(1, 1, 1, 1, 50, 8, ListItem(authCert(8, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))),
+                     receiveOK, execContext(1, 1))
+          => committed(execution(state(1 |-> utxo(100, 10), .Set, SetItem(7), 10, 10, 0), ListItem(successEvent(7)))) </k>
+    [label(S-14-p-deposit-event)]
+  claim <k> settleQ(execution(state(.Map, .Set, .Set, 0, 0, 0), .List), qRequest(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), authCert(8, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), true, 400, 2), authContext(1, 1, 1, 1, 50, 8, ListItem(authCert(8, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 7), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))),
+                     receiveOK, execContext(1, 1))
+          => committed(execution(state(1 |-> utxo(100, 10), .Set, SetItem(7), 10, 10, 0), ListItem(successEvent(7)))) </k>
+    [label(S-14-q-deposit-event)]
+  claim <k> settleP(execution(state(1 |-> utxo(100, 10), .Set, .Set, 10, 10, 0), .List), pRequest(authIntent(validatedTransfer(7, 100, ListItem(1), 200, 3, 2, 3), 77, 78, 500), authCert(8, 1, 100, logicalId(authIntent(validatedTransfer(7, 100, ListItem(1), 200, 3, 2, 3), 77, 78, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), 300, 1), pContext(1, 1, 1, 1, 50, 8, ListItem(authCert(8, 1, 100, logicalId(authIntent(validatedTransfer(7, 100, ListItem(1), 200, 3, 2, 3), 77, 78, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))),
+                     receiveOK, execContext(1, 1))
+          => committed(execution(state((1 |-> utxo(100, 10)) (2 |-> utxo(200, 3)) (3 |-> utxo(100, 7)), SetItem(1), SetItem(7), 10, 10, 0), ListItem(successEvent(7)))) </k>
+    [label(S-14-p-transfer-event)]
+  claim <k> settleQ(execution(state(1 |-> utxo(100, 10), .Set, .Set, 10, 10, 0), .List), qRequest(authIntent(validatedTransfer(7, 100, ListItem(1), 200, 3, 2, 3), 77, 78, 500), authCert(8, 1, 100, logicalId(authIntent(validatedTransfer(7, 100, ListItem(1), 200, 3, 2, 3), 77, 78, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), true, 400, 2), authContext(1, 1, 1, 1, 50, 8, ListItem(authCert(8, 1, 100, logicalId(authIntent(validatedTransfer(7, 100, ListItem(1), 200, 3, 2, 3), 77, 78, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))),
+                     receiveOK, execContext(1, 1))
+          => committed(execution(state((1 |-> utxo(100, 10)) (2 |-> utxo(200, 3)) (3 |-> utxo(100, 7)), SetItem(1), SetItem(7), 10, 10, 0), ListItem(successEvent(7)))) </k>
+    [label(S-14-q-transfer-event)]
+  claim <k> settleP(execution(state(1 |-> utxo(100, 10), .Set, .Set, 10, 10, 0), .List), pRequest(authIntent(validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), 0, 77, 500), authCert(8, 1, 100, logicalId(authIntent(validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), 0, 77, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), 300, 1), pContext(1, 1, 1, 1, 50, 8, ListItem(authCert(8, 1, 100, logicalId(authIntent(validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), 0, 77, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))),
+                     receiveOK, execContext(1, 1))
+          => committed(execution(state((1 |-> utxo(100, 10)) (2 |-> utxo(100, 7)), SetItem(1), SetItem(7), 7, 7, 0), ListItem(successEvent(7)))) </k>
+    [label(S-14-p-withdraw-event)]
+  claim <k> settleQ(execution(state(1 |-> utxo(100, 10), .Set, .Set, 10, 10, 0), .List), qRequest(authIntent(validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), 0, 77, 500), authCert(8, 1, 100, logicalId(authIntent(validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), 0, 77, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), true, 400, 2), authContext(1, 1, 1, 1, 50, 8, ListItem(authCert(8, 1, 100, logicalId(authIntent(validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), 0, 77, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))),
+                     receiveOK, execContext(1, 1))
+          => committed(execution(state((1 |-> utxo(100, 10)) (2 |-> utxo(100, 7)), SetItem(1), SetItem(7), 7, 7, 0), ListItem(successEvent(7)))) </k>
+    [label(S-14-q-withdraw-event)]
+  claim <k> settleQ(execution(state(1 |-> utxo(100, 10), .Set, .Set, 10, 10, 0), .List),
+                     qRequest(authIntent(validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), 0, 77, 500), authCert(8, 1, 100, logicalId(authIntent(validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), 0, 77, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), true, 400, 2),
+                     authContext(1, 1, 1, 1, 50, 8, ListItem(authCert(8, 1, 100, logicalId(authIntent(validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), 0, 77, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))),
+                     returnETH(2), execContext(1, 1))
+          => committed(execution(state((1 |-> utxo(100, 10)) (2 |-> utxo(100, 7)), SetItem(1), SetItem(7), 9, 7, 2), ListItem(successEvent(7)))) </k>
+    [label(S-11-q-return-eth)]
 endmodule

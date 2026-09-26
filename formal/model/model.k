@@ -23,6 +23,18 @@ module UTXO-MODEL
                              | returnThenOuterRevert(Int)
   syntax Frame ::= frame(Execution, State, ValidatedOperation,
                         RecipientBehavior, Context)
+  syntax Envelope ::= envelope(Int, Int, Int, Int, Int)
+  syntax Packed ::= packed(Execution, Envelope)
+                  | applyEnvelope(Packed, Int, Int)
+  syntax Execution ::= assetExecution(Packed) [function]
+  rule assetExecution(packed(Exec:Execution, _Envelope:Envelope)) => Exec
+  rule applyEnvelope(packed(Exec:Execution,
+                            envelope(Sender:Int, Payer:Int, Nonce:Int,
+                                     Spent:Int, Refund:Int)),
+                     Charged:Int, Refunded:Int)
+    => packed(Exec, envelope(Sender, Payer, Nonce +Int 1,
+                             Spent +Int Charged, Refund +Int Refunded))
+    requires Charged >=Int 0 andBool Refunded >=Int 0
   syntax List ::= events(Execution) [function]
   syntax State ::= assetState(Execution) [function]
   rule events(execution(_St:State, Events:List)) => Events
@@ -32,6 +44,7 @@ module UTXO-MODEL
                | inputTotal(Map, List) [function]
                | liability(State) [function]
                | sumUtxos(List) [function]
+               | sumActive(Map, Set) [function]
   syntax Map ::= utxos(State) [function]
   syntax Set ::= spentIds(State) [function]
   rule utxos(state(U:Map, _S:Set, _H:Set, _B:Int, _A:Int, _E:Int)) => U
@@ -42,12 +55,15 @@ module UTXO-MODEL
                 | validShape(State, ValidatedOperation) [function]
                 | wellFormed(State) [function]
                 | backed(State) [function]
-  syntax Outcome ::= accepted(State)
-                   | rejected(State, RejectReason)
+  syntax FinalOutcome ::= accepted(State) | rejected(State, RejectReason)
+  syntax Outcome ::= FinalOutcome
                    | apply(State, ValidatedOperation, Context)
+                   | assertIntEqual(Int, Int)
 
   configuration <k> $PGM:Outcome </k>
 
+  rule assertIntEqual(X:Int, Y:Int) => accepted(initial(0))
+    requires X ==Int Y
   rule I:Int -Int I => 0 [simplification]
   rule valueOf(utxo(_Owner:Int, V:Int)) => V
   rule valueOf(missingUtxo) => 0
@@ -55,7 +71,17 @@ module UTXO-MODEL
   rule ownerOf(missingUtxo) => -1
 
   rule liability(state(U:Map, S:Set, _H:Set, _B:Int, _A:Int, _E:Int))
-    => sumUtxos(values(removeAll(U, S)))
+    => sumActive(U, S)
+  rule sumActive(.Map, _S:Set) => 0
+  rule sumActive((I:Int |-> utxo(_Owner:Int, _V:Int)) Rest:Map,
+                 S:Set SetItem(I))
+    => sumActive(Rest, S) [simplification]
+  rule sumActive((I:Int |-> utxo(_Owner:Int, V:Int)) Rest:Map, S:Set)
+    => V +Int sumActive(Rest, S)
+    requires notBool (I in S)
+  rule sumActive((I:Int |-> utxo(_Owner:Int, _V:Int)) Rest:Map, S:Set)
+    => sumActive(Rest, S)
+    requires I in S
   rule sumUtxos(.List) => 0
   rule sumUtxos(ListItem(utxo(_Owner:Int, V:Int)) Rest:List)
     => V +Int sumUtxos(Rest)

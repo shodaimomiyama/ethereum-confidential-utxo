@@ -66,4 +66,27 @@ module UTXO-MODEL-07
         authIntent(validatedDeposit(Id, Owner, D, D, Op), Packet, 0, Random),
         LiveCtx)
     [label(MODEL-07-p-rechecks-deposit-history)]
+
+  claim <k> settleP(Exec:Execution,
+                    pRequest(Intent:AuthIntent, Cert:AuthCert,
+                             _Submitter:Int, _Nonce:Int),
+                    LiveCtx:PContext, Behavior:RecipientBehavior,
+                    execContext(Chain:Int, Pool:Int))
+          => commonSettlement(Exec, operationOf(Intent), Behavior,
+                              execContext(Chain, Pool)) </k>
+    requires pProofValid(Cert, Intent, LiveCtx)
+    [label(MODEL-07-p-full-settlement-normalizes)]
+
+  claim <k> settleQ(Exec:Execution,
+                    qRequest(Intent:AuthIntent, Cert:AuthCert, _Claimed:Bool,
+                             _Submitter:Int, _Nonce:Int),
+                    authContext(Chain:Int, Pool:Int, Rule:Int, Version:Int,
+                                Now:Int, Issuer:Int, Registry:List),
+                    Behavior:RecipientBehavior, execContext(ExecChain:Int, ExecPool:Int))
+          => commonSettlement(Exec, operationOf(Intent), Behavior,
+                              execContext(ExecChain, ExecPool)) </k>
+    requires hasTrustedCert(Cert, Registry)
+      andBool validCert(Cert, Intent,
+        authContext(Chain, Pool, Rule, Version, Now, Issuer, Registry))
+    [label(MODEL-07-q-full-settlement-normalizes)]
 endmodule
