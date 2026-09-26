@@ -26,7 +26,7 @@ export function Pay({ view, controller }: { readonly view: ViewState; readonly c
     {selected && <div className="conditions"><p>Selected UTXO: <code title={selected.id}>{selected.id}</code></p>
       <p>{formatEth(selected.amountWei)} ETH input; {formatEth(selected.changeWei)} ETH private change after payment and receipt.</p></div>}
     {card.quote && <section className="conditions" aria-label="Payment terms"><h3>Current terms</h3>{quoteDetails(card.quote)}
-      {card.phase === 'ready' && <><label htmlFor="pay-min">Minimum output in dUSD</label><input id="pay-min" type="text" inputMode="decimal" value={card.input.minAmountOut ?? formatEth(card.quote.minAmountOut)} disabled={!editable}
+      {editable && <><label htmlFor="pay-min">Minimum output in dUSD</label><input id="pay-min" type="text" inputMode="decimal" value={card.input.minAmountOut ?? formatEth(card.quote.minAmountOut)} disabled={!editable}
         onChange={(event) => void controller.dispatch({ type: 'edit', card: 'pay', field: 'minAmountOut', value: event.target.value })} />
         <label htmlFor="pay-deadline">Deadline (UTC timestamp)</label><input id="pay-deadline" type="text" inputMode="numeric" value={card.input.deadline ?? String(card.quote.deadline)} disabled={!editable}
           onChange={(event) => void controller.dispatch({ type: 'edit', card: 'pay', field: 'deadline', value: event.target.value })} /></>}
@@ -40,5 +40,6 @@ export function Pay({ view, controller }: { readonly view: ViewState; readonly c
     <CardFeedback card={card} blockedReason={view.reasons['start:pay']} />
     <button type="button" className="button primary" disabled={!allowedFor(view, { type: 'start', card: 'pay' })}
       onClick={() => void controller.dispatch({ type: 'start', card: 'pay' })}>Start private payment</button>
+    {allowedFor(view, { type: 'new-operation', card: 'pay' }) && <button type="button" className="text-button" onClick={() => void controller.dispatch({ type: 'new-operation', card: 'pay' })}>New payment</button>}
   </div>;
 }

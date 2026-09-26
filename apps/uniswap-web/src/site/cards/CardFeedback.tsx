@@ -14,6 +14,8 @@ const recovery: Partial<Record<ValidationReason, string>> = {
   KEY_REQUIRED: 'Prepare your private receipt key before starting.',
   TERMS_CHANGED: 'The payment terms changed. Compare the previous and new terms before confirming.',
   AUTHORIZATION_ACTIVE: 'Wait for the previous authorization to settle before confirming new terms.',
+  TERMS_EXPIRED: 'Enter a deadline later than the latest chain timestamp, in integer Unix seconds.',
+  MINIMUM_NOT_MET: 'Enter a positive minimum output amount in dUSD.',
   RESULT_UNKNOWN: 'The result is unknown. Recheck the existing operation before making another request.',
 };
 

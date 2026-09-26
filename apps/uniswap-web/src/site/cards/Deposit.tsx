@@ -16,5 +16,6 @@ export function Deposit({ view, controller }: { readonly view: ViewState; readon
     <CardFeedback card={card} blockedReason={view.reasons['start:deposit']} />
     <button type="button" className="button primary" disabled={!allowedFor(view, { type: 'start', card: 'deposit' })}
       onClick={() => void controller.dispatch({ type: 'start', card: 'deposit' })}>Start deposit</button>
+    {allowedFor(view, { type: 'new-operation', card: 'deposit' }) && <button type="button" className="text-button" onClick={() => void controller.dispatch({ type: 'new-operation', card: 'deposit' })}>New deposit</button>}
   </div>;
 }

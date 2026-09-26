@@ -5,6 +5,7 @@ import { expect, it } from 'vitest';
 import type { OperationRef, Scope, TxHash } from '@confidential-utxo/uniswap';
 import { createManualClock, createMemoryStore } from '@confidential-utxo/uniswap/testing';
 import { createMockUiController } from '../src/mock/controller.js';
+import { createMockExperience } from '../src/mock/experience.js';
 import { AppPage } from '../src/site/AppPage.js';
 import { operationHref } from '../src/site/explorer.js';
 
@@ -40,4 +41,17 @@ it('does not show an old wallet operation after switching owner', async () => {
   rerender(<AppPage controller={ui} config={{ mode: 'mock', deploymentId: 'local-v1' }} />);
   expect(screen.queryByText(/pending confirmation/i)).not.toBeInTheDocument();
   ui.dispose();
+});
+
+it('keeps pre-submission approval visible after switching cards', async () => {
+  const experience = createMockExperience({ scope });
+  for (const type of ['connect-wallet', 'switch-network', 'prepare-recipient-key', 'refresh-balances'] as const) await experience.dispatch({ type });
+  await experience.dispatch({ type: 'edit', card: 'reward', field: 'amount', value: '0.003' });
+  await experience.dispatch({ type: 'start', card: 'reward' });
+  experience.advance();
+  render(<AppPage controller={experience} config={{ mode: 'mock', deploymentId: 'local-v1' }} />);
+  screen.getByRole('tab', { name: 'Pay' }).click();
+  expect(screen.getByRole('region', { name: 'Activity' })).toHaveTextContent(/Waiting for wallet approval/i);
+  expect(screen.getByRole('region', { name: 'Activity' })).toHaveTextContent(/transaction approval/i);
+  experience.dispose();
 });

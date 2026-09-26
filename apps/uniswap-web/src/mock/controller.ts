@@ -50,6 +50,7 @@ interface Runtime {
   state: ViewState;
   interactive: boolean;
   quoteStartedAt?: number;
+  latestBlockTimestamp?: bigint;
   reservationAck: Set<Card>;
   retryEligible: Set<OperationId>;
   resumeEligible: Set<OperationId>;
@@ -134,14 +135,21 @@ function refreshInteractive(runtime: Runtime): void {
       if (current.quote !== undefined) {
         const minimum = current.input.minAmountOut === undefined
           ? current.quote.minAmountOut : parseEthWei(current.input.minAmountOut);
-        if (minimum === undefined || minimum > current.quote.quoteOut) {
+        if (minimum === undefined) {
           state = setCard(state, card, { phase: 'invalid-input', reason: 'MINIMUM_NOT_MET' });
           continue;
         }
         const deadlineText = current.input.deadline;
-        const deadline = deadlineText === undefined ? current.quote.deadline : Number(deadlineText);
-        if (deadlineText !== undefined && (!/^[1-9]\d*$/.test(deadlineText) || !Number.isSafeInteger(deadline))) {
+        const deadline = deadlineText === undefined ? current.quote.deadline
+          : /^[1-9]\d{0,19}$/.test(deadlineText) ? BigInt(deadlineText) : 0n;
+        if (deadline === 0n || deadline > (1n << 64n) - 1n
+          || (runtime.latestBlockTimestamp !== undefined && deadline <= runtime.latestBlockTimestamp)) {
           state = setCard(state, card, { phase: 'invalid-input', reason: 'TERMS_EXPIRED' });
+          continue;
+        }
+        if (minimum > current.quote.quoteOut) {
+          state = setCard(state, card, { phase: 'confirm-terms', reason: 'TERMS_CHANGED',
+            proposedQuote: { ...current.quote, minAmountOut: minimum, deadline } });
           continue;
         }
         state = setCard(state, card, { quote: { ...current.quote, minAmountOut: minimum, deadline } });
@@ -222,6 +230,7 @@ function derive(runtime: Runtime, now: number): ViewState {
       reasons[`start:${card}`] = state.cards[card].reason ?? 'INPUT_INVALID';
     }
     if (card === 'reward' && phase === 'complete' && state.storageAvailability === 'healthy') allowed.add('start:reward');
+    if (phase === 'complete') allowed.add(`new-operation:${card}`);
     if (phase === 'confirm-terms') {
       if (card === 'pay' && !runtime.oldAuthorizationActive) allowed.add('confirm-terms');
       else reasons['confirm-terms'] = 'AUTHORIZATION_ACTIVE';
@@ -332,8 +341,9 @@ export function createMockUiController({ scope, store, clock, scenario }: {
           startedAt: event.startedAt,
           quoteOut: event.quoteOut,
           minAmountOut: (event.quoteOut * 99n / 100n) > 0n ? event.quoteOut * 99n / 100n : 1n,
-          deadline: event.latestBlockTimestamp + 600,
+          deadline: BigInt(event.latestBlockTimestamp) + 600n,
       };
+      runtime.latestBlockTimestamp = BigInt(event.latestBlockTimestamp);
       if (state.cards.pay.phase === 'awaiting-approval') {
         runtime.oldAuthorizationActive = true;
         state = setCard(state, 'pay', { phase: 'confirm-terms', reason: 'TERMS_CHANGED', proposedQuote: incoming });
@@ -511,6 +521,11 @@ export function createMockUiController({ scope, store, clock, scenario }: {
       if (action.type === 'start') {
         runtime.state = setCard(runtime.state, action.card, { phase: 'preparing' });
         entries.push({ kind: 'start', scope: activeScope });
+      } else if (action.type === 'new-operation') {
+        runtime.state = setCard(runtime.state, action.card, { phase: 'invalid-input', input: {}, reason: 'INVALID_DECIMAL',
+          approvalPurpose: undefined, quote: undefined, proposedQuote: undefined });
+        if (action.card === 'pay') runtime.quoteStartedAt = undefined;
+        refreshInteractive(runtime);
       } else if (action.type === 'connect-wallet' || action.type === 'switch-network'
         || action.type === 'prepare-recipient-key' || action.type === 'refresh-balances') {
         const field = action.type === 'connect-wallet' ? 'wallet' : action.type === 'switch-network' ? 'network'
@@ -524,7 +539,11 @@ export function createMockUiController({ scope, store, clock, scenario }: {
         refreshInteractive(runtime);
       } else if (action.type === 'edit') {
         const card = runtime.state.cards[action.card];
-        runtime.state = setCard(runtime.state, action.card, { input: { ...card.input, [action.field]: action.value } });
+        const staleDraft = action.card === 'pay' && card.reason === 'QUOTE_STALE';
+        const reconsiderTerms = action.card === 'pay' && card.phase === 'confirm-terms' && !runtime.oldAuthorizationActive;
+        runtime.state = setCard(runtime.state, action.card, { input: { ...card.input, [action.field]: action.value },
+          ...(staleDraft ? { reason: undefined, quote: undefined, phase: 'invalid-input' as const } : {}),
+          ...(reconsiderTerms ? { reason: undefined, proposedQuote: undefined, phase: 'invalid-input' as const } : {}) });
         refreshInteractive(runtime);
       } else if (action.type === 'confirm-terms') {
         runtime.state = setCard(runtime.state, 'pay', { phase: 'preparing', reason: undefined,

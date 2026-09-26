@@ -8,6 +8,7 @@ export type UiAction =
   | { readonly type: 'refresh-balances' }
   | { readonly type: 'edit'; readonly card: Card; readonly field: string; readonly value: string }
   | { readonly type: 'start'; readonly card: Card }
+  | { readonly type: 'new-operation'; readonly card: Card }
   | { readonly type: 'confirm-terms'; readonly card: 'pay' }
   | { readonly type: 'recheck'; readonly operationId: OperationId }
   | { readonly type: 'recheck-reward'; readonly requestId: RequestId }
@@ -29,7 +30,7 @@ export interface UiController {
 }
 
 export function actionKey(action: UiAction): string {
-  return action.type === 'edit' || action.type === 'start'
+  return action.type === 'edit' || action.type === 'start' || action.type === 'new-operation'
     ? `${action.type}:${action.card}`
     : action.type;
 }

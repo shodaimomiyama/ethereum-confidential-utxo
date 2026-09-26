@@ -18,12 +18,22 @@ function statusText(operation: OperationRef): string {
 export function OperationStatus({ view, controller, config }: {
   readonly view: ViewState; readonly controller: UiController; readonly config: SiteConfig;
 }) {
+  const preparing = (['reward', 'pay', 'deposit', 'withdraw'] as const).filter((card) =>
+    ['preparing', 'confirm-terms', 'awaiting-approval', 'submitting'].includes(view.cards[card].phase));
   const operations = view.currentScope === undefined ? [] : view.operations.filter((operation) =>
     operation.scope.deploymentId === view.currentScope?.deploymentId
     && operation.scope.owner.toLowerCase() === view.currentScope?.owner.toLowerCase());
   return <section className="activity surface" aria-label="Activity">
     <h2>Activity</h2>
-    {operations.length === 0 && view.rewardRequests.length === 0 && <p>No operations yet. Start with a demo reward or deposit.</p>}
+    {operations.length === 0 && view.rewardRequests.length === 0 && preparing.length === 0 && <p>No operations yet. Start with a demo reward or deposit.</p>}
+    {view.currentScope && preparing.map((card) => <article className="activity-item" key={`preparing-${card}`}>
+      <h3>{card === 'reward' ? 'Demo reward' : card === 'pay' ? 'Pay' : card === 'deposit' ? 'Deposit' : 'Withdraw'}</h3>
+      <p>{view.cards[card].phase === 'awaiting-approval' ? 'Waiting for wallet approval'
+        : view.cards[card].phase === 'confirm-terms' ? 'Review changed terms'
+          : view.cards[card].phase === 'submitting' ? 'Submitting transaction' : 'Preparing request'}</p>
+      {view.cards[card].approvalPurpose && <p>{view.cards[card].approvalPurpose === 'transaction' ? 'Transaction approval'
+        : `${view.cards[card].approvalPurpose.replaceAll('-', ' ')} approval`}</p>}
+    </article>)}
     {view.rewardRequests.map((request) => <article className="activity-item" key={request.requestId}>
       <h3>Demo reward request</h3><p>{request.status === 'accepted' ? 'Request accepted' : request.status === 'pending' ? 'Distribution pending' : request.status === 'finalized' ? 'Distribution finalized; receipt pending' : request.status === 'received' ? 'Reward received' : `Request ${request.status}`}</p>
       <code title={request.requestId}>{request.requestId}</code>

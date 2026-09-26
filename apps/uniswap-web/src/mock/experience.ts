@@ -9,6 +9,7 @@ import { createMockUiController, parseEthWei } from './controller.js';
 import type { MockUiController } from './controller.js';
 
 interface Flow {
+  readonly scope: Scope;
   readonly card: Card;
   readonly operationId: OperationId;
   readonly outputId: Bytes32;
@@ -26,6 +27,7 @@ export interface MockExperience extends UiController {
   readonly mock: MockUiController;
   readonly clock: ManualClock;
   readonly store: MemoryStore;
+  setClock(at: number): void;
 }
 
 function identifier(counter: number, salt: number): `0x${string}` {
@@ -62,7 +64,7 @@ export function createMockExperience({ scope }: { readonly scope: Scope }): Mock
   attach();
 
   async function dispatch(action: UiAction, record = true): Promise<DispatchResult> {
-    if (flow !== undefined && action.type === 'start') return { kind: 'blocked', reason: 'NOT_ALLOWED' };
+    if (flow !== undefined && (action.type === 'start' || action.type === 'confirm-terms')) return { kind: 'blocked', reason: 'NOT_ALLOWED' };
     const result = await mock.dispatch(action);
     if (result.kind !== 'accepted') return result;
     if (record) recorded.push({ kind: 'action', action });
@@ -74,16 +76,17 @@ export function createMockExperience({ scope }: { readonly scope: Scope }): Mock
           latestBlockTimestamp: 1_790_460_000 });
       }
     }
-    if (action.type === 'start') {
+    if (action.type === 'start' || action.type === 'confirm-terms') {
+      const card = action.card;
       counter += 1;
       const view = mock.snapshot();
       const operationId = identifier(counter, 1) as OperationId;
-      const amountWei = action.card === 'withdraw'
+      const amountWei = card === 'withdraw'
         ? view.selectedInput.withdraw?.amountWei ?? 0n
-        : parseEthWei(view.cards[action.card].input.amount) ?? 0n;
-      const requestId = action.card === 'reward' ? identifier(counter, 2) as RequestId : undefined;
-      flow = { card: action.card, operationId, outputId: identifier(counter, 3) as Bytes32,
-        amountWei, changeWei: action.card === 'pay' ? view.selectedInput.pay?.changeWei ?? 0n : 0n,
+        : parseEthWei(view.cards[card].input.amount) ?? 0n;
+      const requestId = card === 'reward' ? identifier(counter, 2) as RequestId : undefined;
+      flow = { scope: view.scope, card, operationId, outputId: identifier(counter, 3) as Bytes32,
+        amountWei, changeWei: card === 'pay' ? view.selectedInput.pay?.changeWei ?? 0n : 0n,
         requestId, stage: 0 };
       if (requestId !== undefined) {
         store.rewards.create({ scope: view.scope, requestId, amountWei, recipientInfo: {
@@ -102,30 +105,30 @@ export function createMockExperience({ scope }: { readonly scope: Scope }): Mock
     const current = flow;
     if (record) recorded.push({ kind: 'advance' });
     if (current.stage === 0) {
-      if (current.card === 'pay' || current.card === 'withdraw') mock.control.inject({ type: 'reservation-ack', card: current.card });
-      mock.control.inject({ type: 'awaiting-approval', card: current.card,
+      if (current.card === 'pay' || current.card === 'withdraw') mock.control.inject({ type: 'reservation-ack', card: current.card, scope: current.scope });
+      mock.control.inject({ type: 'awaiting-approval', card: current.card, scope: current.scope,
         purpose: current.card === 'pay' ? 'pool-authorization' : 'transaction' });
     } else if (current.stage === 1) {
-      mock.control.inject({ type: 'submitted', card: current.card, operationId: current.operationId });
+      mock.control.inject({ type: 'submitted', card: current.card, operationId: current.operationId, scope: current.scope });
       if (current.requestId !== undefined) {
-        mock.control.inject({ type: 'reward-request', requestId: current.requestId, status: 'pending', operationId: current.operationId });
+        mock.control.inject({ type: 'reward-request', requestId: current.requestId, status: 'pending', operationId: current.operationId, scope: current.scope });
       }
     } else if (current.stage === 2) {
-      mock.control.inject({ type: 'finalized-success', card: current.card, operationId: current.operationId,
+      mock.control.inject({ type: 'finalized-success', card: current.card, operationId: current.operationId, scope: current.scope,
         amountWei: current.card === 'deposit' || current.card === 'withdraw' ? current.amountWei : undefined });
       if (current.requestId !== undefined) {
-        store.control.setRewardFinalized(scope, current.requestId, current.outputId, identifier(counter, 5) as Bytes32);
-        mock.control.inject({ type: 'reward-request', requestId: current.requestId, status: 'finalized', operationId: current.operationId });
+        store.control.setRewardFinalized(current.scope, current.requestId, current.outputId, identifier(counter, 5) as Bytes32);
+        mock.control.inject({ type: 'reward-request', requestId: current.requestId, status: 'finalized', operationId: current.operationId, scope: current.scope });
       }
     } else {
       if (current.card !== 'withdraw') {
         const received = current.card === 'pay' ? current.changeWei : current.amountWei;
-        mock.control.inject({ type: 'receipt-confirmed', card: current.card, operationId: current.operationId,
+        mock.control.inject({ type: 'receipt-confirmed', card: current.card, operationId: current.operationId, scope: current.scope,
           outputId: current.outputId, amountWei: received });
       }
       if (current.requestId !== undefined) {
-        store.rewards.markReceived(scope, current.requestId, current.outputId, identifier(counter, 5) as Bytes32);
-        mock.control.inject({ type: 'reward-request', requestId: current.requestId, status: 'received', operationId: current.operationId });
+        store.rewards.markReceived(current.scope, current.requestId, current.outputId, identifier(counter, 5) as Bytes32);
+        mock.control.inject({ type: 'reward-request', requestId: current.requestId, status: 'received', operationId: current.operationId, scope: current.scope });
       }
       flow = undefined;
       for (const listener of listeners) listener(snapshot());
@@ -155,6 +158,7 @@ export function createMockExperience({ scope }: { readonly scope: Scope }): Mock
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
     dispatch: (action) => dispatch(action),
     advance: () => advance(),
+    setClock(at) { clock.set(at); for (const listener of listeners) listener(snapshot()); },
     save: () => encodeSession(recorded),
     restore(serialized) {
       const steps = decodeSession(serialized);
@@ -164,7 +168,8 @@ export function createMockExperience({ scope }: { readonly scope: Scope }): Mock
           if (step.kind === 'action') await dispatch(step.action);
           else advance();
         }
-        if (mock.snapshot().cards.pay.quote !== undefined) {
+        if (mock.snapshot().cards.pay.quote !== undefined
+          && ['ready', 'invalid-input', 'needs-preparation'].includes(mock.snapshot().cards.pay.phase)) {
           mock.control.inject({ type: 'invalidate-quote' });
         }
       })();

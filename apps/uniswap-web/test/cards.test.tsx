@@ -114,13 +114,13 @@ it('keeps submission, chain finality and private receipt as visible separate pha
   }
   await edit('Demo reward amount in ETH', '0.003');
   await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Request demo reward' })); });
-  expect(screen.getByText('Preparing request')).toBeVisible();
+  expect(within(screen.getByRole('tabpanel')).getByText('Preparing request')).toBeVisible();
   act(() => experience.advance());
-  expect(screen.getByText('Waiting for wallet approval')).toBeVisible();
+  expect(within(screen.getByRole('tabpanel')).getByText('Waiting for wallet approval')).toBeVisible();
   act(() => experience.advance());
-  expect(screen.getByText('Submitted; waiting for confirmation')).toBeVisible();
+  expect(within(screen.getByRole('tabpanel')).getByText('Submitted; waiting for confirmation')).toBeVisible();
   act(() => experience.advance());
-  expect(screen.getByText('On-chain success; private receipt pending')).toBeVisible();
+  expect(within(screen.getByRole('tabpanel')).getByText('On-chain success; private receipt pending')).toBeVisible();
   expect(screen.getByText('0 ETH', { selector: 'strong' })).toBeVisible();
   act(() => experience.advance());
   expect(within(screen.getByRole('tabpanel')).getByText('Completed')).toBeVisible();

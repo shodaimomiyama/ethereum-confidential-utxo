@@ -15,7 +15,9 @@ export function Preparation({ view, controller, config }: {
 
   return <section className="preparation surface" aria-label="Preparation">
     <div className="section-heading"><h2>Before you start</h2><span className="status-chip">{action ? 'Setup needed' : 'Ready to use'}</span></div>
-    <p>{action?.detail ?? 'Your wallet, network, key and test ETH are ready in this simulation.'}</p>
+    <p>{action?.detail ?? (config.mode === 'mock'
+      ? 'Your wallet, network, key and test ETH are ready in this simulation.'
+      : 'Your wallet, network, key and test ETH are ready.')}</p>
     {view.currentScope && <p className="address-line">Wallet: <span title={view.currentScope.owner}>{view.currentScope.owner}</span></p>}
     <p>Network: {prep.network ? 'Ethereum Sepolia' : 'Not selected'}</p>
     {action && <button type="button" className="button primary" onClick={() => void controller.dispatch({ type: action.type })}>{action.label}</button>}

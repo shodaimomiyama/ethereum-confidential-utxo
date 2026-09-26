@@ -20,5 +20,6 @@ export function Withdraw({ view, controller }: { readonly view: ViewState; reado
     <CardFeedback card={card} blockedReason={view.reasons['start:withdraw']} />
     <button type="button" className="button primary" disabled={!allowedFor(view, { type: 'start', card: 'withdraw' })}
       onClick={() => void controller.dispatch({ type: 'start', card: 'withdraw' })}>Withdraw full UTXO</button>
+    {allowedFor(view, { type: 'new-operation', card: 'withdraw' }) && <button type="button" className="text-button" onClick={() => void controller.dispatch({ type: 'new-operation', card: 'withdraw' })}>New withdrawal</button>}
   </div>;
 }

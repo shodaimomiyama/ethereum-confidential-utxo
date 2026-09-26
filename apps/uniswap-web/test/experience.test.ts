@@ -77,3 +77,66 @@ it('does not replace a pending simulated operation with a second one', async () 
   expect(experience.snapshot().cards.deposit.phase).toBe('ready');
   experience.dispose();
 });
+
+it('keeps a delayed Pay result in its original owner scope', async () => {
+  const experience = createMockExperience({ scope });
+  await prepare(experience);
+  await experience.dispatch({ type: 'edit', card: 'reward', field: 'amount', value: '0.006' });
+  await experience.dispatch({ type: 'start', card: 'reward' });
+  for (let step = 0; step < 4; step += 1) experience.advance();
+  await experience.dispatch({ type: 'edit', card: 'pay', field: 'amount', value: '0.003' });
+  await experience.dispatch({ type: 'edit', card: 'pay', field: 'recipient', value: owner });
+  await experience.dispatch({ type: 'start', card: 'pay' });
+  experience.advance(); experience.advance();
+  const otherScope = { deploymentId: scope.deploymentId, owner: `0x${'22'.repeat(20)}` } as Scope;
+  await experience.dispatch({ type: 'switch-scope', scope: otherScope });
+  experience.advance(); experience.advance();
+  expect(experience.snapshot().availablePrivateWei).toBe(0n);
+  expect(experience.snapshot().operations).toHaveLength(0);
+  await experience.dispatch({ type: 'switch-scope', scope });
+  expect(experience.snapshot().cards.pay.phase).toBe('complete');
+  expect(experience.snapshot().availablePrivateWei).toBe(3n * 10n ** 15n);
+  experience.dispose();
+});
+
+it('preserves hashless pending Pay and permits draft Pay requote after reload', async () => {
+  const first = createMockExperience({ scope });
+  await prepare(first);
+  await first.dispatch({ type: 'edit', card: 'reward', field: 'amount', value: '0.006' });
+  await first.dispatch({ type: 'start', card: 'reward' });
+  for (let step = 0; step < 4; step += 1) first.advance();
+  await first.dispatch({ type: 'edit', card: 'pay', field: 'amount', value: '0.003' });
+  await first.dispatch({ type: 'edit', card: 'pay', field: 'recipient', value: owner });
+  const draft = createMockExperience({ scope });
+  await draft.restore(first.save());
+  expect(draft.snapshot().cards.pay.reason).toBe('QUOTE_STALE');
+  await draft.dispatch({ type: 'edit', card: 'pay', field: 'amount', value: '0.002' });
+  expect(draft.snapshot().cards.pay.phase).toBe('ready');
+  expect(draft.snapshot().cards.pay.quote).toBeDefined();
+  await first.dispatch({ type: 'start', card: 'pay' });
+  first.advance(); first.advance();
+  const pending = createMockExperience({ scope });
+  await pending.restore(first.save());
+  const operationId = pending.snapshot().operations.at(-1)?.operationId;
+  expect(pending.snapshot().cards.pay.phase).toBe('pending');
+  expect(pending.snapshot().operationActions[operationId ?? '']).toContain('recheck');
+  expect(pending.snapshot().operations.at(-1)?.txHashes).toHaveLength(0);
+  first.dispose(); draft.dispose(); pending.dispose();
+});
+
+it('permits a fresh Pay after the prior payment completes', async () => {
+  const experience = createMockExperience({ scope });
+  await prepare(experience);
+  await experience.dispatch({ type: 'edit', card: 'reward', field: 'amount', value: '0.009' });
+  await experience.dispatch({ type: 'start', card: 'reward' });
+  for (let step = 0; step < 4; step += 1) experience.advance();
+  await experience.dispatch({ type: 'edit', card: 'pay', field: 'amount', value: '0.003' });
+  await experience.dispatch({ type: 'edit', card: 'pay', field: 'recipient', value: owner });
+  await experience.dispatch({ type: 'start', card: 'pay' });
+  for (let step = 0; step < 4; step += 1) experience.advance();
+  expect(await experience.dispatch({ type: 'new-operation', card: 'pay' })).toEqual({ kind: 'accepted' });
+  await experience.dispatch({ type: 'edit', card: 'pay', field: 'amount', value: '0.002' });
+  await experience.dispatch({ type: 'edit', card: 'pay', field: 'recipient', value: owner });
+  expect(await experience.dispatch({ type: 'start', card: 'pay' })).toEqual({ kind: 'accepted' });
+  experience.dispose();
+});

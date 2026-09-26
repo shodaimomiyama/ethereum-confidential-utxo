@@ -52,9 +52,11 @@ export function createScenarioSession(experience: MockExperience): ScenarioSessi
     async next() {
       if (scenario === undefined) { error = 'Choose a scenario first.'; return; }
       try {
+        const previous = scenario.steps[index];
         index = await nextScenarioStep(scenario, index, {
           controller: experience.mock, driver: experience.mock.control, clock: experience.clock, store: experience.store,
         });
+        if (previous?.kind === 'clock') experience.setClock(previous.at);
         error = undefined;
       } catch (cause) {
         error = cause instanceof Error ? cause.message : String(cause);
@@ -95,7 +97,7 @@ export function ScenarioWorkbench({ experience, session: provided }: {
     </div>
     <label htmlFor="mock-clock">Mock clock (milliseconds)</label>
     <div className="clock-control"><input id="mock-clock" type="text" inputMode="numeric" value={clockText} onChange={(event) => setClockText(event.target.value)} />
-      <button type="button" onClick={() => { const value = Number(clockText); if (clockText.trim() && Number.isFinite(value)) { experience.clock.set(value); update(); } }}>Set clock</button></div>
+      <button type="button" onClick={() => { const value = Number(clockText); if (clockText.trim() && Number.isFinite(value)) { experience.setClock(value); update(); } }}>Set clock</button></div>
     {view.error && <p role="alert">{view.error}</p>}
     {view.scenario && <><p>Specification: {view.scenario.specIds.join(', ')}</p>
       <p>Step {view.index} of {view.scenario.steps.length}. {view.nextStep ? stepDescription(view.nextStep) : 'Scenario complete.'}</p>

@@ -20,3 +20,11 @@ it('guides a disconnected visitor through network, key and test ETH preparation'
   await waitFor(() => expect(screen.getByText(/Ready to use/i)).toBeVisible());
   controller.dispose();
 });
+
+it('does not describe an injected live controller as a simulation', async () => {
+  const controller = createMockExperience({ scope: { deploymentId: 'sepolia-v1', owner: `0x${'11'.repeat(20)}` } as Scope });
+  for (const type of ['connect-wallet', 'switch-network', 'prepare-recipient-key', 'refresh-balances'] as const) await controller.dispatch({ type });
+  render(<AppPage controller={controller} config={{ mode: 'live', deploymentId: 'sepolia-v1' }} />);
+  expect(screen.getByRole('region', { name: 'Preparation' })).not.toHaveTextContent(/simulation/i);
+  controller.dispose();
+});

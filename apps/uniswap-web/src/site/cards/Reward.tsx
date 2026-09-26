@@ -16,5 +16,6 @@ export function Reward({ view, controller }: { readonly view: ViewState; readonl
     <button type="button" className="button primary" disabled={!allowedFor(view, { type: 'start', card: 'reward' })}
       onClick={() => void controller.dispatch({ type: 'start', card: 'reward' })}>Request demo reward</button>
     {card.phase === 'complete' && <p>You can request another reward by starting a new request.</p>}
+    {allowedFor(view, { type: 'new-operation', card: 'reward' }) && <button type="button" className="text-button" onClick={() => void controller.dispatch({ type: 'new-operation', card: 'reward' })}>Change reward amount</button>}
   </div>;
 }

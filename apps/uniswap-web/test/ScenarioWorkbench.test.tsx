@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import './setup-dom.js';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { expect, it } from 'vitest';
 import type { Scope } from '@confidential-utxo/uniswap';
 import { createMockExperience } from '../src/mock/experience.js';
@@ -33,7 +33,7 @@ it('shows changed terms at S-34 and rejects an unknown ID without changing the c
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Next step' })); });
   }
   fireEvent.click(screen.getByRole('tab', { name: 'Pay' }));
-  expect(screen.getByText('Review changed terms')).toBeVisible();
+  expect(within(screen.getByRole('tabpanel')).getByText('Review changed terms')).toBeVisible();
   expect(screen.getByRole('heading', { name: 'Previous terms' })).toBeVisible();
   expect(screen.getByRole('heading', { name: 'New terms' })).toBeVisible();
   expect(screen.getByRole('button', { name: 'Confirm new terms' })).toBeEnabled();
