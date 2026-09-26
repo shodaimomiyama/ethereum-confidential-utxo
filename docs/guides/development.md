@@ -45,6 +45,53 @@ artifact全体のSHA-256はコンパイル対象の集合やAST採番によっ�
 
 Anvilの初期アカウントと鍵はローカルテスト専用。実鍵、RPC認証情報、秘密の環境変数をコミットしたり、ログ・manifestに記録したりしない。既存の[先行EIPベンチマーク](../../benchmarks/prior-eips/)はNode.js 22 / Foundry 1.7.1の独立した経路であり、この開発入口の検証結果には含めない。
 
+## Issue #60: Sepolia公開RPCの読取検査
+
+Issue #60のローカル資産単体環境は、Node 24.21.0、pnpm 10.34.5、Foundry 1.8.3で追試する。`pnpm install --frozen-lockfile` 後、`pnpm artifact:uniswap`、`pnpm check:uniswap`、`pnpm build`、`pnpm test`、`pnpm check`、`node --test tests/environment/uniswap-*.test.mjs` を実行する。Uniswapのソースは `vendor/uniswap-v2/source-lock.json` のcommit/hash、生成ABIとbytecodeは `packages/ethereum/generated/uniswap-v2.json` に固定する。
+
+別端末で `anvil --host 127.0.0.1 --port 8545 --chain-id 31337` を起動し、この一時チェーンの管理アカウントを `--holder` と `--lp-recipient` に指定する。以下の `LOCAL_HOLDER` はAnvil上の公開アドレスのみであり、秘密鍵をファイルやコマンドに渡さない。`LOCAL_MANIFEST` と `LOCAL_SNAPSHOT` は新しい一時ファイルのパスにする。
+
+```sh
+pnpm uniswap:local:deploy -- --rpc-url http://127.0.0.1:8545 --chain-id 31337 --manifest "$LOCAL_MANIFEST" --generation local-demo --holder "$LOCAL_HOLDER" --lp-recipient "$LOCAL_HOLDER"
+pnpm uniswap:local:verify -- --rpc-url http://127.0.0.1:8545 --chain-id 31337 --manifest "$LOCAL_MANIFEST"
+pnpm uniswap:local:snapshot -- --rpc-url http://127.0.0.1:8545 --chain-id 31337 --manifest "$LOCAL_MANIFEST" --snapshot "$LOCAL_SNAPSHOT"
+pnpm uniswap:local:reset -- --rpc-url http://127.0.0.1:8545 --chain-id 31337 --manifest "$LOCAL_MANIFEST" --snapshot "$LOCAL_SNAPSHOT"
+```
+
+deployはdUSD、WETH、Uniswap v2 Factory/Router/Pairと初期流動性を作り、manifestを照合する。同じmanifestでの再deployは新しい流動性を投入せず照合に切り替わる。送信結果が不明な場合は `.attempt.json` を残して自動再送を拒否するため、nonce、receipt、code、Pair reserveを調べてから復旧する。snapshot/resetは資産単体に限り、reset後にはsnapshot IDが更新される。正式Pool/Adapter、配布サービス、サイトを含む環境のresetは、それぞれの成果物とDO停止・世代管理が揃ってから有効化する。
+
+`.github/workflows/uniswap-environment.yml` はmacOS 15 arm64上で同じ固定版、ソース/Artifact照合、build/test/check、Anvilへの資産単体配置・再照合・snapshot/resetを実行する。公開RPC、Secrets、実資金は使わない。2026-09-27にcommit `10d2fcf` の[GitHub Actions実run](https://github.com/shodaimomiyama/ethereum-confidential-utxo/actions/runs/36267663500)で全工程が成功した。手元のmacOS 26.5 arm64での結果とは区別し、第三者の独立追試は別途確認する。
+
+2026-09-27に [Uniswap公式のv2配置一覧](https://developers.uniswap.org/docs/protocols/v2/deployments) のSepolia Factory `0xF62c03E08ada871A0bEb309762E260a7a6a880E6` とRouter02 `0xeE567Fe1712Faf6149d80dA1E6934E354124CfE3` を確認した。Routerの `WETH()` を実チェーンで読み、`0xfff9976782d46cc05630d1f6ebab18b2324d6b14` を得た。[PublicNode](https://ethereum.publicnode.com/)を候補にし、`https://ethereum-sepolia-rpc.publicnode.com` のread-only検査を実行した。これは実行時点の観測結果であり、公開配置時にも再検査する。
+
+```sh
+export UNISWAP_SEPOLIA_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
+export UNISWAP_BROWSER_ORIGIN=https://demo.example
+export UNISWAP_SEPOLIA_BLOCK=11788121
+pnpm uniswap:sepolia:probe
+```
+
+この検査はchain ID 11155111、finalizedに含まれる指定blockのhashとcanonical照合、block hash指定の過去残高・code、指定blockのlogs、ブラウザのCORS preflight/POST、Factory・Router・WETHのcodeとRouterの参照先を確認する。結果にはRPC URLを含めない。2026-09-27の上記block hashは `0x51592207abe7ff93a65cfb5c7ed1d7393194508ddab2372f2833cf0994838e7c` で、検査は成功した。RPCの可用性と制限時の挙動は継続保証ではない。
+
+専用の新規walletによるfaucetの実受取、受取tx、必要gasは未実施。署名者とfaucetの条件が揃った時点で別途検査し、未実施を成功と扱わない。SepoliaへのdUSD/Pool/Adapterの配置も未実施である。
+
+### #60受入証拠の現状（2026-09-27）
+
+以下の「成功」は記載した範囲だけを指す。局所Anvilの資産試験を実Pool・実暗号・公開取引の合格へ読み替えない。各コマンドはこの節の固定版セットアップを前提とする。
+
+| 受入 | 対象commit・artifactと実行証拠 | 期待と実結果・状態 | 引渡し先 |
+| --- | --- | --- | --- |
+| A-01 資産 | `1b1af6d`、`DemoUSD.sol`、`forge test --root contracts` | 固定供給・名称・桁数・送付/承認のテスト成功。発行先・残余/LP先はローカルmanifestで照合済み | #56 |
+| A-02 Uniswap | `673c26d`・`4efb68c`、`vendor/uniswap-v2/source-lock.json`、`packages/ethereum/generated/uniswap-v2.json`、`pnpm artifact:uniswap && pnpm check:uniswap` | ソースhash、compiler、Pair init code hash、ローカル配置tx入力・receiptと固定artifactの照合成功。Sepolia公式コードは下記A-06の別検査 | #56・#55 |
+| A-03 ローカル初期状態 | `92923a9`・`4607647`・`4efb68c`、`node --test tests/environment/uniswap-local.test.mjs`、上記Anvilコマンド | forkなし配置・初期reserve・実Router交換・資産snapshot復元とcheckpointでの余剰dUSD/LP残高照合に成功。正式Poolの結合は未実施 | #56・#45 |
+| A-04 再実行 | `92923a9`・`4607647`、同じローカルテストとdeploy→verify→deploy、snapshot→reset | 二重流動性投入を防ぎ、結果不明の再送を停止する局所試験は成功。DOを含む全体resetは #57 interface待ち | #57・#48 |
+| A-05 正式構成 | #27 Pool配置成果と #56 Adapter artifactを入力とする | 未実施。正式ABI・manifestを受領してから専用PoolとAdapterを配置・code/参照先を照合する | #27・#56・#45 |
+| A-06 公開準備 | `b74a3a5`、`pnpm uniswap:sepolia:probe`、checkpoint 11788121 | 公式Factory/Router/WETH、RPC履歴・logs・finalized・CORSは成功。faucet実受取、制限時挙動、公開配置は未実施 | #45〜#50 |
+| A-07 配信・保存設定 | #53/#54/#57/#58/#59 のbuild・DO・Worker interfaceが入力 | 未実施。受領後に同一origin、migration、Secrets欠落停止をローカルruntimeと実配置で照合する | #47・#50 |
+| A-08 復旧引渡し | #57/#58 の停止・保存・配布interfaceが入力 | 未実施。手動補充、DB巻戻り、停止/再開、バックアップ/復元を局所試験して #48へ渡す | #48 |
+| A-09 CI・追試 | `209792b`・`10d2fcf`、`.github/workflows/uniswap-environment.yml`、`pnpm build/test/check`と20件のUniswap環境テスト、[CI実run](https://github.com/shodaimomiyama/ethereum-confidential-utxo/actions/runs/36267663500) | macOS 26.5 arm64とGitHub macos-15 arm64で成功。第三者の独立追試は未実施 | #19・#20 |
+| A-10 証拠・引渡し | 本節、各commit・manifest・ローカル試験 | 進行中。公開URL/txと正式統合結果は存在せず、受領後に各検証Issueへ追加する | #45〜#50・#19・#20 |
+
 ## Poolと検証器の配置（Issue #27）
 
 `pnpm artifact:pool` は `contracts/out/Pool.sol/Pool.json` から公開ABI、bytecode、AST、storage layoutと入力hashを `packages/ethereum/generated/pool-v1.json` に出力する。`pnpm check:pool` は現在のソースとコンパイル結果に照合する。`pnpm fixture:pool` は公開seedから25件の操作、署名、実範囲証明を一時ディレクトリに再生成し、固定ケースとFoundry calldataをbyte単位で比較する。Python依存は `tests/vectors/README.md` に従って導入し、`POOL_VECTOR_PYTHON` にそのvenvのPythonを指定する。
