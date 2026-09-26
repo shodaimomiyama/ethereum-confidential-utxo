@@ -2,6 +2,8 @@ import type { OperationId, OperationRef, RequestId, RewardStatus, Scope } from '
 
 export type Card = 'reward' | 'pay' | 'deposit' | 'withdraw';
 
+export type PreparationAction = 'connect' | 'prepare-key' | 'authenticate' | 'switch-network';
+
 export type CardPhase =
   | 'needs-preparation'
   | 'invalid-input'

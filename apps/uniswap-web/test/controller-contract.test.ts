@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { isActionAllowed } from '../src/contracts/controller.js';
+import { actionKey, isActionAllowed } from '../src/contracts/controller.js';
 import type { UiAction } from '../src/contracts/controller.js';
 
 const operationId = ('0x' + '11'.repeat(32)) as never;
@@ -17,3 +17,12 @@ it('does not treat one card start permission as permission for another card', ()
   expect(isActionAllowed(state, { type: 'start', card: 'deposit' })).toBe(true);
   expect(isActionAllowed(state, { type: 'start', card: 'pay' })).toBe(false);
 });
+
+it.each(['connect', 'prepare-key', 'authenticate', 'switch-network'] as const)(
+  'uses the existing allowedActions contract for %s', (type) => {
+    const action: UiAction = { type };
+    expect(actionKey(action)).toBe(type);
+    expect(isActionAllowed({ allowedActions: [type] }, action)).toBe(true);
+    expect(isActionAllowed({ allowedActions: [] }, action)).toBe(false);
+  },
+);

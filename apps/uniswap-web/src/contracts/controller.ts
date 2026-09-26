@@ -1,7 +1,8 @@
 import type { OperationId, RequestId, Scope } from '@confidential-utxo/uniswap';
-import type { Card, ReasonCode, ViewState } from './state.js';
+import type { Card, PreparationAction, ReasonCode, ViewState } from './state.js';
 
 export type UiAction =
+  | { readonly type: PreparationAction }
   | { readonly type: 'edit'; readonly card: Card; readonly field: string; readonly value: string }
   | { readonly type: 'start'; readonly card: Card }
   | { readonly type: 'confirm-terms'; readonly card: 'pay' }

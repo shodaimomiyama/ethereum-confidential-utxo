@@ -4,7 +4,7 @@ import type {
 import type { ManualClock, MemoryStore } from '@confidential-utxo/uniswap/testing';
 import { actionKey } from '../contracts/controller.js';
 import type { DispatchResult, UiAction, UiController } from '../contracts/controller.js';
-import type { ApprovalPurpose, Card, CardState, ReasonCode, ValidationReason, ViewState } from '../contracts/state.js';
+import type { ApprovalPurpose, Card, CardState, PreparationAction, ReasonCode, ValidationReason, ViewState } from '../contracts/state.js';
 import { initialScenario } from './scenarios.js';
 
 export type ScenarioEvent = (
@@ -22,6 +22,7 @@ export type ScenarioEvent = (
   | { readonly type: 'original-unsent'; readonly card: Card; readonly operationId: OperationId; readonly inputUnspent: boolean; readonly deadlineValid: boolean }
   | { readonly type: 'terms-changed'; readonly card: 'pay'; readonly oldAuthorizationActive: boolean }
   | { readonly type: 'validation-result'; readonly card: Card; readonly phase: 'ready' | 'invalid-input' | 'needs-preparation'; readonly reason?: ValidationReason; readonly input?: Readonly<Record<string, string>> }
+  | { readonly type: 'allow-preparation-action'; readonly action: PreparationAction }
 ) & { readonly scope?: Scope };
 
 export interface ScenarioJournalEntry {
@@ -49,6 +50,7 @@ interface Runtime {
   resumeEligible: Set<OperationId>;
   oldAuthorizationActive: boolean;
   countedOutputs: Map<string, { operationId: OperationId; amountWei: bigint }>;
+  allowedPreparationActions: Set<PreparationAction>;
 }
 
 function scopeKey(scope: Scope): string {
@@ -63,6 +65,7 @@ function makeRuntime(scope: Scope, scenario: string): Runtime {
     resumeEligible: new Set(),
     oldAuthorizationActive: false,
     countedOutputs: new Map(),
+    allowedPreparationActions: new Set(),
   };
 }
 
@@ -111,6 +114,10 @@ function derive(runtime: Runtime, now: number): ViewState {
   const allowed = new Set<string>(['switch-scope', 'resync']);
   const reasons: Record<string, ReasonCode> = {};
   const state = runtime.state;
+  for (const action of ['connect', 'prepare-key', 'authenticate', 'switch-network'] as const) {
+    if (runtime.allowedPreparationActions.has(action)) allowed.add(action);
+    else reasons[action] = 'PREPARATION_MISSING';
+  }
   for (const card of ['reward', 'pay', 'deposit', 'withdraw'] as const) {
     const phase = state.cards[card].phase;
     if (phase === 'ready' || phase === 'needs-preparation' || phase === 'invalid-input' || phase === 'confirm-terms') {
@@ -323,6 +330,8 @@ export function createMockUiController({ scope, store, clock, scenario }: {
         reason: event.reason,
         input: event.input ?? state.cards[event.card].input,
       });
+    } else if (event.type === 'allow-preparation-action') {
+      runtime.allowedPreparationActions.add(event.action);
     }
     runtime.state = state;
     if (key === scopeKey(activeScope)) notify();

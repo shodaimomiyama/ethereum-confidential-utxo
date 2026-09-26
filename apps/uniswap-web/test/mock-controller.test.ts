@@ -26,6 +26,18 @@ it('blocks starting Pay when its result is unknown without creating an effect', 
   expect(ui.snapshot().allowedActions).toContain('recheck');
 });
 
+it.each(['connect', 'prepare-key', 'authenticate', 'switch-network'] as const)(
+  'blocks %s until the scenario explicitly allows it', async (type) => {
+    const { ui } = setup();
+    const action = { type } as const;
+    expect(await ui.dispatch(action)).toEqual({ kind: 'blocked', reason: 'PREPARATION_MISSING' });
+    expect(ui.snapshot().allowedActions).not.toContain(type);
+    ui.control.inject({ type: 'allow-preparation-action', action: type });
+    expect(ui.snapshot().allowedActions).toContain(type);
+    expect(await ui.dispatch(action)).toEqual({ kind: 'accepted' });
+  },
+);
+
 it('notifies a subscriber once per event and keeps older owner state separate', async () => {
   const { ui } = setup();
   const seen: string[] = [];
