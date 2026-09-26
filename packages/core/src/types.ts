@@ -48,7 +48,7 @@ export type OwnedUtxo = {
 export type Complete<T> = { complete: true; blockHash: Hex; value: T };
 export type Incomplete = { complete: false; reason: "RPC" | "GAP" | "HASH_MISMATCH" };
 export type Observation<T> = Complete<T> | Incomplete;
-export type UtxoState = { exists: boolean; consumedBy?: Hex };
+export type UtxoState = { exists: boolean; owner?: Address; commitment?: G1Point; consumedBy?: Hex };
 export type OperationSuccess = { executed: boolean; operation?: OperationRequest };
 export type ObservedOperation = {
   request: OperationRequest;
@@ -61,6 +61,8 @@ export type ObservedOperation = {
     logIndex: number;
   };
   outputLogs: {
+    operationId: Hex;
+    output: PublicOutput;
     outputId: Hex;
     outputIndex: number;
     blockNumber: bigint;

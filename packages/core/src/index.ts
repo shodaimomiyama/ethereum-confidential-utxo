@@ -25,3 +25,5 @@ export type { RecipientInfo } from "./authorization.js";
 export { selectInputs } from "./selection.js";
 export { buildOperation, regenerateProofs, toPublicSubmission } from "./operation.js";
 export type { BuildIntent, BuildDependencies, PublicSubmission } from "./operation.js";
+export { inspectReceipt } from "./receipt.js";
+export type { ReceivedUtxo, ReceiptFailure, ReceiptState } from "./receipt.js";
