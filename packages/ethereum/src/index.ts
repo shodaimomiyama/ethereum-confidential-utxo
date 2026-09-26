@@ -5,3 +5,5 @@ export { createOperationSigner, createRecipientInfoSigner } from "./signing.js";
 export type { SigningSource } from "./signing.js";
 export { verifyEthereumDeployment } from "./deployment.js";
 export type { DeploymentManifestV1, VerifiedDeployment } from "./deployment.js";
+export { canonicalHeader, createEthereumRpc, defaultRpcPolicy, readPinnedCall, readWithPolicy, validateRpcPolicy } from "./rpc.js";
+export type { RpcConnection, RpcPolicy } from "./rpc.js";
