@@ -2,8 +2,10 @@ import { useState } from 'react';
 import type { UiController } from '../contracts/controller.js';
 import type { Card } from '../contracts/state.js';
 import type { SiteConfig } from './config.js';
-import { ControllerProvider, useViewState } from './controller-context.js';
+import { ControllerProvider, useController, useViewState } from './controller-context.js';
 import { formatEth } from './format.js';
+import { Preparation } from './Preparation.js';
+import { OperationStatus } from './OperationStatus.js';
 
 const tabs: readonly { key: Card; label: string }[] = [
   { key: 'reward', label: 'Demo reward' },
@@ -14,6 +16,7 @@ const tabs: readonly { key: Card; label: string }[] = [
 
 function AppShell({ config }: { readonly config: SiteConfig }) {
   const view = useViewState();
+  const controller = useController();
   const [active, setActive] = useState<Card>('reward');
   return <div className="site app-page">
     <header className="site-header">
@@ -26,6 +29,7 @@ function AppShell({ config }: { readonly config: SiteConfig }) {
         <div className="surface"><span>Public ETH</span><strong>{formatEth(view.publicEthWei)} ETH</strong></div>
         <div className="surface"><span>Available private ETH</span><strong>{formatEth(view.availablePrivateWei)} ETH</strong></div>
       </section>
+      <Preparation view={view} controller={controller} config={config} />
       <section className="card-shell surface" aria-label="Dim actions">
         <div role="tablist" aria-label="Choose an action" className="card-tabs">
           {tabs.map((tab) => <button key={tab.key} id={`tab-${tab.key}`} role="tab" aria-controls={`panel-${tab.key}`} aria-selected={active === tab.key} tabIndex={active === tab.key ? 0 : -1} type="button" onClick={() => setActive(tab.key)}>{tab.label}</button>)}
@@ -34,7 +38,7 @@ function AppShell({ config }: { readonly config: SiteConfig }) {
           <h2>{tabs.find((tab) => tab.key === active)?.label}</h2>
         </div>
       </section>
-      <aside className="surface"><h2>Activity</h2><p>Ongoing operations and their results appear here.</p><p>Full history: Coming soon</p></aside>
+      <OperationStatus view={view} controller={controller} config={config} />
     </main>
   </div>;
 }
