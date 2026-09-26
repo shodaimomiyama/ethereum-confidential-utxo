@@ -145,3 +145,34 @@ it('rejects a conflicting ACK instead of treating it as a successful save', asyn
   const http = { async call() { return { scope, record: original, revision: 3 }; } } as unknown as HttpClient;
   await expect(saveBeforeAuthorization(http, original, 0)).rejects.toThrow();
 });
+
+it('accepts a byte-identical idempotent ACK at its explicitly sealed existing revision', async () => {
+  const original = record(await sealRecord(await key(), context, plain));
+  const saved: SavedOperation = { record: original, revision: 1 };
+  const calls: string[] = [];
+  const http = { async call(route: string) {
+    calls.push(route);
+    return { ...saved, scope };
+  } } as HttpClient;
+  await expect(saveBeforeAuthorization(http, original, 1, { bundleRevision: 1 })).resolves.toEqual(saved);
+  expect(calls).toEqual(['PUT /v1/operations/{id}']);
+  await expect(saveBeforeAuthorization(http, original, 1)).rejects.toThrow();
+});
+
+it('accepts a byte-identical existing revision after lost ACK, without retrying or accepting changed metadata', async () => {
+  const original = record(await sealRecord(await key(), context, plain));
+  let returned: OperationRecord = original;
+  const calls: string[] = [];
+  const http = { async call(route: string) {
+    calls.push(route);
+    if (route === 'PUT /v1/operations/{id}') throw new Error('ACK disappeared');
+    return { availability: 'healthy', records: [{ scope, record: returned, revision: 1 }] };
+  } } as HttpClient;
+  await expect(saveBeforeAuthorization(http, original, 1, { bundleRevision: 1 }))
+    .resolves.toEqual({ record: original, revision: 1 });
+  expect(calls).toEqual(['PUT /v1/operations/{id}', 'GET /v1/operations']);
+  returned = { ...original, contentHash: id('9') };
+  await expect(saveBeforeAuthorization(http, original, 1, { bundleRevision: 1 })).rejects.toThrow();
+  returned = { ...original, encryptedBundle: { ...original.encryptedBundle, nonce: `0x${'ff'.repeat(12)}` } };
+  await expect(saveBeforeAuthorization(http, original, 1, { bundleRevision: 1 })).rejects.toThrow();
+});

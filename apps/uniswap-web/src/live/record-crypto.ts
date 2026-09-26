@@ -146,15 +146,23 @@ function sameRecord(a: OperationRecord, b: OperationRecord): boolean {
       && a.deadline === b.deadline));
 }
 
-function confirmed(saved: SavedOperation, record: OperationRecord, expectedRevision: number): SavedOperation {
-  if (saved.revision !== expectedRevision + 1 || !sameRecord(saved.record, record)) throw new Error('OPERATION_SAVE_UNCONFIRMED');
+function confirmed(saved: SavedOperation, record: OperationRecord, bundleRevision: number): SavedOperation {
+  if (saved.revision !== bundleRevision || !sameRecord(saved.record, record)) throw new Error('OPERATION_SAVE_UNCONFIRMED');
   return { record: saved.record, revision: saved.revision };
 }
 
 export async function saveBeforeAuthorization(
   http: HttpClient, record: OperationRecord, expectedRevision: number,
+  options?: { readonly bundleRevision: number },
 ): Promise<SavedOperation> {
   if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0) throw new Error('INVALID_REVISION');
+  // A new bundle targets the next revision. Replaying a byte-identical saved bundle
+  // may target the current revision, but the caller must state that AAD revision.
+  const bundleRevision = options?.bundleRevision ?? expectedRevision + 1;
+  if (!Number.isSafeInteger(bundleRevision) || bundleRevision < 1
+    || (bundleRevision !== expectedRevision + 1 && bundleRevision !== expectedRevision)) {
+    throw new Error('INVALID_REVISION');
+  }
   const { scope } = record;
   const wireRecord: WireOperationRecord = record.kind === 'pay'
     ? { kind: 'pay', recordId: record.recordId, inputId: record.inputId, operationId: record.operationId,
@@ -168,7 +176,7 @@ export async function saveBeforeAuthorization(
     const saved = await http.call('PUT /v1/operations/{id}', { scope, id: record.recordId,
       body: { scope, expectedRevision, record: wireRecord } });
     if (!sameScope(saved.scope, scope)) throw new Error('OPERATION_SAVE_UNCONFIRMED');
-    return confirmed(saved, record, expectedRevision);
+    return confirmed(saved, record, bundleRevision);
   } catch (error) {
     if (error instanceof HttpFailure && (error.kind === 'api' || error.kind === 'scope')) throw error;
     if (error instanceof Error && error.message === 'OPERATION_SAVE_UNCONFIRMED') throw error;
@@ -176,6 +184,6 @@ export async function saveBeforeAuthorization(
     if (listed.availability !== 'healthy') throw new Error('OPERATION_SAVE_UNCONFIRMED');
     const found = listed.records.find(saved => saved.record.recordId.toLowerCase() === record.recordId.toLowerCase());
     if (!found || !sameScope(found.scope, scope)) throw new Error('OPERATION_SAVE_UNCONFIRMED');
-    return confirmed(found, record, expectedRevision);
+    return confirmed(found, record, bundleRevision);
   }
 }
