@@ -99,6 +99,8 @@ flowchart LR
 
 Adapterのconstructorは六つの固定参照のコード存在とRouter・Factory・Pairの参照関係を検査し、不一致なら配置を拒否する。固定アドレスは公開getterから照合できる。採用artifactと実runtime、配置取引・環境の一致は配置処理とmanifestで照合する。constructorの参照整合検査だけを採用コードの証明と扱わない。具体的な検査式とABIは[接続の設計](design.md#支払い認可と公開abi)に従う。
 
+#56のAdapter実装は `contracts/src/integration/uniswap/UniswapPaymentAdapter.sol`、生成ABIとbytecodeは `packages/ethereum/generated/uniswap-payment-v1.json` に置く。#60の `uniswap-v2.json` と資産manifestは固定dUSD/Uniswapの正本であり、Adapter生成物を資産manifestへ取り込む配置処理は後続の全体配置に属する。局所結合はFoundryで固定Pool/Adapterアドレスへ実コードを配置し、実Verifierと固定Uniswap artifactを使う。独立Anvil配置・公開実取引の証拠はこの局所harnessと分けて扱う。
+
 ### 情報と信頼の境界
 
 | 境界 | 渡す情報 | 前提・制限 |
