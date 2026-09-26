@@ -142,3 +142,17 @@ it('parses released records and rejects unknown reservation states', () => {
   expect(parseApiResponse('POST /v1/operations/{id}/release', 200, response)).toMatchObject({ reservationState: 'released', revision: 2 });
   expect(() => parseApiResponse('POST /v1/operations/{id}/release', 200, { ...response, reservationState: 'missing' })).toThrowError();
 });
+
+it.each([
+  ['PUT', `/v1/operations/${id}`],
+  ['POST', `/v1/operations/${id}/release`],
+])('bounds the complete %s operation request to 1 MiB', (method, path) => {
+  const body = { scope, expectedRevision: 1, sealedRevision: 2, blockHash: hash,
+    record: { ...payRecord, encryptedBundle: { ...payRecord.encryptedBundle, ciphertext: '' } } };
+  const overhead = new TextEncoder().encode(JSON.stringify(body)).length;
+  body.record.encryptedBundle.ciphertext = 'A'.repeat(1_048_576 - overhead);
+  expect(new TextEncoder().encode(JSON.stringify(body)).length).toBe(1_048_576);
+  expect(() => parseApiRequest(method!, path!, body)).not.toThrow();
+  body.record.encryptedBundle.ciphertext += 'A';
+  expect(() => parseApiRequest(method!, path!, body)).toThrowError('INVALID_FIELD');
+});

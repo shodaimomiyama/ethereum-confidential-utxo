@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import { parseApiRequest, type ApiRequestBodyMap, type Scope, type Bytes32 } from '@confidential-utxo/uniswap';
+import { parseApiRequest, type ApiRequestBodyMap, type Scope, type Bytes32, type InputId, type OperationId, type PaymentId } from '@confidential-utxo/uniswap';
 import { assertHttpConformance, createManualClock, createMemoryStore, createMockHttp } from '@confidential-utxo/uniswap/testing';
 import { createHttpClient, HttpFailure } from '../../src/live/http.js';
 
@@ -86,4 +86,20 @@ it('rejects foreign owner/environment and different reward IDs in successful rep
   }
   const client = createHttpClient({ origin, transport: async () => Response.json({ rewards: [{ ...reward, scope: { ...scope, deploymentId: 'foreign' } }] }) });
   await expect(client.call('GET /v1/rewards', { scope })).rejects.toMatchObject({ kind: 'scope' });
+});
+
+it('rejects an oversized release record before transport', async () => {
+  const body: ApiRequestBodyMap['POST /v1/operations/{id}/release'] = {
+    scope, expectedRevision: 1, sealedRevision: 2, blockHash: id,
+    record: {
+      recordId: id, kind: 'pay', inputId: id as unknown as InputId,
+      operationId: id as unknown as OperationId, paymentId: id as unknown as PaymentId,
+      deadline: '600', contentHash: id, signatureStarted: true, attemptIds: [],
+      encryptedBundle: { ciphertext: 'A'.repeat(1_048_576), nonce: `0x${'00'.repeat(12)}`, tag: `0x${'00'.repeat(16)}` },
+    },
+  };
+  const transport = vi.fn(async () => Response.json({ scope, record: body.record, revision: 2, reservationState: 'released' }));
+  const client = createHttpClient({ origin, transport });
+  await expect(client.call('POST /v1/operations/{id}/release', { scope, id, body }).then(() => 'sent')).rejects.toMatchObject({ kind: 'schema' });
+  expect(transport).not.toHaveBeenCalled();
 });
