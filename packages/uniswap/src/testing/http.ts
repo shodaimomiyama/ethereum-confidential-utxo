@@ -133,7 +133,12 @@ export function createMockHttp({ store, clock }: {
           const saved = store.operations.put(parsed.record, parsed.expectedRevision);
           result = { scope, ...saved };
         } else if (route === 'GET /v1/operations') {
-          result = { availability: store.availability(), records: store.operations.list(scope).map((saved) => ({ scope, ...saved })) };
+          const page = store.operations.listPage(scope, parsed.cursor);
+          result = {
+            availability: store.availability(),
+            records: page.records.map((saved) => ({ scope, ...saved })),
+            ...(page.nextCursor === undefined ? {} : { nextCursor: page.nextCursor }),
+          };
         } else if (route === 'POST /v1/rewards') {
           if (parsed.reward === undefined) throw new SchemaError('INVALID_FIELD', 'reward');
           result = { reward: store.rewards.create(parsed.reward) };

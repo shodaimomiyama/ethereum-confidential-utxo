@@ -15,11 +15,12 @@ import {
 import type {
   EncryptedBundle,
   OperationRecord,
+  OperationStatus,
   ReservationBase,
   RewardRecord,
   RewardRequest,
   RewardStatus,
-  SavedOperation,
+  StoredOperation,
   SignedRecipientInfo,
 } from './storage.js';
 
@@ -107,10 +108,11 @@ export interface ApiSuccessResponseMap {
     readonly expiresAt: number;
   };
   readonly 'POST /v1/auth/verify': { readonly sessionExpiresAt: number };
-  readonly 'PUT /v1/operations/{id}': SavedOperation & { readonly scope: Scope };
+  readonly 'PUT /v1/operations/{id}': StoredOperation & { readonly scope: Scope };
   readonly 'GET /v1/operations': {
     readonly availability: 'healthy' | 'rollback';
-    readonly records: readonly (SavedOperation & { readonly scope: Scope })[];
+    readonly records: readonly (StoredOperation & { readonly scope: Scope })[];
+    readonly nextCursor?: Bytes32;
   };
   readonly 'POST /v1/rewards': { readonly reward: RewardRecord };
   readonly 'GET /v1/rewards': { readonly rewards: readonly RewardRecord[] };
@@ -122,6 +124,7 @@ export interface ParsedApiRequest {
   readonly route: ApiRoute;
   readonly scope: Scope;
   readonly id?: Bytes32;
+  readonly cursor?: Bytes32;
   readonly challengeId?: Bytes32;
   readonly siweMessage?: string;
   readonly signature?: `0x${string}`;
@@ -137,6 +140,9 @@ const UINT256_MAX = (1n << 256n) - 1n;
 const REWARD_STATUSES: readonly RewardStatus[] = [
   'accepted', 'queued', 'processing', 'pending', 'unknown',
   'finalized', 'received', 'ended-without-distribution',
+];
+const OPERATION_STATUSES: readonly OperationStatus[] = [
+  'reserved', 'unknown', 'released', 'consumed', 'finalized-success',
 ];
 
 function parseScope(value: unknown): Scope {
@@ -271,7 +277,11 @@ export function parseApiRequest(method: string, path: string, body: unknown): Pa
     };
   }
   if (method === 'GET' && pathname === '/v1/operations') {
-    return { route: 'GET /v1/operations', scope: parseQueryScope(url) };
+    const cursor = url.searchParams.get('cursor');
+    return {
+      route: 'GET /v1/operations', scope: parseQueryScope(url),
+      ...(cursor === null ? {} : { cursor: parseBytes32(cursor, 'cursor') }),
+    };
   }
   if (method === 'POST' && pathname === '/v1/rewards') {
     const reward = parseRewardRequest(body);
@@ -360,6 +370,34 @@ function parseRewardRecord(value: unknown): RewardRecord {
   };
 }
 
+function parseStoredOperation(value: unknown): StoredOperation & { readonly scope: Scope } {
+  const object = parseJsonObject(value, 'operation');
+  const scope = parseScope(object.scope);
+  if (!OPERATION_STATUSES.includes(object.status as OperationStatus)) {
+    throw new SchemaError('INVALID_FIELD', 'operation.status');
+  }
+  let checkpoint: StoredOperation['checkpoint'];
+  if (object.checkpoint !== undefined) {
+    const item = parseJsonObject(object.checkpoint, 'operation.checkpoint');
+    checkpoint = {
+      blockNumber: parseUintString(item.blockNumber, 'operation.checkpoint.blockNumber').toString(),
+      blockHash: parseBytes32(item.blockHash, 'operation.checkpoint.blockHash'),
+      blockTimestamp: parseUintString(item.blockTimestamp, 'operation.checkpoint.blockTimestamp').toString(),
+    };
+  }
+  if (['released', 'consumed', 'finalized-success'].includes(object.status as string) && checkpoint === undefined) {
+    throw new SchemaError('INVALID_FIELD', 'operation.checkpoint');
+  }
+  return {
+    scope,
+    record: parseOperationRecord(object.record, scope),
+    revision: parseRevision(object.revision, 'operation.revision'),
+    stateVersion: parseRevision(object.stateVersion, 'operation.stateVersion'),
+    status: object.status as OperationStatus,
+    ...(checkpoint === undefined ? {} : { checkpoint }),
+  };
+}
+
 function parseApiResponseValue(route: ApiRoute, status: number, body: unknown): unknown {
   const object = parseJsonObject(body);
   if (status >= 400) {
@@ -382,27 +420,18 @@ function parseApiResponseValue(route: ApiRoute, status: number, body: unknown): 
     return { sessionExpiresAt: parseTimestamp(object.sessionExpiresAt, 'sessionExpiresAt') };
   }
   if (route === 'PUT /v1/operations/{id}') {
-    const scope = parseScope(object.scope);
-    return {
-      scope,
-      record: parseOperationRecord(object.record, scope),
-      revision: parseRevision(object.revision, 'revision'),
-    };
+    return parseStoredOperation(object);
   }
   if (route === 'GET /v1/operations') {
     if (!Array.isArray(object.records)) throw new SchemaError('INVALID_FIELD', 'records');
     if (object.availability !== 'healthy' && object.availability !== 'rollback') {
       throw new SchemaError('INVALID_FIELD', 'availability');
     }
-    return { availability: object.availability, records: object.records.map((item: unknown) => {
-      const saved = parseJsonObject(item, 'records');
-      const scope = parseScope(saved.scope);
-      return {
-        scope,
-        record: parseOperationRecord(saved.record, scope),
-        revision: parseRevision(saved.revision, 'revision'),
-      };
-    }) };
+    return {
+      availability: object.availability,
+      records: object.records.map(parseStoredOperation),
+      ...(object.nextCursor === undefined ? {} : { nextCursor: parseBytes32(object.nextCursor, 'nextCursor') }),
+    };
   }
   if (route === 'POST /v1/rewards' || route === 'GET /v1/rewards/{id}' || route === 'POST /v1/rewards/{id}/received') {
     return { reward: parseRewardRecord(object.reward) };

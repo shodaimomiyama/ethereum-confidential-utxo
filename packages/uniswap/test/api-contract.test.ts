@@ -92,8 +92,8 @@ it('validates success response shape for every route', () => {
   const valid = [
     ['POST /v1/auth/challenge', { challengeId: id, nonce: hash, issuedAt: 0, expiresAt: 300000 }],
     ['POST /v1/auth/verify', { sessionExpiresAt: 1800000 }],
-    ['PUT /v1/operations/{id}', { scope, record: payRecord, revision: 1 }],
-    ['GET /v1/operations', { availability: 'healthy', records: [{ scope, record: payRecord, revision: 1 }] }],
+    ['PUT /v1/operations/{id}', { scope, record: payRecord, revision: 1, stateVersion: 1, status: 'reserved' }],
+    ['GET /v1/operations', { availability: 'healthy', records: [{ scope, record: payRecord, revision: 1, stateVersion: 1, status: 'reserved' }] }],
     ['POST /v1/rewards', { reward: rewardRecord }],
     ['GET /v1/rewards', { rewards: [rewardRecord] }],
     ['GET /v1/rewards/{id}', { reward: rewardRecord }],
@@ -109,4 +109,32 @@ it('rejects response codes that disagree with conflict or unavailable status', (
   const error = { error: { code: 'REQUEST_CONFLICT', message: 'Request conflicts', allowedActions: ['recheck'] } };
   expect(() => parseApiResponse('POST /v1/rewards', 503, error)).toThrowError();
   expect(() => parseApiResponse('POST /v1/rewards', 409, error)).not.toThrow();
+});
+
+it('parses operation lifecycle separately from encrypted revision', () => {
+  const parsed = parseApiResponse('GET /v1/operations', 200, {
+    availability: 'healthy',
+    records: [{
+      scope,
+      record: payRecord,
+      revision: 1,
+      stateVersion: 2,
+      status: 'released',
+      checkpoint: { blockNumber: '12', blockHash: id, blockTimestamp: '601' },
+    }],
+  });
+  if ('error' in parsed) throw new Error('unexpected error response');
+  expect(parsed.records[0]?.status).toBe('released');
+  expect(parsed.records[0]?.revision).toBe(1);
+  expect(parsed.records[0]?.stateVersion).toBe(2);
+});
+
+it('accepts a record ID cursor for the next operations page', () => {
+  const request = parseApiRequest('GET', `/v1/operations?deploymentId=local-v1&owner=${owner}&cursor=${id}`, undefined);
+  expect(request.cursor).toBe(id);
+  const response = parseApiResponse('GET /v1/operations', 200, {
+    availability: 'healthy', records: [], nextCursor: id,
+  });
+  if ('error' in response) throw new Error('unexpected error response');
+  expect(response.nextCursor).toBe(id);
 });
