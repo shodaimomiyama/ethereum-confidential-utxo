@@ -1,7 +1,7 @@
-import { getAddress } from 'viem';
-import type { Scope } from '@confidential-utxo/uniswap';
+import { createSiweMessage } from 'viem/siwe';
+import type { DeploymentId, Scope } from '@confidential-utxo/uniswap';
 import { sameScope, type HttpClient } from './http.js';
-import type { ResolveDeployment } from './scope.js';
+import type { DeploymentLocation } from './scope.js';
 import type { WalletEvent, WalletPort } from './wallet.js';
 
 export class AuthFailure extends Error {
@@ -9,6 +9,10 @@ export class AuthFailure extends Error {
     super(kind);
     this.name = 'AuthFailure';
   }
+}
+
+export interface AuthDeploymentLocation extends DeploymentLocation {
+  readonly siweUri: string;
 }
 
 export interface AuthSession {
@@ -22,7 +26,7 @@ export function createAuthSession(options: {
   client: HttpClient;
   wallet: WalletPort;
   origin: string;
-  resolveDeployment: ResolveDeployment;
+  resolveDeployment(deploymentId: DeploymentId): AuthDeploymentLocation | undefined;
   connection(): WalletEvent;
   now?: () => number;
 }): AuthSession {
@@ -33,7 +37,7 @@ export function createAuthSession(options: {
     || url.pathname !== '/' || url.search || url.hash) throw new AuthFailure('challenge');
   let revision = 0;
   let disposed = false;
-  let authenticated: { scope: Scope; expiresAt: number; epoch: number; chainId: bigint; pool: string } | undefined;
+  let authenticated: { scope: Scope; expiresAt: number; epoch: number; chainId: bigint; pool: string; siweUri: string } | undefined;
   const invalidate = (): void => { revision++; authenticated = undefined; };
   const unsubscribe = wallet.subscribe(invalidate);
   return {
@@ -45,13 +49,18 @@ export function createAuthSession(options: {
       const epoch = connected.epoch;
       const deployment = resolveDeployment(scope.deploymentId);
       if (!deployment || !connected.scope || !sameScope(connected.scope, scope)) throw new AuthFailure('scope');
-      const { chainId, pool } = deployment;
+      const { chainId, pool, siweUri } = deployment;
+      try {
+        const uri = new URL(siweUri);
+        if (uri.origin !== url.origin || uri.username || uri.password
+          || chainId <= 0n || chainId > BigInt(Number.MAX_SAFE_INTEGER)) throw new AuthFailure('challenge');
+      } catch { throw new AuthFailure('challenge'); }
       const check = (): void => {
         const current = connection();
         const location = resolveDeployment(scope.deploymentId);
         if (disposed || revision !== generation || current.epoch !== epoch || !current.scope
           || !sameScope(current.scope, scope) || location?.chainId !== chainId
-          || location.pool.toLowerCase() !== pool.toLowerCase()) throw new AuthFailure('scope');
+          || location.pool.toLowerCase() !== pool.toLowerCase() || location.siweUri !== siweUri) throw new AuthFailure('scope');
       };
       check();
       const challenge = await client.call('POST /v1/auth/challenge', { scope, body: { scope } });
@@ -63,13 +72,11 @@ export function createAuthSession(options: {
           || !/^0x[0-9a-fA-F]{64}$/.test(challenge.nonce)) throw new AuthFailure('challenge');
       };
       validChallenge();
-      const message = [
-        `${url.host} wants you to sign in with your Ethereum account:`, getAddress(scope.owner), '',
-        'Sign in to Confidential UTXO.', '', `URI: ${url.origin}/`, 'Version: 1',
-        `Chain ID: ${chainId.toString()}`, `Nonce: ${challenge.nonce.slice(2)}`,
-        `Issued At: ${new Date(challenge.issuedAt).toISOString()}`,
-        `Expiration Time: ${new Date(challenge.expiresAt).toISOString()}`,
-      ].join('\n');
+      const message = createSiweMessage({
+        address: scope.owner, domain: url.host, uri: siweUri, version: '1',
+        chainId: Number(chainId), nonce: challenge.nonce,
+        issuedAt: new Date(challenge.issuedAt), expirationTime: new Date(challenge.expiresAt),
+      });
       const signed = await wallet.personalSign(new TextEncoder().encode(message), 'api-login');
       check();
       validChallenge();
@@ -81,7 +88,7 @@ export function createAuthSession(options: {
       check();
       if (verified.sessionExpiresAt <= now() || verified.sessionExpiresAt > now() + 1800000
         || verified.sessionExpiresAt < startedAt) throw new AuthFailure('session');
-      authenticated = { scope, epoch, chainId, pool, expiresAt: verified.sessionExpiresAt };
+      authenticated = { scope, epoch, chainId, pool, siweUri, expiresAt: verified.sessionExpiresAt };
     },
     isAuthenticated(scope) {
       const current = connection();
@@ -90,7 +97,8 @@ export function createAuthSession(options: {
         && current.epoch === authenticated.epoch && current.scope !== undefined
         && sameScope(current.scope, scope) && sameScope(authenticated.scope, scope)
         && deployment !== undefined && deployment.chainId === authenticated.chainId
-        && deployment.pool.toLowerCase() === authenticated.pool.toLowerCase();
+        && deployment.pool.toLowerCase() === authenticated.pool.toLowerCase()
+        && deployment.siweUri === authenticated.siweUri;
     },
     invalidate,
     dispose() { disposed = true; invalidate(); unsubscribe(); },

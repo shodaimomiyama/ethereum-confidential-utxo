@@ -2,20 +2,21 @@ import { expect, it, vi } from 'vitest';
 import type { Bytes32, Scope } from '@confidential-utxo/uniswap';
 import { createAuthSession } from '../../src/live/auth.js';
 import { createHttpClient } from '../../src/live/http.js';
-import type { DeploymentLocation } from '../../src/live/scope.js';
+import type { AuthDeploymentLocation } from '../../src/live/auth.js';
+import { createSiweMessage } from 'viem/siwe';
 import type { WalletPort, WalletEvent } from '../../src/live/wallet.js';
 
 const scope = { deploymentId: 'local-v1', owner: `0x${'ab'.repeat(20)}` } as Scope;
 const id = `0x${'33'.repeat(32)}` as Bytes32;
 function setup(challenge = { challengeId: id, nonce: id, issuedAt: 1000, expiresAt: 301000 }) {
   let now = 1000;
-  let deployment: DeploymentLocation | undefined = { chainId: 31337n, pool: `0x${'11'.repeat(20)}` };
+  let deployment: AuthDeploymentLocation | undefined = { chainId: 31337n, pool: `0x${'11'.repeat(20)}`, siweUri: 'https://mock.invalid/' };
   let listener: ((event: WalletEvent) => void) | undefined;
   const personalSign = vi.fn(async (_message: Uint8Array, _purpose: string) => ({ value: `0x${'aa'.repeat(65)}`, scope, epoch: 1 }));
   const wallet = { personalSign, subscribe: (fn: typeof listener) => { listener = fn; return () => { listener = undefined; }; } } as unknown as WalletPort;
   const transport = vi.fn(async (request: Request) => request.url.endsWith('/challenge') ? Response.json(challenge) : Response.json({ sessionExpiresAt: now + 1800000 }));
   const auth = createAuthSession({ client: createHttpClient({ origin: 'https://mock.invalid', transport }), wallet, origin: 'https://mock.invalid', resolveDeployment: () => deployment, connection: () => ({ scope, epoch: 1 }), now: () => now });
-  return { auth, personalSign, transport, setDeployment: (value: DeploymentLocation | undefined) => { deployment = value; }, setNow: (value: number) => { now = value; }, change: () => listener?.({ epoch: 2 }) };
+  return { auth, personalSign, transport, setDeployment: (value: AuthDeploymentLocation | undefined) => { deployment = value; }, setNow: (value: number) => { now = value; }, change: () => listener?.({ epoch: 2 }) };
 }
 
 it('only signs on explicit authenticate and uses a dedicated SIWE signature', async () => {
@@ -28,7 +29,7 @@ it('only signs on explicit authenticate and uses a dedicated SIWE signature', as
   expect(message).toContain('mock.invalid wants you to sign in with your Ethereum account:');
   expect(message).toContain('URI: https://mock.invalid/');
   expect(message).toContain('Chain ID: 31337');
-  expect(message).toContain(`Nonce: ${id.slice(2)}`);
+  expect(message).toContain(`Nonce: ${id}`);
   expect(message).toContain('Expiration Time: 1970-01-01T00:05:01.000Z');
   setNow(1801001);
   expect(auth.isAuthenticated(scope)).toBe(false);
@@ -87,8 +88,8 @@ it('rejects a session longer than thirty minutes and disconnects on disposal', a
 
 
 it.each([
-  { reason: 'chain changed', deployment: { chainId: 1n, pool: `0x${'11'.repeat(20)}` as const } },
-  { reason: 'Pool changed', deployment: { chainId: 31337n, pool: `0x${'22'.repeat(20)}` as const } },
+  { reason: 'chain changed', deployment: { chainId: 1n, pool: `0x${'11'.repeat(20)}` as const, siweUri: 'https://mock.invalid/' } },
+  { reason: 'Pool changed', deployment: { chainId: 31337n, pool: `0x${'22'.repeat(20)}` as const, siweUri: 'https://mock.invalid/' } },
   { reason: 'mapping removed', deployment: undefined },
 ])('rejects authenticated state when $reason without an epoch change', async ({ deployment }) => {
   const { auth, personalSign, transport, setDeployment } = setup();
@@ -98,4 +99,57 @@ it.each([
   expect(auth.isAuthenticated(scope)).toBe(false);
   expect(personalSign).toHaveBeenCalledTimes(1);
   expect(transport).toHaveBeenCalledTimes(2);
+});
+
+const deployment = { chainId: 31337n, pool: `0x${'11'.repeat(20)}` as const, siweUri: 'https://mock.invalid/login/utxo' };
+
+it('uses the explicit non-root deployment URI and service canonical SIWE text', async () => {
+  const { auth, personalSign, setDeployment } = setup();
+  setDeployment(deployment);
+  await auth.authenticate(scope);
+  expect(new TextDecoder().decode(personalSign.mock.calls[0]![0])).toBe(createSiweMessage({
+    address: scope.owner, domain: 'mock.invalid', uri: deployment.siweUri, version: '1',
+    chainId: 31337, nonce: id, issuedAt: new Date(1000), expirationTime: new Date(301000),
+  }));
+});
+
+it.each([undefined, '', '/login', 'https://other.invalid/login', 'http://mock.invalid/login', 'https://user@mock.invalid/login'])('rejects invalid configured SIWE URI %s before fetching or signing', async siweUri => {
+  const { auth, personalSign, transport, setDeployment } = setup();
+  setDeployment({ ...deployment, siweUri } as AuthDeploymentLocation);
+  await expect(auth.authenticate(scope)).rejects.toMatchObject({ kind: 'challenge' });
+  expect(personalSign).not.toHaveBeenCalled();
+  expect(transport).not.toHaveBeenCalled();
+});
+
+it.each(['challenge', 'sign', 'verify'])('rejects URI drift during %s', async stage => {
+  const { auth, personalSign, transport, setDeployment } = setup();
+  if (stage === 'sign') personalSign.mockImplementation(async () => {
+    setDeployment(deployment);
+    return { value: `0x${'aa'.repeat(65)}`, scope, epoch: 1 };
+  });
+  else transport.mockImplementation(async request => {
+    const challenge = request.url.endsWith('/challenge');
+    if (stage === (challenge ? 'challenge' : 'verify')) setDeployment(deployment);
+    return Response.json(challenge ? { challengeId: id, nonce: id, issuedAt: 1000, expiresAt: 301000 } : { sessionExpiresAt: 1801000 });
+  });
+  await expect(auth.authenticate(scope)).rejects.toMatchObject({ kind: 'scope' });
+  expect(auth.isAuthenticated(scope)).toBe(false);
+  expect(personalSign).toHaveBeenCalledTimes(stage === 'challenge' ? 0 : 1);
+  expect(transport).toHaveBeenCalledTimes(stage === 'verify' ? 2 : 1);
+});
+
+it('invalidates a session when its configured URI changes', async () => {
+  const { auth, personalSign, setDeployment } = setup();
+  await auth.authenticate(scope);
+  setDeployment(deployment);
+  expect(auth.isAuthenticated(scope)).toBe(false);
+  expect(personalSign).toHaveBeenCalledTimes(1);
+});
+
+it.each([0n, -1n, 9007199254740993n])('rejects a chain ID unsupported by the service: %s', async chainId => {
+  const { auth, personalSign, transport, setDeployment } = setup();
+  setDeployment({ ...deployment, chainId });
+  await expect(auth.authenticate(scope)).rejects.toMatchObject({ kind: 'challenge' });
+  expect(personalSign).not.toHaveBeenCalled();
+  expect(transport).not.toHaveBeenCalled();
 });
