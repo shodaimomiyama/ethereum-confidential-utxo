@@ -10,7 +10,7 @@ it('binds encrypted state to deployment, request and revision', async () => {
   await expect(decryptRewardState(key, 'other', 'request-1', 2, ciphertext)).rejects.toThrow();
   await expect(decryptRewardState(key, 'local-v1', 'other', 2, ciphertext)).rejects.toThrow();
   await expect(decryptRewardState(key, 'local-v1', 'request-1', 3, ciphertext)).rejects.toThrow();
-  const changed = ciphertext.slice(0, -2) + (ciphertext.endsWith('A') ? 'B' : 'A') + ciphertext.slice(-1);
+  const changed = ciphertext.slice(0, 28) + (ciphertext[28] === 'a' ? 'b' : 'a') + ciphertext.slice(29);
   await expect(decryptRewardState(key, 'local-v1', 'request-1', 2, changed)).rejects.toThrow();
 });
 

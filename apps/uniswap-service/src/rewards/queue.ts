@@ -13,8 +13,15 @@ type QueueRow = { request_id: string; status: string; checkpoint_hash: string | 
 export async function runRewardAlarm(context: ServiceContext, injected?: RewardQueueRunner): Promise<void> {
   context.ensureWritable();
   if (context.deploymentId === undefined) throw new Error('UNKNOWN_DEPLOYMENT');
-  const runner = injected ?? await createProductionRewardRunner(context);
   const deploymentId = context.deploymentId;
+  if (injected === undefined) {
+    const any = context.storage.sql.exec<{ seq: number }>(
+      `SELECT seq FROM reward_requests WHERE deployment_id = ? AND status <> 'ended-without-distribution'
+       LIMIT 1`, deploymentId,
+    ).toArray()[0];
+    if (any === undefined) return;
+  }
+  const runner = injected ?? await createProductionRewardRunner(context);
   const finalized = context.storage.sql.exec<QueueRow>(
     `SELECT request_id, status, checkpoint_hash FROM reward_requests
      WHERE deployment_id = ? AND status IN ('finalized', 'received') ORDER BY seq`, deploymentId,
