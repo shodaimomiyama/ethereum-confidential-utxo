@@ -24,6 +24,9 @@ export type ScenarioEvent = (
   | { readonly type: 'validation-result'; readonly card: Card; readonly phase: 'ready' | 'invalid-input' | 'needs-preparation'; readonly reason?: ValidationReason; readonly input?: Readonly<Record<string, string>> }
   | { readonly type: 'preparation'; readonly wallet?: boolean; readonly network?: boolean; readonly key?: boolean; readonly faucet?: boolean; readonly gas?: boolean }
   | { readonly type: 'utxos'; readonly utxos: readonly UtxoView[] }
+  | { readonly type: 'public-balance'; readonly amountWei: bigint }
+  | { readonly type: 'reward-request'; readonly requestId: import('@confidential-utxo/uniswap').RequestId; readonly status: import('@confidential-utxo/uniswap').RewardStatus; readonly operationId?: OperationId }
+  | { readonly type: 'invalidate-quote' }
 ) & { readonly scope?: Scope };
 
 export interface ScenarioJournalEntry {
@@ -72,7 +75,7 @@ function makeRuntime(scope: Scope, scenario: string): Runtime {
   return runtime;
 }
 
-function parseEthWei(value: string | undefined): bigint | undefined {
+export function parseEthWei(value: string | undefined): bigint | undefined {
   if (value === undefined || !/^(?:0|[1-9]\d*)(?:\.\d{1,18})?$/.test(value)) return undefined;
   const [whole, fraction = ''] = value.split('.');
   const amount = BigInt(whole ?? '0') * 10n ** 18n + BigInt(fraction.padEnd(18, '0'));
@@ -116,6 +119,10 @@ function refreshInteractive(runtime: Runtime): void {
       state = { ...state, selectedInput: { ...state.selectedInput, pay: { id: selected.id, amountWei: selected.amountWei, changeWei: selected.amountWei - amount } } };
       if (!/^0x[0-9a-fA-F]{40}$/.test(current.input.recipient ?? '') || /^0x0{40}$/i.test(current.input.recipient ?? '')) {
         state = setCard(state, card, { phase: 'invalid-input', reason: 'UNSUPPORTED_RECIPIENT' });
+        continue;
+      }
+      if (current.reason === 'QUOTE_STALE') {
+        state = setCard(state, card, { phase: 'needs-preparation', reason: 'QUOTE_STALE' });
         continue;
       }
     }
@@ -169,6 +176,12 @@ function derive(runtime: Runtime, now: number): ViewState {
   const allowed = new Set<string>(['switch-scope', 'resync']);
   const reasons: Record<string, ValidationReason> = {};
   const state = runtime.state;
+  if (runtime.interactive) {
+    if (!state.preparation.wallet) allowed.add('connect-wallet');
+    else if (!state.preparation.network) allowed.add('switch-network');
+    else if (!state.preparation.key) allowed.add('prepare-recipient-key');
+    else if (!state.preparation.faucet || !state.preparation.gas) allowed.add('refresh-balances');
+  }
   const operationActions: Record<string, OperationAction[]> = {};
   for (const card of ['reward', 'pay', 'deposit', 'withdraw'] as const) {
     const phase = state.cards[card].phase;
@@ -307,8 +320,11 @@ export function createMockUiController({ scope, store, clock, scenario }: {
         state = setCard(state, 'pay', { proposedQuote: incoming });
       } else {
         runtime.quoteStartedAt = event.startedAt;
-        state = setCard(state, 'pay', { quote: incoming });
+        state = setCard(state, 'pay', { quote: incoming, reason: undefined });
       }
+    } else if (event.type === 'invalidate-quote') {
+      runtime.quoteStartedAt = undefined;
+      state = setCard(state, 'pay', { quote: undefined, phase: 'needs-preparation', reason: 'QUOTE_STALE' });
     } else if (event.type === 'reservation-ack') {
       runtime.reservationAck.add(event.card);
     } else if (event.type === 'awaiting-approval') {
@@ -339,6 +355,14 @@ export function createMockUiController({ scope, store, clock, scenario }: {
         chainOutcome: 'finalized-success', receiptState: needsReceipt ? 'pending' : 'none',
       });
       state = appendAttempt(state, event.operationId, event.attemptId);
+      if (runtime.interactive && (event.card === 'pay' || event.card === 'withdraw')) {
+        const selected = state.selectedInput[event.card];
+        if (selected !== undefined && state.utxos.some((item) => item.id === selected.id && item.available)) {
+          state = { ...state,
+            utxos: state.utxos.map((item) => item.id === selected.id ? { ...item, available: false } : item),
+            availablePrivateWei: state.availablePrivateWei - selected.amountWei };
+        }
+      }
     } else if (event.type === 'receipt-invalid') {
       state = setCard(state, event.card, { phase: 'receipt-invalid', reason: 'RECEIPT_INVALID' });
       state = setOperation(state, event.operationId, { receiptState: 'invalid' });
@@ -411,6 +435,14 @@ export function createMockUiController({ scope, store, clock, scenario }: {
     } else if (event.type === 'utxos') {
       state = { ...state, utxos: event.utxos,
         availablePrivateWei: event.utxos.filter((item) => item.available).reduce((sum, item) => sum + item.amountWei, 0n) };
+    } else if (event.type === 'public-balance') {
+      state = { ...state, publicEthWei: event.amountWei };
+    } else if (event.type === 'reward-request') {
+      const existing = state.rewardRequests.find((item) => item.requestId === event.requestId);
+      const next = { requestId: event.requestId, status: event.status, operationId: event.operationId };
+      state = { ...state, rewardRequests: existing
+        ? state.rewardRequests.map((item) => item.requestId === event.requestId ? next : item)
+        : [...state.rewardRequests, next] };
     }
     if ('operationId' in event && 'card' in event) {
       state = { ...state, operationCards: { ...state.operationCards, [event.operationId]: event.card } };
@@ -446,6 +478,17 @@ export function createMockUiController({ scope, store, clock, scenario }: {
       if (action.type === 'start') {
         runtime.state = setCard(runtime.state, action.card, { phase: 'preparing' });
         entries.push({ kind: 'start', scope: activeScope });
+      } else if (action.type === 'connect-wallet' || action.type === 'switch-network'
+        || action.type === 'prepare-recipient-key' || action.type === 'refresh-balances') {
+        const field = action.type === 'connect-wallet' ? 'wallet' : action.type === 'switch-network' ? 'network'
+          : action.type === 'prepare-recipient-key' ? 'key' : 'faucet';
+        runtime.state = { ...runtime.state,
+          preparation: { ...runtime.state.preparation, [field]: true,
+            ...(action.type === 'refresh-balances' ? { gas: true } : {}) },
+          ...(action.type === 'connect-wallet' ? { connection: 'connected' as const, currentScope: activeScope } : {}),
+          ...(action.type === 'refresh-balances' ? { publicEthWei: 20n * 10n ** 15n } : {}),
+        };
+        refreshInteractive(runtime);
       } else if (action.type === 'edit') {
         const card = runtime.state.cards[action.card];
         runtime.state = setCard(runtime.state, action.card, { input: { ...card.input, [action.field]: action.value } });

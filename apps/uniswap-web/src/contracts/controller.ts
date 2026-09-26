@@ -2,6 +2,10 @@ import type { OperationId, RequestId, Scope } from '@confidential-utxo/uniswap';
 import type { Card, OperationAction, ValidationReason, ViewState } from './state.js';
 
 export type UiAction =
+  | { readonly type: 'connect-wallet' }
+  | { readonly type: 'switch-network' }
+  | { readonly type: 'prepare-recipient-key' }
+  | { readonly type: 'refresh-balances' }
   | { readonly type: 'edit'; readonly card: Card; readonly field: string; readonly value: string }
   | { readonly type: 'start'; readonly card: Card }
   | { readonly type: 'confirm-terms'; readonly card: 'pay' }
