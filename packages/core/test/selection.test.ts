@@ -98,6 +98,11 @@ describe("input selection", () => {
       { kind: 1, owner, amount: 3n }))).toBe("UNCONFIRMED");
     expect(failureCode(() => selectInputs(context, [coin(1n, 2n), coin(2n, 2n, { status: "spent" })],
       { kind: 1, owner, amount: 3n }))).toBe("INSUFFICIENT");
+    expect(failureCode(() => selectInputs(context, [coin(1n, 2n, { status: "unknown" }),
+      coin(2n, 2n, { status: "unknown" }), coin(3n, 2n, { status: "unknown" })],
+    { kind: 1, owner, amount: 5n }))).toBe("UNCONSTRUCTABLE");
+    expect(failureCode(() => selectInputs(context, [coin(1n, 2n, { status: "unknown" })],
+      { kind: 1, owner, amount: 3n }))).toBe("INSUFFICIENT");
   });
 
   it("rejects invalid operation bounds, duplicate IDs, and explicit input counts", () => {

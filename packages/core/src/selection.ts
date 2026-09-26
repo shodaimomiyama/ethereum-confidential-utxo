@@ -91,15 +91,12 @@ export function selectInputs(
   const pair = bestPair(available, amount);
   if (pair) return pair;
 
-  const totalAvailable = sum(available);
   const uncertain = eligible.filter(coin => coin.status === "pending" || coin.status === "unknown" ||
     (coin.status === "available" && !confirmed(coin, context)));
-  if (uncertain.length > 0) {
-    const possiblyAvailable = [...available, ...uncertain].sort(compareId);
-    if (possiblyAvailable.some(coin => feasible([coin], amount)) || bestPair(possiblyAvailable, amount)) {
-      failure("UNCONFIRMED");
-    }
-    if (totalAvailable < amount && sum(possiblyAvailable) >= amount) failure("UNCONFIRMED");
+  const possiblyAvailable = [...available, ...uncertain].sort(compareId);
+  if (uncertain.length > 0 &&
+      (possiblyAvailable.some(coin => feasible([coin], amount)) || bestPair(possiblyAvailable, amount))) {
+    failure("UNCONFIRMED");
   }
-  failure(totalAvailable < amount ? "INSUFFICIENT" : "UNCONSTRUCTABLE");
+  failure(sum(possiblyAvailable) < amount ? "INSUFFICIENT" : "UNCONSTRUCTABLE");
 }
