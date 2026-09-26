@@ -257,6 +257,9 @@ export function parseApiRequest(method: string, path: string, body: unknown): Pa
   }
   const operationMatch = /^\/v1\/operations\/(0x[0-9a-fA-F]{64})$/.exec(pathname);
   if (method === 'PUT' && operationMatch) {
+    if (new TextEncoder().encode(JSON.stringify(body)).length > 1_048_576) {
+      throw new SchemaError('INVALID_FIELD', 'record.encryptedBundle');
+    }
     const object = parseJsonObject(body);
     const scope = parseScope(object.scope);
     const id = parseBytes32(operationMatch[1], 'id');
