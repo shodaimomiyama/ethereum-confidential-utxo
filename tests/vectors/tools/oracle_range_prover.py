@@ -110,6 +110,15 @@ class Transcript:
 
 
 def prove(value, blinding, operation_id, output_index, seed, parameters, profile):
+    return _prove(value, blinding, operation_id, output_index, seed, parameters, profile, False)
+
+
+def prove_with_internal_identity(value, blinding, operation_id, output_index, seed, parameters, profile):
+    """Test-only construction with S = 0; keeps the ordinary scalar tape position."""
+    return _prove(value, blinding, operation_id, output_index, seed, parameters, profile, True)
+
+
+def _prove(value, blinding, operation_id, output_index, seed, parameters, profile, identity_s):
     if not 1 <= value <= 2**64 or not 0 <= blinding < Q:
         raise ValueError('witness out of range')
     h, g, gs, hs = pts(parameters)
@@ -121,6 +130,10 @@ def prove(value, blinding, operation_id, output_index, seed, parameters, profile
     lmask = [tape.next() for _ in range(N)]
     rmask = [tape.next() for _ in range(N)]
     alpha, rho = tape.next(), tape.next()
+    if identity_s:
+        lmask = [0] * N
+        rmask = [0] * N
+        rho = 0
     a_point = suma(multi(gs, bits), multi(hs, shifted), multiply(g, alpha))
     s_point = suma(multi(gs, lmask), multi(hs, rmask), multiply(g, rho))
     tr = Transcript(operation_id, output_index, crange, profile)
@@ -231,6 +244,23 @@ def build_deterministic_case(parameters, profile):
             'expected': {'decision': 'accept',
                          'parametersHash': profile['expectedParametersHash'],
                          'C_range': ['0', '0']},
+            'oracle': 'tools/oracle_range_prover.py#verify and tools/oracle_v3.py#replay_trace',
+            'consumers': ['#26', '#28']}
+
+
+def build_internal_identity_case(parameters, profile):
+    proof = prove_with_internal_identity(1, 0, bytes.fromhex('66'*32), 0,
+                                         bytes.fromhex('12'*32), parameters, profile)
+    if proof['coords'][4:6] != ['0', '0'] or not verify(proof, parameters, profile):
+        raise ValueError('internal identity proof failed independent verification')
+    return {'id': 'VEC-04-DETERMINISTIC-VALID-INTERNAL-IDENTITY',
+            'profile': 'range-bp-v3',
+            'source': 'docs/design.md#v3範囲証明 and EXP-08 profile.json',
+            'stage': 'range-proof',
+            'input': {'amount': '1', 'blinding': '0', **proof},
+            'expected': {'decision': 'accept',
+                         'parametersHash': profile['expectedParametersHash'],
+                         'identityPoint': 'S', 'S': ['0', '0']},
             'oracle': 'tools/oracle_range_prover.py#verify and tools/oracle_v3.py#replay_trace',
             'consumers': ['#26', '#28']}
 

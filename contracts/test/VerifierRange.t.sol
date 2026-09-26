@@ -37,7 +37,7 @@ contract VerifierRangeTest {
     function test_validRangeBoundariesAndIdentity() public {
         (uint256[4] memory base, uint256[128] memory gs, uint256[128] memory hs) = VerifierVectors.parameters();
         RangeParameterProbe verifier = new RangeParameterProbe(base, gs, hs);
-        uint256[4] memory caseIndices = [uint256(0), 1, 2, 4];
+        uint256[5] memory caseIndices = [uint256(0), 1, 2, 4, 5];
         for (uint256 i; i < caseIndices.length; ++i) {
             (
                 bytes32 operationId,
@@ -49,6 +49,25 @@ contract VerifierRangeTest {
             ) = VerifierVectors.rangeProof(caseIndices[i]);
             require(verifier.verify(operationId, outputIndex, coords, scalars, ls, rs), "valid range rejected");
         }
+    }
+
+    function test_internalIdentityIsValidButMutationIsNot() public {
+        (uint256[4] memory base, uint256[128] memory gs, uint256[128] memory hs) = VerifierVectors.parameters();
+        RangeParameterProbe verifier = new RangeParameterProbe(base, gs, hs);
+        (
+            bytes32 op,
+            uint256 index,
+            uint256[10] memory coords,
+            uint256[5] memory scalars,
+            uint256[] memory ls,
+            uint256[] memory rs
+        ) = VerifierVectors.rangeProof(5);
+        require(coords[4] == 0 && coords[5] == 0, "S is not identity");
+        require(verifier.verify(op, index, coords, scalars, ls, rs), "valid internal identity rejected");
+        (op, index, coords, scalars, ls, rs) = VerifierVectors.rangeProof(0);
+        coords[4] = 0;
+        coords[5] = 0;
+        require(!verifier.verify(op, index, coords, scalars, ls, rs), "identity mutation accepted");
     }
 
     function test_polynomialAndInnerEquationFailuresReturnFalse() public {
