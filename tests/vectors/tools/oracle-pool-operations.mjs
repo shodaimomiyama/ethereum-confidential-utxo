@@ -7,6 +7,7 @@ const ownerWallet = new Wallet(`0x${'01'.repeat(32)}`);
 const recipientWallet = new Wallet(`0x${'02'.repeat(32)}`);
 const pool = '0x1111111111111111111111111111111111111111';
 const callback = '0x3333333333333333333333333333333333333333';
+const adapter = '0x2222222222222222222222222222222222222222';
 const zero = '0x0000000000000000000000000000000000000000';
 const authorizations = { OperationAuthorization: [
   { name: 'operationId', type: 'bytes32' }, { name: 'owner', type: 'address' },
@@ -31,7 +32,8 @@ export async function makeCases(base, parameters) {
       owner: output.ownerSymbol === 'A' ? ownerWallet.address.toLowerCase() : recipient }));
     const destination = item.destinationSymbol === 'ZERO' ? zero
       : item.destinationSymbol === 'POOL' ? pool
-      : item.destinationSymbol === 'CALLBACK' ? callback : recipient;
+      : item.destinationSymbol === 'CALLBACK' ? callback
+      : item.destinationSymbol === 'ADAPTER' ? adapter : recipient;
     const actualDestination = item.destinationSymbol === 'OWNER' ? owner : destination;
     const salt = `0x${number.toString(16).padStart(2, '0').repeat(32)}`;
     const input = { chainId: '31337', pool, kind: item.kind, owner, salt,
