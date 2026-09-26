@@ -90,6 +90,147 @@ const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 const INPUT_A = '0x' + '10'.repeat(32);
 const INPUT_B = '0x' + '20'.repeat(32);
 
+const eventSignatures = Object.freeze({
+  InputConsumed: 'InputConsumed(bytes32,bytes32)',
+  OutputCreated: 'OutputCreated(address,bytes32,bytes32,uint256,uint256,uint256,uint8,bytes)',
+  OperationSucceeded: 'OperationSucceeded(bytes32,uint8,address,bytes32[],bytes32[],uint256,uint256,address,bytes32)',
+});
+const selector = signature => keccak256(stringToHex(signature)).slice(0, 10);
+const indexedAddress = address => '0x' + address.slice(2).toLowerCase().padStart(64, '0');
+const observation = (id, stage, input, expected) => ({
+  id: `VEC-06-${id}`, profile: 'pool-observation-v1',
+  source: stage === 'error' ? 'docs/design.md#拒否理由のabi' :
+    'docs/design.md#イベントと照会のabi', stage, input, expected,
+  oracle: 'viem 2.56.9 ABI encoding; ethers 6.13.4 independent decoding',
+  consumers: ['#27', '#29', '#30'],
+});
+
+export function buildOperationLogs(operation) {
+  const { input, expected } = operation;
+  const opId = expected.operationId;
+  const logs = input.inputIds.map(inputId => ({
+    name: 'InputConsumed',
+    topics: [keccak256(stringToHex(eventSignatures.InputConsumed)), inputId, opId],
+    data: '0x', args: [inputId, opId],
+  }));
+  input.outputs.forEach((output, index) => {
+    const outputId = expected.outputIds[index].hash;
+    logs.push({
+      name: 'OutputCreated',
+      topics: [keccak256(stringToHex(eventSignatures.OutputCreated)),
+        indexedAddress(output.owner), outputId, opId],
+      data: encodeAbiParameters(parseAbiParameters('uint256, uint256, uint256, uint8, bytes'),
+        [BigInt(index), BigInt(output.Cx), BigInt(output.Cy), output.receiptFormat, output.packet]),
+      args: [output.owner, outputId, opId, String(index), output.Cx, output.Cy,
+        String(output.receiptFormat), output.packet],
+    });
+  });
+  logs.push({
+    name: 'OperationSucceeded',
+    topics: [keccak256(stringToHex(eventSignatures.OperationSucceeded)),
+      opId, indexedAddress(input.owner)],
+    data: encodeAbiParameters(parseAbiParameters(
+      'uint8, bytes32[], bytes32[], uint256, uint256, address, bytes32'),
+    [input.kind, input.inputIds, expected.outputIds.map(item => item.hash),
+      BigInt(input.d), BigInt(input.w), input.destination, input.salt]),
+    args: [opId, String(input.kind), input.owner, input.inputIds,
+      expected.outputIds.map(item => item.hash), input.d, input.w,
+      input.destination, input.salt],
+  });
+  return logs;
+}
+
+export function validateSyncLogs(operation, logs) {
+  if (!Array.isArray(logs)) return false;
+  const expected = buildOperationLogs(operation);
+  if (logs.length !== expected.length) return false;
+  return logs.every((log, index) => log.name === expected[index].name &&
+    log.data.toLowerCase() === expected[index].data.toLowerCase() &&
+    Array.isArray(log.topics) && log.topics.length === expected[index].topics.length &&
+    log.topics.every((topic, topicIndex) =>
+      topic.toLowerCase() === expected[index].topics[topicIndex].toLowerCase()));
+}
+
+const queryDefinitions = [
+  ['getUtxo', 'getUtxo(bytes32)', 'bytes32', 'uint8, address, uint256, uint256'],
+  ['isOperationExecuted', 'isOperationExecuted(bytes32)', 'bytes32', 'bool'],
+  ['getAccounting', 'getAccounting()', '', 'uint256, uint256, uint256'],
+];
+
+function queryCase(id, name, args, values) {
+  const [, signature, inputTypes, outputTypes] = queryDefinitions.find(item => item[0] === name);
+  const calldata = concatHex([selector(signature),
+    inputTypes ? encodeAbiParameters(parseAbiParameters(inputTypes), args) : '0x']);
+  const returndata = encodeAbiParameters(parseAbiParameters(outputTypes), values);
+  return observation(id, 'query', { name, args }, { decision: 'accept',
+    selector: selector(signature), calldata, returndata, values: values.map(value =>
+      typeof value === 'bigint' ? value.toString() : value) });
+}
+
+const errorDefinitions = [
+  ['InvalidRequest', ''], ['PublicAmountOutOfRange', ''],
+  ['MsgValueMismatch', 'uint256,uint256', ['1', '2']], ['ReentrantOperation', ''],
+  ['InputNotFound', 'bytes32', [INPUT_A]], ['InputAlreadySpent', 'bytes32', [INPUT_A]],
+  ['DuplicateInput', 'bytes32', [INPUT_A]], ['InputOwnerMismatch', 'bytes32', [INPUT_A]],
+  ['OperationAlreadyExecuted', 'bytes32', []], ['OutputIdCollision', 'bytes32', []],
+  ['InvalidAuthorization', ''], ['InvalidBalanceProof', ''],
+  ['InvalidRangeProof', 'uint256', ['1']],
+  ['WithdrawalFailed', 'address,uint256', [RECIPIENT, '1']],
+  ['AccountingInvariantViolation', ''],
+];
+
+export function buildObservationCases(operations) {
+  const selected = [operations[0], operations[2], operations[5]];
+  const accepted = selected.map(operation => observation(
+    `LOG-${operation.id.slice('VEC-01-'.length)}`, 'sync-log',
+    { operationCase: operation.id },
+    { decision: 'accept', logs: buildOperationLogs(operation) }));
+  const transfer = operations[2];
+  const full = buildOperationLogs(transfer);
+  const mutations = [
+    ['MISSING', full.slice(0, -1), 'logs.length'],
+    ['ORDER', [full[1], full[0], ...full.slice(2)], 'logs.order'],
+    ['OUTPUT-ID', full.map((log, index) => index === 1 ?
+      { ...log, topics: [log.topics[0], log.topics[1], INPUT_B, log.topics[3]] } : log),
+    'logs[1].topics[2]'],
+    ['PACKET', full.map((log, index) => index === 1 ?
+      { ...log, data: log.data.slice(0, -34) + '45' + log.data.slice(-32) } : log),
+    'logs[1].data'],
+  ].map(([label, logs, mutatedField]) => ({
+    ...observation(`LOG-${label}`, 'sync-log',
+      { operationCase: transfer.id, logs }, { decision: 'reject', reason: 'incomplete or inconsistent logs' }),
+    baseCase: 'VEC-06-LOG-TRANSFER-CHANGE', mutatedField,
+  }));
+  const outputId = operations[0].expected.outputIds[0].hash;
+  const opId = operations[0].expected.operationId;
+  const queries = [
+    queryCase('GET-UTXO-ABSENT', 'getUtxo', [INPUT_B], [0, ZERO_ADDRESS, 0n, 0n]),
+    queryCase('GET-UTXO-LIVE', 'getUtxo', [outputId],
+      [1, operations[0].input.owner, 1n, 2n]),
+    queryCase('GET-UTXO-SPENT', 'getUtxo', [INPUT_A],
+      [2, operations[0].input.owner, 1n, 2n]),
+    queryCase('IS-EXECUTED', 'isOperationExecuted', [opId], [true]),
+    queryCase('IS-NOT-EXECUTED', 'isOperationExecuted', [INPUT_B], [false]),
+    queryCase('ACCOUNTING', 'getAccounting', [], [3n, 2n, 1n]),
+    observation('ACCOUNTING-DEFICIT', 'query', { name: 'getAccounting',
+      actualBalance: '1', accountedLiability: '2' },
+    { decision: 'reject', error: 'AccountingInvariantViolation',
+      data: selector('AccountingInvariantViolation()') }),
+  ];
+  const errors = errorDefinitions.map(([name, types, sampleArgs]) => {
+    const args = sampleArgs?.length ? sampleArgs :
+      name === 'OperationAlreadyExecuted' ? [opId] :
+        name === 'OutputIdCollision' ? [outputId] : [];
+    const signature = `${name}(${types})`;
+    const errorSelector = selector(signature);
+    return observation(`ERROR-${name.replace(/([a-z])([A-Z])/g, '$1-$2').toUpperCase()}`,
+      'error', { name, args }, { selector: errorSelector,
+        data: concatHex([errorSelector, types ?
+          encodeAbiParameters(parseAbiParameters(types), args) : '0x']) });
+  });
+  return [...accepted, ...mutations, ...queries, ...errors];
+}
+
 function operationSeeds(owner) {
   const packet = '0x' + '44'.repeat(112);
   const recipientOutput = { owner: RECIPIENT, Cx: '1', Cy: '2', receiptFormat: 1, packet };
@@ -233,4 +374,6 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   writeFileSync(join(output, 'operation.json'), JSON.stringify(operations, null, 2) + '\n');
   writeFileSync(join(output, 'operation-rejected.json'), JSON.stringify(invalidOperations, null, 2) + '\n');
   writeFileSync(join(output, 'authorization.json'), JSON.stringify(authorization, null, 2) + '\n');
+  writeFileSync(join(output, 'abi-observation.json'),
+    JSON.stringify(buildObservationCases(operations), null, 2) + '\n');
 }
