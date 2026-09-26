@@ -1,0 +1,378 @@
+[
+  {
+    "id": "VEC-02-OPERATION-SIGNATURE",
+    "profile": "operation-v1",
+    "source": "docs/design.md#操作の結合とabi",
+    "stage": "signature",
+    "input": {
+      "chainId": "31337",
+      "pool": "0x1111111111111111111111111111111111111111",
+      "operationId": "0xda4a2c5b62f976c445f27cd49bce6d9da172dd43e3b662e4c962ff1ab6ada3e1",
+      "owner": "0x1a642f0e3c3af545e7acbd38b07251b3990914f1",
+      "authScheme": 1,
+      "authVersion": 1,
+      "signature": "0x316e9bb506fb4419e1665d5ed314fea9389ba6632a1463ae7570c6c962ca5b054f9650746a409daf19969b5349c9b5af26352b5a7bf0035a44d8c6e21923fb3b1b",
+      "testOnlyPrivateKey": "0x0101010101010101010101010101010101010101010101010101010101010101"
+    },
+    "expected": {
+      "domainSeparator": {
+        "preimage": "0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400ff7e20ebcaa068bf5f7337c7dedf357bb406d50deb4ab167bf9ee3cbf0b2b3677c89efdaa54c0f20c7adf612882df0950f5a951637e0307cdcb4c672f298b8bc60000000000000000000000000000000000000000000000000000000000007a690000000000000000000000001111111111111111111111111111111111111111",
+        "hash": "0x0a05cf95fae24de9b26a7a3e7e211b6fb9a9137e58f94fbbb6f8e2c1ffb4d6d9"
+      },
+      "typeHash": "0xb265d3273af157e1a84511122d2e5e3cc26a6fb9c7c474dec24577db721f2913",
+      "structHash": {
+        "preimage": "0xb265d3273af157e1a84511122d2e5e3cc26a6fb9c7c474dec24577db721f2913da4a2c5b62f976c445f27cd49bce6d9da172dd43e3b662e4c962ff1ab6ada3e10000000000000000000000001a642f0e3c3af545e7acbd38b07251b3990914f100000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001",
+        "hash": "0xe5d4548c75bd94f75dc1db9ec2103c1aeb2cca639253153e2c805bbeb2e48003"
+      },
+      "digest": "0x017b92ed2e03d88e76e852a0d1a45000115261d0486cbfe44f64056e43abf5f5",
+      "recoveredOwner": "0x1a642f0e3c3af545e7acbd38b07251b3990914f1",
+      "decision": "accept"
+    },
+    "oracle": "ethers 6.13.4 signing; viem 2.56.9 digest",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ]
+  },
+  {
+    "id": "VEC-02-RECIPIENT-SIGNATURE",
+    "profile": "operation-v1",
+    "source": "docs/design.md#操作の結合とabi",
+    "stage": "recipient-info-signature",
+    "input": {
+      "chainId": "31337",
+      "pool": "0x1111111111111111111111111111111111111111",
+      "owner": "0x1a642f0e3c3af545e7acbd38b07251b3990914f1",
+      "receivePublicKey": "0x6666666666666666666666666666666666666666666666666666666666666666",
+      "receiptFormat": 1,
+      "recipientInfoVersion": 1,
+      "signature": "0x73a2fa38dbc03fc212073beff10db01e096d5f2e999ce76d49d3b111cbd7fdde7c5a099d9c4da0cabfa015c7605197dba131a0833d8df6f76b4c993185f311e91c",
+      "testOnlyPrivateKey": "0x0101010101010101010101010101010101010101010101010101010101010101"
+    },
+    "expected": {
+      "domainSeparator": {
+        "preimage": "0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400ff7e20ebcaa068bf5f7337c7dedf357bb406d50deb4ab167bf9ee3cbf0b2b3677c89efdaa54c0f20c7adf612882df0950f5a951637e0307cdcb4c672f298b8bc60000000000000000000000000000000000000000000000000000000000007a690000000000000000000000001111111111111111111111111111111111111111",
+        "hash": "0x0a05cf95fae24de9b26a7a3e7e211b6fb9a9137e58f94fbbb6f8e2c1ffb4d6d9"
+      },
+      "typeHash": "0x08b01166d746c3ba8e41392ad1fb32866b1e96c4b1aa219f3f467bc492df0686",
+      "structHash": {
+        "preimage": "0x08b01166d746c3ba8e41392ad1fb32866b1e96c4b1aa219f3f467bc492df06860000000000000000000000001a642f0e3c3af545e7acbd38b07251b3990914f1666666666666666666666666666666666666666666666666666666666666666600000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001",
+        "hash": "0x9f98f1f4096c59fe351bd3df03ba8d71fd6eb40a39cb7dc9dfd7e08293e8cb81"
+      },
+      "digest": "0x3e2e01b6ab120e20b2adf508c7a7276ba264ce26944b30959c3aacb21e75c428",
+      "recoveredOwner": "0x1a642f0e3c3af545e7acbd38b07251b3990914f1",
+      "decision": "accept"
+    },
+    "oracle": "ethers 6.13.4 signing; viem 2.56.9 digest",
+    "consumers": [
+      "#28",
+      "#29"
+    ]
+  },
+  {
+    "id": "VEC-02-CHAIN-CHANGED",
+    "profile": "operation-v1",
+    "source": "docs/design.md#操作の結合とabi",
+    "stage": "signature",
+    "input": {
+      "chainId": "31338",
+      "pool": "0x1111111111111111111111111111111111111111",
+      "operationId": "0xda4a2c5b62f976c445f27cd49bce6d9da172dd43e3b662e4c962ff1ab6ada3e1",
+      "owner": "0x1a642f0e3c3af545e7acbd38b07251b3990914f1",
+      "authScheme": 1,
+      "authVersion": 1,
+      "signature": "0x316e9bb506fb4419e1665d5ed314fea9389ba6632a1463ae7570c6c962ca5b054f9650746a409daf19969b5349c9b5af26352b5a7bf0035a44d8c6e21923fb3b1b",
+      "testOnlyPrivateKey": "0x0101010101010101010101010101010101010101010101010101010101010101"
+    },
+    "expected": {
+      "decision": "reject",
+      "reason": "invalid signature or recipient info"
+    },
+    "oracle": "design signature and version rules",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-02-OPERATION-SIGNATURE",
+    "mutatedField": "chainId"
+  },
+  {
+    "id": "VEC-02-POOL-CHANGED",
+    "profile": "operation-v1",
+    "source": "docs/design.md#操作の結合とabi",
+    "stage": "signature",
+    "input": {
+      "chainId": "31337",
+      "pool": "0x3333333333333333333333333333333333333333",
+      "operationId": "0xda4a2c5b62f976c445f27cd49bce6d9da172dd43e3b662e4c962ff1ab6ada3e1",
+      "owner": "0x1a642f0e3c3af545e7acbd38b07251b3990914f1",
+      "authScheme": 1,
+      "authVersion": 1,
+      "signature": "0x316e9bb506fb4419e1665d5ed314fea9389ba6632a1463ae7570c6c962ca5b054f9650746a409daf19969b5349c9b5af26352b5a7bf0035a44d8c6e21923fb3b1b",
+      "testOnlyPrivateKey": "0x0101010101010101010101010101010101010101010101010101010101010101"
+    },
+    "expected": {
+      "decision": "reject",
+      "reason": "invalid signature or recipient info"
+    },
+    "oracle": "design signature and version rules",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-02-OPERATION-SIGNATURE",
+    "mutatedField": "pool"
+  },
+  {
+    "id": "VEC-02-OWNER-CHANGED",
+    "profile": "operation-v1",
+    "source": "docs/design.md#操作の結合とabi",
+    "stage": "signature",
+    "input": {
+      "chainId": "31337",
+      "pool": "0x1111111111111111111111111111111111111111",
+      "operationId": "0xda4a2c5b62f976c445f27cd49bce6d9da172dd43e3b662e4c962ff1ab6ada3e1",
+      "owner": "0x3333333333333333333333333333333333333333",
+      "authScheme": 1,
+      "authVersion": 1,
+      "signature": "0x316e9bb506fb4419e1665d5ed314fea9389ba6632a1463ae7570c6c962ca5b054f9650746a409daf19969b5349c9b5af26352b5a7bf0035a44d8c6e21923fb3b1b",
+      "testOnlyPrivateKey": "0x0101010101010101010101010101010101010101010101010101010101010101"
+    },
+    "expected": {
+      "decision": "reject",
+      "reason": "invalid signature or recipient info"
+    },
+    "oracle": "design signature and version rules",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-02-OPERATION-SIGNATURE",
+    "mutatedField": "owner"
+  },
+  {
+    "id": "VEC-02-HIGH-S",
+    "profile": "operation-v1",
+    "source": "docs/design.md#操作の結合とabi",
+    "stage": "signature",
+    "input": {
+      "chainId": "31337",
+      "pool": "0x1111111111111111111111111111111111111111",
+      "operationId": "0xda4a2c5b62f976c445f27cd49bce6d9da172dd43e3b662e4c962ff1ab6ada3e1",
+      "owner": "0x1a642f0e3c3af545e7acbd38b07251b3990914f1",
+      "authScheme": 1,
+      "authVersion": 1,
+      "signature": "0x316e9bb506fb4419e1665d5ed314fea9389ba6632a1463ae7570c6c962ca5b05b069af8b95bf6250e66964acb6364a4f9479b18c33589ce17af997aab71246061b",
+      "testOnlyPrivateKey": "0x0101010101010101010101010101010101010101010101010101010101010101"
+    },
+    "expected": {
+      "decision": "reject",
+      "reason": "invalid signature or recipient info"
+    },
+    "oracle": "design signature and version rules",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-02-OPERATION-SIGNATURE",
+    "mutatedField": "signature.s"
+  },
+  {
+    "id": "VEC-02-ZERO-R",
+    "profile": "operation-v1",
+    "source": "docs/design.md#操作の結合とabi",
+    "stage": "signature",
+    "input": {
+      "chainId": "31337",
+      "pool": "0x1111111111111111111111111111111111111111",
+      "operationId": "0xda4a2c5b62f976c445f27cd49bce6d9da172dd43e3b662e4c962ff1ab6ada3e1",
+      "owner": "0x1a642f0e3c3af545e7acbd38b07251b3990914f1",
+      "authScheme": 1,
+      "authVersion": 1,
+      "signature": "0x00000000000000000000000000000000000000000000000000000000000000004f9650746a409daf19969b5349c9b5af26352b5a7bf0035a44d8c6e21923fb3b1b",
+      "testOnlyPrivateKey": "0x0101010101010101010101010101010101010101010101010101010101010101"
+    },
+    "expected": {
+      "decision": "reject",
+      "reason": "invalid signature or recipient info"
+    },
+    "oracle": "design signature and version rules",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-02-OPERATION-SIGNATURE",
+    "mutatedField": "signature.r"
+  },
+  {
+    "id": "VEC-02-ZERO-S",
+    "profile": "operation-v1",
+    "source": "docs/design.md#操作の結合とabi",
+    "stage": "signature",
+    "input": {
+      "chainId": "31337",
+      "pool": "0x1111111111111111111111111111111111111111",
+      "operationId": "0xda4a2c5b62f976c445f27cd49bce6d9da172dd43e3b662e4c962ff1ab6ada3e1",
+      "owner": "0x1a642f0e3c3af545e7acbd38b07251b3990914f1",
+      "authScheme": 1,
+      "authVersion": 1,
+      "signature": "0x316e9bb506fb4419e1665d5ed314fea9389ba6632a1463ae7570c6c962ca5b0500000000000000000000000000000000000000000000000000000000000000001b",
+      "testOnlyPrivateKey": "0x0101010101010101010101010101010101010101010101010101010101010101"
+    },
+    "expected": {
+      "decision": "reject",
+      "reason": "invalid signature or recipient info"
+    },
+    "oracle": "design signature and version rules",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-02-OPERATION-SIGNATURE",
+    "mutatedField": "signature.s"
+  },
+  {
+    "id": "VEC-02-BAD-V",
+    "profile": "operation-v1",
+    "source": "docs/design.md#操作の結合とabi",
+    "stage": "signature",
+    "input": {
+      "chainId": "31337",
+      "pool": "0x1111111111111111111111111111111111111111",
+      "operationId": "0xda4a2c5b62f976c445f27cd49bce6d9da172dd43e3b662e4c962ff1ab6ada3e1",
+      "owner": "0x1a642f0e3c3af545e7acbd38b07251b3990914f1",
+      "authScheme": 1,
+      "authVersion": 1,
+      "signature": "0x316e9bb506fb4419e1665d5ed314fea9389ba6632a1463ae7570c6c962ca5b054f9650746a409daf19969b5349c9b5af26352b5a7bf0035a44d8c6e21923fb3b1d",
+      "testOnlyPrivateKey": "0x0101010101010101010101010101010101010101010101010101010101010101"
+    },
+    "expected": {
+      "decision": "reject",
+      "reason": "invalid signature or recipient info"
+    },
+    "oracle": "design signature and version rules",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-02-OPERATION-SIGNATURE",
+    "mutatedField": "signature.v"
+  },
+  {
+    "id": "VEC-02-SHORT-SIGNATURE",
+    "profile": "operation-v1",
+    "source": "docs/design.md#操作の結合とabi",
+    "stage": "signature",
+    "input": {
+      "chainId": "31337",
+      "pool": "0x1111111111111111111111111111111111111111",
+      "operationId": "0xda4a2c5b62f976c445f27cd49bce6d9da172dd43e3b662e4c962ff1ab6ada3e1",
+      "owner": "0x1a642f0e3c3af545e7acbd38b07251b3990914f1",
+      "authScheme": 1,
+      "authVersion": 1,
+      "signature": "0x316e9bb506fb4419e1665d5ed314fea9389ba6632a1463ae7570c6c962ca5b054f9650746a409daf19969b5349c9b5af26352b5a7bf0035a44d8c6e21923fb3b",
+      "testOnlyPrivateKey": "0x0101010101010101010101010101010101010101010101010101010101010101"
+    },
+    "expected": {
+      "decision": "reject",
+      "reason": "invalid signature or recipient info"
+    },
+    "oracle": "design signature and version rules",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-02-OPERATION-SIGNATURE",
+    "mutatedField": "signature.length"
+  },
+  {
+    "id": "VEC-02-RECIPIENT-KEY-CHANGED",
+    "profile": "operation-v1",
+    "source": "docs/design.md#操作の結合とabi",
+    "stage": "recipient-info-signature",
+    "input": {
+      "chainId": "31337",
+      "pool": "0x1111111111111111111111111111111111111111",
+      "owner": "0x1a642f0e3c3af545e7acbd38b07251b3990914f1",
+      "receivePublicKey": "0x6767676767676767676767676767676767676767676767676767676767676767",
+      "receiptFormat": 1,
+      "recipientInfoVersion": 1,
+      "signature": "0x73a2fa38dbc03fc212073beff10db01e096d5f2e999ce76d49d3b111cbd7fdde7c5a099d9c4da0cabfa015c7605197dba131a0833d8df6f76b4c993185f311e91c",
+      "testOnlyPrivateKey": "0x0101010101010101010101010101010101010101010101010101010101010101"
+    },
+    "expected": {
+      "decision": "reject",
+      "reason": "invalid signature or recipient info"
+    },
+    "oracle": "design signature and version rules",
+    "consumers": [
+      "#28",
+      "#29"
+    ],
+    "baseCase": "VEC-02-RECIPIENT-SIGNATURE",
+    "mutatedField": "receivePublicKey"
+  },
+  {
+    "id": "VEC-02-RECIPIENT-FORMAT-CHANGED",
+    "profile": "operation-v1",
+    "source": "docs/design.md#操作の結合とabi",
+    "stage": "recipient-info-signature",
+    "input": {
+      "chainId": "31337",
+      "pool": "0x1111111111111111111111111111111111111111",
+      "owner": "0x1a642f0e3c3af545e7acbd38b07251b3990914f1",
+      "receivePublicKey": "0x6666666666666666666666666666666666666666666666666666666666666666",
+      "receiptFormat": 2,
+      "recipientInfoVersion": 1,
+      "signature": "0x73a2fa38dbc03fc212073beff10db01e096d5f2e999ce76d49d3b111cbd7fdde7c5a099d9c4da0cabfa015c7605197dba131a0833d8df6f76b4c993185f311e91c",
+      "testOnlyPrivateKey": "0x0101010101010101010101010101010101010101010101010101010101010101"
+    },
+    "expected": {
+      "decision": "reject",
+      "reason": "invalid signature or recipient info"
+    },
+    "oracle": "design signature and version rules",
+    "consumers": [
+      "#28",
+      "#29"
+    ],
+    "baseCase": "VEC-02-RECIPIENT-SIGNATURE",
+    "mutatedField": "receiptFormat"
+  },
+  {
+    "id": "VEC-02-RECIPIENT-VERSION-CHANGED",
+    "profile": "operation-v1",
+    "source": "docs/design.md#操作の結合とabi",
+    "stage": "recipient-info-signature",
+    "input": {
+      "chainId": "31337",
+      "pool": "0x1111111111111111111111111111111111111111",
+      "owner": "0x1a642f0e3c3af545e7acbd38b07251b3990914f1",
+      "receivePublicKey": "0x6666666666666666666666666666666666666666666666666666666666666666",
+      "receiptFormat": 1,
+      "recipientInfoVersion": 2,
+      "signature": "0x73a2fa38dbc03fc212073beff10db01e096d5f2e999ce76d49d3b111cbd7fdde7c5a099d9c4da0cabfa015c7605197dba131a0833d8df6f76b4c993185f311e91c",
+      "testOnlyPrivateKey": "0x0101010101010101010101010101010101010101010101010101010101010101"
+    },
+    "expected": {
+      "decision": "reject",
+      "reason": "invalid signature or recipient info"
+    },
+    "oracle": "design signature and version rules",
+    "consumers": [
+      "#28",
+      "#29"
+    ],
+    "baseCase": "VEC-02-RECIPIENT-SIGNATURE",
+    "mutatedField": "recipientInfoVersion"
+  }
+]

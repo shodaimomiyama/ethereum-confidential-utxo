@@ -1,5 +1,39 @@
 {
   "version": 1,
   "baselineCommit": "5d9e378ed9d1e970723a198b244e74aa868d6c74",
-  "files": []
+  "files": [
+    {
+      "path": "cases/authorization.json",
+      "sha256": "542bf9483626803844ffbf4db94f74da4c110d479d966258719975ef4eb9654d",
+      "source": "docs/design.md at baseline commit",
+      "generator": "tools/oracle-abi.mjs",
+      "independentCheck": "tools/verify-abi.mjs",
+      "dependencies": {
+        "viem": "2.56.9",
+        "ethers": "6.13.4"
+      }
+    },
+    {
+      "path": "cases/operation-rejected.json",
+      "sha256": "0595d25acfaa3d1a5554a94de0ec678ab5445275e79ca64e398fd74c34131023",
+      "source": "docs/design.md at baseline commit",
+      "generator": "tools/oracle-abi.mjs",
+      "independentCheck": "tools/verify-abi.mjs",
+      "dependencies": {
+        "viem": "2.56.9",
+        "ethers": "6.13.4"
+      }
+    },
+    {
+      "path": "cases/operation.json",
+      "sha256": "79427c735de86e2c79fd8ee80b0eb625ce5d07f306bf7e4a25622af14fa6f461",
+      "source": "docs/design.md at baseline commit",
+      "generator": "tools/oracle-abi.mjs",
+      "independentCheck": "tools/verify-abi.mjs",
+      "dependencies": {
+        "viem": "2.56.9",
+        "ethers": "6.13.4"
+      }
+    }
+  ]
 }
