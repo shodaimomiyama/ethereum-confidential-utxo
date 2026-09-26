@@ -1535,7 +1535,7 @@
     "contracts/src/verifier/BalanceProofV3.sol": "e4566ac33d3cbd7fbce929672e1c619a046e4539cfde96d98b9e29f67aa853ec",
     "contracts/src/verifier/RangeBalanceVerifier.sol": "4fe1d17d767e51b0ea78b35c732010f58cc8db793b4ca0bc8e75b129cabf16ba",
     "contracts/src/verifier/UPSTREAM-LICENSE.txt": "06a54024b435038ec834ef4cc1a6aa7cb60981f6600827ba121ece9087010743",
-    "contracts/src/verifier/provenance.json": "e2b4f4fa2ef3a3726291b71db5a279fe7b4cd7f1984f1f820ddacbb30ef0c6b9",
+    "contracts/src/verifier/provenance.json": "dccb4ffdb2043316912d57862c1c3224c17fa26b84aedcf37f906f0decf87179",
     "contracts/foundry.toml": "13057369dae9d02c9822feb7335ffea5f2bbd51266da3caf67c9f5d081309072"
   },
   "parametersHash": "0x0bfd116b8ef31332d31d3350ed24fa36d1e17865a7c1dc0758331da0755f8dae",
@@ -1548,7 +1548,7 @@
     "metadataSha256": "fb3d90917ab56a74466694cc4e2033f30c47e58cbf691ed1084dbf5b188614d9",
     "astSha256": "9e20a551f94b2bd0c2ef9e1658a56a2b8697438ad9587608e8ff75c4c45d9bfc",
     "storageLayoutSha256": "4ada32fdca5298a7e030a3d25e821bb1c145a327ac9a4ed024335d362c6d4219",
-    "sourceMapSha256": "727296f1b79e34a408a0a736718cb7ab89f9ece778bd5efce3d4b7845ee05e7e",
+    "sourceMapSha256": "a507fa1af1866ae9a039a83a6e2d246303ae7472389df7da838fa61fa2b05241",
     "constructorInputSha256": "3a228cf1c0f45fe7943aff187b06ef50bc5092b8114a83f3eb34e310e90c49b6"
   },
   "deployment": {
@@ -1565,5 +1565,60 @@
     "initcodeSha256": "043341d7a3fb2b34d2bb7f6c9825d8efeeabb2cbb6236c31556d28d6859d3680",
     "constructorInputSha256": "3a228cf1c0f45fe7943aff187b06ef50bc5092b8114a83f3eb34e310e90c49b6",
     "initialStateSha256": "3a228cf1c0f45fe7943aff187b06ef50bc5092b8114a83f3eb34e310e90c49b6"
+  },
+  "measurements": [
+    {
+      "type": "deployment",
+      "inputId": "EXP-08-PARAMETERS",
+      "chainId": 31337,
+      "hardfork": "cancun",
+      "runtimeSha256": "9223fe531791c01d640b2e3e5fe914809395c72184ced03837880683f28e190f",
+      "compiler": "0.8.37+commit.f401782d",
+      "caller": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+      "gasUsed": 8123700,
+      "transactionHash": "0x504bd2c858ff6681e1093977f919a805ec5c3b8b84460d07a16b8fb8cb32b7a0",
+      "condition": "normal creation transaction; code-size limits enabled; 30,000,000 block gas limit"
+    },
+    {
+      "type": "range",
+      "inputId": "VEC-04-VALID-MIN",
+      "chainId": 31337,
+      "hardfork": "cancun",
+      "runtimeSha256": "9223fe531791c01d640b2e3e5fe914809395c72184ced03837880683f28e190f",
+      "compiler": "0.8.37+commit.f401782d",
+      "caller": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+      "gasUsed": 4634056,
+      "estimateGas": 4634056,
+      "transactionHash": "0x785f5a8d0db861feca9ddd046bfe7606a4ef92a1c759caa392f3f73343afd2b1",
+      "condition": "one fresh transaction; no access list; cold state access"
+    },
+    {
+      "type": "balance",
+      "inputId": "VEC-05-DEPOSIT",
+      "chainId": 31337,
+      "hardfork": "cancun",
+      "runtimeSha256": "9223fe531791c01d640b2e3e5fe914809395c72184ced03837880683f28e190f",
+      "compiler": "0.8.37+commit.f401782d",
+      "caller": "0x1111111111111111111111111111111111111111",
+      "gasUsed": 49023,
+      "estimateGas": 49023,
+      "transactionHash": "0xfc7d1ae5109f5a5709f572418d8e26e4249b157f6f8806b7d1cbd35ff409405f",
+      "condition": "one fresh transaction; no access list; cold state access"
+    }
+  ],
+  "measurementEnvironment": {
+    "node": "v24.21.0",
+    "forge": "forge Version: 1.8.3\nCommit SHA: cae51ad458f6abb64852b7709eb784352429825d\nBuild Timestamp: 2026-09-15T10:34:23.361078000Z (1789468463)\nBuild Profile: dist",
+    "anvil": "anvil Version: 1.8.3\nCommit SHA: cae51ad458f6abb64852b7709eb784352429825d\nBuild Timestamp: 2026-09-15T10:34:23.361078000Z (1789468463)\nBuild Profile: dist",
+    "chainId": 31337,
+    "hardfork": "cancun",
+    "blockGasLimit": "30000000",
+    "commands": [
+      "pnpm build",
+      "pnpm artifact:verifier",
+      "pnpm measure:verifier",
+      "pnpm check:verifier"
+    ],
+    "interpretation": "Individual verifier transactions only; no Pool operation or end-to-end gas claim."
   }
 }

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { readFileSync } from 'node:fs';
-import { createVerifierRecord, verifyVerifierRecord, artifactPath } from '../../scripts/verifier-artifact.mjs';
+import { createVerifierRecord, verifyVerifierRecord, validateMeasurements, artifactPath } from '../../scripts/verifier-artifact.mjs';
 
 const artifact = JSON.parse(readFileSync(artifactPath, 'utf8'));
 const original = createVerifierRecord(artifact);
@@ -24,4 +24,21 @@ test('compiler settings and complete compiler outputs are pinned', () => {
   assert.equal(original.metadata.settings.evmVersion, 'cancun');
   assert.notEqual(original.metadata.settings.viaIR, true);
   assert.ok(original.ast && original.storageLayout);
+});
+
+test('measurement schema requires reproducible separate calls', () => {
+  const rows = ['deployment', 'range', 'balance'].map(type => ({
+    type, inputId: 'VEC-04-VALID-MIN', chainId: 31337, hardfork: 'cancun',
+    runtimeSha256: original.manifest.runtimeSha256, compiler: original.manifest.compiler,
+    caller: '0x1111111111111111111111111111111111111111', gasUsed: 1, estimateGas: 1,
+  }));
+  validateMeasurements(rows, original.manifest.runtimeSha256);
+  for (const key of ['inputId', 'chainId', 'hardfork', 'runtimeSha256', 'compiler', 'caller', 'type', 'gasUsed']) {
+    const mutated = structuredClone(rows);
+    delete mutated[1][key];
+    assert.throws(() => validateMeasurements(mutated, original.manifest.runtimeSha256), /invalid range measurement/);
+  }
+  const combined = structuredClone(rows);
+  combined[2].type = 'pool-operation';
+  assert.throws(() => validateMeasurements(combined, original.manifest.runtimeSha256));
 });

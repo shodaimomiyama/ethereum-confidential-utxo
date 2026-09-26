@@ -41,5 +41,23 @@
     "Cancun deployment meets ordinary code and initcode size limits",
     "Official runtime and constructor-initialized parameters are bound to artifact",
     "Deployment, range and balance gas measurements are reproducible"
-  ]
+  ],
+  "actualChanges": [
+    "Ported EXP-08 range verifier to Solidity 0.8.37 with explicit memory/calldata and checked arithmetic.",
+    "Preserved six-round full-prefix range transcript, candidate rejection and both range equations.",
+    "Replaced unchecked BN254 wrappers with canonical point/scalar validation and exact precompile return lengths.",
+    "Added constructor-bound EXP-08 parameters and one concrete contract with direct verify and verifyBalance entries.",
+    "Added balance Schnorr challenge over chain ID, direct caller, operation ID, parameters and proof points."
+  ],
+  "behaviorDifferences": [
+    "Malformed ABI, noncanonical scalars or points and precompile failures revert; canonical equation mismatch returns false.",
+    "Valid internal range point S=(0,0) is accepted when the complete proof equations hold.",
+    "Balance X=(0,0) may remain valid after caller/chain changes when sG=R; this is an equation consequence, not a context-binding guarantee for identity X."
+  ],
+  "validation": {
+    "build": "pnpm build; forge build --root contracts",
+    "tests": "pnpm test; python3 -m unittest discover -s tests/vectors/tools -p test_*.py; python3 tests/vectors/tools/check.py; python3 tests/vectors/tools/check_coverage.py",
+    "artifact": "pnpm artifact:verifier; pnpm check:verifier; pnpm measure:verifier",
+    "formalScope": "Issue #18 invariant work and Issue #34 full formal verification remain separate; these tests do not prove soundness."
+  }
 }

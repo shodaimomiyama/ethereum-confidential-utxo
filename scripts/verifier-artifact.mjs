@@ -86,5 +86,24 @@ export function verifyVerifierRecord(record, artifact) {
       throw new Error('deployment binding mismatch');
     }
   }
+  if (record.measurements) validateMeasurements(record.measurements, expected.manifest.runtimeSha256);
   return expected;
+}
+
+export function validateMeasurements(measurements, runtimeSha256) {
+  if (!Array.isArray(measurements) || measurements.length !== 3) throw new Error('measurement count mismatch');
+  const types = ['deployment', 'range', 'balance'];
+  for (let i = 0; i < types.length; ++i) {
+    const row = measurements[i];
+    if (row?.type !== types[i] || typeof row.inputId !== 'string' || !row.inputId ||
+        row.chainId !== 31337 || row.hardfork !== 'cancun' || row.runtimeSha256 !== runtimeSha256 ||
+        typeof row.compiler !== 'string' || typeof row.caller !== 'string' ||
+        !/^0x[0-9a-fA-F]{40}$/.test(row.caller) || !Number.isSafeInteger(row.gasUsed) || row.gasUsed <= 0) {
+      throw new Error(`invalid ${types[i]} measurement`);
+    }
+    if (row.type !== 'deployment' && (!Number.isSafeInteger(row.estimateGas) || row.estimateGas <= 0)) {
+      throw new Error(`missing ${types[i]} estimate`);
+    }
+  }
+  if (measurements.some(row => row.type === 'pool-operation')) throw new Error('Pool total gas is not measured');
 }

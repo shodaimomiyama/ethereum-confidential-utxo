@@ -13,6 +13,7 @@
     "artifact:environment": "node scripts/export-environment-artifact.mjs",
     "artifact:verifier": "node scripts/export-verifier-artifact.mjs",
     "check:verifier": "node scripts/verify-verifier-artifact.mjs",
+    "measure:verifier": "node scripts/measure-verifier.mjs",
     "smoke:rpc": "node scripts/check-tools.mjs && node scripts/run-environment-smoke.mjs",
     "smoke:formal": "sh formal/environment/run-smoke.sh"
   },
