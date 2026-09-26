@@ -14,6 +14,16 @@ export function initialScenario(scope: Scope, scenario: string): ViewState {
   };
   return {
     scope,
+    connection: scenario === 'disconnected' ? 'disconnected' : 'connected',
+    currentScope: scenario === 'disconnected' ? undefined : scope,
+    preparation: {
+      wallet: scenario !== 'disconnected', network: scenario !== 'disconnected',
+      key: scenario !== 'disconnected', faucet: scenario !== 'disconnected', gas: scenario !== 'disconnected',
+    },
+    utxos: [],
+    selectedInput: {},
+    operationCards: {},
+    operationActions: {},
     publicEthWei: 0n,
     availablePrivateWei: 0n,
     pendingPrivateWei: 0n,

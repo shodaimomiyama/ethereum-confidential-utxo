@@ -184,6 +184,51 @@ it('passes a validation reason to the UI and prevents an invalid Pay start', asy
   expect((await ui.dispatch({ type: 'start', card: 'pay' })).kind).toBe('blocked');
 });
 
+it('shows disconnected preparation without an active wallet scope', () => {
+  const { ui } = setup('disconnected');
+  expect(ui.snapshot().connection).toBe('disconnected');
+  expect(ui.snapshot().currentScope).toBeUndefined();
+  expect(ui.snapshot().preparation.wallet).toBe(false);
+  expect(ui.snapshot().allowedActions).not.toContain('start:reward');
+});
+
+it('blocks Pay when combined UTXOs cover the amount but no single one does', async () => {
+  const { ui } = setup('interactive');
+  ui.control.inject({ type: 'preparation', wallet: true, network: true, key: true, faucet: true, gas: true });
+  ui.control.inject({ type: 'utxos', utxos: [
+    { id: `0x${'01'.repeat(32)}`, amountWei: 2n * 10n ** 18n, available: true },
+    { id: `0x${'02'.repeat(32)}`, amountWei: 2n * 10n ** 18n, available: true },
+  ] });
+  await ui.dispatch({ type: 'edit', card: 'pay', field: 'amount', value: '3' });
+  expect(ui.snapshot().cards.pay.reason).toBe('NO_SINGLE_INPUT');
+  expect(await ui.dispatch({ type: 'start', card: 'pay' })).toEqual({ kind: 'blocked', reason: 'NO_SINGLE_INPUT' });
+  expect(ui.control.journal().filter((entry) => entry.kind === 'start')).toHaveLength(0);
+});
+
+it('selects the smallest eligible UTXO and the lower ID on equal amounts', async () => {
+  const { ui } = setup('interactive');
+  ui.control.inject({ type: 'utxos', utxos: [
+    { id: `0x${'03'.repeat(32)}`, amountWei: 4n * 10n ** 18n, available: true },
+    { id: `0x${'02'.repeat(32)}`, amountWei: 4n * 10n ** 18n, available: true },
+    { id: `0x${'01'.repeat(32)}`, amountWei: 5n * 10n ** 18n, available: true },
+  ] });
+  await ui.dispatch({ type: 'edit', card: 'pay', field: 'amount', value: '3' });
+  expect(ui.snapshot().selectedInput.pay).toEqual({
+    id: `0x${'02'.repeat(32)}`, amountWei: 4n * 10n ** 18n, changeWei: 1n * 10n ** 18n,
+  });
+});
+
+it('keeps unrelated UTXOs when one operation is removed by reorganization', () => {
+  const { ui } = setup('interactive');
+  const unrelatedId = `0x${'99'.repeat(32)}`;
+  ui.control.inject({ type: 'utxos', utxos: [{ id: unrelatedId, amountWei: 5n, available: true }] });
+  ui.control.inject({ type: 'finalized-success', card: 'reward', operationId });
+  ui.control.inject({ type: 'receipt-confirmed', card: 'reward', operationId, outputId, amountWei: 7n });
+  ui.control.inject({ type: 'reorg', card: 'reward', operationId });
+  expect(ui.snapshot().utxos).toEqual([{ id: unrelatedId, amountWei: 5n, available: true }]);
+  expect(ui.snapshot().availablePrivateWei).toBe(5n);
+});
+
 it('shows finalized full Withdraw as complete without waiting for a change output', () => {
   const { ui } = setup();
   ui.control.inject({ type: 'finalized-success', card: 'withdraw', operationId });

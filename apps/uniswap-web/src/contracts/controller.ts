@@ -1,5 +1,5 @@
 import type { OperationId, RequestId, Scope } from '@confidential-utxo/uniswap';
-import type { Card, ReasonCode, ViewState } from './state.js';
+import type { Card, OperationAction, ValidationReason, ViewState } from './state.js';
 
 export type UiAction =
   | { readonly type: 'edit'; readonly card: Card; readonly field: string; readonly value: string }
@@ -15,7 +15,7 @@ export type UiAction =
 
 export type DispatchResult =
   | { readonly kind: 'accepted' }
-  | { readonly kind: 'blocked'; readonly reason: ReasonCode };
+  | { readonly kind: 'blocked'; readonly reason: ValidationReason };
 
 export interface UiController {
   snapshot(): ViewState;
@@ -31,8 +31,18 @@ export function actionKey(action: UiAction): string {
 }
 
 export function isActionAllowed(
-  state: Pick<ViewState, 'allowedActions'>,
+  state: Pick<ViewState, 'allowedActions'> & Partial<Pick<ViewState, 'operationActions'>>,
   action: UiAction,
 ): boolean {
+  return allowedFor(state, action);
+}
+
+export function allowedFor(
+  state: Pick<ViewState, 'allowedActions'> & Partial<Pick<ViewState, 'operationActions'>>,
+  action: UiAction,
+): boolean {
+  if ('operationId' in action && state.operationActions !== undefined) {
+    return state.operationActions[action.operationId]?.includes(action.type as OperationAction) ?? false;
+  }
   return state.allowedActions.includes(actionKey(action));
 }

@@ -75,8 +75,37 @@ export interface RewardRequestRef {
   readonly operationId?: OperationId;
 }
 
+export interface PreparationView {
+  readonly wallet: boolean;
+  readonly network: boolean;
+  readonly key: boolean;
+  readonly faucet: boolean;
+  readonly gas: boolean;
+}
+
+export interface UtxoView {
+  readonly id: string;
+  readonly amountWei: bigint;
+  readonly available: boolean;
+}
+
+export interface SelectedInputView {
+  readonly id: string;
+  readonly amountWei: bigint;
+  readonly changeWei: bigint;
+}
+
+export type OperationAction = 'recheck' | 'resume-original' | 'retry-attempt' | 'acknowledge-receipt';
+
 export interface ViewState {
   readonly scope: Scope;
+  readonly connection: 'connected' | 'disconnected';
+  readonly currentScope?: Scope;
+  readonly preparation: PreparationView;
+  readonly utxos: readonly UtxoView[];
+  readonly selectedInput: Readonly<Partial<Record<Card, SelectedInputView>>>;
+  readonly operationCards: Readonly<Record<string, Card>>;
+  readonly operationActions: Readonly<Record<string, readonly OperationAction[]>>;
   readonly publicEthWei: bigint;
   readonly availablePrivateWei: bigint;
   readonly pendingPrivateWei: bigint;
@@ -87,5 +116,5 @@ export interface ViewState {
   readonly operations: readonly OperationRef[];
   readonly rewardRequests: readonly RewardRequestRef[];
   readonly allowedActions: readonly string[];
-  readonly reasons: Readonly<Record<string, ReasonCode>>;
+  readonly reasons: Readonly<Record<string, ValidationReason>>;
 }

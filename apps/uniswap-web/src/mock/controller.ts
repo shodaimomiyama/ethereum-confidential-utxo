@@ -4,7 +4,7 @@ import type {
 import type { ManualClock, MemoryStore } from '@confidential-utxo/uniswap/testing';
 import { actionKey } from '../contracts/controller.js';
 import type { DispatchResult, UiAction, UiController } from '../contracts/controller.js';
-import type { ApprovalPurpose, Card, CardState, ReasonCode, ValidationReason, ViewState } from '../contracts/state.js';
+import type { ApprovalPurpose, Card, CardState, OperationAction, PreparationView, ReasonCode, UtxoView, ValidationReason, ViewState } from '../contracts/state.js';
 import { initialScenario } from './scenarios.js';
 
 export type ScenarioEvent = (
@@ -22,6 +22,8 @@ export type ScenarioEvent = (
   | { readonly type: 'original-unsent'; readonly card: Card; readonly operationId: OperationId; readonly inputUnspent: boolean; readonly deadlineValid: boolean }
   | { readonly type: 'terms-changed'; readonly card: 'pay'; readonly oldAuthorizationActive: boolean }
   | { readonly type: 'validation-result'; readonly card: Card; readonly phase: 'ready' | 'invalid-input' | 'needs-preparation'; readonly reason?: ValidationReason; readonly input?: Readonly<Record<string, string>> }
+  | { readonly type: 'preparation'; readonly wallet?: boolean; readonly network?: boolean; readonly key?: boolean; readonly faucet?: boolean; readonly gas?: boolean }
+  | { readonly type: 'utxos'; readonly utxos: readonly UtxoView[] }
 ) & { readonly scope?: Scope };
 
 export interface ScenarioJournalEntry {
@@ -43,6 +45,7 @@ export interface MockUiController extends UiController {
 
 interface Runtime {
   state: ViewState;
+  interactive: boolean;
   quoteStartedAt?: number;
   reservationAck: Set<Card>;
   retryEligible: Set<OperationId>;
@@ -56,14 +59,69 @@ function scopeKey(scope: Scope): string {
 }
 
 function makeRuntime(scope: Scope, scenario: string): Runtime {
-  return {
+  const runtime: Runtime = {
     state: initialScenario(scope, scenario),
+    interactive: scenario === 'interactive' || scenario === 'disconnected',
     reservationAck: new Set(),
     retryEligible: new Set(),
     resumeEligible: new Set(),
     oldAuthorizationActive: false,
     countedOutputs: new Map(),
   };
+  refreshInteractive(runtime);
+  return runtime;
+}
+
+function parseEthWei(value: string | undefined): bigint | undefined {
+  if (value === undefined || !/^(?:0|[1-9]\d*)(?:\.\d{1,18})?$/.test(value)) return undefined;
+  const [whole, fraction = ''] = value.split('.');
+  const amount = BigInt(whole ?? '0') * 10n ** 18n + BigInt(fraction.padEnd(18, '0'));
+  return amount > 0n && amount <= (1n << 256n) - 1n ? amount : undefined;
+}
+
+function refreshInteractive(runtime: Runtime): void {
+  if (!runtime.interactive) return;
+  let state = runtime.state;
+  const prep = state.preparation;
+  const prepReason: ValidationReason | undefined = !prep.wallet ? 'PREPARATION_MISSING'
+    : !prep.network ? 'WRONG_NETWORK' : !prep.key ? 'KEY_REQUIRED'
+      : !prep.faucet || !prep.gas ? 'GAS_REQUIRED' : undefined;
+  for (const card of ['reward', 'pay', 'deposit', 'withdraw'] as const) {
+    const current = state.cards[card];
+    if (!['ready', 'invalid-input', 'needs-preparation'].includes(current.phase)) continue;
+    if (prepReason !== undefined) {
+      state = setCard(state, card, { phase: 'needs-preparation', reason: prepReason });
+      continue;
+    }
+    if (card === 'withdraw') {
+      const chosen = state.utxos.find((item) => item.id === current.input.utxoId && item.available);
+      state = setCard(state, card, { phase: chosen ? 'ready' : 'invalid-input', reason: chosen ? undefined : 'NO_SINGLE_INPUT' });
+      if (chosen) state = { ...state, selectedInput: { ...state.selectedInput, withdraw: { id: chosen.id, amountWei: chosen.amountWei, changeWei: 0n } } };
+      continue;
+    }
+    const amount = parseEthWei(current.input.amount);
+    if (amount === undefined) {
+      state = setCard(state, card, { phase: 'invalid-input', reason: 'INVALID_DECIMAL' });
+      continue;
+    }
+    if (card === 'pay') {
+      const candidates = state.utxos.filter((item) => item.available && item.amountWei > amount)
+        .sort((a, b) => a.amountWei < b.amountWei ? -1 : a.amountWei > b.amountWei ? 1 : a.id.toLowerCase().localeCompare(b.id.toLowerCase()));
+      const selected = candidates[0];
+      if (selected === undefined) {
+        state = setCard(state, card, { phase: 'invalid-input', reason: 'NO_SINGLE_INPUT' });
+        state = { ...state, selectedInput: { ...state.selectedInput, pay: undefined } };
+        continue;
+      }
+      state = { ...state, selectedInput: { ...state.selectedInput, pay: { id: selected.id, amountWei: selected.amountWei, changeWei: selected.amountWei - amount } } };
+      if (!/^0x[0-9a-fA-F]{40}$/.test(current.input.recipient ?? '') || /^0x0{40}$/i.test(current.input.recipient ?? '')) {
+        state = setCard(state, card, { phase: 'invalid-input', reason: 'UNSUPPORTED_RECIPIENT' });
+        continue;
+      }
+    }
+    state = setCard(state, card, { phase: 'ready', reason: undefined });
+  }
+  runtime.state = state;
 }
 
 function setCard(state: ViewState, card: Card, update: Partial<CardState>): ViewState {
@@ -109,8 +167,9 @@ function quoteValid(startedAt: number | undefined, now: number): boolean {
 
 function derive(runtime: Runtime, now: number): ViewState {
   const allowed = new Set<string>(['switch-scope', 'resync']);
-  const reasons: Record<string, ReasonCode> = {};
+  const reasons: Record<string, ValidationReason> = {};
   const state = runtime.state;
+  const operationActions: Record<string, OperationAction[]> = {};
   for (const card of ['reward', 'pay', 'deposit', 'withdraw'] as const) {
     const phase = state.cards[card].phase;
     if (phase === 'ready' || phase === 'needs-preparation' || phase === 'invalid-input' || phase === 'confirm-terms') {
@@ -124,6 +183,9 @@ function derive(runtime: Runtime, now: number): ViewState {
       } else {
         allowed.add(`start:${card}`);
       }
+    }
+    if (phase === 'invalid-input' || phase === 'needs-preparation') {
+      reasons[`start:${card}`] = state.cards[card].reason ?? 'INPUT_INVALID';
     }
     if (card === 'reward' && phase === 'complete' && state.storageAvailability === 'healthy') allowed.add('start:reward');
     if (phase === 'confirm-terms') {
@@ -153,7 +215,16 @@ function derive(runtime: Runtime, now: number): ViewState {
     || state.cards.reward.phase === 'confirmed-receipt-pending') {
     allowed.add('acknowledge-receipt');
   }
-  return { ...state, allowedActions: [...allowed], reasons };
+  for (const operation of state.operations) {
+    const actions: OperationAction[] = [];
+    const card = state.operationCards[operation.operationId];
+    if (card !== undefined && ['unknown', 'pending', 'failed', 'receipt-invalid'].includes(state.cards[card].phase)) actions.push('recheck');
+    if (runtime.retryEligible.has(operation.operationId) && operation.chainOutcome === 'finalized-failure' && state.storageAvailability === 'healthy') actions.push('retry-attempt');
+    if (runtime.resumeEligible.has(operation.operationId) && operation.chainOutcome === 'not-submitted' && state.storageAvailability === 'healthy') actions.push('resume-original');
+    if (card !== undefined && operation.chainOutcome === 'finalized-success' && operation.receiptState === 'pending') actions.push('acknowledge-receipt');
+    operationActions[operation.operationId] = actions;
+  }
+  return { ...state, allowedActions: [...allowed], reasons, operationActions };
 }
 
 export function createMockUiController({ scope, store, clock, scenario }: {
@@ -276,7 +347,8 @@ export function createMockUiController({ scope, store, clock, scenario }: {
       if (operation?.chainOutcome === 'finalized-success') {
         if (!runtime.countedOutputs.has(event.outputId)) {
           runtime.countedOutputs.set(event.outputId, { operationId: event.operationId, amountWei: event.amountWei });
-          state = { ...state, availablePrivateWei: state.availablePrivateWei + event.amountWei };
+          state = { ...state, availablePrivateWei: state.availablePrivateWei + event.amountWei,
+            utxos: [...state.utxos, { id: event.outputId, amountWei: event.amountWei, available: true }] };
         }
         state = setCard(state, event.card, { phase: 'complete' });
         state = setOperation(state, event.operationId, { receiptState: 'confirmed' });
@@ -285,13 +357,16 @@ export function createMockUiController({ scope, store, clock, scenario }: {
       runtime.retryEligible.delete(event.operationId);
       runtime.resumeEligible.delete(event.operationId);
       let removed = 0n;
+      const removedOutputIds = new Set<string>();
       for (const [outputId, item] of runtime.countedOutputs) {
         if (item.operationId === event.operationId) {
           removed += item.amountWei;
+          removedOutputIds.add(outputId);
           runtime.countedOutputs.delete(outputId);
         }
       }
-      state = { ...state, availablePrivateWei: state.availablePrivateWei - removed, isStale: true };
+      state = { ...state, availablePrivateWei: state.availablePrivateWei - removed, isStale: true,
+        utxos: state.utxos.filter((item) => !removedOutputIds.has(item.id)) };
       state = setCard(state, event.card, { phase: 'unknown', reason: 'RESULT_UNKNOWN' });
       state = setOperation(state, event.operationId, { chainOutcome: 'unknown', receiptState: 'none' });
     } else if (event.type === 'attempt-failed') {
@@ -323,8 +398,25 @@ export function createMockUiController({ scope, store, clock, scenario }: {
         reason: event.reason,
         input: event.input ?? state.cards[event.card].input,
       });
+    } else if (event.type === 'preparation') {
+      const preparation: PreparationView = {
+        wallet: event.wallet ?? state.preparation.wallet,
+        network: event.network ?? state.preparation.network,
+        key: event.key ?? state.preparation.key,
+        faucet: event.faucet ?? state.preparation.faucet,
+        gas: event.gas ?? state.preparation.gas,
+      };
+      state = { ...state, preparation, connection: preparation.wallet ? 'connected' : 'disconnected',
+        currentScope: preparation.wallet ? state.scope : undefined };
+    } else if (event.type === 'utxos') {
+      state = { ...state, utxos: event.utxos,
+        availablePrivateWei: event.utxos.filter((item) => item.available).reduce((sum, item) => sum + item.amountWei, 0n) };
+    }
+    if ('operationId' in event && 'card' in event) {
+      state = { ...state, operationCards: { ...state.operationCards, [event.operationId]: event.card } };
     }
     runtime.state = state;
+    refreshInteractive(runtime);
     if (key === scopeKey(activeScope)) notify();
   }
 
@@ -357,6 +449,7 @@ export function createMockUiController({ scope, store, clock, scenario }: {
       } else if (action.type === 'edit') {
         const card = runtime.state.cards[action.card];
         runtime.state = setCard(runtime.state, action.card, { input: { ...card.input, [action.field]: action.value } });
+        refreshInteractive(runtime);
       } else if (action.type === 'confirm-terms') {
         runtime.state = setCard(runtime.state, 'pay', { phase: 'preparing', reason: undefined,
           quote: runtime.state.cards.pay.proposedQuote ?? runtime.state.cards.pay.quote, proposedQuote: undefined });
