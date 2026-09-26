@@ -5,6 +5,8 @@ export type { PayInput } from './selection.js';
 export { defaultTerms, fetchPayQuote, isQuoteFresh } from './quote.js';
 export type { MonotonicClock, PayQuote, QuoteReader, RouteAddresses } from './quote.js';
 export type { ReleaseEvidence, ReservationPort, SavedReservation, VerifiedReleaseState } from './reservation.js';
+export { inspectOperation } from './recovery.js';
+export type { AttemptEvidence, CurrentInput, RecoveryDecision, RecoveryEvidence } from './recovery.js';
 export type {
   Address,
   AttemptId,
