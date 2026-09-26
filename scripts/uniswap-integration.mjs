@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { createWalletClient, encodeDeployData, http } from 'viem';
 import { verifyDeployment } from './pool-deployment.mjs';
 import { artifactPath, outputPath, verifyUniswapPaymentRecord } from './uniswap-payment-artifact.mjs';
-import { createUniswapManifest, verifyUniswapManifest } from './uniswap-manifest.mjs';
+import { createUniswapManifest } from './uniswap-manifest.mjs';
 import { verifyLocalAssets } from './uniswap-local.mjs';
 
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -106,6 +106,7 @@ async function verifyAdapter(manifest, client, artifact) {
 
 export async function verifyConnection(manifest, publicClient) {
   if (await publicClient.getChainId() !== manifest?.chainId) throw new Error('chain ID mismatch');
+  if (manifest.chainId !== 31337) throw new Error('public chain connection not supported without pinned asset verification');
   const rpcUrl = publicClient.transport?.url;
   if (typeof rpcUrl !== 'string') throw new Error('HTTP RPC URL required for Pool verification');
   const poolManifest = poolReference(manifest);
@@ -127,8 +128,7 @@ export async function verifyConnection(manifest, publicClient) {
   }
   const artifact = loadAdapter();
   await verifyAdapter(manifest, publicClient, artifact);
-  if (manifest.chainId === 31337) await verifyLocalAssets(manifest, publicClient);
-  else await verifyUniswapManifest(manifest, publicClient);
+  await verifyLocalAssets(manifest, publicClient);
 }
 
 export async function deployConnection({ poolManifest, poolManifestPath, adapterArtifact, assetManifest,
@@ -138,7 +138,11 @@ export async function deployConnection({ poolManifest, poolManifestPath, adapter
   }
   if (await publicClient.getChainId() !== poolManifest.chainId ||
       assetManifest.chainId !== poolManifest.chainId) throw new Error('chain ID mismatch');
-  if (excludedPoolAddress && same(excludedPoolAddress, poolManifest.pool.address)) {
+  if (poolManifest.chainId !== 31337) throw new Error('public chain connection not supported without pinned asset verification');
+  if (!/^0x[0-9a-fA-F]{40}$/.test(excludedPoolAddress ?? '')) {
+    throw new Error('core Pool address required');
+  }
+  if (same(excludedPoolAddress, poolManifest.pool.address)) {
     throw new Error('demo Pool must differ from core Pool');
   }
   const original = readFileSync(poolManifestPath);
@@ -152,8 +156,7 @@ export async function deployConnection({ poolManifest, poolManifestPath, adapter
   const rpcUrl = publicClient.transport?.url;
   if (typeof rpcUrl !== 'string') throw new Error('HTTP RPC URL required for Pool verification');
   await verifyDeployment(poolManifest, rpcUrl);
-  if (poolManifest.chainId === 31337) await verifyLocalAssets(assetManifest, publicClient);
-  else await verifyUniswapManifest(assetManifest, publicClient);
+  await verifyLocalAssets(assetManifest, publicClient);
   const contracts = { ...assetManifest.contracts,
     pool: await poolRecord(publicClient, poolManifest.pool),
     verifier: await poolRecord(publicClient, poolManifest.verifier) };
@@ -174,7 +177,7 @@ export async function deployConnection({ poolManifest, poolManifestPath, adapter
   const manifest = createUniswapManifest({ ...assetFields, contracts,
     references: { ...assetManifest.references,
       poolManifest: { path: poolManifestPath, sha256: sha256(original) },
-      ...(excludedPoolAddress ? { corePoolAddress: excludedPoolAddress } : {}) } });
+      corePoolAddress: excludedPoolAddress } });
   await verifyConnection(manifest, publicClient);
   return manifest;
 }

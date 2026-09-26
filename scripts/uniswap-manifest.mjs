@@ -74,8 +74,7 @@ function validateManifest(manifest) {
     }
     const ref = manifest.references.poolManifest;
     if (typeof ref?.path !== 'string' || !ref.path || !/^[0-9a-fA-F]{64}$/.test(ref.sha256 ?? '') ||
-        (manifest.references.corePoolAddress !== undefined &&
-          !address.test(manifest.references.corePoolAddress))) {
+        !address.test(manifest.references.corePoolAddress ?? '')) {
       throw new Error('Pool manifest reference invalid');
     }
     for (const name of ['pool', 'router02', 'factory', 'weth', 'dUSD', 'pair']) {
