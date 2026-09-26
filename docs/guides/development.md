@@ -44,3 +44,19 @@ artifact全体のSHA-256はコンパイル対象の集合やAST採番によっ�
 版違いのエラーが出たら `node --version`、`pnpm --version`、`forge --version` を確認する。Dockerのメモリ不足、ディスク不足、アーキテクチャ不一致では形式検証を成功とみなさず、Docker DesktopのResources、`docker info`、`docker image inspect` を確認して再実行する。タイムアウト、OOM、compiler mismatch、未解決proofも成功ではない。Kontrolの証明は1命題60分、RAM 16 GiB、worker 1を上限目安とする。
 
 Anvilの初期アカウントと鍵はローカルテスト専用。実鍵、RPC認証情報、秘密の環境変数をコミットしたり、ログ・manifestに記録したりしない。既存の[先行EIPベンチマーク](../../benchmarks/prior-eips/)はNode.js 22 / Foundry 1.7.1の独立した経路であり、この開発入口の検証結果には含めない。
+
+## Issue #28: 暗号ライブラリの検証入口
+
+`packages/crypto` は `@confidential-utxo/crypto` として、BN254コミットメント、v3範囲証明、Schnorr収支証明、HPKE受領packetを提供する。ルートの `pnpm build`、`pnpm test`、`pnpm check` はそれぞれライブラリのビルド、Vitest、型検査も実行する。個別確認は `pnpm --filter @confidential-utxo/crypto build`、`pnpm --filter @confidential-utxo/crypto test`、`pnpm --filter @confidential-utxo/crypto check` を使う。Node.js 24.21.0とlockfileの固定依存を使い、`pnpm install --frozen-lockfile` の後に実行する。
+
+公開入口は `commit`、`randomBlinding`、`generateRangeProof`、`computeBalancePoint`、`balanceWitness`、`generateBalanceProof`、`encryptReceipt`、`decryptReceipt`、定数 `M/P/Q`、対応する型、`CryptoFailure` に限る。内部の乱数源と固定seedは公開しない。生成順は、出力ごとに開示値 `(v,r)` とコミットメントを作り、受信者鍵とcoreが計算した32 byteの `info` で受領packetを暗号化し、操作ID確定後に出力番号を付けて範囲証明を生成し、入出力のコミットメントと公開入出金額から `X` を計算して収支証明を生成する。操作ID・出力番号・`info`・Poolアドレス・chain IDは後から差し替えず、再生成時は対応する証明を作り直す。`RangeProof` の `coords/scalars/ls/rs` は公開ABI語列、`BalanceProof` の `Rx/Ry/s` と `X` も公開値である。開示値、blinding、受領秘密鍵、収支witnessは秘密として扱い、検証器・ログ・例外causeへ渡さない。
+
+`CryptoFailure` のコードは `INPUT`、`RANDOM`、`SCALAR_EXHAUSTED`、`CHALLENGE_EXHAUSTED`、`DECRYPT`、`PLAINTEXT`、`COMMITMENT`、`INTERNAL`。メッセージはコードと公開stageのみを含む。HPKEはX25519/HKDF-SHA256/ChaCha20-Poly1305、packetは32 byteのencと80 byteの暗号文を連結した112 byteで、空AADを1回だけ使用する。復号後は64 byteの開示値を検査し、コミットメントを再計算して照合する。受信者鍵の保管、所有者認可、UTXO状態の確定は本ライブラリの責務外である。
+
+固定値と移植元は [v3 profile](../../experiments/design/crypto-profile-v3/exp08/profile.json)、[Javaの範囲証明実装](../../experiments/design/crypto-profile-v3/exp08/java/RevisedRangeProver.java)、[旧EVM検証器](../../experiments/design/crypto-profile-v3/exp08/solidity/RangeProofVerifier.sol)、[#35ベクトル](../../tests/vectors/README.md) を参照する。BN254固定パラメータhashは `0x0bfd116b8ef31332d31d3350ed24fa36d1e17865a7c1dc0758331da0755f8dae`。独立ベクトルの再検証には、`tests/vectors` で `pnpm install --ignore-workspace --frozen-lockfile` を実行し、ルートで `python3 -m venv tests/vectors/.cache/venv`、`tests/vectors/.cache/venv/bin/python -m pip install -r tests/vectors/tools/requirements.txt`、同READMEの読み取り専用コマンドを使う。実験・oracleのライセンスや生成根拠はそれぞれの元ファイルとベクトルmanifestで確認する。
+
+移植元の固定版は `5d9e378ed9d1e970723a198b244e74aa868d6c74` の `RevisedRangeProver.java`、`RevisedProtocol.java`、`RevisedRangeProof.java` とEXP-08の生成点である。これらは同一リポジトリ内の実験資料で、各ファイルに独立したSPDX/license表示はない。実装ではJavaの曲線演算をnobleのBN254アダプタへ置き換え、公開入力の正規性検査、256候補上限の乱数採取、v3 full-prefix、秘密を含まないエラー分類を加えた。Javaの試験用強制分岐と詳細な秘密traceは移植していない。採用した `@noble/curves`、`@noble/hashes` と4件の `@hpke/*` パッケージは、固定版のpackage manifest上いずれもMIT表記である。再配布条件の確認には各依存パッケージのライセンス原文を使う。
+
+検証器との相互運用では、#26の確定した `packages/ethereum/generated/verifier-v3.json` のcreation/runtime SHA-256をmanifestに照合してから一時Anvilへデプロイし、`verify(operationId,outputIndex,coords,scalars,ls,rs)` と `verifyBalance(operationId,Xx,Xy,Rx,Ry,s)` を呼ぶ。ライブラリをビルドしてから、ルートで `pnpm interop:crypto packages/ethereum/generated/verifier-v3.json` を実行する。このコマンドは秘密を保存せず、実行時に作る証明の受理と公開文脈の改変拒否を検査する。収支challengeのPoolアドレスには検証器への**呼出元**アドレス（Solidity側の `msg.sender`）を渡す。`X=(0,0),x=0` の有効な収支証明では `sG=R` となり、challengeの変更だけで式は破れない。operation ID・chain ID・Poolの改変拒否は `X≠(0,0)` のケースで試験し、単位元ケースは受理と非退化ケースの試験を分ける。この数学的限界を、操作認可や受領の検証へ読み替えない。
+
+実行環境、入力artifactのhash、ケース別結果、未実施範囲は [相互運用記録](../../packages/crypto/interop-result.json) に残す。macOSでの成功はUbuntuでの成功を意味しない。Ubuntuの判定には同じ固定版で `build/test/check` と独立oracleを実行し、OS/CPU/RAM、依存・artifactのhashと結果を別記録する。

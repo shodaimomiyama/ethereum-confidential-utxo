@@ -4,6 +4,7 @@
 **/__pycache__/
 **/cache/
 **/out/
+**/dist/
 **/proof-snapshot*/
 **/*proof-snapshot*/
 *.pyc
