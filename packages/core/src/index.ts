@@ -19,3 +19,4 @@ export type {
   StoragePort,
   UtxoState,
 } from "./types.js";
+export { receiptInfo, operationPreimage, operationId, outputId, validateOperationShape } from "./encoding.js";
