@@ -13,10 +13,11 @@ export function Introduction({ config }: { readonly config: SiteConfig }) {
       <section className="hero" aria-labelledby="hero-title">
         <img className="hero-art" src="/assets/brand/dim-cover.png" width="1672" height="941" alt="Dim mark over a blue horizon" />
         <div className="hero-copy">
-          <p className="eyebrow"><span className="eyebrow-line" aria-hidden="true" /> Ethereum Sepolia research demo</p>
+          <p className="eyebrow"><span className="eyebrow-line" aria-hidden="true" /> {config.mode === 'mock' ? 'Interactive mock demo' : 'Ethereum Sepolia research demo'}</p>
           <h1 id="hero-title">Dim</h1>
           <p className="tagline">Lightweight privacy for amounts on Ethereum.</p>
           <p className="hero-description">Receive private ETH rewards, exchange a chosen part through public Uniswap liquidity, and keep the remainder in a private UTXO.</p>
+          {config.mode === 'mock' && <p>No real transactions. Live testnet integration is in progress.</p>}
           <a className="button primary hero-cta" href="/app">Try demo <span aria-hidden="true">↗</span></a>
         </div>
         <div className="hero-caption" aria-hidden="true"><span>DIM / 01</span><span>RESEARCH PROTOTYPE</span></div>
