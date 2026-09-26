@@ -341,7 +341,7 @@ S-01〜50の各ケースには、ローカル・公開テストネットの実�
 
 ## 実装後の検証と見直し条件
 
-#56の局所実装では、`AdapterConfiguration`・`AdapterAuthorization`・`AdapterPayment`・`AdapterRollback` のFoundry単体試験、独立viem署名ベクトル、`AdapterRealFlow` の実Pool・Verifier・固定Uniswap/dUSD結合を使う。後者は部分出金、残額1 wei、最低受取額未達時のPool/Pairを含む取消、出金先改変の拒否を確認する。対象はchain 31337の固定アドレスharnessで、外部Anvilへの独立配置やSepolia実取引の成立を示さない。シナリオ別の局所結果と未検証条件は[開発手順](../../guides/development.md#56の局所受入記録)に記録する。
+#56の局所実装では、`AdapterConfiguration`・`AdapterAuthorization`・`AdapterPayment`・`AdapterRollback` のFoundry単体試験、独立viem署名ベクトル、`AdapterRealFlow` の実Pool・Verifier・固定Uniswap/dUSD結合を使う。後者は部分出金、残額1 wei、最低受取額未達時のPool/Pairを含む取消、出金先改変の拒否、別の認可済み操作による入力先行消費を確認する。対象はchain 31337の固定アドレスharnessで、外部Anvilへの独立配置やSepolia実取引の成立を示さない。シナリオ別の局所結果と未検証条件は[開発手順](../../guides/development.md#56の局所受入記録)に記録する。
 
 本書は方式と規則を確定するが、UX-01〜05の局所実験から実装後の成立性は証明されない。実Pool・Uniswap・認可/取消は[#45](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/45)、Chrome間の実受領と鍵の安全性は[#46](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/46)、Cloudflare Freeでの実暗号処理は[#47](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/47)、予約・配布の実取引復旧は[#48](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/48)、公開情報と能動照会を含む機密性は[#49](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/49)、公開サイトと一連の利用者操作は[#50](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/50)で受入判定する。完全版・配置・RPCは[Architecture](architecture.md#実行前に固定する版と配置情報)の条件に従い各実行前に固定する。
 

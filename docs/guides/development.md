@@ -100,7 +100,7 @@ pnpm uniswap:sepolia:probe
 
 ### #56の局所受入記録
 
-2026-09-27、#56の実装commitは `d25b08f`・`107f389`・`1da9841`・`558b991`・`4e7b2fd`・`9f5d115`。#60は確定commit `5e2bc99` をmerge `4ff2422` で受領した。使用版はmacOS arm64、Node 24.21.0、pnpm 10.34.5、Foundry 1.8.3、solc 0.8.37、optimizer 200、viaIR=false、Cancun。`vendor/uniswap-v2/source-lock.json` のSHA-256は `b79877dc7e39d52fbec7dd44933bb176fde1e8d855c560bfcd8cfd0ecf8bb5b9`、`uniswap-v2.json` は `15f59154adb078eb6e7acd64f499a40ff7f0df11a2f24f9baaf0c33ce8aeee46`、Pair init code hashは `0x730b60d8659dba7089b26ec3c5b93e948a9e179fd7a2db2d3c15732d610c2061`。Pool runtime SHA-256は `3fe229dd1351eb85e1d409457c37032651c03248520f2b7a8b1294b3e62077f8`、dUSD runtimeは `bb8e1f57ad35ffde78f29ecd191695bb4624c87ec4e06c560bbd36f33487f50d`、Adapterのimmutable埋込み前runtimeは `debea6b9655182a65f3f3ee5cd6f201e16660f117fe47a8e0b0704805b80b4a2`。実配置ごとのAdapter runtime hashは6アドレスで変わるため、上記template hashとそのまま比較しない。
+2026-09-27、#56の実装commitは `d25b08f`・`107f389`・`1da9841`・`558b991`・`4e7b2fd`・`9f5d115`・`e346cc2`。#60は確定commit `5e2bc99` をmerge `4ff2422` で受領した。使用版はmacOS arm64、Node 24.21.0、pnpm 10.34.5、Foundry 1.8.3、solc 0.8.37、optimizer 200、viaIR=false、Cancun。`vendor/uniswap-v2/source-lock.json` のSHA-256は `b79877dc7e39d52fbec7dd44933bb176fde1e8d855c560bfcd8cfd0ecf8bb5b9`、`uniswap-v2.json` は `15f59154adb078eb6e7acd64f499a40ff7f0df11a2f24f9baaf0c33ce8aeee46`、Pair init code hashは `0x730b60d8659dba7089b26ec3c5b93e948a9e179fd7a2db2d3c15732d610c2061`。Pool runtime SHA-256は `3fe229dd1351eb85e1d409457c37032651c03248520f2b7a8b1294b3e62077f8`、dUSD runtimeは `bb8e1f57ad35ffde78f29ecd191695bb4624c87ec4e06c560bbd36f33487f50d`、Adapterのimmutable埋込み前runtimeは `debea6b9655182a65f3f3ee5cd6f201e16660f117fe47a8e0b0704805b80b4a2`。実配置ごとのAdapter runtime hashは6アドレスで変わるため、上記template hashとそのまま比較しない。
 
 署名ベクトル `tests/vectors/cases/uniswap-payment.json` のSHA-256は `4454703116158b55568476803ea2d815500ba81688938e2a3fe69918ffda12fa`、実証明の専用ケースは `9eb25969aff1c72119e32cbc924f7693a766a6217f23d53436c7cbb65b2da866`、Foundry calldataは `967d4f697d9d28a7b3243d02245b6cc5053660f30e2491bd7aa8468147c320e2`。結合harnessはchain ID 31337、Pool `0x1111111111111111111111111111111111111111`、Adapter `0x2222222222222222222222222222222222222222`、初期流動性0.1 ETHと10,000 dUSD、入力UTXO `6×10^15 wei`、使用額 `3×10^15 wei` と `6×10^15−1 wei` を用いる。Router/Factory/WETH/dUSD/Pairは各試験で新規配置し、アドレスを公開配置の値とみなさない。
 
@@ -111,7 +111,7 @@ pnpm uniswap:sepolia:probe
 | S-03 | `Auth.test_allForbiddenRecipientsAndZeroMinimum`、`Real.test_realOneWeiRemainder` | 正の額は実結合で成功。UIの負値・精度超過、直接呼出しの全範囲外は未検証 |
 | S-04 | `Auth.test_requestMutationAndDirectWithdrawalAreRejected`、`Real.test_realOneWeiRemainder` | 形と正残額の代表例。`w=V`・`w>V`・複数入力の個別実結合は未検証 |
 | S-05 | `Real.test_realOneWeiRemainder` | `r=1 wei` の実証明と交換が成功 |
-| S-06 | `Rollback.test_failedAttemptCanRetryAndSuccessfulPaymentCannotRepeat` | 使用済み入力の再提出を拒否。不存在・他ownerの実結合は未検証 |
+| S-06 | `Rollback.test_failedAttemptCanRetryAndSuccessfulPaymentCannotRepeat`、`Real.test_realCompetingOperationConsumesInputFirst` | 使用済み入力の再提出を拒否。不存在・他ownerの実結合は未検証 |
 | S-07 | `Auth.test_allForbiddenRecipientsAndZeroMinimum` | `m=0` を拒否。UIの負値・端数・上限と境界一致は未検証 |
 | S-08 | `Real.test_realMinimumFailureRollsBackPoolAndPair`、`Real.test_realPaymentConsumesInputAndDeliversAllTokens` | 未達を取消、超過を全量着金。`q=m` の一致境界は未検証 |
 | S-09 | `Pay.test_existingEthIsNotSpent`、`Pay.test_rejectsSwapReturnAndDeliveryMismatch` | 残留・返値不一致をstubで拒否。実Routerの部分交換経路は固定APIでは利用しない |
@@ -120,18 +120,18 @@ pnpm uniswap:sepolia:probe
 | S-12 | `Pay.test_rejectsSwapReturnAndDeliveryMismatch` | 処理中の残高不足を拒否。成功後の受取人による転送は未検証 |
 | S-13 | `Real.test_realPaymentConsumesInputAndDeliversAllTokens` | Poolの残額生成と入力消費まで確認。受領・再送金・同期は #46 |
 | S-14 | `Auth.test_eachPaymentFieldMutationInvalidatesSignature` | `w,T,m,R,d` の各改変を拒否 |
-| S-15 | `Auth.test_requestMutationAndDirectWithdrawalAreRejected`・`test_wrongChainAdapterAndSignatureShapeAreRejected`、`Real.test_changedWithdrawalDestinationRejectsSignedPoolRequest` | 入力・残額・出金先・chain/Adapter・非正規署名を拒否。別Poolでの実取引は未検証 |
+| S-15 | `Auth.test_requestMutationAndDirectWithdrawalAreRejected`・`test_wrongDomainAndPoolAreRejectedForOtherwiseValidTerms`、`Real.test_changedWithdrawalDestinationRejectsSignedPoolRequest` | 入力・残額・出金先、EIP-712のchain/Adapter domain、別Pool操作ID、非正規署名を拒否。別Poolでの実取引は未検証 |
 | S-16 | `Auth.test_deadlineBoundaryAndForbiddenRecipient` | `τ=d` を受理し `τ>d` を拒否。`τ<d` は通常成功経路で確認 |
 | S-17 | `Auth.test_deadlineBoundaryAndForbiddenRecipient` | 実行時刻で再判定。事前見積りからの経時UIは未検証 |
 | S-18 | `Rollback.test_poolFailuresRollbackEvenWhenOuterCallerCatches`、`Real.test_realMinimumFailureRollsBackPoolAndPair` | Pool/Router失敗と実Pair未達の取消。実取引の資源不足は未検証 |
 | S-19 | `Rollback.test_swapAndDeliveryFailuresRollbackEvenWhenOuterCallerCatches` | swap後の不足着金をstubで取消。実dUSDでは不足着金挙動を作れない |
 | S-20 | `Auth.test_requestMutationAndDirectWithdrawalAreRejected`、`Rollback.test_swapAndDeliveryFailuresRollbackEvenWhenOuterCallerCatches` | 切出し要求と外側catch後の内部状態を検査 |
-| S-21 | `Pay.test_payTransfersAllOutputAndRecordsPayment`、`Rollback.test_failedAttemptCanRetryAndSuccessfulPaymentCannotRepeat` | 別提出者による初回と成功後再提出を検査。別経路の公開取引履歴は #45 |
-| S-22 | `Rollback.test_failedAttemptCanRetryAndSuccessfulPaymentCannotRepeat` | 同入力の成功後再提出を拒否。別操作の先行消費と認可後競合は未検証 |
+| S-21 | `Rollback.test_sameSignedPaymentOnlyFirstSubmitterSucceeds`・`test_failedAttemptCanRetryAndSuccessfulPaymentCannotRepeat` | 同一署名を異なる提出者から出し、初回のみ成功。別経路の公開取引履歴は #45 |
+| S-22 | `Rollback.test_differentOperationConsumesInputBeforePayment`、`Real.test_realCompetingOperationConsumesInputFirst` | 異なる認可済み操作による入力先行消費後、後続支払いを拒否し先行成功を維持。認可後の並行取引競合は未検証 |
 | S-23 | `Rollback.test_reentryIsRejectedWhileOuterPaymentCanSucceed`・`test_propagatedReentryRollsBackOuterPayment` | 内側拒否をcatchした外側成功と伝播取消を検査 |
 | S-24 | `Rollback.test_propagatedReentryRollsBackOuterPayment` | この実装は全pay再入を拒否するため「内側受理」分岐は適用不能。伝播時の外側取消を確認 |
 
-実行結果は `pnpm build`、`pnpm test`（Foundry 98/98、環境・暗号テスト成功）、`pnpm check`、`pnpm check:uniswap-payment`、`pnpm check:uniswap`、`pnpm check:pool`、`forge test --root contracts`、`node tests/vectors/tools/oracle-uniswap-payment.mjs`、`POOL_VECTOR_PYTHON=<venvのPython> node scripts/generate-pool-fixtures.mjs --uniswap` が成功。`Real` は4/4で、正常支払い、1 wei残額、最低額未達のPool/Pair/recipient/Adapter取消、Pool出金先書換え拒否を確認した。#55へ生成ABIと独立ベクトル、#60へ6参照のconstructor/getter・artifact/manifest条件、#45へ局所harnessと未検証分岐を渡す。独立Anvil全体配置、manifestによる実Adapter runtime照合、Sepolia実取引、UI/受領・同期、形式証明、第三者の独立追試は未実施。
+実行結果は `pnpm build`、`pnpm test`（Foundry 102/102、環境・暗号テスト成功）、`pnpm check`、`pnpm check:uniswap-payment`、`pnpm check:uniswap`、`pnpm check:pool`、`forge test --root contracts`、`node tests/vectors/tools/oracle-uniswap-payment.mjs`、`POOL_VECTOR_PYTHON=<venvのPython> node scripts/generate-pool-fixtures.mjs --uniswap` が成功。`Real` は5/5で、正常支払い、1 wei残額、最低額未達のPool/Pair/recipient/Adapter取消、Pool出金先書換え拒否を確認した。#55へ生成ABIと独立ベクトル、#60へ6参照のconstructor/getter・artifact/manifest条件、#45へ局所harnessと未検証分岐を渡す。独立Anvil全体配置、manifestによる実Adapter runtime照合、Sepolia実取引、UI/受領・同期、形式証明、第三者の独立追試は未実施。
 
 ## Poolと検証器の配置（Issue #27）
 
