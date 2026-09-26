@@ -41,4 +41,13 @@ describe("complete v3 range proof", () => {
     expect(() => generateRangeProof({ amount: 1n, blinding: 0n }, new Uint8Array(31), 0n))
       .toThrowError("INPUT:rangeContext");
   });
+
+  it("regenerates internal randomness while keeping the public context fixed", () => {
+    const opening = { amount: 2n, blinding: 7n };
+    const operationId = new Uint8Array(32).fill(0x44);
+    const first = generateRangeProof(opening, operationId, 0n);
+    const second = generateRangeProof(opening, operationId, 0n);
+    expect(second.coords.slice(0, 2)).toEqual(first.coords.slice(0, 2));
+    expect(second).not.toEqual(first);
+  });
 });

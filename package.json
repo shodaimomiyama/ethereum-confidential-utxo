@@ -9,6 +9,7 @@
     "build": "node scripts/check-tools.mjs && forge build --root contracts && node scripts/export-environment-artifact.mjs && tsc --noEmit -p tsconfig.tools.json && pnpm --filter @confidential-utxo/crypto build",
     "test": "node scripts/check-tools.mjs && node --test tests/environment/check-tools.test.mjs tests/environment/entrypoints.test.mjs && forge test --root contracts && vitest run tests/environment/artifact-guard.test.mjs && pnpm --filter @confidential-utxo/crypto test",
     "check": "tsc --noEmit -p tsconfig.tools.json && forge fmt --check --root contracts && pnpm --filter @confidential-utxo/crypto check",
+    "interop:crypto": "node scripts/crypto-interop.mjs",
     "artifact:environment": "node scripts/export-environment-artifact.mjs",
     "smoke:rpc": "node scripts/check-tools.mjs && node scripts/run-environment-smoke.mjs",
     "smoke:formal": "sh formal/environment/run-smoke.sh"

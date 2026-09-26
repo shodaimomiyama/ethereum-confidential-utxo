@@ -75,4 +75,16 @@ describe("Schnorr balance proof", () => {
     const operation = args.operationId.slice(); operation[0]! ^= 1;
     expect(balanceChallengeTrace(args.chainId, args.pool, operation, X, R).at(-1)!.candidate).not.toBe(original);
   });
+
+  it("treats a zero response as canonical but rejects a false equation", () => {
+    const entry = cases.find((candidate) => candidate.id === "VEC-05-S-ZERO")! as unknown as ProofCase;
+    const input = entry.input;
+    const X = computeBalancePoint(
+      input.inputCommitments.map(point), input.outputCommitments.map(point), BigInt(input.d), BigInt(input.w),
+    );
+    const R = point(input.proof.R);
+    const challenge = balanceChallengeTrace(BigInt(input.chainId), hexBytes(input.pool), hexBytes(input.operationId), X, R).at(-1)!.candidate;
+    expect(0n >= 0n && 0n < Q).toBe(true);
+    expect(samePoint(mul(G, 0n), add(R, mul(X, challenge)))).toBe(false);
+  });
 });

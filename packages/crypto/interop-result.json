@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-09-26T18:02:17+00:00",
+  "status": "verified-with-stated-limits",
+  "source": {
+    "branch": "feat/28-crypto-proofs-commitments-hpke",
+    "cryptoSourceSha256": "2a12188e38c3115d32852dc5a27ce04e551b717132cc74986ea26df374f8c46e",
+    "cryptoSourceHashMethod": "SHA-256 of sorted relative path, NUL byte, file bytes for packages/crypto/src/**/*.ts",
+    "pnpmLockSha256": "6132479f76905a5645c51b988b9a44289caf5f14edecf693c184de6db218c7f5",
+    "vectorsManifestSha256": "295646fcc830bc49d3d7d5a6d00b9384b11ff2047e31ebea9de228c1fafdaac2",
+    "fixedParametersHash": "0x0bfd116b8ef31332d31d3350ed24fa36d1e17865a7c1dc0758331da0755f8dae",
+    "interopScriptSha256": "2f15ea2a8c6c01c594e653498e51dd2bcd4d1fc9a4499258f251849da2067106"
+  },
+  "verifier": {
+    "source": "Issue #26 commit 11d8e43, subsequently merged into main at 3c5eb6c; artifact copied byte-for-byte to ignored cache for isolated verification",
+    "commit": "11d8e43a81cf293e5e0ba886669797a9668bf509",
+    "artifactSha256": "cde952405fd1abc16dee0c3da5726a6fbe872323a74347ab5a2596806f83030e",
+    "runtimeSha256": "9223fe531791c01d640b2e3e5fe914809395c72184ced03837880683f28e190f",
+    "creationSha256": "896e49362a9899014372ffd6c6d40d12bede4059c3cbe05a347e3654a5c85894",
+    "artifactMergedIntoThisBranch": false
+  },
+  "macos": {
+    "os": "macOS 26.5",
+    "cpu": "Apple Silicon arm64",
+    "hostRamBytes": 34359738368,
+    "node": "v24.21.0",
+    "pnpm": "10.34.5",
+    "checks": [
+      {
+        "command": "pnpm build",
+        "result": "pass"
+      },
+      {
+        "command": "pnpm test",
+        "result": "pass",
+        "cryptoVitest": "8 files, 31 tests passed"
+      },
+      {
+        "command": "pnpm check",
+        "result": "pass"
+      },
+      {
+        "command": "node --test tests/vectors/tools/test-*.mjs",
+        "result": "31 passed"
+      },
+      {
+        "command": "tests/vectors/.cache/venv/bin/python -m unittest discover -s tests/vectors/tools -p 'test_*.py' -v",
+        "result": "38 passed"
+      },
+      {
+        "command": "tests/vectors/.cache/venv/bin/python tests/vectors/tools/check.py",
+        "result": "185 cases valid"
+      },
+      {
+        "command": "tests/vectors/.cache/venv/bin/python tests/vectors/tools/check_coverage.py",
+        "result": "185 cases, 23 required groups valid"
+      },
+      {
+        "command": "tests/vectors/.cache/venv/bin/python tests/vectors/tools/verify_storage.py",
+        "result": "5 envelopes cross-checked"
+      },
+      {
+        "command": "pnpm interop:crypto tests/vectors/.cache/verifier-v3-head.json (artifact bytes from Issue #26 commit 11d8e43)",
+        "result": "three TS range proofs (including valid internal identity) and nonidentity and identity balance proofs accepted; thirteen public-value mutations rejected"
+      }
+    ],
+    "independentEvidence": {
+      "rangeVector": "VEC-04-DETERMINISTIC-VALID-IDENTITY exact coords/scalars/ls/rs and 10 challenge stages",
+      "rangePython": "TS-generated amount=1 and amount=2^64 accepted; changed operationId, outputIndex, C_range, and proof shape rejected",
+      "rangeLegacyEvm": "TS-generated amount=1 and amount=2^64 accepted by EXP-08 Solidity 0.4.19 verifier",
+      "balanceVectors": [
+        "VEC-05-DEPOSIT",
+        "VEC-05-TRANSFER-ONE",
+        "VEC-05-TRANSFER-MERGE-IDENTITY-X",
+        "VEC-05-WITHDRAW-FULL",
+        "VEC-05-WITHDRAW-PARTIAL"
+      ],
+      "hpkeVectors": "VEC-07-RFC-A2-BASE, VEC-07-RECEIPT-VALID and malformed/altered recipient cases",
+      "applicationVector": "VEC-07-APPLICATION-DEPOSIT uses one operation ID for receipt, range, and balance"
+    },
+    "rangeProofMeasurements": {
+      "conditions": "Node 24.21.0, one warm process, sequential single-shot generation; no SLO claimed",
+      "minimum": {
+        "amount": "1",
+        "blinding": "0",
+        "elapsedMs": 1451,
+        "heapDeltaBytes": 3630192,
+        "rssBytes": 71188480
+      },
+      "maximum": {
+        "amount": "18446744073709551616",
+        "blinding": "42",
+        "elapsedMs": 1574,
+        "heapDeltaBytes": 8281800,
+        "rssBytes": 80592896
+      }
+    }
+  },
+  "ubuntu": {
+    "os": "Ubuntu 24.04.5 LTS",
+    "cpu": "linux/arm64 Docker on Apple Silicon",
+    "containerMemory": "15 GiB reported by free -h",
+    "imageDigest": "sha256:008173c23f95b170204355c12626cb5a965d779a7e1283b09e9cffbb1bf33ca3",
+    "node": "v24.21.0",
+    "pnpm": "10.34.5",
+    "sameSourceAndLockAsMacos": true,
+    "checks": [
+      {
+        "command": "pnpm --filter @confidential-utxo/crypto build",
+        "result": "pass"
+      },
+      {
+        "command": "pnpm --filter @confidential-utxo/crypto check",
+        "result": "pass"
+      },
+      {
+        "command": "pnpm --filter @confidential-utxo/crypto test",
+        "result": "8 files, 31 tests passed"
+      }
+    ]
+  },
+  "limits": [
+    "Ubuntu arm64 and emulated amd64 runs cover crypto package build/check/tests and fixed JSON vectors; root Foundry/Kontrol commands were not run inside Ubuntu.",
+    "The official Ubuntu 24.04 x86_64 baseline of 8 logical CPUs, 32 GiB RAM, and 100 GiB free SSD has not been run; Docker VM reported 15 GiB.",
+    "Issue #26 verifier artifact is committed and merged into main but not yet merged into this feature branch; rerun interop after merging main.",
+    "For X=(0,0), Schnorr equation sG=R does not bind the challenge; context mutations are tested with X nonidentity.",
+    "Finite vectors and concrete EVM calls do not establish a formal proof of cryptographic security."
+  ],
+  "ubuntuX86Emulated": {
+    "os": "Ubuntu 24.04.5 LTS",
+    "cpu": "linux/amd64 under Docker emulation on Apple Silicon",
+    "containerMemory": "15 GiB reported by free -h",
+    "imageId": "sha256:6232b38791000e3818b58d8847b5a8f5612d606929e01156dd8febc423e0f2ef",
+    "node": "v24.21.0",
+    "pnpm": "10.34.5",
+    "sameSourceAndLockAsMacos": true,
+    "checks": [
+      {
+        "command": "pnpm --filter @confidential-utxo/crypto build",
+        "result": "pass"
+      },
+      {
+        "command": "pnpm --filter @confidential-utxo/crypto check",
+        "result": "pass"
+      },
+      {
+        "command": "pnpm --filter @confidential-utxo/crypto test",
+        "result": "8 files, 31 tests passed"
+      }
+    ]
+  }
+}

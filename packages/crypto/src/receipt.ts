@@ -1,6 +1,7 @@
 import { CipherSuite, HkdfSha256 } from "@hpke/core";
 import { DhkemX25519HkdfSha256 } from "@hpke/dhkem-x25519";
 import { Chacha20Poly1305 } from "@hpke/chacha20poly1305";
+import { x25519 } from "@noble/curves/ed25519.js";
 import { bytesToBigInt, concat, word } from "./bytes.js";
 import { CryptoFailure } from "./errors.js";
 import { commit, M, parsePoint, Q, samePoint, type G1Point, type Opening } from "./group.js";
@@ -11,6 +12,7 @@ const suite = new CipherSuite({
   aead: new Chacha20Poly1305(),
 });
 const emptyAad = new Uint8Array();
+const validationScalar = new Uint8Array(32).fill(1);
 
 export type EncryptReceiptInput = Readonly<{
   recipientPublicKey: Uint8Array;
@@ -31,7 +33,7 @@ function encodeOpening(opening: Opening): Uint8Array {
   return concat(word(opening.amount), word(opening.blinding));
 }
 
-function decodeOpening(plaintext: Uint8Array): Opening {
+export function decodeOpening(plaintext: Uint8Array): Opening {
   if (plaintext.length !== 64) throw new CryptoFailure("PLAINTEXT", "receipt");
   const amount = bytesToBigInt(plaintext.slice(0, 32));
   const blinding = bytesToBigInt(plaintext.slice(32));
@@ -45,17 +47,23 @@ export async function encryptReceipt(input: EncryptReceiptInput): Promise<Uint8A
   if (input.info.length !== 32) throw new CryptoFailure("INPUT", "receipt.info");
   if (input.recipientPublicKey.length !== 32) throw new CryptoFailure("INPUT", "receipt.key");
   const plaintext = encodeOpening(input.opening);
+  let recipientPublicKey: CryptoKey;
   try {
-    const recipientPublicKey = await suite.kem.deserializePublicKey(input.recipientPublicKey);
-    const sender = await suite.createSenderContext({ recipientPublicKey, info: input.info });
-    const ciphertext = new Uint8Array(await sender.seal(plaintext, emptyAad));
-    const packet = concat(new Uint8Array(sender.enc), ciphertext);
-    if (packet.length !== 112) throw new CryptoFailure("INTERNAL", "receipt.packet");
-    return packet;
-  } catch (error) {
-    if (error instanceof CryptoFailure) throw error;
+    // The fixed scalar is used only to reject low-order public keys, never for encapsulation.
+    x25519.getSharedSecret(validationScalar, input.recipientPublicKey);
+    recipientPublicKey = await suite.kem.deserializePublicKey(input.recipientPublicKey);
+  } catch {
     throw new CryptoFailure("INPUT", "receipt.key");
   }
+  let sender: Awaited<ReturnType<typeof suite.createSenderContext>>;
+  try { sender = await suite.createSenderContext({ recipientPublicKey, info: input.info }); }
+  catch { throw new CryptoFailure("RANDOM", "receipt"); }
+  let ciphertext: Uint8Array;
+  try { ciphertext = new Uint8Array(await sender.seal(plaintext, emptyAad)); }
+  catch { throw new CryptoFailure("INTERNAL", "receipt"); }
+  const packet = concat(new Uint8Array(sender.enc), ciphertext);
+  if (packet.length !== 112) throw new CryptoFailure("INTERNAL", "receipt.packet");
+  return packet;
 }
 
 export async function decryptReceipt(input: DecryptReceiptInput): Promise<Opening> {
