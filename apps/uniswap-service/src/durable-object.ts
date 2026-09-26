@@ -9,6 +9,7 @@ import { getOperation, listOperations, putOperation } from './store.js';
 import { ensureWritable, getAvailability, initializeEnvironment, resolveRecoveryGate } from './recovery.js';
 import { getServiceExtensions, makeServiceContext } from './extensions.js';
 import { createCoreInputReader, getCoreHistoryProvider } from './core-reader.js';
+import { loadEthereumHistory } from './ethereum-provider.js';
 
 export class UniswapServiceObject extends DurableObject<ServiceEnv> {
   constructor(ctx: DurableObjectState, env: ServiceEnv) {
@@ -70,9 +71,10 @@ export class UniswapServiceObject extends DurableObject<ServiceEnv> {
       if (parsed.route === 'PUT /v1/operations/{id}') {
         ensureWritable(this.ctx.storage, recoveryGate);
         const provider = getCoreHistoryProvider();
-        if (provider === undefined) return apiError(503, 'SERVICE_UNAVAILABLE');
         let history;
-        try { history = provider(parsed.scope.deploymentId, config); }
+        try { history = provider === undefined
+          ? await loadEthereumHistory(parsed.scope.deploymentId, config, this.env.RPC_DEPLOYMENTS_JSON)
+          : provider(parsed.scope.deploymentId, config); }
         catch { return apiError(503, 'SERVICE_UNAVAILABLE'); }
         const saved = await putOperation(this.ctx.storage, parsed.scope, parsed.record!, parsed.expectedRevision!,
           createCoreInputReader(history, config), () => ensureWritable(this.ctx.storage, recoveryGate));

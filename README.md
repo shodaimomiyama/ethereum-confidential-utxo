@@ -1,12 +1,12 @@
-# ethereum-confidential-utxo
+![Dim — Lightweight privacy for amounts on Ethereum](apps/uniswap-web/public/assets/brand/dim-cover.png)
 
-English | [日本語](README.ja.md)
+# Dim
 
-## Short description
+Confidential ETH UTXOs on Ethereum, with public Uniswap payments.
 
-Confidential ETH UTXO research prototype with public Uniswap payments.
+[日本語](README.ja.md) · [Scope and workflow](#scope-and-workflow) · [Confidentiality limits](#confidentiality-limits) · [Reproduce the benchmark](#reproduce-the-prior-eip-benchmark) · [Documentation](#documentation)
 
-## Description
+## Overview
 
 This project studies confidential ETH transfers on Ethereum while keeping the relationships between consumed and created UTXOs public. The research prototype supports ETH deposits, confidential transfers, and public withdrawals. Its Uniswap integration exchanges a fixed amount of ETH for a public token, delivers all swap proceeds to a designated recipient, and lets the payer reuse the remaining confidential UTXO. It is aimed at developers and researchers evaluating functionality, cost, security, and the limits of amount confidentiality as a basis for future standardization. The public transaction graph and known amounts can reveal transfer amounts or remaining balances.
 

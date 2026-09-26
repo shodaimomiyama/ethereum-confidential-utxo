@@ -96,7 +96,7 @@ pnpm uniswap:sepolia:probe
 
 `pnpm artifact:uniswap-payment` はSolidityコンパイラの `UniswapPaymentAdapter.json` からABI、生成・実行bytecode、immutable参照、AST、storage layout、metadataと入力ソースhashを `packages/ethereum/generated/uniswap-payment-v1.json` へ出力する。`pnpm check:uniswap-payment` は現在のコンパイル結果とソースに完全照合する。`pnpm build/test/check` にもこの生成・検査を組み込んでいる。公開ABIはこの生成物を正本とし、別に手書きしない。
 
-#60の資産manifestへAdapterを追加する際は、同じ配置世代とchain IDに属するPool、Router02、Factory、WETH、dUSD、Pairの6アドレスをこの順でconstructorへ渡す。デプロイ取引の入力から6引数を再取得し、配置後の6 getter、各アドレスのcode、Routerの `factory()` / `WETH()`、Factoryの `getPair(WETH,dUSD)`、Pairの `factory()` / `token0()` / `token1()` を再読する。Adapterの実行bytecodeはimmutable埋込み後の値を取得してhashを保存・照合し、固定artifactの `immutableReferences` を使って埋込み以外の差分がないことも確認する。Pool・dUSD・Uniswap各契約はそれぞれの正式artifact/manifestのruntimeと照合する。constructorの関係検査だけでは、同じ返値を装う別コードを排除できない。失敗時には資産manifestを正式な全体配置成功へ昇格させない。現時点の #60 `uniswap:local:*` は資産単体を扱い、Adapterの配置・照合は後続の全体配置で実装する。
+#60の資産manifestへAdapterを追加する際は、同じ配置世代とchain IDに属するPool、Router02、Factory、WETH、dUSD、Pairの6アドレスをこの順でconstructorへ渡す。デプロイ取引の入力から6引数を再取得し、配置後の6 getter、各アドレスのcode、Routerの `factory()` / `WETH()`、Factoryの `getPair(WETH,dUSD)`、Pairの `factory()` / `token0()` / `token1()` を再読する。Adapterの実行bytecodeはimmutable埋込み後の値を取得してhashを保存・照合し、固定artifactの `immutableReferences` を使って埋込み以外の差分がないことも確認する。Pool・dUSD・Uniswap各契約はそれぞれの正式artifact/manifestのruntimeと照合する。constructorの関係検査だけでは、同じ返値を装う別コードを排除できない。失敗時には資産manifestを正式な全体配置成功へ昇格させない。#60の `deployConnection({ poolManifest, poolManifestPath, adapterArtifact, assetManifest, signer, publicClient, excludedPoolAddress })` は #27の配置経路で保存した専用Pool manifestを読み、#36のcore Poolアドレスと異なることを確認してAdapterを配置し、資産manifestへ接続情報を追加する。`verifyConnection(manifest, publicClient)` は保存Pool manifestのパス・内容hash、Pool/Verifier配置、Adapterの生成取引・固定参照・実行codeを再照合する。現行APIは固定資産の生成取引まで検査できるローカルchain 31337に限定し、公開chainは厳格な資産検証が実装されるまで拒否する。ローカル実証は `node --test tests/environment/uniswap-integration.test.mjs` で再現する。`uniswap:local:*` は引き続き資産単体を扱い、公開テストネットの全体配置CLIは別途用意する。
 
 ### #56の局所受入記録
 
@@ -220,3 +220,30 @@ rg 'from .*packages/(ethereum|cli)|node:fs|tests/vectors/tools|experiments/' pac
 | AC-10 | `public-api` の公開ルートの実行・型importとbuild/test/check |
 
 これらはNode上の共通処理の検証である。実PoolのABI・RPC接続は#30/#36、CLIの暗号化保存と永続化は#31、ブラウザ実行は#46/#59で検証する。ここでの保存成功は偽adapterの応答に基づき、ディスク耐久性や実送信の成功を示さない。
+
+
+## Webモックの静的公開
+
+紹介ページとモックデモは `apps/uniswap-web/wrangler.jsonc` を使い、Cloudflare Workers Static Assetsへ配置する。API、DO、Sepolia資産配置には依存しない。`VITE_DIM_MODE=mock` を明示し、実取引の完了とは扱わない。Node.js 24.21.0、pnpm 10.34.5、Wrangler 4.116.0を使う。互換性日付は固定Wranglerのローカルruntimeで確認した2026-07-30。
+
+リポジトリルートから実行する。
+
+```bash
+pnpm install --frozen-lockfile
+pnpm check:site
+pnpm test:site
+VITE_DIM_MODE=mock VITE_DIM_DEPLOYMENT_ID=public-mock-v1 VITE_DIM_CODE_URL=https://github.com/shodaimomiyama/ethereum-confidential-utxo pnpm build:site
+pnpm dlx wrangler@4.116.0 dev --config apps/uniswap-web/wrangler.jsonc
+```
+
+ローカルの `/` と `/app`、画像、コードリンク、モック操作、`/app` の再読み込みを確認して開発サーバーを停止する。公開時は対象アカウントを確認して次を実行する。他のアカウントで追試する場合は既存Workerとの名前衝突を確認する。
+
+```bash
+pnpm dlx wrangler@4.116.0 login
+pnpm dlx wrangler@4.116.0 whoami
+pnpm dlx wrangler@4.116.0 deploy --config apps/uniswap-web/wrangler.jsonc
+```
+
+更新時もモック用環境変数で再ビルドしてからdeployする。`dist` の配置だけでは再ビルドされない。同じアカウント、Worker名、workers.devサブドメインを維持する。API統合時には同じoriginへのroutingとDO設定を別途確認する。
+
+2026-09-27の先行公開先は https://dim.mmymshd52.workers.dev 。配置versionは `8dffe4f3-54d3-4f75-98c6-b7dcc4dd8a81`。ソースは `dfa88f767fceaf2ba4cc3e788da2c1dc862d89b1` に、モック説明の追加と静的配信設定を適用した作業ツリー。型検査・Webテスト86件・Viteビルドが成功した。公開はモックUIに限り、実資産移動、API/DO、実テストネットの受入を示さない。

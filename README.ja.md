@@ -1,12 +1,12 @@
-# ethereum-confidential-utxo
+![Dim — Ethereum上の金額に、軽量なプライバシーを](apps/uniswap-web/public/assets/brand/dim-cover.png)
 
-[English](README.md) | 日本語
+# Dim
 
-## 概要（Short description）
+Ethereum上の機密ETH UTXOと、Uniswapを利用した公開支払い。
 
-機密ETH UTXOと、Uniswapを利用した公開支払いを提供する研究プロトタイプ。
+[English](README.md) · [対象範囲と利用の流れ](#対象範囲と利用の流れ) · [機密性の限界](#機密性の限界) · [先行EIPベンチマークの再現](#先行eipベンチマークの再現) · [文書索引](#文書索引)
 
-## プロジェクトの目的（Description）
+## プロジェクトの目的
 
 Ethereum上で、UTXOの消費と生成の関係を公開しながら、ETHの金額を秘匿する送金の仕組みを研究するプロジェクトです。研究用プロトタイプでは、ETHの入金、機密送金、公開出金を扱います。Uniswap接続では、固定額のETHを公開トークンへ交換して指定した最終受取人に全量を渡し、支払者が残りの機密UTXOを使い続けられます。開発者と研究者が機能、コスト、安全性、金額の機密性の限界を評価し、将来の標準化を議論するための根拠を提供します。公開された取引グラフと既知の金額から、送金額や残額が判明する場合があります。
 

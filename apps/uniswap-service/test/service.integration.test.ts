@@ -65,7 +65,7 @@ it('restores a committed operation in a second authenticated browser session', a
     encryptedBundle: { ciphertext: 'AQID', nonce: `0x${'00'.repeat(12)}`, tag: `0x${'00'.repeat(16)}` },
     signatureStarted: false, attemptIds: [],
   };
-  // #29 HistoryPort is exercised through the real Worker PUT; #30's RPC adapter is not yet available.
+  // This test injects a trusted HistoryPort; #30's RPC adapter is exercised by its package tests.
   const saved = await worker.fetch(new Request(`https://site.test/v1/operations/${recordId}`, {
     method: 'PUT', headers: { origin: 'https://site.test', cookie: firstCookie },
     body: JSON.stringify({ scope, expectedRevision: 0, record }),

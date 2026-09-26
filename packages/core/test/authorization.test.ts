@@ -91,10 +91,19 @@ it("rejects semantically invalid requests before asking the signer", async () =>
   await expect(authorizeOperation(context, operation, { signTypedData })).rejects.toBeInstanceOf(CoreFailure);
   expect(signTypedData).not.toHaveBeenCalled();
 });
-it("AC-04: sanitizes signer refusal and invalid returned signatures", async () => {
-  for (const signTypedData of [async () => { throw new Error("secret request details"); }, async () => "0x" as Hex]) {
-    await expect(authorizeOperation(context, request(), { signTypedData })).rejects.toMatchObject({ code: "SIGNATURE_REJECTED", message: "SIGNATURE_REJECTED:authorization.signer" });
-  }
+it("AC-04: sanitizes untyped signer errors", async () => {
+  await expect(authorizeOperation(context, request(), { signTypedData: async () => {
+    throw new Error("secret request details");
+  } })).rejects.toMatchObject({ code: "SIGNATURE_REJECTED", message: "SIGNATURE_REJECTED:authorization.signer" });
+});
+it("distinguishes an invalid returned signature from an explicit refusal", async () => {
+  await expect(authorizeOperation(context, request(), { signTypedData: async () => "0x" as Hex }))
+    .rejects.toMatchObject({ code: "SIGNATURE_INVALID" });
+});
+it("preserves a typed signer transport failure instead of reporting a refusal", async () => {
+  await expect(authorizeOperation(context, request(), { signTypedData: async () => {
+    throw new CoreFailure("RPC", "signer.transport");
+  } })).rejects.toMatchObject({ code: "RPC", stage: "signer.transport" });
 });
 it("rejects changes to the caller request while the signer awaits", async () => {
   const operation = request();

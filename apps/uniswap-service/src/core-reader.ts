@@ -23,7 +23,7 @@ function read<T>(observation: Observation<T>, point: Checkpoint): T | undefined 
 
 function matchesContext(context: Context, config: DeploymentConfig): boolean {
   return context.chainId === BigInt(config.chainId) && same(context.pool, config.pool)
-    && context.finalityMode === 'finalized' && context.deploymentBlock >= 0n;
+    && context.finalityMode === config.finalityMode && context.deploymentBlock >= 0n;
 }
 
 function sameContext(left: Context, right: Context): boolean {
@@ -45,13 +45,13 @@ export function createCoreInputReader(history: HistoryPort, config: DeploymentCo
     async readInput(scope: Scope, inputId: OperationRecord['inputId']): Promise<InputState> {
       try {
         const finalized = await history.getFinalizedCheckpoint();
-        if (finalized === null || finalized.mode !== 'finalized') return 'unknown';
+        if (finalized === null || finalized.mode !== config.finalityMode) return 'unknown';
         const context = read(await history.getContext(finalized), finalized);
         if (context === undefined || !matchesContext(context, config)
           || finalized.number < context.deploymentBlock) return 'unknown';
         const latest = await history.getLatestHeader();
         if (latest === null || latest.number < finalized.number) return 'unknown';
-        const latestPoint: Checkpoint = { ...latest, mode: 'finalized' };
+        const latestPoint: Checkpoint = { ...latest, mode: config.finalityMode };
         const ancestor = read(await history.getCanonicalHeader(finalized.number, latestPoint), latestPoint);
         if (ancestor === undefined || ancestor.number !== finalized.number
           || !same(ancestor.hash, finalized.hash)) return 'unknown';

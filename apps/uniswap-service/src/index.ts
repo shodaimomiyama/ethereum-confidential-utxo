@@ -7,6 +7,7 @@ export interface ServiceEnv {
   readonly UNISWAP_STATE: DurableObjectNamespace<UniswapServiceObject>;
   readonly DEPLOYMENTS_JSON: string;
   readonly RECOVERY_JSON: string;
+  readonly RPC_DEPLOYMENTS_JSON?: string;
 }
 
 export { UniswapServiceObject };

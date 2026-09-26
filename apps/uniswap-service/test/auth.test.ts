@@ -10,6 +10,7 @@ import type { DeploymentConfig } from '../src/config.js';
 const config: DeploymentConfig = {
   origin: 'https://site.test', siweUri: 'https://site.test/', chainId: 31337,
   pool: '0x0000000000000000000000000000000000000001',
+  finalityMode: 'finalized',
 };
 const start = Date.parse('2026-09-27T00:00:00.000Z');
 
