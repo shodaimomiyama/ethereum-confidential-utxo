@@ -62,7 +62,8 @@ export function trackAttempt(id: Hex, observation: AttemptObservation, prior: Su
   const index = attempt.txHash === undefined ? -1 : attempts.findIndex(a => a.txHash !== undefined && equal(a.txHash, attempt.txHash!));
   if (index < 0) attempts.push(attempt);
   else attempts[index] = attempt;
-  const evidence = observation.historyStatus ? undefined : observation.evidence ??
+  const replacement = observation.evidence && verifiedSuccess(id, observation.evidence) ? observation.evidence : undefined;
+  const evidence = observation.historyStatus ? undefined : replacement ??
     (previous && equal(previous.operationId, id) ? previous.successEvidence : undefined);
   const confirmed = evidence && verifiedSuccess(id, evidence);
   return { operationId: id, attempts, operation: confirmed ? "executed" : "unconfirmed", receipt: "unconfirmed",

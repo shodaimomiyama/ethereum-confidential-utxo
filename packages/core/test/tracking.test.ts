@@ -184,3 +184,18 @@ it("returns latest evidence separately from finality in preflight and preparatio
   expect(await preflightSubmission(context, d.request, p)).toEqual({ status: "ready", latest });
   expect(await prepareSubmission(d, p)).toMatchObject({ status: "ready", latest });
 });
+
+it.each(["invalid", "incomplete", "mismatched"])("preserves verified success when a failed attempt carries %s replacement evidence", mode => {
+  const evidence = { context, checkpoint: point, event: success(), record: bound({ executed: true }), header: bound(point) };
+  const before = trackAttempt(id, { txHash: hex(20), outer: "success", evidence }, []);
+  const record = mode === "incomplete"
+    ? { complete: false as const, reason: "GAP" as const }
+    : mode === "mismatched" ? { ...bound({ executed: true }), blockHash: hex(99) } : bound({ executed: false });
+  const observation = { txHash: hex(21), outer: "failed" as const, evidence: { ...evidence, record } };
+  const after = trackAttempt(id, observation, before);
+  expect(after.operation).toBe("executed");
+  expect(after.checkpoint).toEqual(before.checkpoint);
+  expect(after.successEvidence).toEqual(before.successEvidence);
+  expect(after.attempts.map(a => a.outer)).toEqual(["success", "failed"]);
+  expect(trackAttempt(id, { ...observation, historyStatus: "uncertain" }, before).operation).toBe("unconfirmed");
+});
