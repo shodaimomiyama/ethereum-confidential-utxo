@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>UX-02 MetaMask signature reproducibility probe</title>
+    <style>
+      body { max-width: 46rem; margin: 3rem auto; padding: 0 1rem; font: 1rem/1.5 system-ui, sans-serif; }
+      button { padding: .6rem 1rem; font: inherit; }
+      pre { overflow-wrap: anywhere; white-space: pre-wrap; background: #f3f3f3; padding: 1rem; }
+    </style>
+  </head>
+  <body>
+    <h1>UX-02 signature reproducibility probe</h1>
+    <p>Use a new, unfunded test wallet only. The signature is secret key material; this page displays only its SHA-256 fingerprint. It makes no fetch or storage calls.</p>
+    <p>The Pool address below is a fixed test placeholder. This page checks signature reproducibility only; it does not derive a recipient key or test HPKE.</p>
+    <button id="sign" type="button">Connect and sign fixed message</button>
+    <pre id="result" aria-live="polite">Ready.</pre>
+    <script>
+      (() => {
+        const pool = '0x0000000000000000000000000000000000000001';
+        const output = document.getElementById('result');
+        const button = document.getElementById('sign');
+        const hex = (bytes) => [...new Uint8Array(bytes)].map((b) => b.toString(16).padStart(2, '0')).join('');
+        const bytesFromHex = (value) => {
+          if (!/^0x(?:[0-9a-fA-F]{2})+$/.test(value)) throw new Error('Invalid signature format');
+          return Uint8Array.from(value.slice(2).match(/../g), (pair) => parseInt(pair, 16));
+        };
+        const sha256 = async (bytes) => hex(await crypto.subtle.digest('SHA-256', bytes));
+        button.addEventListener('click', async () => {
+          button.disabled = true;
+          output.textContent = 'Waiting for MetaMask…';
+          try {
+            if (!window.ethereum?.request) throw new Error('No injected wallet provider');
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            if (!Array.isArray(accounts) || !/^0x[0-9a-fA-F]{40}$/.test(accounts[0])) throw new Error('No EOA selected');
+            const owner = accounts[0].toLowerCase();
+            const chainHex = await window.ethereum.request({ method: 'eth_chainId' });
+            const chainId = BigInt(chainHex).toString(10);
+            const message = [
+              'ECU Uniswap recipient-key reproducibility probe v1',
+              'This signature is secret key material. Never share it.',
+              'Purpose: ecu/uniswap/key-root/v1',
+              `ChainId: ${chainId}`,
+              `Pool: ${pool}`,
+              `Owner: ${owner}`,
+            ].join('\n');
+            const messageBytes = new TextEncoder().encode(message);
+            const signature = await window.ethereum.request({
+              method: 'personal_sign',
+              params: [`0x${hex(messageBytes)}`, owner],
+            });
+            const signatureBytes = bytesFromHex(signature);
+            const result = {
+              purpose: 'UX-02 signature reproducibility only',
+              owner,
+              chainId,
+              pool,
+              messageSha256: await sha256(messageBytes),
+              signatureSha256: await sha256(signatureBytes),
+            };
+            signatureBytes.fill(0);
+            output.textContent = JSON.stringify(result, null, 2);
+          } catch (error) {
+            output.textContent = `No result. Error code: ${String(error?.code ?? 'unavailable')}`;
+          } finally {
+            button.disabled = false;
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>

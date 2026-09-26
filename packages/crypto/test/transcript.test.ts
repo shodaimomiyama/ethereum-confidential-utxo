@@ -9,7 +9,7 @@ const point = (pair: readonly string[]) => ({ x: BigInt(pair[0]!), y: BigInt(pai
 describe("v3 range transcript", () => {
   it("matches every stored challenge and full-prefix state", () => {
     for (const vector of vectors) {
-      const tr = new RangeTranscript(hexBytes(vector.input.operationId), BigInt(vector.input.outputIndex), point(vector.expected.C_range));
+      const tr = new RangeTranscript(hexBytes(vector.input.operationId), BigInt(vector.input.outputIndex), point(vector.input.coords.slice(0, 2)));
       expect(tr.stateHex()).toBe(vector.input.transcriptTrace.initialState);
       for (const step of vector.input.transcriptTrace.stages) {
         expect(tr.stateHex()).toBe(step.previousState);
@@ -36,7 +36,7 @@ describe("v3 range transcript", () => {
 
   it("binds operation and output identities", () => {
     const vector = vectors[0]!;
-    const commitment = point(vector.expected.C_range);
+    const commitment = point(vector.input.coords.slice(0, 2));
     const operation = hexBytes(vector.input.operationId);
     const altered = operation.slice(); altered[0]! ^= 1;
     const original = new RangeTranscript(operation, 0n, commitment);

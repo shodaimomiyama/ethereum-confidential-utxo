@@ -164,7 +164,7 @@
     },
     {
       "path": "cases/range-deterministic.json",
-      "sha256": "986dc9079366334ed128c9156ce42a11331b082d7b9c0e451af2ebf28d84728d",
+      "sha256": "7944f835c6a5ab501b429699dfc5a7c3f10471e4f6ef928a4a7ae0b89d077ef0",
       "source": "docs/design.md v3 and EXP-08 profile/parameters at baseline commit",
       "generator": "tools/oracle_range_prover.py",
       "independentCheck": "tools/oracle_range_prover.py#verify and EXP-08 Java/EVM profile",
@@ -275,7 +275,7 @@
     "tools/oracle-verifier-abi.mjs": "2116e58d08f6a08be04f62088ee6b88b3d095548e1e45ce6d7a4bba6c65ebcbb",
     "tools/oracle_application.py": "6447d950fa733f78ed6693a80324b9de96f02daec1ce6d48ad8e1d9dbe09b109",
     "tools/oracle_balance.py": "a881488125d0813add18b13f1e19455ae8e98f0001e87fef33de4f5b65dde61e",
-    "tools/oracle_range_prover.py": "d68a0e0ae2504b814f785ee983eb67502caf7a31326577ade0ca231f61f8707b",
+    "tools/oracle_range_prover.py": "ff770768b52461354e41971158eef95e2ff5cb0f56a78064834a1a0baadf4873",
     "tools/oracle_v3.py": "1ee3bafe63455a57b6cf8f4d486e88b6860eeae0df6d299ae1507401203c788a",
     "tools/reference_bn254.py": "2c0d5de546edf3e3b292eb13d6012ebbf7db2384512140c5d158e21604c12407",
     "tools/test-oracle-abi.mjs": "0df4c9101e851c4a02be3339e71462490eb595360a2d0e3e09767ed5f2bf5ae7",
@@ -289,14 +289,14 @@
     "tools/test_oracle_application.py": "efb4464c85f4bc4af792e7e0ed09bfd53f84d948813c3676b90e8b0791875acc",
     "tools/test_oracle_balance.py": "868d8ac5c2e70902d5d349c990b48078be91d9f64990eac1213532778392f40a",
     "tools/test_oracle_v3.py": "b036036b53e131383c29ef5c138e5a5a7bbb519fbf75df15713845e6f0961be0",
-    "tools/test_range_prover.py": "7bf8595c862551a272d0a173aa90a8f083fe601b97eebec01a3d27711e2cb148",
+    "tools/test_range_prover.py": "9e0c9a2284dbd9b8b9d801aa4215718465143baff1d45ec2fe28d1a198ad8afa",
     "tools/test_storage_crosscheck.py": "94cf5b4cba1681a209913d2ba9ec6cee878193882a01d18141df81459cf99e63",
     "tools/verify-abi.mjs": "d2e5025d62258227d37bf1631b99c74a348b0631196bd2ac58393d1662fd5f90",
     "tools/verify_storage.py": "a0427bdb22d70139aba23d714e3dc9ed1d526c6ac80246123e582b3b29aa485f"
   },
   "artifactHashes": {
     "schema.json": "ac56b6596eb687677ecc2305d696151f39ceab20787eb6e0a066d1541bbb5d7c",
-    "coverage.json": "7556ece0c0d7b42d39dd1fe4c3dfcffab6b75195c07c71c83f69393b5c056680",
+    "coverage.json": "24905e5a84af2197e5c64e281eb73d0b495767e7f63944ee43eda181ee41a1d5",
     "package.json": "835831072d5b59534fd2c1fa72c35f096beaa410c8794e32e580a30061204700",
     "pnpm-lock.yaml": "cbede875e3027c6b32efc25201e44e9a59261abed5c4a06ccc6250382009e0fe",
     "tools/requirements.txt": "8af6d5cfebc5c65614d58aee1d40b734d61d9ce4741ef03bad97749a4aa24145"

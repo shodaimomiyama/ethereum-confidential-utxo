@@ -1,0 +1,53 @@
+{
+  "id": "UX-01",
+  "verdict": "boundary_pass_full_ux01_unresolved",
+  "pre_registered_plan": "plan.json",
+  "raw_outputs": [
+    "outputs/build-core.log",
+    "outputs/build-periphery.log",
+    "outputs/forge-test.log",
+    "outputs/anvil-fork-test.log"
+  ],
+  "commands": [
+    "./run.sh",
+    "forge build vendor/v2-core/contracts/UniswapV2Factory.sol --use 0.5.16",
+    "forge build vendor/v2-periphery/contracts/UniswapV2Router02.sol vendor/v2-periphery/contracts/test/WETH9.sol --use 0.6.6",
+    "forge test --via-ir -vvv",
+    "forge test --via-ir --fork-url http://127.0.0.1:18545 -vvv"
+  ],
+  "inputs": {
+    "pool_fixture_input_wei": "6000000000000000",
+    "payment_wei": "3000000000000000",
+    "expected_change_wei": "3000000000000000",
+    "initial_weth_liquidity_wei": "100000000000000000",
+    "initial_dusd_liquidity_base_units": "10000000000000000000000",
+    "dUSD_supply_base_units": "1000000000000000000000000",
+    "min_output_for_success": "1",
+    "deadline_offset_seconds": 600,
+    "chain_id": 31337,
+    "fixture_owner_key": "0xA11CE"
+  },
+  "expected_uniswap_v2_quote_base_units": "290413725471157673971",
+  "observed": {
+    "forge_local": "9/9 passed",
+    "anvil_fork": "9/9 passed",
+    "success": "Actual Router02 swapped full W, Pair WETH rose exactly W, Pair dUSD fell by exactly the Router quote, recipient dUSD rose by exactly the same quote. Pool input spent, one owner change V-W, adapter ETH unchanged, and payment executed recorded.",
+    "mutation": "operationId, owner, ETH amount, token, minimum output, recipient, and deadline mutations rejected with original payment signature; Pool withdrawal amount and destination mismatch rejected.",
+    "rollback": "Minimum output above quote reverted after Pool withdrawal call; Pool spent/executed/change/accounting/ETH, Adapter ETH/payment flag, Pair reserves/WETH/dUSD, recipient balance all unchanged.",
+    "deadline": "Exact deadline accepted; deadline+1 rejected.",
+    "replay": "Copied signed pay calldata after success rejected.",
+    "direct_receipt": "Direct ETH to adapter rejected.",
+    "reentrancy": "During BoundaryPool.withdraw, the Pool called pay again with the same valid signed calldata, called fallback, and attempted a one-wei receive. The adapter returned ReentrantPayment() for nested pay and UnexpectedEthReceipt() for the other two; outer payment then succeeded exactly once. When the Pool aborted after all three rejected probes, Pool input/executed/change/accounting/ETH, Pair reserves/WETH/dUSD, recipient token, Adapter ETH/payment flag and probe flags all rolled back."
+  },
+  "limitations": [
+    "BoundaryPool omits all real cryptographic balance and range verification and stores plaintext fixture values; proof structs are accepted but not validated. This cannot demonstrate actual confidential UTXO value conservation or proof binding.",
+    "Forge Anvil-fork tests execute in the Forge test EVM against a local Anvil fork; they are not broadcast transactions on Anvil RPC or Sepolia.",
+    "Upstream periphery pair init code hash was patched to locally compiled core Pair hash. Evidence applies only to this patched local code path.",
+    "No official Sepolia deployment, browser, quote freshness, gas comparison, full Pool, or formal verification is covered.",
+    "Foundry recordLogs includes logs emitted in a reverted subcall before the outer revert; test asserts storage and balances only. Persisted receipt logs would require a broadcast transaction.",
+    "The reentry probes are injected by the minimal BoundaryPool. A separate malicious token callback was not exercised because fixed dUSD does not invoke recipient hooks; the actual Pool implementation remains untested."
+  ],
+  "upstream_patch": "provenance.json",
+  "source_and_artifact_hashes": "outputs/source-hashes.json",
+  "environment": "outputs/environment.json"
+}

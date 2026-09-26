@@ -1,0 +1,439 @@
+{
+  "experiment": "UX-04",
+  "passed": true,
+  "runtime": {
+    "miniflare": "4.20260730.0",
+    "compatibilityDate": "2026-07-30",
+    "storage": "SQLite Durable Object local workerd",
+    "restart": "Miniflare dispose then new instance using same persistent directory; Node controller process retained; see process-restart-result.json for independent Node process restart",
+    "deployment": false
+  },
+  "sources": [
+    "https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/",
+    "https://developers.cloudflare.com/durable-objects/platform/limits/"
+  ],
+  "scenarios": [
+    {
+      "action": "cryptoProbe",
+      "params": {},
+      "status": 200,
+      "body": {
+        "ok": true,
+        "value": {
+          "nonceSamples": 1000,
+          "aadChangeRejected": true,
+          "ciphertextChangeRejected": true,
+          "algorithm": "AES-256-GCM"
+        }
+      }
+    },
+    {
+      "action": "reserve",
+      "params": {
+        "inputId": "u1",
+        "owner": "alice",
+        "operationId": "pay-1",
+        "contentHash": "terms-a"
+      },
+      "status": 200,
+      "body": {
+        "ok": true,
+        "value": {
+          "input_id": "u1",
+          "owner": "alice",
+          "operation_id": "pay-1",
+          "content_hash": "terms-a",
+          "revision": 0,
+          "phase": "reserved"
+        }
+      }
+    },
+    {
+      "action": "reserve",
+      "params": {
+        "inputId": "u1",
+        "owner": "alice",
+        "operationId": "withdraw-1",
+        "contentHash": "terms-b"
+      },
+      "status": 409,
+      "body": {
+        "ok": false,
+        "error": "input-conflict"
+      }
+    },
+    {
+      "action": "reserve",
+      "params": {
+        "inputId": "u1",
+        "owner": "alice",
+        "operationId": "pay-1",
+        "contentHash": "terms-a"
+      },
+      "status": 200,
+      "body": {
+        "ok": true,
+        "value": {
+          "input_id": "u1",
+          "owner": "alice",
+          "operation_id": "pay-1",
+          "content_hash": "terms-a",
+          "revision": 0,
+          "phase": "reserved"
+        }
+      }
+    },
+    {
+      "action": "revise",
+      "params": {
+        "inputId": "u1",
+        "owner": "alice",
+        "expectedRevision": 1,
+        "phase": "signed"
+      },
+      "status": 409,
+      "body": {
+        "ok": false,
+        "error": "stale-revision"
+      }
+    },
+    {
+      "action": "revise",
+      "params": {
+        "inputId": "u1",
+        "owner": "alice",
+        "expectedRevision": 0,
+        "phase": "signed"
+      },
+      "status": 200,
+      "body": {
+        "ok": true,
+        "value": {
+          "input_id": "u1",
+          "owner": "alice",
+          "operation_id": "pay-1",
+          "content_hash": "terms-a",
+          "revision": 1,
+          "phase": "signed"
+        }
+      }
+    },
+    {
+      "action": "revise",
+      "params": {
+        "inputId": "u1",
+        "owner": "alice",
+        "expectedRevision": 0,
+        "phase": "replaced"
+      },
+      "status": 409,
+      "body": {
+        "ok": false,
+        "error": "stale-revision"
+      }
+    },
+    {
+      "action": "reward",
+      "params": {
+        "requestId": "r1",
+        "owner": "alice",
+        "contentHash": "amount-and-recipient-1",
+        "operationId": "transfer-1"
+      },
+      "status": 200,
+      "body": {
+        "ok": true,
+        "value": {
+          "request_id": "r1",
+          "owner": "alice",
+          "content_hash": "amount-and-recipient-1",
+          "operation_id": "transfer-1",
+          "raw_tx": null,
+          "tx_hash": null,
+          "phase": "accepted"
+        }
+      }
+    },
+    {
+      "action": "reward",
+      "params": {
+        "requestId": "r2",
+        "owner": "alice",
+        "contentHash": "amount-and-recipient-2",
+        "operationId": "transfer-2"
+      },
+      "status": 409,
+      "body": {
+        "ok": false,
+        "error": "owner-active-request"
+      }
+    },
+    {
+      "action": "reward",
+      "params": {
+        "requestId": "r1",
+        "owner": "alice",
+        "contentHash": "amount-and-recipient-1",
+        "operationId": "transfer-1"
+      },
+      "status": 200,
+      "body": {
+        "ok": true,
+        "value": {
+          "request_id": "r1",
+          "owner": "alice",
+          "content_hash": "amount-and-recipient-1",
+          "operation_id": "transfer-1",
+          "raw_tx": null,
+          "tx_hash": null,
+          "phase": "accepted"
+        }
+      }
+    },
+    {
+      "action": "reward",
+      "params": {
+        "requestId": "r1",
+        "owner": "alice",
+        "contentHash": "changed",
+        "operationId": "transfer-1"
+      },
+      "status": 409,
+      "body": {
+        "ok": false,
+        "error": "request-conflict"
+      }
+    },
+    {
+      "action": "broadcastUnknown",
+      "params": {
+        "requestId": "r1"
+      },
+      "status": 409,
+      "body": {
+        "ok": false,
+        "error": "transaction-not-persisted"
+      }
+    },
+    {
+      "action": "prepare",
+      "params": {
+        "requestId": "r1",
+        "rawTx": "0x01aabb",
+        "txHash": "0xhash1"
+      },
+      "status": 200,
+      "body": {
+        "ok": true,
+        "value": {
+          "request_id": "r1",
+          "owner": "alice",
+          "content_hash": "amount-and-recipient-1",
+          "operation_id": "transfer-1",
+          "raw_tx": "0x01aabb",
+          "tx_hash": "0xhash1",
+          "phase": "prepared"
+        }
+      }
+    },
+    {
+      "action": "broadcastUnknown",
+      "params": {
+        "requestId": "r1"
+      },
+      "status": 200,
+      "body": {
+        "ok": true,
+        "value": {
+          "request_id": "r1",
+          "owner": "alice",
+          "content_hash": "amount-and-recipient-1",
+          "operation_id": "transfer-1",
+          "raw_tx": "0x01aabb",
+          "tx_hash": "0xhash1",
+          "phase": "uncertain"
+        }
+      }
+    },
+    {
+      "action": "snapshot",
+      "params": {},
+      "status": 200,
+      "body": {
+        "ok": true,
+        "value": {
+          "reservations": [
+            {
+              "input_id": "u1",
+              "owner": "alice",
+              "operation_id": "pay-1",
+              "content_hash": "terms-a",
+              "revision": 1,
+              "phase": "signed"
+            }
+          ],
+          "rewards": [
+            {
+              "request_id": "r1",
+              "owner": "alice",
+              "content_hash": "amount-and-recipient-1",
+              "operation_id": "transfer-1",
+              "raw_tx": "0x01aabb",
+              "tx_hash": "0xhash1",
+              "phase": "uncertain"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "action": "reward",
+      "params": {
+        "requestId": "r3",
+        "owner": "alice",
+        "contentHash": "new",
+        "operationId": "transfer-3"
+      },
+      "status": 409,
+      "body": {
+        "ok": false,
+        "error": "owner-active-request"
+      }
+    },
+    {
+      "action": "prepare",
+      "params": {
+        "requestId": "r1",
+        "rawTx": "0x01aabb",
+        "txHash": "0xhash1"
+      },
+      "status": 200,
+      "body": {
+        "ok": true,
+        "value": {
+          "request_id": "r1",
+          "owner": "alice",
+          "content_hash": "amount-and-recipient-1",
+          "operation_id": "transfer-1",
+          "raw_tx": "0x01aabb",
+          "tx_hash": "0xhash1",
+          "phase": "uncertain"
+        }
+      }
+    },
+    {
+      "action": "finalize",
+      "params": {
+        "requestId": "r1",
+        "txHash": "0xhash1"
+      },
+      "status": 200,
+      "body": {
+        "ok": true,
+        "value": {
+          "request_id": "r1",
+          "owner": "alice",
+          "content_hash": "amount-and-recipient-1",
+          "operation_id": "transfer-1",
+          "raw_tx": "0x01aabb",
+          "tx_hash": "0xhash1",
+          "phase": "finalized"
+        }
+      }
+    },
+    {
+      "action": "reorg",
+      "params": {
+        "requestId": "r1"
+      },
+      "status": 200,
+      "body": {
+        "ok": true,
+        "value": {
+          "request_id": "r1",
+          "owner": "alice",
+          "content_hash": "amount-and-recipient-1",
+          "operation_id": "transfer-1",
+          "raw_tx": "0x01aabb",
+          "tx_hash": "0xhash1",
+          "phase": "uncertain"
+        }
+      }
+    },
+    {
+      "action": "reward",
+      "params": {
+        "requestId": "r4",
+        "owner": "alice",
+        "contentHash": "new",
+        "operationId": "transfer-4"
+      },
+      "status": 409,
+      "body": {
+        "ok": false,
+        "error": "owner-active-request"
+      }
+    },
+    {
+      "action": "snapshot",
+      "params": {},
+      "status": 200,
+      "body": {
+        "ok": true,
+        "value": {
+          "reservations": [
+            {
+              "input_id": "u1",
+              "owner": "alice",
+              "operation_id": "pay-1",
+              "content_hash": "terms-a",
+              "revision": 1,
+              "phase": "signed"
+            }
+          ],
+          "rewards": [
+            {
+              "request_id": "r1",
+              "owner": "alice",
+              "content_hash": "amount-and-recipient-1",
+              "operation_id": "transfer-1",
+              "raw_tx": "0x01aabb",
+              "tx_hash": "0xhash1",
+              "phase": "uncertain"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "finalSnapshot": {
+    "reservations": [
+      {
+        "input_id": "u1",
+        "owner": "alice",
+        "operation_id": "pay-1",
+        "content_hash": "terms-a",
+        "revision": 1,
+        "phase": "signed"
+      }
+    ],
+    "rewards": [
+      {
+        "request_id": "r1",
+        "owner": "alice",
+        "content_hash": "amount-and-recipient-1",
+        "operation_id": "transfer-1",
+        "raw_tx": "0x01aabb",
+        "tx_hash": "0xhash1",
+        "phase": "uncertain"
+      }
+    ]
+  },
+  "limits": [
+    "Model contract only, not production API/authentication or chain integration",
+    "No actual broadcast, finalized-chain verification, rollback of persisted DB, or encrypted bundle persistence and key derivation",
+    "Nonce uniqueness checked for 1000 draws only; not a proof against future random collisions",
+    "No deployed Cloudflare persistence test",
+    "Local workerd does not establish production Cloudflare Free behavior"
+  ]
+}

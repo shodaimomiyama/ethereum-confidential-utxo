@@ -2,7 +2,8 @@ import json
 import unittest
 from pathlib import Path
 
-from oracle_range_prover import prove, verify, build_deterministic_case
+from oracle_range_prover import (prove, prove_with_internal_identity, verify,
+                                 build_deterministic_case, build_internal_identity_case)
 from oracle_v3 import replay_trace
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -38,9 +39,21 @@ class DeterministicRangeProverTests(unittest.TestCase):
                       bytes.fromhex('12'*32), self.parameters, self.profile)
         self.assertFalse(verify({**proof, 'operationId': '0x' + '77'*32}, self.parameters, self.profile))
 
+    def test_internal_identity_proof_is_valid_and_deterministic(self):
+        args = (1, 0, bytes.fromhex('66'*32), 0, bytes.fromhex('12'*32), self.parameters, self.profile)
+        ordinary = prove(*args)
+        proof = prove_with_internal_identity(*args)
+        self.assertEqual(proof['coords'][4:6], ['0', '0'])
+        self.assertTrue(verify(proof, self.parameters, self.profile))
+        self.assertEqual(replay_trace(proof, self.profile, self.parameters), proof['transcriptTrace']['stages'])
+        self.assertEqual(proof, prove_with_internal_identity(*args))
+        self.assertEqual(ordinary, prove(*args))
+
     def test_saved_new_proof_reproduces_exact_bytes(self):
-        saved = json.loads((ROOT / 'tests/vectors/cases/range-deterministic.json').read_text())[0]
+        cases = json.loads((ROOT / 'tests/vectors/cases/range-deterministic.json').read_text())
+        saved = cases[0]
         self.assertEqual(build_deterministic_case(self.parameters, self.profile), saved)
+        self.assertEqual(build_internal_identity_case(self.parameters, self.profile), cases[1])
         proof = saved['input']
         self.assertTrue(verify(proof, self.parameters, self.profile))
         self.assertEqual(replay_trace(proof, self.profile, self.parameters),

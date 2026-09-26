@@ -1,0 +1,63 @@
+{
+  "upstream": {
+    "repository": "https://github.com/leanderdulac/BulletProofLib",
+    "commit": "b7ec38970636d47f6b6bc0db6a3df62b188a247c",
+    "license": "MIT",
+    "noticePath": "contracts/src/verifier/UPSTREAM-LICENSE.txt",
+    "noticeSha256": "06a54024b435038ec834ef4cc1a6aa7cb60981f6600827ba121ece9087010743"
+  },
+  "sources": [
+    {
+      "path": "experiments/design/crypto-profile-v3/exp08/solidity/RangeProofVerifier.sol",
+      "sha256": "0e64d8e4e5eb63cc9bfdf5336df0b95728d260ba8620d3cefc53831f20ece819"
+    },
+    {
+      "path": "experiments/design/crypto-profile-v3/exp08/solidity/Transcript.sol",
+      "sha256": "ec87587e61dba283777e9a6fbe5e7f6dd5eea48320e5ac83861eb91a006e8545"
+    },
+    {
+      "path": "experiments/design/crypto-profile-v3/exp08/solidity/alt_bn128.sol",
+      "sha256": "b5db410990b99ac6ec25dc56a85f89cc9963126af11cc8b0f9385f74015ddd7c"
+    }
+  ],
+  "profile": {
+    "path": "experiments/design/crypto-profile-v3/exp08/profile.json",
+    "sha256": "8d78e9d4ba05e62e0cb1f97df0873f57690223aa92e6a1544d1a5500aabd4836",
+    "parametersPath": "experiments/design/crypto-profile-v3/exp08/parameters.json",
+    "parametersSha256": "884f531df7b30698d9a3d798ade2d26c5e985425d657d7c0f54bdec6a64d3755",
+    "parametersHash": "0x0bfd116b8ef31332d31d3350ed24fa36d1e17865a7c1dc0758331da0755f8dae"
+  },
+  "plannedChanges": [
+    "Solidity 0.8.37 syntax and explicit data locations",
+    "Checked integer arithmetic and finite-field modular operations",
+    "Explicit ABI, point, scalar and precompile result rejection",
+    "Bounded challenge extraction with existing full-prefix transcript",
+    "Separate Schnorr balance verifier entry in one fixed contract"
+  ],
+  "passCriteria": [
+    "Published independent v3 and balance proof decisions and transcript trace match",
+    "Canonical input and precompile failure classes reject as specified",
+    "Valid internal identity proof is accepted",
+    "Cancun deployment meets ordinary code and initcode size limits",
+    "Official runtime and constructor-initialized parameters are bound to artifact",
+    "Deployment, range and balance gas measurements are reproducible"
+  ],
+  "actualChanges": [
+    "Ported EXP-08 range verifier to Solidity 0.8.37 with explicit memory/calldata and checked arithmetic.",
+    "Preserved six-round full-prefix range transcript, candidate rejection and both range equations.",
+    "Replaced unchecked BN254 wrappers with canonical point/scalar validation and exact precompile return lengths.",
+    "Added constructor-bound EXP-08 parameters and one concrete contract with direct verify and verifyBalance entries.",
+    "Added balance Schnorr challenge over chain ID, direct caller, operation ID, parameters and proof points."
+  ],
+  "behaviorDifferences": [
+    "Malformed ABI, noncanonical scalars or points and precompile failures revert; canonical equation mismatch returns false.",
+    "Valid internal range point S=(0,0) is accepted when the complete proof equations hold.",
+    "Balance X=(0,0) may remain valid after caller/chain changes when sG=R; this is an equation consequence, not a context-binding guarantee for identity X."
+  ],
+  "validation": {
+    "build": "pnpm build; forge build --root contracts",
+    "tests": "pnpm test; python3 -m unittest discover -s tests/vectors/tools -p test_*.py; python3 tests/vectors/tools/check.py; python3 tests/vectors/tools/check_coverage.py",
+    "artifact": "pnpm artifact:verifier; pnpm check:verifier; pnpm measure:verifier",
+    "formalScope": "Issue #18 invariant work and Issue #34 full formal verification remain separate; these tests do not prove soundness."
+  }
+}

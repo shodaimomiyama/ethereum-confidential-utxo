@@ -13,7 +13,7 @@ describe("v3 range body", () => {
       hexBytes(vector.input.operationId), BigInt(vector.input.outputIndex),
       testScalarSource(hexBytes(vector.input.testScalarSeed)),
     );
-    expect(pointPair(body.C_range)).toEqual(vector.expected.C_range.map(BigInt));
+    expect(pointPair(body.C_range)).toEqual(vector.expected.C_range!.map(BigInt));
     expect(pointPair(body.A)).toEqual(vector.input.coords.slice(2, 4).map(BigInt));
     expect(pointPair(body.S)).toEqual(vector.input.coords.slice(4, 6).map(BigInt));
     expect(pointPair(body.T1)).toEqual(vector.input.coords.slice(6, 8).map(BigInt));

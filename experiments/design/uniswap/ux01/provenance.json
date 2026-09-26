@@ -1,0 +1,31 @@
+{
+  "upstream": [
+    {
+      "name": "Uniswap v2 core",
+      "url": "https://github.com/Uniswap/v2-core",
+      "commit": "6a9e7c97860676e0992f22a49665760444c1cdf5",
+      "source": "vendor/v2-core/contracts"
+    },
+    {
+      "name": "Uniswap v2 periphery",
+      "url": "https://github.com/Uniswap/v2-periphery",
+      "commit": "ed24991304291297c3b4a52818d02f46a17aa9a2",
+      "source": "vendor/v2-periphery/contracts"
+    },
+    {
+      "name": "Uniswap solidity lib",
+      "url": "https://github.com/Uniswap/solidity-lib",
+      "commit": "c01640b0f0f1d8a85cba8de378cc48469fcfd9a6",
+      "source": "vendor/uniswap-lib/contracts"
+    }
+  ],
+  "license_note": "The upstream LICENSE.txt files are preserved. Source import snapshots omit repository metadata and Markdown documentation.",
+  "local_patch": {
+    "file": "vendor/v2-periphery/contracts/libraries/UniswapV2Library.sol",
+    "constant": "pair init code hash",
+    "upstream_value": "0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f",
+    "patched_value": "0x6e0852370c0f5f59d23ec1217959cf15732c8f839de8d3d08858544edc4f8150",
+    "reason": "The upstream periphery constant did not match keccak256 of the locally compiled pinned core UniswapV2Pair creation bytecode, so addLiquidityETH attempted to interact with a non-contract address. This one-line patch lets the genuine Router02 address the locally deployed genuine Pair.",
+    "scope": "Only the patched local deployment is exercised. It is not evidence that unmodified periphery, official Sepolia deployment, or another compiler configuration works."
+  }
+}
