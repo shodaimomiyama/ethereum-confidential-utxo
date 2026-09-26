@@ -10,7 +10,7 @@ describe("public crypto integration", () => {
   it("exports only the production capability set", () => {
     expect(Object.keys(api).sort()).toEqual([
       "CryptoFailure", "M", "P", "Q", "balanceWitness", "commit", "computeBalancePoint",
-      "decryptReceipt", "encryptReceipt", "generateBalanceProof", "generateRangeProof", "randomBlinding",
+      "decryptReceipt", "encryptReceipt", "generateBalanceProof", "generateRangeProof", "randomBlinding", "validateCommitment",
     ].sort());
   });
 
