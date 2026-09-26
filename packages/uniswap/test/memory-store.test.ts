@@ -76,6 +76,25 @@ it('keeps authorization stopped after a partially rolled back operation record',
   expect(store.operations.list(scope)).toHaveLength(0);
   expect(store.control.health()).toBe('rollback');
   expect(() => store.operations.put(record('pay'), 0)).toThrowError(/UNAVAILABLE/);
+  store.control.setUnavailable(false);
+  expect(store.control.health()).toBe('rollback');
+  expect(() => store.operations.put(record('pay'), 0)).toThrowError(/UNAVAILABLE/);
+  store.control.setUnavailable(true);
+  expect(store.control.health()).toBe('unavailable');
+  store.control.setUnavailable(false);
+  expect(store.control.health()).toBe('rollback');
+  expect(() => store.operations.put(record('pay'), 0)).toThrowError(/UNAVAILABLE/);
+});
+
+it('does not mark a finalized reward as received during a rollback', () => {
+  const store = createMemoryStore();
+  const request = store.rewards.create(reward());
+  store.control.setRewardFinalized(scope, request.requestId, inputId as never, id as never);
+  store.control.simulateRollback();
+  expect(() => store.rewards.markReceived(scope, request.requestId, inputId as never, id as never))
+    .toThrowError(/UNAVAILABLE/);
+  expect(store.rewards.get(scope, request.requestId)?.status).toBe('finalized');
+  expect(store.control.journal().map((entry) => entry.kind)).not.toContain('reward-received');
 });
 
 it('never rewinds the fact that signing started or erases a known attempt', () => {

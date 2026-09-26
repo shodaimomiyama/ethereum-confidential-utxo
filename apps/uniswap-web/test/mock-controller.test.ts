@@ -100,6 +100,34 @@ it('keeps the original signed operation available for first submission after pro
   expect(ui.control.journal().filter((x) => x.kind === 'send')).toHaveLength(1);
 });
 
+for (const availability of ['unavailable', 'rollback'] as const) {
+  for (const actionType of ['retry-attempt', 'resume-original'] as const) {
+    it(`blocks ${actionType} while storage is ${availability} without sending`, async () => {
+      const { ui, store } = setup();
+      if (actionType === 'retry-attempt') {
+        ui.control.inject({ type: 'attempt-failed', card: 'pay', operationId, otherAttemptPending: false, inputUnspent: true, deadlineValid: true });
+      } else {
+        ui.control.inject({ type: 'original-unsent', card: 'pay', operationId, inputUnspent: true, deadlineValid: true });
+      }
+      expect(ui.snapshot().allowedActions).toContain(actionType);
+
+      if (availability === 'unavailable') store.control.setUnavailable(true);
+      else store.control.simulateRollback('partial');
+
+      expect(ui.snapshot().allowedActions).not.toContain(actionType);
+      expect(await ui.dispatch({ type: actionType, operationId })).toEqual({ kind: 'blocked', reason: 'SERVICE_UNAVAILABLE' });
+      expect(ui.control.journal().filter((entry) => entry.kind === 'send')).toHaveLength(0);
+
+      if (availability === 'unavailable') {
+        store.control.setUnavailable(false);
+        expect(ui.snapshot().allowedActions).toContain(actionType);
+        expect(await ui.dispatch({ type: actionType, operationId })).toEqual({ kind: 'accepted' });
+        expect(ui.control.journal().filter((entry) => entry.kind === 'send')).toHaveLength(1);
+      }
+    });
+  }
+}
+
 it('holds changed terms until the prior authorization is proven unusable', async () => {
   const { ui } = setup();
   ui.control.inject({ type: 'terms-changed', card: 'pay', oldAuthorizationActive: true });

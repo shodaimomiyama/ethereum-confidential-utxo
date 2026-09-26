@@ -73,29 +73,35 @@ export function createMemoryStore(seed: StoreSeed = {}): MemoryStore {
   const rewards = new Map<string, RewardRecord>();
   const lostAcks = new Map<string, number>();
   const entries: StoreJournalEntry[] = [];
-  let health: 'healthy' | 'unavailable' | 'rollback' = 'healthy';
+  let unavailable = false;
+  let rolledBack = false;
+
+  function health(): 'healthy' | 'unavailable' | 'rollback' {
+    return unavailable ? 'unavailable' : rolledBack ? 'rollback' : 'healthy';
+  }
 
   function reset(next: StoreSeed = {}): void {
     operations.clear();
     rewards.clear();
     lostAcks.clear();
     entries.length = 0;
-    health = 'healthy';
+    unavailable = false;
+    rolledBack = false;
     for (const saved of next.operations ?? []) operations.set(operationKey(saved.record), structuredClone(saved));
     for (const reward of next.rewards ?? []) rewards.set(rewardKey(reward.scope, reward.requestId), structuredClone(reward));
   }
 
   function readable(): void {
-    if (health === 'unavailable') throw new StoreError('UNAVAILABLE');
+    if (unavailable) throw new StoreError('UNAVAILABLE');
   }
 
   function writable(): void {
-    if (health !== 'healthy') throw new StoreError('UNAVAILABLE');
+    if (health() !== 'healthy') throw new StoreError('UNAVAILABLE');
   }
 
   reset(seed);
   return {
-    availability: () => health,
+    availability: health,
     operations: {
       put(record, expectedRevision) {
         writable();
@@ -180,7 +186,7 @@ export function createMemoryStore(seed: StoreSeed = {}): MemoryStore {
         return reward === undefined ? undefined : structuredClone(reward);
       },
       markReceived(scope, requestId, outputId, blockHash) {
-        readable();
+        writable();
         const key = rewardKey(scope, requestId);
         const existing = rewards.get(key);
         if (existing === undefined) throw new StoreError('NOT_FOUND');
@@ -200,9 +206,9 @@ export function createMemoryStore(seed: StoreSeed = {}): MemoryStore {
     },
     control: {
       reset,
-      setUnavailable(value) { health = value ? 'unavailable' : 'healthy'; },
+      setUnavailable(value) { unavailable = value; },
       simulateRollback(mode = 'flag') {
-        health = 'rollback';
+        rolledBack = true;
         if (mode === 'partial') {
           const mostRecentKey = [...operations.keys()].at(-1);
           if (mostRecentKey !== undefined) operations.delete(mostRecentKey);
@@ -223,7 +229,7 @@ export function createMemoryStore(seed: StoreSeed = {}): MemoryStore {
         rewards.set(key, { ...existing, status: 'finalized', outputId, blockHash });
       },
       journal: () => structuredClone(entries),
-      health: () => health,
+      health,
     },
   };
 }

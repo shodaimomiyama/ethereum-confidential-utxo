@@ -136,10 +136,16 @@ function derive(runtime: Runtime, now: number): ViewState {
     }
   }
   for (const operationId of runtime.retryEligible) {
-    if (state.operations.some((operation) => operation.operationId === operationId && operation.chainOutcome === 'finalized-failure')) allowed.add('retry-attempt');
+    if (state.operations.some((operation) => operation.operationId === operationId && operation.chainOutcome === 'finalized-failure')) {
+      if (state.storageAvailability === 'healthy') allowed.add('retry-attempt');
+      else reasons['retry-attempt'] = 'SERVICE_UNAVAILABLE';
+    }
   }
   for (const operationId of runtime.resumeEligible) {
-    if (state.operations.some((operation) => operation.operationId === operationId && operation.chainOutcome === 'not-submitted')) allowed.add('resume-original');
+    if (state.operations.some((operation) => operation.operationId === operationId && operation.chainOutcome === 'not-submitted')) {
+      if (state.storageAvailability === 'healthy') allowed.add('resume-original');
+      else reasons['resume-original'] = 'SERVICE_UNAVAILABLE';
+    }
   }
   if (state.rewardRequests.some((reward) => reward.status !== 'received')) allowed.add('recheck-reward');
   if (state.cards.pay.phase === 'confirmed-receipt-pending'
@@ -355,6 +361,9 @@ export function createMockUiController({ scope, store, clock, scenario }: {
         runtime.state = setCard(runtime.state, 'pay', { phase: 'preparing', reason: undefined,
           quote: runtime.state.cards.pay.proposedQuote ?? runtime.state.cards.pay.quote, proposedQuote: undefined });
       } else if (action.type === 'retry-attempt' || action.type === 'resume-original') {
+        if (store.availability() !== 'healthy') {
+          return { kind: 'blocked', reason: 'SERVICE_UNAVAILABLE' };
+        }
         const eligible = action.type === 'retry-attempt' ? runtime.retryEligible : runtime.resumeEligible;
         if (!eligible.has(action.operationId)
           || !runtime.state.operations.some((operation) => operation.operationId === action.operationId
