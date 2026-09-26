@@ -8,6 +8,6 @@ export default defineConfig({
       'packages/uniswap/test/**/*.test.ts',
       'apps/uniswap-web/test/**/*.test.ts',
     ],
-    exclude: ['experiments/**', 'benchmarks/**', 'tests/environment/check-tools.test.mjs'],
+    exclude: ['apps/uniswap-web/test/browser/**', 'experiments/**', 'benchmarks/**', 'tests/environment/check-tools.test.mjs'],
   },
 });

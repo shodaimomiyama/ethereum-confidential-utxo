@@ -2,7 +2,7 @@
 // This file has no runtime dependency on experiments/.
 import { bn254 } from "@noble/curves/bn254.js";
 import { keccak_256 } from "@noble/hashes/sha3.js";
-import { concat, hexBytes, tag, word } from "./bytes.js";
+import { bytesHex, concat, hexBytes, tag, word } from "./bytes.js";
 import type { G1Point } from "./group.js";
 
 export const H: G1Point = { x: 12730586376239396577779996276718232087903100639305218386364088504561595411059n, y: 11546560963110481742356578822308548249278318971213841271481263934160486303484n };
@@ -151,7 +151,7 @@ const unique = new Set<string>();
 for (const point of fixedPoints) {
   if (point.x === 0n && point.y === 0n) throw new Error("identity fixed generator");
   bn254.G1.Point.fromAffine(point).assertValidity();
-  const encoded = Buffer.from(fixedPointBytes(point)).toString("hex");
+  const encoded = bytesHex(fixedPointBytes(point));
   if (unique.has(encoded)) throw new Error("duplicate fixed generator");
   unique.add(encoded);
 }
@@ -159,6 +159,6 @@ const digest = keccak_256(concat(
   tag("ecu/bp/parameters/v3"), word(64n),
   ...fixedPoints.map(fixedPointBytes),
 ));
-if (!Buffer.from(digest).equals(Buffer.from(PARAMETERS_HASH_V3))) {
+if (bytesHex(digest) !== bytesHex(PARAMETERS_HASH_V3)) {
   throw new Error("fixed parameters hash mismatch");
 }
