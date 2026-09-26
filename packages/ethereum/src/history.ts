@@ -1,10 +1,11 @@
-import { decodeEventLog, decodeFunctionData } from "viem";
+import { decodeEventLog, decodeFunctionData, decodeFunctionResult, encodeFunctionData } from "viem";
 import type { Hex, PublicClient } from "viem";
 import { operationId, outputId, validateOperationShape } from "@confidential-utxo/core";
-import type { Checkpoint, Context, Observation, ObservedOperation, OperationRequest, PublicOutput } from "@confidential-utxo/core";
+import type { Checkpoint, Context, HistoryPort, Observation, ObservedOperation, OperationRequest, OperationSuccess, PublicOutput, UtxoState } from "@confidential-utxo/core";
 import { poolAbi } from "./abi.js";
+import type { VerifiedDeployment } from "./deployment.js";
 import { EthereumFailure } from "./errors.js";
-import { canonicalHeader, readWithPolicy } from "./rpc.js";
+import { canonicalHeader, readPinnedCall, readWithPolicy } from "./rpc.js";
 import type { RpcPolicy } from "./rpc.js";
 
 type Position = { operationId: Hex; blockNumber: bigint; blockHash: Hex;
@@ -189,4 +190,94 @@ export async function getPoolOperations(client: PublicClient, context: Context, 
     if (error instanceof EthereumFailure && error.code === "HASH_MISMATCH") return incomplete("HASH_MISMATCH");
     return incomplete("GAP");
   }
+}
+
+const incompleteState = (reason: "RPC" | "GAP" | "HASH_MISMATCH") => ({ complete: false as const, reason });
+const completeState = <T>(point: Checkpoint, value: T): Observation<T> =>
+  ({ complete: true, blockHash: point.hash, value });
+const samePoint = (point: Checkpoint, context: Context) =>
+  point.mode === context.finalityMode && point.number >= context.deploymentBlock;
+
+export function createHistoryPort(verified: VerifiedDeployment, client: PublicClient, policy: RpcPolicy): HistoryPort {
+  const context = verified.context;
+  const checked = (point: Checkpoint) => samePoint(point, context) ? undefined : incompleteState("GAP");
+  const allOperations = (point: Checkpoint) =>
+    getPoolOperations(client, context, context.deploymentBlock, point, policy);
+
+  const utxo = async (id: Hex, point: Checkpoint): Promise<Observation<UtxoState>> => {
+    const invalid = checked(point);
+    if (invalid) return invalid;
+    try {
+      const data = await readPinnedCall(client, context.pool,
+        encodeFunctionData({ abi: poolAbi, functionName: "getUtxo", args: [id] }), point);
+      const [status, owner, x, y] = decodeFunctionResult({ abi: poolAbi, functionName: "getUtxo", data });
+      if (status === 0) return completeState(point, { exists: false });
+      if (status !== 1 && status !== 2) return incompleteState("GAP");
+      const value: UtxoState = { exists: true, owner, commitment: { x, y } };
+      if (status === 2) {
+        const operations = await allOperations(point);
+        if (!operations.complete) return incompleteState(operations.reason);
+        const consumers = operations.value.filter(op => op.request.inputIds.some(input => same(input, id)));
+        if (consumers.length !== 1 || !consumers[0]?.success) return incompleteState("GAP");
+        value.consumedBy = consumers[0].success.operationId;
+      }
+      const after = await canonicalHeader(client, point.number, point);
+      return after.complete ? completeState(point, value) : incompleteState(after.reason);
+    } catch (error) {
+      return incompleteState(error instanceof EthereumFailure && error.code === "HASH_MISMATCH" ? "HASH_MISMATCH" : "RPC");
+    }
+  };
+
+  const success = async (id: Hex, point: Checkpoint): Promise<Observation<OperationSuccess>> => {
+    const invalid = checked(point);
+    if (invalid) return invalid;
+    try {
+      const data = await readPinnedCall(client, context.pool,
+        encodeFunctionData({ abi: poolAbi, functionName: "isOperationExecuted", args: [id] }), point);
+      const executed = decodeFunctionResult({ abi: poolAbi, functionName: "isOperationExecuted", data });
+      if (!executed) return completeState(point, { executed: false });
+      const operations = await allOperations(point);
+      if (!operations.complete) return incompleteState(operations.reason);
+      const matches = operations.value.filter(op => op.success && same(op.success.operationId, id));
+      if (matches.length !== 1 || !matches[0]) return incompleteState("GAP");
+      const after = await canonicalHeader(client, point.number, point);
+      return after.complete ? completeState(point, { executed: true, operation: matches[0].request }) : incompleteState(after.reason);
+    } catch (error) {
+      return incompleteState(error instanceof EthereumFailure && error.code === "HASH_MISMATCH" ? "HASH_MISMATCH" : "RPC");
+    }
+  };
+
+  return {
+    async getFinalizedCheckpoint() {
+      try {
+        const block = await readWithPolicy(() => client.getBlock({ blockTag: context.finalityMode === "finalized" ? "finalized" : "latest" }), policy);
+        if (!block.hash || block.number < context.deploymentBlock) return null;
+        return { number: block.number, hash: block.hash, mode: context.finalityMode };
+      } catch { return null; }
+    },
+    async getContext(point) {
+      const invalid = checked(point);
+      if (invalid) return invalid;
+      const header = await canonicalHeader(client, point.number, point);
+      return header.complete ? completeState(point, context) : incompleteState(header.reason);
+    },
+    getCanonicalHeader(number, point) {
+      const invalid = checked(point);
+      return invalid ? Promise.resolve(invalid) : canonicalHeader(client, number, point);
+    },
+    getOperations(fromBlock, point) {
+      const invalid = checked(point);
+      return invalid ? Promise.resolve(invalid) : getPoolOperations(client, context, fromBlock, point, policy);
+    },
+    getUtxo: utxo,
+    getOperationSuccess: success,
+    async getLatestHeader() {
+      try {
+        const block = await readWithPolicy(() => client.getBlock({ blockTag: "latest" }), policy);
+        return block.hash ? { number: block.number, hash: block.hash } : null;
+      } catch { return null; }
+    },
+    getLatestUtxo(id, point) { return utxo(id, { ...point, mode: context.finalityMode }); },
+    getLatestOperationSuccess(id, point) { return success(id, { ...point, mode: context.finalityMode }); },
+  };
 }

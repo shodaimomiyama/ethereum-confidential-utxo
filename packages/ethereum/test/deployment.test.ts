@@ -1,10 +1,15 @@
 import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { spawn } from "node:child_process";
 import { expect, it } from "vitest";
 import { createPublicClient, http } from "viem";
 import type { PublicClient } from "viem";
+import { preflightSubmission, synchronize } from "@confidential-utxo/core";
+import type { OperationRequest } from "@confidential-utxo/core";
 import { verifyEthereumDeployment } from "../src/deployment.js";
+import { createHistoryPort } from "../src/history.js";
+import { defaultRpcPolicy } from "../src/rpc.js";
 
 const require = createRequire(import.meta.url);
 const { deployPool } = require("../../../scripts/pool-deployment.mjs") as {
@@ -47,6 +52,23 @@ it("accepts only the fixed Pool and verifier deployment on the selected chain", 
     const verified = await verifyEthereumDeployment(client, manifest, "local-simulated");
     expect(verified.context.pool.toLowerCase()).toBe((manifest as { pool: { address: string } }).pool.address.toLowerCase());
     expect(verified.context.finalityMode).toBe("local-simulated");
+    const history = createHistoryPort(verified, client, defaultRpcPolicy);
+    const first = await history.getFinalizedCheckpoint();
+    expect(first).not.toBeNull();
+    const baseline = await history.getOperations(verified.context.deploymentBlock, first!);
+    expect(baseline).toEqual({ complete: true, blockHash: first!.hash, value: [] });
+    expect(await history.getOperations(verified.context.deploymentBlock, first!)).toEqual(baseline);
+    const synchronized = await synchronize(verified.context, { history,
+      owners: [verified.context.verifier], keys: { getKey: async () => { throw new Error("unused"); } } });
+    expect(synchronized).toMatchObject({ status: "complete", availableWei: 0n, utxos: [] });
+    const cases = JSON.parse(readFileSync("tests/vectors/cases/operation.json", "utf8"));
+    const input = cases.find((item: { id: string }) => item.id === "VEC-01-DEPOSIT").input;
+    const request: OperationRequest = { kind: 0, owner: input.owner, salt: input.salt, inputIds: [],
+      outputs: input.outputs.map((output: { owner: string; Cx: string; Cy: string; packet: string }) => ({
+        owner: output.owner, commitment: { x: BigInt(output.Cx), y: BigInt(output.Cy) },
+        receiptFormat: 1, packet: output.packet,
+      })), d: 1n, w: 0n, destination: input.destination };
+    expect(await preflightSubmission(verified.context, request, { history })).toMatchObject({ status: "ready" });
     for (const mutate of [
       (copy: any) => { copy.schemaVersion = 2; },
       (copy: any) => { copy.chainId = 11155111; },

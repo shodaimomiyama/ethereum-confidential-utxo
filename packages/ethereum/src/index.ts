@@ -7,4 +7,4 @@ export { verifyEthereumDeployment } from "./deployment.js";
 export type { DeploymentManifestV1, VerifiedDeployment } from "./deployment.js";
 export { canonicalHeader, createEthereumRpc, defaultRpcPolicy, readPinnedCall, readWithPolicy, validateRpcPolicy } from "./rpc.js";
 export type { RpcConnection, RpcPolicy } from "./rpc.js";
-export { chunkInclusive, getPoolOperations } from "./history.js";
+export { chunkInclusive, createHistoryPort, getPoolOperations } from "./history.js";
