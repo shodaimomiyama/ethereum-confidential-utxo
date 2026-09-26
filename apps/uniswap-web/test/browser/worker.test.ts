@@ -87,7 +87,10 @@ it('builds a full Withdraw through published core in the production Worker and v
 it('builds a Deposit and encrypts a receivable output through published core in the production Worker', async () => {
   const vector = applicationVectors.find(v => v.id === 'VEC-07-APPLICATION-DEPOSIT')!;
   const receipt = vector.expected.receipts[0]!;
-  const { commit } = await import('@confidential-utxo/crypto');
+  const { commit, computeBalancePoint } = await import('@confidential-utxo/crypto');
+  const { balanceChallengeTrace } = await import('../../../../packages/crypto/src/balance.js');
+  const { G } = await import('../../../../packages/crypto/src/fixed-parameters.js');
+  const { add, mul, samePoint } = await import('../../../../packages/crypto/src/group.js');
   const { operationId, outputId, receiptInfo, validateOperationShape } = await import('@confidential-utxo/core');
   const context: import('@confidential-utxo/core').Context = {
     chainId: BigInt(vector.input.chainId), pool: vector.input.pool as `0x${string}`, deploymentBlock: 1n,
@@ -114,13 +117,19 @@ it('builds a Deposit and encrypts a receivable output through published core in 
     expect(() => validateOperationShape(draft.request)).not.toThrow();
     expect(draft.operationId).toBe(operationId(context, draft.request));
     expect(draft.outputIds).toEqual([outputId(draft.operationId, 0)]);
+    expect(draft.request.outputs).toHaveLength(1);
     expect(draft.openings).toHaveLength(1);
+    expect(draft.openings[0]!.amount).toBe(payload.intent.amount);
     expect(output.commitment).toEqual(commit(draft.openings[0]!));
     expect(output.packet).toMatch(/^0x[0-9a-f]{224}$/);
     expect(output.packet).not.toBe(receipt.packet);
     expect(draft.inputOpenings).toEqual([]);
     expect(draft.rangeProofs).toEqual([]);
     expect(draft.signature).toBeUndefined();
+    const X = computeBalancePoint([], [output.commitment], draft.request.d, draft.request.w);
+    const R = { x: draft.balanceProof.Rx, y: draft.balanceProof.Ry };
+    const challenge = balanceChallengeTrace(context.chainId, bytes(context.pool), bytes(draft.operationId), X, R).at(-1)!.candidate;
+    expect(samePoint(mul(G, draft.balanceProof.s), add(R, mul(X, challenge)))).toBe(true);
 
     const received = await worker.run({ kind: 'receive', jobId: 'deposit-receipt', epoch: 0, scope,
       payload: { recipientPrivateKey, info: bytes(receiptInfo(context, draft.request, 0)),
