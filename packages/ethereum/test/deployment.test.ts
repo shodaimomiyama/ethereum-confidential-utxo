@@ -3,13 +3,16 @@ import { readFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { spawn } from "node:child_process";
 import { expect, it } from "vitest";
-import { createPublicClient, http } from "viem";
+import { createPublicClient, createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { foundry } from "viem/chains";
 import type { PublicClient } from "viem";
-import { preflightSubmission, synchronize } from "@confidential-utxo/core";
+import { preflightSubmission, synchronize, trackAttempt } from "@confidential-utxo/core";
 import type { OperationRequest } from "@confidential-utxo/core";
 import { verifyEthereumDeployment } from "../src/deployment.js";
 import { createHistoryPort } from "../src/history.js";
 import { defaultRpcPolicy } from "../src/rpc.js";
+import { observeAttempt } from "../src/observation.js";
 
 const require = createRequire(import.meta.url);
 const { deployPool } = require("../../../scripts/pool-deployment.mjs") as {
@@ -69,6 +72,20 @@ it("accepts only the fixed Pool and verifier deployment on the selected chain", 
         receiptFormat: 1, packet: output.packet,
       })), d: 1n, w: 0n, destination: input.destination };
     expect(await preflightSubmission(verified.context, request, { history })).toMatchObject({ status: "ready" });
+    // Runtime forwards arbitrary calldata to Pool, discards CALL's failure flag, then STOPs.
+    const relayRuntime = `36600060003760006000366000600073${verified.context.pool.slice(2)}5af15000`;
+    const length = (relayRuntime.length / 2).toString(16).padStart(2, "0");
+    const initcode = `0x60${length}600c60003960${length}6000f3${relayRuntime}` as const;
+    const wallet = createWalletClient({ account: privateKeyToAccount(anvilKey), chain: foundry, transport: http(url) });
+    const deployHash = await wallet.sendTransaction({ data: initcode, gas: 500000n });
+    const deployed = await client.waitForTransactionReceipt({ hash: deployHash });
+    expect(deployed.contractAddress).not.toBeNull();
+    const relayHash = await wallet.sendTransaction({ to: deployed.contractAddress!, data: "0x12345678", gas: 100000n });
+    const relayReceipt = await client.waitForTransactionReceipt({ hash: relayHash });
+    expect(relayReceipt.status).toBe("success");
+    const observed = await observeAttempt(history, client, `0x${"01".repeat(32)}`, relayHash, defaultRpcPolicy);
+    expect(observed.observation).toMatchObject({ outer: "success", operation: "unconfirmed" });
+    expect(trackAttempt(`0x${"01".repeat(32)}`, observed.observation, []).receipt).toBe("unconfirmed");
     for (const mutate of [
       (copy: any) => { copy.schemaVersion = 2; },
       (copy: any) => { copy.chainId = 11155111; },
