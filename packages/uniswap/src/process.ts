@@ -3,9 +3,11 @@ import type { EncryptedBundle, OperationRecord } from './storage.js';
 import type { ReservationPort, SavedReservation } from './reservation.js';
 import type { MonotonicClock, PayQuote } from './quote.js';
 import { isQuoteFresh } from './quote.js';
+import { inspectOperation } from './recovery.js';
+import type { CurrentInput, RecoveryEvidence } from './recovery.js';
 
 export class PaymentProcessError extends Error {
-  constructor(readonly code: 'TERMS_CHANGED' | 'SCOPE_CHANGED' | 'QUOTE_STALE' | 'TERMS_EXPIRED' | 'INPUT_RESERVED' | 'INPUT_INVALID') {
+  constructor(readonly code: 'TERMS_CHANGED' | 'SCOPE_CHANGED' | 'QUOTE_STALE' | 'TERMS_EXPIRED' | 'INPUT_RESERVED' | 'INPUT_INVALID' | 'RECOVERY_BLOCKED' | 'RECOVERY_UNAVAILABLE') {
     super(code);
     this.name = 'PaymentProcessError';
   }
@@ -30,8 +32,21 @@ export interface AuthorizationSignatures {
   readonly payment?: `0x${string}`;
 }
 
+export type SubmissionOutcome =
+  | { readonly kind: 'submitted'; readonly txHash: TxHash }
+  | { readonly kind: 'not-submitted' }
+  | { readonly kind: 'unknown' };
+
+export interface RecoveryPorts {
+  readEvidence(saved: SavedReservation): Promise<{ readonly evidence: RecoveryEvidence; readonly currentInput: CurrentInput }>;
+  executeResumeOriginal(saved: SavedReservation, evidence: RecoveryEvidence): Promise<SubmissionOutcome>;
+  executeRetryAttempt(saved: SavedReservation, evidence: RecoveryEvidence): Promise<SubmissionOutcome>;
+  releaseAndPrepareChangedTerms(saved: SavedReservation, evidence: RecoveryEvidence, input: unknown): Promise<PreparedPay>;
+}
+
 export interface PaymentPorts {
   reservations: ReservationPort;
+  recovery?: RecoveryPorts;
   preparePay(input: unknown): Promise<PreparedPay>;
   prepareFullWithdraw(input: unknown): Promise<PreparedFullWithdraw>;
   refreshPay(prepared: PreparedPay): Promise<PreparedPay>;
@@ -44,11 +59,7 @@ export interface PaymentPorts {
   signPool(payload: Readonly<Record<string, unknown>>): Promise<`0x${string}`>;
   signPayment(prepared: PreparedPay): Promise<`0x${string}`>;
   createAttempt(prepared: PreparedBase, signatures: AuthorizationSignatures): AttemptId;
-  submit(prepared: PreparedBase, signatures: AuthorizationSignatures, attemptId: AttemptId): Promise<
-    | { readonly kind: 'submitted'; readonly txHash: TxHash }
-    | { readonly kind: 'not-submitted' }
-    | { readonly kind: 'unknown' }
-  >;
+  submit(prepared: PreparedBase, signatures: AuthorizationSignatures, attemptId: AttemptId): Promise<SubmissionOutcome>;
 }
 
 export interface PaymentClient {
@@ -56,6 +67,9 @@ export interface PaymentClient {
   prepareFullWithdraw(input: unknown): Promise<PreparedFullWithdraw>;
   authorizePay(prepared: PreparedPay, confirmedContentHash: Bytes32): Promise<OperationRef>;
   authorizeFullWithdraw(prepared: PreparedFullWithdraw, confirmedContentHash: Bytes32): Promise<OperationRef>;
+  resumeOriginal(recordId: Bytes32): Promise<SubmissionOutcome>;
+  retryAttempt(recordId: Bytes32): Promise<SubmissionOutcome>;
+  prepareChangedTerms(recordId: Bytes32, input: unknown): Promise<PreparedPay>;
 }
 
 function sameScope(a: Scope, b: Scope): boolean {
@@ -115,6 +129,16 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
     }
   }
 
+  async function assertPayTermsLive(prepared: PreparedPay): Promise<void> {
+    if (!isQuoteFresh(prepared.quote, ports.clock.now())) {
+      throw new PaymentProcessError('QUOTE_STALE');
+    }
+    if (prepared.record.kind !== 'pay' || await ports.latestBlockTime() >= prepared.record.deadline) {
+      throw new PaymentProcessError('TERMS_EXPIRED');
+    }
+    assertScope(prepared.record.scope);
+  }
+
   async function authorize(preparedInput: PreparedBase, confirmedContentHash: Bytes32, isPay: boolean): Promise<OperationRef> {
     let prepared = preparedInput;
     const initialScope = prepared.record.scope;
@@ -138,11 +162,7 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
           throw new PaymentProcessError('QUOTE_STALE');
         }
       }
-      const latestBlockTime = await ports.latestBlockTime();
-      assertScope(initialScope);
-      if (prepared.record.kind !== 'pay' || latestBlockTime >= prepared.record.deadline) {
-        throw new PaymentProcessError('TERMS_EXPIRED');
-      }
+      await assertPayTermsLive(prepared as PreparedPay);
     }
     await ports.validatePrepared(prepared);
     assertScope(initialScope);
@@ -159,16 +179,11 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
     assertScope(initialScope);
     assertSaved(started, startedRecord, 2);
     if (isPay) {
-      if (!isQuoteFresh((prepared as PreparedPay).quote, ports.clock.now())) {
-        throw new PaymentProcessError('QUOTE_STALE');
-      }
-      if (prepared.record.kind !== 'pay' || await ports.latestBlockTime() >= prepared.record.deadline) {
-        throw new PaymentProcessError('TERMS_EXPIRED');
-      }
-      assertScope(initialScope);
+      await assertPayTermsLive(prepared as PreparedPay);
     }
     const pool = await ports.signPool(prepared.poolAuthorization);
     assertScope(initialScope);
+    if (isPay) await assertPayTermsLive(prepared as PreparedPay);
     const payment = isPay ? await ports.signPayment(prepared as PreparedPay) : undefined;
     assertScope(initialScope);
     const signatures: AuthorizationSignatures = { pool, ...(payment === undefined ? {} : { payment }) };
@@ -206,10 +221,49 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
     };
   }
 
+  async function recover<T>(
+    recordId: Bytes32,
+    action: 'resume-original' | 'retry-attempt' | 'change-terms',
+    execute: (recovery: RecoveryPorts, saved: SavedReservation, evidence: RecoveryEvidence) => Promise<T>,
+  ): Promise<T> {
+    const recovery = ports.recovery;
+    if (recovery === undefined) throw new PaymentProcessError('RECOVERY_UNAVAILABLE');
+    const scope = ports.currentScope();
+    const listed = await ports.reservations.list(scope);
+    assertScope(scope);
+    if (listed.availability !== 'healthy') throw new PaymentProcessError('RECOVERY_BLOCKED');
+    const saved = listed.records.find(({ record }) => sameHash(record.recordId, recordId));
+    if (saved === undefined || !sameScope(saved.record.scope, scope)) {
+      throw new PaymentProcessError('RECOVERY_BLOCKED');
+    }
+    const { evidence, currentInput } = await recovery.readEvidence(saved);
+    assertScope(scope);
+    const latest = await ports.reservations.get(scope, recordId);
+    assertScope(scope);
+    if (latest === undefined || latest.revision !== saved.revision
+      || latest.reservationState !== saved.reservationState
+      || !sameHash(latest.record.contentHash, saved.record.contentHash)
+      || latest.record.attemptIds.join('\u0000') !== saved.record.attemptIds.join('\u0000')) {
+      throw new PaymentProcessError('RECOVERY_BLOCKED');
+    }
+    if (inspectOperation(saved, evidence, currentInput).action !== action) {
+      throw new PaymentProcessError('RECOVERY_BLOCKED');
+    }
+    const result = await execute(recovery, saved, evidence);
+    assertScope(scope);
+    return result;
+  }
+
   return {
     preparePay: (input) => ports.preparePay(input),
     prepareFullWithdraw: (input) => ports.prepareFullWithdraw(input),
     authorizePay: (prepared, confirmation) => authorize(prepared, confirmation, true),
     authorizeFullWithdraw: (prepared, confirmation) => authorize(prepared, confirmation, false),
+    resumeOriginal: (recordId) => recover(recordId, 'resume-original',
+      (recovery, saved, evidence) => recovery.executeResumeOriginal(saved, evidence)),
+    retryAttempt: (recordId) => recover(recordId, 'retry-attempt',
+      (recovery, saved, evidence) => recovery.executeRetryAttempt(saved, evidence)),
+    prepareChangedTerms: (recordId, input) => recover(recordId, 'change-terms',
+      (recovery, saved, evidence) => recovery.releaseAndPrepareChangedTerms(saved, evidence, input)),
   };
 }

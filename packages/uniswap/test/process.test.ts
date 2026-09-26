@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest';
 import { createPaymentClient } from '../src/process.js';
 import type { PreparedPay, PaymentPorts } from '../src/process.js';
+import type { RecoveryEvidence } from '../src/recovery.js';
 import { createMemoryReservationPort } from '../src/testing/reservation.js';
 import { parseOperationRecord } from '../src/api.js';
 import type { Scope } from '../src/domain.js';
@@ -143,6 +144,14 @@ it('does not sign when the quote becomes stale while waiting for the signature-s
   expect(fixture.calls).not.toContain('sign-pool');
 });
 
+it('does not request a payment signature when the quote expires during pool signing', async () => {
+  const fixture = setup();
+  fixture.ports.signPool = async () => { fixture.calls.push('sign-pool'); fixture.setNow(30_001); return '0x11'; };
+  await expect(createPaymentClient(fixture.ports).authorizePay(fixture.prepared, fixture.prepared.record.contentHash))
+    .rejects.toMatchObject({ code: 'QUOTE_STALE' });
+  expect(fixture.calls).not.toContain('sign-payment');
+});
+
 it('rejects a full Withdraw that races with a Pay for the same input', async () => {
   const fixture = setup();
   const withdraw = parseOperationRecord({
@@ -159,4 +168,76 @@ it('rejects a full Withdraw that races with a Pay for the same input', async () 
   await expect(client.authorizeFullWithdraw(await client.prepareFullWithdraw(undefined), withdraw.contentHash))
     .rejects.toMatchObject({ code: 'CONFLICT' });
   expect(fixture.calls.filter((call) => call === 'sign-pool')).toHaveLength(1);
+});
+
+it('allows only the recovery action supported by a fresh finalized view', async () => {
+  const fixture = setup();
+  await createPaymentClient(fixture.ports).authorizePay(fixture.prepared, fixture.prepared.record.contentHash);
+  const actions: string[] = [];
+  const failedEvidence: RecoveryEvidence = {
+    finalized: true, blockTime: 599n, paymentSucceeded: false,
+    submissionKnownAbsent: false,
+    attempts: [{ id: 'attempt-1', outcome: 'finalized-failure' }],
+    storageAvailability: 'healthy',
+  };
+  fixture.ports.recovery = {
+    readEvidence: async () => ({ evidence: failedEvidence, currentInput: { state: 'unspent' } }),
+    executeResumeOriginal: async () => { actions.push('resume'); return { kind: 'unknown' }; },
+    executeRetryAttempt: async () => { actions.push('retry'); return { kind: 'unknown' }; },
+    releaseAndPrepareChangedTerms: async () => { actions.push('change'); return fixture.prepared; },
+  };
+  const client = createPaymentClient(fixture.ports);
+  await expect(client.resumeOriginal(recordId as never)).rejects.toMatchObject({ code: 'RECOVERY_BLOCKED' });
+  expect(actions).toEqual([]);
+  expect((await client.retryAttempt(recordId as never)).kind).toBe('unknown');
+  expect(actions).toEqual(['retry']);
+});
+
+it('does not execute recovery when reservation state rolls back or an attempt is unresolved', async () => {
+  const fixture = setup();
+  await createPaymentClient(fixture.ports).authorizePay(fixture.prepared, fixture.prepared.record.contentHash);
+  const actions: string[] = [];
+  fixture.ports.recovery = {
+    readEvidence: async () => ({
+      evidence: {
+        finalized: true, blockTime: 601n, paymentSucceeded: false,
+        submissionKnownAbsent: false,
+        attempts: [{ id: 'attempt-1', outcome: 'unknown' }],
+        storageAvailability: 'healthy',
+      },
+      currentInput: { state: 'unspent' },
+    }),
+    executeResumeOriginal: async () => { actions.push('resume'); return { kind: 'unknown' }; },
+    executeRetryAttempt: async () => { actions.push('retry'); return { kind: 'unknown' }; },
+    releaseAndPrepareChangedTerms: async () => { actions.push('change'); return fixture.prepared; },
+  };
+  const client = createPaymentClient(fixture.ports);
+  await expect(client.prepareChangedTerms(recordId as never, 'new terms')).rejects.toMatchObject({ code: 'RECOVERY_BLOCKED' });
+  fixture.reservations.control.simulateRollback();
+  await expect(client.retryAttempt(recordId as never)).rejects.toMatchObject({ code: 'RECOVERY_BLOCKED' });
+  expect(actions).toEqual([]);
+});
+
+it('blocks recovery after a detected storage rollback even when chain evidence permits retry', async () => {
+  const fixture = setup();
+  await createPaymentClient(fixture.ports).authorizePay(fixture.prepared, fixture.prepared.record.contentHash);
+  fixture.reservations.control.simulateRollback();
+  const actions: string[] = [];
+  fixture.ports.recovery = {
+    readEvidence: async () => ({
+      evidence: {
+        finalized: true, blockTime: 599n, paymentSucceeded: false,
+        submissionKnownAbsent: false,
+        attempts: [{ id: 'attempt-1', outcome: 'finalized-failure' }],
+        storageAvailability: 'healthy',
+      },
+      currentInput: { state: 'unspent' },
+    }),
+    executeResumeOriginal: async () => { actions.push('resume'); return { kind: 'unknown' }; },
+    executeRetryAttempt: async () => { actions.push('retry'); return { kind: 'unknown' }; },
+    releaseAndPrepareChangedTerms: async () => { actions.push('change'); return fixture.prepared; },
+  };
+  await expect(createPaymentClient(fixture.ports).retryAttempt(recordId as never))
+    .rejects.toMatchObject({ code: 'RECOVERY_BLOCKED' });
+  expect(actions).toEqual([]);
 });
