@@ -121,7 +121,7 @@
   },
   "limits": [
     "Ubuntu arm64 and emulated amd64 runs cover crypto package build/check/tests and fixed JSON vectors; root Foundry/Kontrol commands were not run inside Ubuntu.",
-    "The official Ubuntu 24.04 x86_64 baseline of 8 logical CPUs, 32 GiB RAM, and 100 GiB free SSD has not been run; Docker VM reported 15 GiB.",
+    "The project-wide Ubuntu 24.04 x86_64 baseline of 8 logical CPUs, 32 GiB RAM, and 100 GiB free SSD has not been run and is outside Issue #28 acceptance; Docker VM reported 15 GiB.",
     "For X=(0,0), Schnorr equation sG=R does not bind the challenge; context mutations are tested with X nonidentity.",
     "Finite vectors and concrete EVM calls do not establish a formal proof of cryptographic security."
   ],
