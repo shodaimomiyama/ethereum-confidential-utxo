@@ -11,6 +11,8 @@ export { reconcilePayment } from './reconcile.js';
 export type { CoreReceiptResult, FinalizedHistory, ReconciledPayment } from './reconcile.js';
 export { assertWithdrawalBinding, paymentDigest } from './payment.js';
 export type { PaymentDeployment, PaymentTerms, WithdrawalBindingInput } from './payment.js';
+export { createPaymentClient, PaymentProcessError } from './process.js';
+export type { AuthorizationSignatures, PaymentClient, PaymentPorts, PreparedFullWithdraw, PreparedPay } from './process.js';
 export type {
   Address,
   AttemptId,
