@@ -19,6 +19,7 @@ import type {
   RewardRecord,
   RewardRequest,
   RewardStatus,
+  SavedOperation,
   SignedRecipientInfo,
 } from './storage.js';
 
@@ -53,6 +54,65 @@ export interface ApiError {
   readonly message: string;
   readonly field?: string;
   readonly allowedActions: readonly string[];
+}
+
+export type WireOperationRecord =
+  | (Omit<ReservationBase, 'scope'> & {
+      readonly kind: 'pay';
+      readonly paymentId: PaymentId;
+      readonly deadline: string;
+    })
+  | (Omit<ReservationBase, 'scope'> & {
+      readonly kind: 'withdraw';
+      readonly paymentId?: never;
+      readonly deadline?: never;
+    });
+
+export interface WireRewardRequest {
+  readonly scope: Scope;
+  readonly requestId: RequestId;
+  readonly amountWei: string;
+  readonly recipientInfo: SignedRecipientInfo;
+}
+
+export interface ApiRequestBodyMap {
+  readonly 'POST /v1/auth/challenge': { readonly scope: Scope };
+  readonly 'POST /v1/auth/verify': {
+    readonly scope: Scope;
+    readonly challengeId: Bytes32;
+    readonly siweMessage: string;
+    readonly signature: `0x${string}`;
+  };
+  readonly 'PUT /v1/operations/{id}': {
+    readonly scope: Scope;
+    readonly expectedRevision: number;
+    readonly record: WireOperationRecord;
+  };
+  readonly 'GET /v1/operations': undefined;
+  readonly 'POST /v1/rewards': WireRewardRequest;
+  readonly 'GET /v1/rewards': undefined;
+  readonly 'GET /v1/rewards/{id}': undefined;
+  readonly 'POST /v1/rewards/{id}/received': {
+    readonly scope: Scope;
+    readonly outputId: Bytes32;
+    readonly blockHash: Bytes32;
+  };
+}
+
+export interface ApiSuccessResponseMap {
+  readonly 'POST /v1/auth/challenge': {
+    readonly challengeId: Bytes32;
+    readonly nonce: Bytes32;
+    readonly issuedAt: number;
+    readonly expiresAt: number;
+  };
+  readonly 'POST /v1/auth/verify': { readonly sessionExpiresAt: number };
+  readonly 'PUT /v1/operations/{id}': SavedOperation & { readonly scope: Scope };
+  readonly 'GET /v1/operations': { readonly records: readonly (SavedOperation & { readonly scope: Scope })[] };
+  readonly 'POST /v1/rewards': { readonly reward: RewardRecord };
+  readonly 'GET /v1/rewards': { readonly rewards: readonly RewardRecord[] };
+  readonly 'GET /v1/rewards/{id}': { readonly reward: RewardRecord };
+  readonly 'POST /v1/rewards/{id}/received': { readonly reward: RewardRecord };
 }
 
 export interface ParsedApiRequest {
@@ -297,7 +357,7 @@ function parseRewardRecord(value: unknown): RewardRecord {
   };
 }
 
-export function parseApiResponse(route: ApiRoute, status: number, body: unknown): unknown {
+function parseApiResponseValue(route: ApiRoute, status: number, body: unknown): unknown {
   const object = parseJsonObject(body);
   if (status >= 400) {
     const error = parseError(object.error);
@@ -343,4 +403,12 @@ export function parseApiResponse(route: ApiRoute, status: number, body: unknown)
   }
   if (!Array.isArray(object.rewards)) throw new SchemaError('INVALID_FIELD', 'rewards');
   return { rewards: object.rewards.map(parseRewardRecord) };
+}
+
+export function parseApiResponse<Route extends ApiRoute>(
+  route: Route,
+  status: number,
+  body: unknown,
+): ApiSuccessResponseMap[Route] | { readonly error: ApiError } {
+  return parseApiResponseValue(route, status, body) as ApiSuccessResponseMap[Route] | { readonly error: ApiError };
 }

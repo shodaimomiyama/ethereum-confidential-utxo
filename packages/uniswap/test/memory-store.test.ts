@@ -77,3 +77,25 @@ it('keeps authorization stopped after a partially rolled back operation record',
   expect(store.control.health()).toBe('rollback');
   expect(() => store.operations.put(record('pay'), 0)).toThrowError(/UNAVAILABLE/);
 });
+
+it('never rewinds the fact that signing started or erases a known attempt', () => {
+  const store = createMemoryStore();
+  const original = record('pay');
+  store.operations.put(original, 0);
+  const signed = { ...original, signatureStarted: true, attemptIds: ['attempt-a' as never] };
+  expect(store.operations.put(signed, 1).revision).toBe(2);
+  expect(() => store.operations.put({ ...signed, signatureStarted: false }, 2)).toThrowError(/CONFLICT/);
+  expect(() => store.operations.put({ ...signed, attemptIds: [] }, 2)).toThrowError(/CONFLICT/);
+  expect(store.operations.list(scope)[0]?.record.attemptIds).toEqual(['attempt-a']);
+});
+
+it('cannot replace a reserved operation or payment under a later revision', () => {
+  const store = createMemoryStore();
+  const original = record('pay');
+  store.operations.put(original, 0);
+  expect(() => store.operations.put({ ...original, operationId: inputId as never }, 1)).toThrowError(/CONFLICT/);
+  if (original.kind === 'pay') {
+    expect(() => store.operations.put({ ...original, paymentId: inputId as never }, 1)).toThrowError(/CONFLICT/);
+    expect(() => store.operations.put({ ...original, deadline: 601n }, 1)).toThrowError(/CONFLICT/);
+  }
+});

@@ -3,6 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    "./contracts": "./src/contracts/index.ts",
+    "./mock": "./src/mock/index.ts",
+    "./testing": "./src/mock/scenario-catalog.ts"
+  },
   "dependencies": {
     "@confidential-utxo/uniswap": "workspace:*"
   }

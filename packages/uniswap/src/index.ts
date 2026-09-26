@@ -28,7 +28,10 @@ export {
   parseOperationRecord,
   parseRewardRequest,
 } from './api.js';
-export type { ApiError, ApiRoute, ApiTransport, ErrorCode, ParsedApiRequest } from './api.js';
+export type {
+  ApiError, ApiRequestBodyMap, ApiRoute, ApiSuccessResponseMap,
+  ApiTransport, ErrorCode, ParsedApiRequest, WireOperationRecord, WireRewardRequest,
+} from './api.js';
 export { StoreError } from './storage.js';
 export type {
   EncryptedBundle,

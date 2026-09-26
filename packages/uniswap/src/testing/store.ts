@@ -101,7 +101,16 @@ export function createMemoryStore(seed: StoreSeed = {}): MemoryStore {
         const existing = operations.get(key);
         if (existing !== undefined) {
           if (existing.record.recordId.toLowerCase() !== record.recordId.toLowerCase()
-            || existing.record.contentHash.toLowerCase() !== record.contentHash.toLowerCase()) {
+            || existing.record.contentHash.toLowerCase() !== record.contentHash.toLowerCase()
+            || existing.record.kind !== record.kind
+            || existing.record.operationId.toLowerCase() !== record.operationId.toLowerCase()
+            || (existing.record.kind === 'pay' && record.kind === 'pay'
+              && (existing.record.paymentId.toLowerCase() !== record.paymentId.toLowerCase()
+                || existing.record.deadline !== record.deadline))) {
+            throw new StoreError('CONFLICT');
+          }
+          if ((existing.record.signatureStarted && !record.signatureStarted)
+            || existing.record.attemptIds.some((id, index) => record.attemptIds[index] !== id)) {
             throw new StoreError('CONFLICT');
           }
           if (sameRecord(existing.record, record)) return structuredClone(existing);
