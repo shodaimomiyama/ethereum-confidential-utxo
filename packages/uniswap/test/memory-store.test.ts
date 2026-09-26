@@ -126,3 +126,43 @@ it('rejects reuse of a scoped record ID on another input', () => {
   expect(() => store.operations.put({ ...original, inputId: `0x${'55'.repeat(32)}` as never }, 0)).toThrowError(/CONFLICT/);
   expect(store.operations.get(scope, original.recordId)?.record.inputId).toBe(original.inputId);
 });
+
+it('retains a released Pay and its encrypted revision after a later reservation', () => {
+  const store = createMemoryStore();
+  const original = record('pay');
+  const first = store.operations.put(original, 0);
+  const released = store.operations.applyCheckpoint(scope, original.recordId, {
+    status: 'released',
+    checkpoint: { blockNumber: '12', blockHash: id as never, blockTimestamp: '601' },
+  });
+  expect(released.revision).toBe(first.revision);
+  expect(released.stateVersion).toBe(first.stateVersion + 1);
+
+  const next = record('withdraw', `0x${'55'.repeat(32)}`);
+  expect(store.operations.put(next, 0).record.recordId).toBe(next.recordId);
+  expect(store.operations.list(scope).map(({ record: { recordId } }) => recordId)).toEqual([id, next.recordId]);
+  expect(() => store.operations.put(original, 0)).not.toThrow();
+  expect(store.operations.get(scope, next.recordId)?.status).toBe('reserved');
+  store.operations.applyCheckpoint(scope, original.recordId, {
+    status: 'released',
+    checkpoint: { blockNumber: '13', blockHash: id as never, blockTimestamp: '602' },
+  });
+  expect(() => store.operations.put(record('pay', `0x${'66'.repeat(32)}`), 0)).toThrowError(/CONFLICT/);
+});
+
+it('pages all owned records without dropping the record after the first 100', () => {
+  const store = createMemoryStore();
+  for (let index = 1; index <= 101; index += 1) {
+    const item = record('withdraw', `0x${index.toString(16).padStart(64, '0')}`);
+    store.operations.put({
+      ...item,
+      inputId: `0x${(index + 1000).toString(16).padStart(64, '0')}` as never,
+    }, 0);
+  }
+  const first = store.operations.listPage(scope);
+  expect(first.records).toHaveLength(100);
+  expect(first.nextCursor).toBe(`0x${(100).toString(16).padStart(64, '0')}`);
+  const second = store.operations.listPage(scope, first.nextCursor);
+  expect(second.records).toHaveLength(1);
+  expect(second.nextCursor).toBeUndefined();
+});

@@ -44,6 +44,20 @@ export interface SavedOperation {
   readonly revision: number;
 }
 
+export type OperationStatus = 'reserved' | 'unknown' | 'released' | 'consumed' | 'finalized-success';
+
+export interface FinalizedCheckpoint {
+  readonly blockNumber: string;
+  readonly blockHash: Bytes32;
+  readonly blockTimestamp: string;
+}
+
+export interface StoredOperation extends SavedOperation {
+  readonly status: OperationStatus;
+  readonly stateVersion: number;
+  readonly checkpoint?: FinalizedCheckpoint;
+}
+
 export interface SignedRecipientInfo {
   readonly owner: Address;
   readonly publicKey: Bytes32;
@@ -92,9 +106,18 @@ export class StoreError extends Error {
 }
 
 export interface OperationStore {
-  put(record: OperationRecord, expectedRevision: number): SavedOperation;
-  list(scope: Scope): readonly SavedOperation[];
-  get(scope: Scope, recordId: Bytes32): SavedOperation | undefined;
+  put(record: OperationRecord, expectedRevision: number): StoredOperation;
+  list(scope: Scope): readonly StoredOperation[];
+  listPage(scope: Scope, cursor?: Bytes32): {
+    readonly records: readonly StoredOperation[];
+    readonly nextCursor?: Bytes32;
+  };
+  get(scope: Scope, recordId: Bytes32): StoredOperation | undefined;
+  applyCheckpoint(
+    scope: Scope,
+    recordId: Bytes32,
+    update: { readonly status: OperationStatus; readonly checkpoint?: FinalizedCheckpoint },
+  ): StoredOperation;
 }
 
 export interface RewardStore {

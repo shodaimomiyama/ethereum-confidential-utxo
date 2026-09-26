@@ -100,8 +100,8 @@ it('validates success response shape for every route', () => {
   const valid = [
     ['POST /v1/auth/challenge', { challengeId: id, nonce: hash, issuedAt: 0, expiresAt: 300000 }],
     ['POST /v1/auth/verify', { sessionExpiresAt: 1800000 }],
-    ['PUT /v1/operations/{id}', { scope, record: payRecord, revision: 1 }],
-    ['GET /v1/operations', { availability: 'healthy', records: [{ scope, record: payRecord, revision: 1 }] }],
+    ['PUT /v1/operations/{id}', { scope, record: payRecord, revision: 1, stateVersion: 1, status: 'reserved' }],
+    ['GET /v1/operations', { availability: 'healthy', records: [{ scope, record: payRecord, revision: 1, stateVersion: 1, status: 'reserved' }] }],
     ['POST /v1/rewards', { reward: rewardRecord }],
     ['GET /v1/rewards', { rewards: [rewardRecord] }],
     ['GET /v1/rewards/{id}', { reward: rewardRecord }],
@@ -149,4 +149,37 @@ it('parses released records and rejects unknown reservation states', () => {
   const response = { scope, record: payRecord, revision: 2, reservationState: 'released' };
   expect(parseApiResponse('POST /v1/operations/{id}/release', 200, response)).toMatchObject({ reservationState: 'released', revision: 2 });
   expect(() => parseApiResponse('POST /v1/operations/{id}/release', 200, { ...response, reservationState: 'missing' })).toThrowError();
+});
+
+it('parses operation lifecycle separately from encrypted revision', () => {
+  const parsed = parseApiResponse('GET /v1/operations', 200, {
+    availability: 'healthy',
+    records: [{
+      scope,
+      record: payRecord,
+      revision: 1,
+      stateVersion: 2,
+      status: 'released',
+      checkpoint: { blockNumber: '12', blockHash: id, blockTimestamp: '601' },
+    }],
+  });
+  if ('error' in parsed) throw new Error('unexpected error response');
+  expect(parsed.records[0]?.status).toBe('released');
+  expect(parsed.records[0]?.revision).toBe(1);
+  expect(parsed.records[0]?.stateVersion).toBe(2);
+  expect(parsed.records[0]?.reservationState).toBeUndefined();
+  expect(() => parseApiResponse('GET /v1/operations/{id}', 200, {
+    scope, record: payRecord, revision: 1, stateVersion: 2, status: 'released',
+    checkpoint: { blockNumber: '12', blockHash: id, blockTimestamp: '601' },
+  })).toThrowError();
+});
+
+it('accepts a record ID cursor for the next operations page', () => {
+  const request = parseApiRequest('GET', `/v1/operations?deploymentId=local-v1&owner=${owner}&cursor=${id}`, undefined);
+  expect(request.cursor).toBe(id);
+  const response = parseApiResponse('GET /v1/operations', 200, {
+    availability: 'healthy', records: [], nextCursor: id,
+  });
+  if ('error' in response) throw new Error('unexpected error response');
+  expect(response.nextCursor).toBe(id);
 });

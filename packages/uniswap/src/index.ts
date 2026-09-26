@@ -49,7 +49,9 @@ export type {
 export { StoreError } from './storage.js';
 export type {
   EncryptedBundle,
+  FinalizedCheckpoint,
   OperationRecord,
+  OperationStatus,
   OperationStore,
   RewardRecord,
   RewardRequest,
@@ -58,4 +60,5 @@ export type {
   SavedOperation,
   SignedRecipientInfo,
   StoreErrorCode,
+  StoredOperation,
 } from './storage.js';
