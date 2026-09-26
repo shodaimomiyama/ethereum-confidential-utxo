@@ -96,9 +96,16 @@ export async function authorizeOperation(context: AuthorizationContext, request:
   let signature: Hex;
   try {
     signature = await signer.signTypedData(snapshot);
+  } catch (error) {
+    if (error instanceof CoreFailure &&
+      (error.code === "RPC" || error.code === "UNSUPPORTED" || error.code === "INCONSISTENT" ||
+        error.code === "SIGNATURE_REJECTED" || error.code === "SIGNATURE_INVALID")) throw error;
+    throw new CoreFailure("SIGNATURE_REJECTED", "authorization.signer");
+  }
+  try {
     await verifyOperationAuthorization({ chainId: snapshot.domain.chainId, pool: snapshot.domain.verifyingContract }, snapshot.message.operationId, snapshot.message.owner, signature);
   } catch {
-    throw new CoreFailure("SIGNATURE_REJECTED", "authorization.signer");
+    throw new CoreFailure("SIGNATURE_INVALID", "authorization.signature");
   }
   try {
     if (hashTypedData(authorizationTypedData(context, request)) !== expectedDigest) throw new Error();
