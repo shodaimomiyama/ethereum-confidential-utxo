@@ -92,6 +92,12 @@ pnpm uniswap:sepolia:probe
 | A-09 CI・追試 | `209792b`・`10d2fcf`、`.github/workflows/uniswap-environment.yml`、`pnpm build/test/check`と20件のUniswap環境テスト、[CI実run](https://github.com/shodaimomiyama/ethereum-confidential-utxo/actions/runs/36267663500) | macOS 26.5 arm64とGitHub macos-15 arm64で成功。第三者の独立追試は未実施 | #19・#20 |
 | A-10 証拠・引渡し | 本節、各commit・manifest・ローカル試験 | 進行中。公開URL/txと正式統合結果は存在せず、受領後に各検証Issueへ追加する | #45〜#50・#19・#20 |
 
+## Uniswap支払いAdapterの成果物（Issue #56）
+
+`pnpm artifact:uniswap-payment` はSolidityコンパイラの `UniswapPaymentAdapter.json` からABI、生成・実行bytecode、immutable参照、AST、storage layout、metadataと入力ソースhashを `packages/ethereum/generated/uniswap-payment-v1.json` へ出力する。`pnpm check:uniswap-payment` は現在のコンパイル結果とソースに完全照合する。`pnpm build/test/check` にもこの生成・検査を組み込んでいる。公開ABIはこの生成物を正本とし、別に手書きしない。
+
+#60の資産manifestへAdapterを追加する際は、同じ配置世代とchain IDに属するPool、Router02、Factory、WETH、dUSD、Pairの6アドレスをこの順でconstructorへ渡す。デプロイ取引の入力から6引数を再取得し、配置後の6 getter、各アドレスのcode、Routerの `factory()` / `WETH()`、Factoryの `getPair(WETH,dUSD)`、Pairの `factory()` / `token0()` / `token1()` を再読する。Adapterの実行bytecodeはimmutable埋込み後の値を取得してhashを保存・照合し、固定artifactの `immutableReferences` を使って埋込み以外の差分がないことも確認する。Pool・dUSD・Uniswap各契約はそれぞれの正式artifact/manifestのruntimeと照合する。constructorの関係検査だけでは、同じ返値を装う別コードを排除できない。失敗時には資産manifestを正式な全体配置成功へ昇格させない。現時点の #60 `uniswap:local:*` は資産単体を扱い、Adapterの配置・照合は後続の全体配置で実装する。
+
 ## Poolと検証器の配置（Issue #27）
 
 `pnpm artifact:pool` は `contracts/out/Pool.sol/Pool.json` から公開ABI、bytecode、AST、storage layoutと入力hashを `packages/ethereum/generated/pool-v1.json` に出力する。`pnpm check:pool` は現在のソースとコンパイル結果に照合する。`pnpm fixture:pool` は公開seedから25件の操作、署名、実範囲証明を一時ディレクトリに再生成し、固定ケースとFoundry calldataをbyte単位で比較する。Python依存は `tests/vectors/README.md` に従って導入し、`POOL_VECTOR_PYTHON` にそのvenvのPythonを指定する。
