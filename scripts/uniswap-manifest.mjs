@@ -62,6 +62,28 @@ function validateManifest(manifest) {
       throw new Error(`${name} deployment record invalid`);
     }
   }
+  const connectionNames = ['pool', 'verifier', 'adapter'];
+  if (connectionNames.some(name => name in manifest.contracts)) {
+    for (const name of connectionNames) {
+      const contract = manifest.contracts[name];
+      if (!address.test(contract?.address ?? '') || !/^[0-9a-fA-F]{64}$/.test(contract?.runtimeSha256 ?? '') ||
+          !hash.test(contract?.txHash ?? '') || !decimal.test(contract?.blockNumber ?? '') ||
+          !hash.test(contract?.blockHash ?? '')) {
+        throw new Error(`${name} deployment record invalid`);
+      }
+    }
+    const ref = manifest.references.poolManifest;
+    if (typeof ref?.path !== 'string' || !ref.path || !/^[0-9a-fA-F]{64}$/.test(ref.sha256 ?? '') ||
+        (manifest.references.corePoolAddress !== undefined &&
+          !address.test(manifest.references.corePoolAddress))) {
+      throw new Error('Pool manifest reference invalid');
+    }
+    for (const name of ['pool', 'router02', 'factory', 'weth', 'dUSD', 'pair']) {
+      if (!address.test(manifest.contracts.adapter[name] ?? '')) {
+        throw new Error(`Adapter ${name} reference invalid`);
+      }
+    }
+  }
   const { dUSD, liquidity, checkpoint } = manifest.assets;
   if (dUSD?.decimals !== 18 || dUSD?.totalSupply !== '1000000000000000000000000' ||
       !address.test(dUSD?.initialHolder ?? '') || !address.test(dUSD?.remainingHolder ?? '') ||
