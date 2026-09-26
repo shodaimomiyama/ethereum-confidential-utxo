@@ -197,12 +197,18 @@ export async function sealPaymentPrivateRecord(key: CryptoKey, context: RecordCo
     intendedAuthorization: { payload: pack(record.intendedAuthorization), signatures: record.signatures ?? null }, attempts: record.attempts,
     recoveryMarkers: pack(record.recoveryMarkers) });
 }
+function samePublicBinding(a: Binding, b: Binding): boolean {
+  // Service reads rebuild scope using the request's address spelling.
+  const normalizeOwner = (binding: Binding) => ({ ...binding,
+    scope: { ...binding.scope, owner: binding.scope.owner.toLowerCase() } });
+  return same(normalizeOwner(a), normalizeOwner(b));
+}
 export async function openPaymentPrivateRecord(key: CryptoKey, context: RecordContext, publicRecord: OperationRecord): Promise<PaymentPrivateRecord> {
   const plain = await openRecord(key, context, publicRecord.encryptedBundle);
   if (typeof plain.creationInputs !== 'string') invalid();
   const record = decodePaymentPrivateRecord(encoder.encode(plain.creationInputs)); assertContext(record, context);
   const { encryptedBundle: _, signatureStarted, attemptIds, ...binding } = publicRecord;
-  if (!same(binding, record.binding) || !same(attemptIds, record.attempts.map(attempt => attempt.attemptId))
+  if (!samePublicBinding(binding, record.binding) || !same(attemptIds, record.attempts.map(attempt => attempt.attemptId))
     || (record.signatures !== undefined && !signatureStarted) || plain.operationId !== record.operationId || plain.paymentId !== record.paymentId
     || !same(plain.intendedAuthorization, { payload: pack(record.intendedAuthorization), signatures: record.signatures ?? null }) || !same(plain.attempts, record.attempts)
     || !same(plain.recoveryMarkers, pack(record.recoveryMarkers))) invalid();

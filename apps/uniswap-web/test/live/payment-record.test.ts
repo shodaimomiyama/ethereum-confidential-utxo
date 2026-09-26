@@ -1,18 +1,21 @@
+import { readFileSync } from 'node:fs';
+import { getAddress } from 'viem';
 import { expect, it } from 'vitest';
-import { buildOperation, operationId, type Context } from '@confidential-utxo/core';
+import { authorizationTypedData, buildOperation, operationId, type Context, type RecipientInfo } from '@confidential-utxo/core';
 import { commit } from '@confidential-utxo/crypto';
-import type { AttemptId, OperationRecord } from '@confidential-utxo/uniswap';
+import { paymentAuthorizationTypedData, paymentDigest, type AttemptId, type OperationRecord, type PaymentTerms, type Address } from '@confidential-utxo/uniswap';
 import { encodePaymentPrivateRecord, decodePaymentPrivateRecord, sealPaymentPrivateRecord, openPaymentPrivateRecord, appendPaymentAuthorization, createPaymentRecordEncryptor, type PaymentPrivateRecord } from '../../src/live/payment-record.js';
 const hash = (n: string) => `0x${n.repeat(64)}` as `0x${string}`;
 const owner = `0x${'11'.repeat(20)}` as const;
 const context: Context = { chainId: 31337n, pool: owner, verifier: owner, parametersHash: hash('1'), deploymentBlock: 0n, finalityMode: 'finalized' };
-async function fixture() {
+async function fixture(walletOwner: `0x${string}` = owner) {
+  const owner = walletOwner;
   const opening = { amount: 10n, blinding: 2n };
-  const draft = await buildOperation({ kind: 2, owner, amount: 10n, destination: owner }, context, { randomSalt: () => new Uint8Array(32).fill(4), inputs: [{ id: hash('2'), owner, opening, commitment: commit(opening), checkpoint: { number: 1n, hash: hash('3'), mode: 'finalized' }, status: 'available', chainId: context.chainId, pool: owner }] });
+  const draft = await buildOperation({ kind: 2, owner, amount: 10n, destination: owner }, context, { randomSalt: () => new Uint8Array(32).fill(4), inputs: [{ id: hash('2'), owner, opening, commitment: commit(opening), checkpoint: { number: 1n, hash: hash('3'), mode: 'finalized' }, status: 'available', chainId: context.chainId, pool: context.pool }] });
   const record = { kind: 'withdraw', scope: { deploymentId: 'local', owner }, recordId: hash('4'), inputId: hash('2'), operationId: draft.operationId, contentHash: hash('5'), encryptedBundle: { nonce: '', ciphertext: '', tag: '' }, signatureStarted: false, attemptIds: [] } as unknown as OperationRecord;
   const { encryptedBundle: _, signatureStarted: __, attemptIds: ___, ...binding } = record;
   const plain: PaymentPrivateRecord = { version: 1, creationInputs: draft, binding, operationId: record.operationId, intendedAuthorization: { pool: { enum: 2, secret: new Uint8Array([1, 2]), marker: 'PRIVATE_MARKER' } }, attempts: [], recoveryMarkers: { status: 'reserved' } };
-  const aad = { deploymentId: record.scope.deploymentId, owner: record.scope.owner, chainId: context.chainId, pool: record.scope.owner, recordId: record.recordId, revision: 1 };
+  const aad = { deploymentId: record.scope.deploymentId, owner: record.scope.owner, chainId: context.chainId, pool: context.pool as typeof record.scope.owner, recordId: record.recordId, revision: 1 };
   return { plain, record, aad };
 }
 it('round trips a real core draft, bigints, byte arrays and numeric enums deterministically', async () => {
@@ -118,4 +121,48 @@ it('round trips payment identity and rejects changed payment ID/deadline on open
   for (const changed of [{ paymentId: hash('b') }, { deadline: 11n }]) {
     await expect(openPaymentPrivateRecord(key, aad, { ...payRecord, encryptedBundle, ...changed } as OperationRecord)).rejects.toThrow();
   }
+});
+
+it('restores a checksummed-owner snapshot from a lowercase-owner service GET without changing private data', async () => {
+  const checksummed = getAddress(`0x${'abcdef'.repeat(6)}abcd`);
+  const { plain, record, aad } = await fixture(checksummed);
+  const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  const encryptedBundle = await sealPaymentPrivateRecord(key, aad, encodePaymentPrivateRecord(plain));
+  const lowerOwner = checksummed.toLowerCase() as typeof record.scope.owner;
+  const freshContext = { ...aad, owner: lowerOwner };
+  const freshRecord = { ...record, encryptedBundle, scope: { ...record.scope, owner: lowerOwner } };
+  const restored = await openPaymentPrivateRecord(key, freshContext, freshRecord);
+  expect(restored).toEqual(plain);
+  expect(restored.creationInputs.request.owner).toBe(checksummed);
+  expect(restored.binding.scope.owner).toBe(checksummed);
+  await expect(openPaymentPrivateRecord(key, freshContext, { ...freshRecord, scope: { ...freshRecord.scope, owner: owner as typeof lowerOwner } })).rejects.toThrow();
+  await expect(openPaymentPrivateRecord(key, freshContext, { ...freshRecord, contentHash: hash('9') } as OperationRecord)).rejects.toThrow();
+});
+
+it('round trips a core-built Pay withdrawal with positive change, receipt packet and range proof', async () => {
+  const vector = JSON.parse(readFileSync(new URL('../../../../tests/vectors/cases/authorization.json', import.meta.url), 'utf8'))
+    .find((entry: { id: string }) => entry.id === 'VEC-02-RECIPIENT-SIGNATURE');
+  const recipient: RecipientInfo = { ...vector.input, chainId: BigInt(vector.input.chainId) };
+  const { plain, record, aad } = await fixture(recipient.owner);
+  const opening = { amount: 10n, blinding: 2n };
+  const adapter = `0x${'22'.repeat(20)}` as Address;
+  const draft = await buildOperation({ kind: 2, owner: recipient.owner, amount: 9n, destination: adapter, changeRecipient: recipient }, context, {
+    randomSalt: () => new Uint8Array(32).fill(5), inputs: [{ id: hash('2'), owner: recipient.owner, opening, commitment: commit(opening),
+      checkpoint: { number: 1n, hash: hash('3'), mode: 'finalized' }, status: 'available', chainId: context.chainId, pool: context.pool }],
+  });
+  expect(draft.openings[0]!.amount).toBe(1n);
+  expect(draft.rangeProofs).toHaveLength(1);
+  expect(draft.request.outputs[0]!.packet.length).toBeGreaterThan(2);
+  const terms: PaymentTerms = { operationId: draft.operationId as PaymentTerms['operationId'], owner: recipient.owner as Address,
+    ethAmount: 9n, token: `0x${'33'.repeat(20)}` as Address, minAmountOut: 1n, recipient: `0x${'44'.repeat(20)}` as Address, deadline: 100n };
+  const paymentId = paymentDigest(terms, context.chainId, adapter);
+  const payRecord = { ...record, kind: 'pay', operationId: terms.operationId, paymentId, deadline: terms.deadline } as OperationRecord;
+  const payment: PaymentPrivateRecord = { ...plain, creationInputs: draft, operationId: terms.operationId, paymentId,
+    binding: { ...plain.binding, kind: 'pay', operationId: terms.operationId, paymentId, deadline: terms.deadline },
+    intendedAuthorization: { pool: authorizationTypedData(context, draft.request), payment: paymentAuthorizationTypedData(terms, context.chainId, adapter) } };
+  const bytes = encodePaymentPrivateRecord(payment);
+  expect(decodePaymentPrivateRecord(bytes)).toEqual(payment);
+  const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  const encryptedBundle = await sealPaymentPrivateRecord(key, aad, bytes);
+  expect(await openPaymentPrivateRecord(key, aad, { ...payRecord, encryptedBundle })).toEqual(payment);
 });
