@@ -1,4 +1,4 @@
-import type { RewardRecord, RewardStatus, Scope, RequestId, SignedRecipientInfo } from '@confidential-utxo/uniswap';
+import type { RewardRecord, RewardStatus, Scope, RequestId, SignedRecipientInfo, AttemptId, TxHash } from '@confidential-utxo/uniswap';
 import type { RewardRequest } from '@confidential-utxo/uniswap';
 import { keccak256, stringToHex } from 'viem';
 import { decodeRewardSecret, decryptRewardState, encodeRewardSecret, encryptRewardState } from './crypto.js';
@@ -17,15 +17,19 @@ type RewardRow = {
   output_id: string | null;
 };
 
-function record(row: RewardRow): RewardRecord {
+function record(storage: DurableObjectStorage, row: RewardRow): RewardRecord {
+  const attempts = storage.sql.exec<{ attempt_no: number; tx_hash: string }>(
+    `SELECT attempt_no, tx_hash FROM reward_attempts WHERE deployment_id = ? AND request_id = ?
+     ORDER BY attempt_no`, row.deployment_id, row.request_id,
+  ).toArray();
   return {
     scope: { deploymentId: row.deployment_id, owner: row.owner } as Scope,
     requestId: row.request_id as RequestId,
     amountWei: BigInt(row.amount_wei),
     recipientInfo: JSON.parse(row.recipient_info_json) as SignedRecipientInfo,
     status: row.status as RewardStatus,
-    attemptIds: [],
-    txHashes: [],
+    attemptIds: attempts.map((item) => `${row.request_id}:${item.attempt_no}` as AttemptId),
+    txHashes: attempts.map((item) => item.tx_hash as TxHash),
     ...(row.operation_id === null ? {} : { operationId: row.operation_id as RewardRecord['operationId'] }),
     ...(row.checkpoint_hash === null ? {} : { blockHash: row.checkpoint_hash as RewardRecord['blockHash'] }),
     ...(row.output_id === null ? {} : { outputId: row.output_id as RewardRecord['outputId'] }),
@@ -38,7 +42,7 @@ export function listRewards(storage: DurableObjectStorage, scope: Scope): Reward
       operation_id, checkpoint_hash, output_id FROM reward_requests
       WHERE deployment_id = ? AND owner = ? ORDER BY seq`,
     scope.deploymentId, scope.owner.toLowerCase(),
-  ).toArray().map(record);
+  ).toArray().map((row) => record(storage, row));
 }
 
 export function getReward(storage: DurableObjectStorage, scope: Scope, requestId: string): RewardRecord | undefined {
@@ -48,7 +52,7 @@ export function getReward(storage: DurableObjectStorage, scope: Scope, requestId
       WHERE deployment_id = ? AND owner = ? AND request_id = ?`,
     scope.deploymentId, scope.owner.toLowerCase(), requestId.toLowerCase(),
   ).toArray()[0];
-  return row === undefined ? undefined : record(row);
+  return row === undefined ? undefined : record(storage, row);
 }
 
 export type Admission =
