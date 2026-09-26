@@ -4,12 +4,13 @@ import type {
 import type { ManualClock, MemoryStore } from '@confidential-utxo/uniswap/testing';
 import { actionKey } from '../contracts/controller.js';
 import type { DispatchResult, UiAction, UiController } from '../contracts/controller.js';
-import type { ApprovalPurpose, Card, CardState, ReasonCode, ValidationReason, ViewState } from '../contracts/state.js';
+import type { ApprovalPurpose, Card, CardState, OperationAction, PreparationView, ReasonCode, UtxoView, ValidationReason, ViewState } from '../contracts/state.js';
 import { initialScenario } from './scenarios.js';
 
 export type ScenarioEvent = (
   | { readonly type: 'preparing'; readonly card: Card }
   | { readonly type: 'quote'; readonly startedAt: number; readonly quoteOut: bigint; readonly latestBlockTimestamp: number }
+  | { readonly type: 'chain-timestamp'; readonly latestBlockTimestamp: number }
   | { readonly type: 'reservation-ack'; readonly card: 'pay' | 'withdraw' }
   | { readonly type: 'awaiting-approval'; readonly card: Card; readonly purpose: ApprovalPurpose }
   | { readonly type: 'submitted'; readonly card: Card; readonly operationId: OperationId; readonly attemptId?: string; readonly txHash?: TxHash }
@@ -22,6 +23,11 @@ export type ScenarioEvent = (
   | { readonly type: 'original-unsent'; readonly card: Card; readonly operationId: OperationId; readonly inputUnspent: boolean; readonly deadlineValid: boolean }
   | { readonly type: 'terms-changed'; readonly card: 'pay'; readonly oldAuthorizationActive: boolean }
   | { readonly type: 'validation-result'; readonly card: Card; readonly phase: 'ready' | 'invalid-input' | 'needs-preparation'; readonly reason?: ValidationReason; readonly input?: Readonly<Record<string, string>> }
+  | { readonly type: 'preparation'; readonly wallet?: boolean; readonly network?: boolean; readonly key?: boolean; readonly faucet?: boolean; readonly gas?: boolean }
+  | { readonly type: 'utxos'; readonly utxos: readonly UtxoView[] }
+  | { readonly type: 'public-balance'; readonly amountWei: bigint }
+  | { readonly type: 'reward-request'; readonly requestId: import('@confidential-utxo/uniswap').RequestId; readonly status: import('@confidential-utxo/uniswap').RewardStatus; readonly operationId?: OperationId }
+  | { readonly type: 'invalidate-quote' }
 ) & { readonly scope?: Scope };
 
 export interface ScenarioJournalEntry {
@@ -43,12 +49,15 @@ export interface MockUiController extends UiController {
 
 interface Runtime {
   state: ViewState;
+  interactive: boolean;
   quoteStartedAt?: number;
+  latestBlockTimestamp?: bigint;
   reservationAck: Set<Card>;
   retryEligible: Set<OperationId>;
   resumeEligible: Set<OperationId>;
   oldAuthorizationActive: boolean;
   countedOutputs: Map<string, { operationId: OperationId; amountWei: bigint }>;
+  publicEffects: Map<OperationId, bigint>;
 }
 
 function scopeKey(scope: Scope): string {
@@ -56,14 +65,100 @@ function scopeKey(scope: Scope): string {
 }
 
 function makeRuntime(scope: Scope, scenario: string): Runtime {
-  return {
+  const runtime: Runtime = {
     state: initialScenario(scope, scenario),
+    interactive: scenario === 'interactive' || scenario === 'disconnected',
     reservationAck: new Set(),
     retryEligible: new Set(),
     resumeEligible: new Set(),
     oldAuthorizationActive: false,
     countedOutputs: new Map(),
+    publicEffects: new Map(),
   };
+  refreshInteractive(runtime);
+  return runtime;
+}
+
+export function parseEthWei(value: string | undefined): bigint | undefined {
+  if (value === undefined || !/^(?:0|[1-9]\d*)(?:\.\d{1,18})?$/.test(value)) return undefined;
+  const [whole, fraction = ''] = value.split('.');
+  const amount = BigInt(whole ?? '0') * 10n ** 18n + BigInt(fraction.padEnd(18, '0'));
+  return amount > 0n && amount <= (1n << 256n) - 1n ? amount : undefined;
+}
+
+function refreshInteractive(runtime: Runtime): void {
+  if (!runtime.interactive) return;
+  let state = runtime.state;
+  const prep = state.preparation;
+  const prepReason: ValidationReason | undefined = !prep.wallet ? 'PREPARATION_MISSING'
+    : !prep.network ? 'WRONG_NETWORK' : !prep.key ? 'KEY_REQUIRED'
+      : !prep.faucet || !prep.gas ? 'GAS_REQUIRED' : undefined;
+  for (const card of ['reward', 'pay', 'deposit', 'withdraw'] as const) {
+    const current = state.cards[card];
+    if (!['ready', 'invalid-input', 'needs-preparation'].includes(current.phase)) continue;
+    if (prepReason !== undefined) {
+      state = setCard(state, card, { phase: 'needs-preparation', reason: prepReason });
+      continue;
+    }
+    if (card === 'withdraw') {
+      const chosen = state.utxos.find((item) => item.id === current.input.utxoId && item.available);
+      state = setCard(state, card, { phase: chosen ? 'ready' : 'invalid-input', reason: chosen ? undefined : 'NO_SINGLE_INPUT' });
+      if (chosen) state = { ...state, selectedInput: { ...state.selectedInput, withdraw: { id: chosen.id, amountWei: chosen.amountWei, changeWei: 0n } } };
+      continue;
+    }
+    const amount = parseEthWei(current.input.amount);
+    if (amount === undefined) {
+      state = setCard(state, card, { phase: 'invalid-input', reason: 'INVALID_DECIMAL' });
+      continue;
+    }
+    if (card === 'deposit' && amount >= state.publicEthWei) {
+      state = setCard(state, card, { phase: 'invalid-input', reason: 'INSUFFICIENT_FUNDS' });
+      continue;
+    }
+    if (card === 'pay') {
+      const candidates = state.utxos.filter((item) => item.available && item.amountWei > amount)
+        .sort((a, b) => a.amountWei < b.amountWei ? -1 : a.amountWei > b.amountWei ? 1 : a.id.toLowerCase().localeCompare(b.id.toLowerCase()));
+      const selected = candidates[0];
+      if (selected === undefined) {
+        state = setCard(state, card, { phase: 'invalid-input', reason: 'NO_SINGLE_INPUT' });
+        state = { ...state, selectedInput: { ...state.selectedInput, pay: undefined } };
+        continue;
+      }
+      state = { ...state, selectedInput: { ...state.selectedInput, pay: { id: selected.id, amountWei: selected.amountWei, changeWei: selected.amountWei - amount } } };
+      if (!/^0x[0-9a-fA-F]{40}$/.test(current.input.recipient ?? '') || /^0x0{40}$/i.test(current.input.recipient ?? '')) {
+        state = setCard(state, card, { phase: 'invalid-input', reason: 'UNSUPPORTED_RECIPIENT' });
+        continue;
+      }
+      if (current.reason === 'QUOTE_STALE') {
+        state = setCard(state, card, { phase: 'needs-preparation', reason: 'QUOTE_STALE' });
+        continue;
+      }
+      if (current.quote !== undefined) {
+        const minimum = current.input.minAmountOut === undefined
+          ? current.quote.minAmountOut : parseEthWei(current.input.minAmountOut);
+        if (minimum === undefined) {
+          state = setCard(state, card, { phase: 'invalid-input', reason: 'MINIMUM_NOT_MET' });
+          continue;
+        }
+        const deadlineText = current.input.deadline;
+        const deadline = deadlineText === undefined ? current.quote.deadline
+          : /^[1-9]\d{0,19}$/.test(deadlineText) ? BigInt(deadlineText) : 0n;
+        if (deadline === 0n || deadline > (1n << 64n) - 1n
+          || (runtime.latestBlockTimestamp !== undefined && deadline <= runtime.latestBlockTimestamp)) {
+          state = setCard(state, card, { phase: 'invalid-input', reason: 'TERMS_EXPIRED' });
+          continue;
+        }
+        if (minimum > current.quote.quoteOut) {
+          state = setCard(state, card, { phase: 'confirm-terms', reason: 'TERMS_CHANGED',
+            proposedQuote: { ...current.quote, minAmountOut: minimum, deadline } });
+          continue;
+        }
+        state = setCard(state, card, { quote: { ...current.quote, minAmountOut: minimum, deadline } });
+      }
+    }
+    state = setCard(state, card, { phase: 'ready', reason: undefined });
+  }
+  runtime.state = state;
 }
 
 function setCard(state: ViewState, card: Card, update: Partial<CardState>): ViewState {
@@ -107,10 +202,30 @@ function quoteValid(startedAt: number | undefined, now: number): boolean {
   return age >= 0 && age <= 30000;
 }
 
+const maximumDeadline = (1n << 64n) - 1n;
+
+function chainTimestamp(value: number): bigint | undefined {
+  if (!Number.isSafeInteger(value) || value < 0) return undefined;
+  const timestamp = BigInt(value);
+  return timestamp + 600n <= maximumDeadline ? timestamp : undefined;
+}
+
+function deadlineValid(runtime: Runtime, deadline: bigint): boolean {
+  return deadline > 0n && deadline <= maximumDeadline
+    && (runtime.latestBlockTimestamp === undefined || deadline > runtime.latestBlockTimestamp);
+}
+
 function derive(runtime: Runtime, now: number): ViewState {
   const allowed = new Set<string>(['switch-scope', 'resync']);
-  const reasons: Record<string, ReasonCode> = {};
+  const reasons: Record<string, ValidationReason> = {};
   const state = runtime.state;
+  if (runtime.interactive) {
+    if (!state.preparation.wallet) allowed.add('connect-wallet');
+    else if (!state.preparation.network) allowed.add('switch-network');
+    else if (!state.preparation.key) allowed.add('prepare-recipient-key');
+    else if (!state.preparation.faucet || !state.preparation.gas) allowed.add('refresh-balances');
+  }
+  const operationActions: Record<string, OperationAction[]> = {};
   for (const card of ['reward', 'pay', 'deposit', 'withdraw'] as const) {
     const phase = state.cards[card].phase;
     if (phase === 'ready' || phase === 'needs-preparation' || phase === 'invalid-input' || phase === 'confirm-terms') {
@@ -119,15 +234,26 @@ function derive(runtime: Runtime, now: number): ViewState {
     if (phase === 'ready') {
       if (state.storageAvailability !== 'healthy') {
         reasons[`start:${card}`] = 'SERVICE_UNAVAILABLE';
+      } else if (card === 'pay' && state.cards.pay.quote !== undefined
+        && !deadlineValid(runtime, state.cards.pay.quote.deadline)) {
+        reasons['start:pay'] = 'TERMS_EXPIRED';
       } else if (card === 'pay' && !quoteValid(runtime.quoteStartedAt, now)) {
         reasons['start:pay'] = 'QUOTE_STALE';
       } else {
         allowed.add(`start:${card}`);
       }
     }
+    if (phase === 'invalid-input' || phase === 'needs-preparation') {
+      reasons[`start:${card}`] = state.cards[card].reason ?? 'INPUT_INVALID';
+    }
     if (card === 'reward' && phase === 'complete' && state.storageAvailability === 'healthy') allowed.add('start:reward');
+    if (phase === 'complete') allowed.add(`new-operation:${card}`);
     if (phase === 'confirm-terms') {
-      if (card === 'pay' && !runtime.oldAuthorizationActive) allowed.add('confirm-terms');
+      if (card === 'pay' && !runtime.oldAuthorizationActive
+        && (state.cards.pay.proposedQuote === undefined
+          || deadlineValid(runtime, state.cards.pay.proposedQuote.deadline))) allowed.add('confirm-terms');
+      else if (card === 'pay' && state.cards.pay.proposedQuote !== undefined
+        && !deadlineValid(runtime, state.cards.pay.proposedQuote.deadline)) reasons['confirm-terms'] = 'TERMS_EXPIRED';
       else reasons['confirm-terms'] = 'AUTHORIZATION_ACTIVE';
     }
     if (phase === 'unknown' || phase === 'pending' || phase === 'failed' || phase === 'receipt-invalid') {
@@ -153,7 +279,16 @@ function derive(runtime: Runtime, now: number): ViewState {
     || state.cards.reward.phase === 'confirmed-receipt-pending') {
     allowed.add('acknowledge-receipt');
   }
-  return { ...state, allowedActions: [...allowed], reasons };
+  for (const operation of state.operations) {
+    const actions: OperationAction[] = [];
+    const card = state.operationCards[operation.operationId];
+    if (card !== undefined && ['unknown', 'pending', 'failed', 'receipt-invalid'].includes(state.cards[card].phase)) actions.push('recheck');
+    if (runtime.retryEligible.has(operation.operationId) && operation.chainOutcome === 'finalized-failure' && state.storageAvailability === 'healthy') actions.push('retry-attempt');
+    if (runtime.resumeEligible.has(operation.operationId) && operation.chainOutcome === 'not-submitted' && state.storageAvailability === 'healthy') actions.push('resume-original');
+    if (card !== undefined && operation.chainOutcome === 'finalized-success' && operation.receiptState === 'pending') actions.push('acknowledge-receipt');
+    operationActions[operation.operationId] = actions;
+  }
+  return { ...state, allowedActions: [...allowed], reasons, operationActions };
 }
 
 export function createMockUiController({ scope, store, clock, scenario }: {
@@ -223,21 +358,36 @@ export function createMockUiController({ scope, store, clock, scenario }: {
     }
     let state = runtime.state;
     if (event.type === 'quote') {
-      const incoming = {
+      const timestamp = chainTimestamp(event.latestBlockTimestamp);
+      if (timestamp === undefined || event.quoteOut <= 0n) {
+        runtime.quoteStartedAt = undefined;
+        state = setCard(state, 'pay', { quote: undefined, proposedQuote: undefined, phase: 'needs-preparation', reason: 'QUOTE_STALE' });
+      } else {
+        const incoming = {
           startedAt: event.startedAt,
           quoteOut: event.quoteOut,
           minAmountOut: (event.quoteOut * 99n / 100n) > 0n ? event.quoteOut * 99n / 100n : 1n,
-          deadline: event.latestBlockTimestamp + 600,
-      };
-      if (state.cards.pay.phase === 'awaiting-approval') {
-        runtime.oldAuthorizationActive = true;
-        state = setCard(state, 'pay', { phase: 'confirm-terms', reason: 'TERMS_CHANGED', proposedQuote: incoming });
-      } else if (state.cards.pay.phase === 'confirm-terms') {
-        state = setCard(state, 'pay', { proposedQuote: incoming });
-      } else {
-        runtime.quoteStartedAt = event.startedAt;
-        state = setCard(state, 'pay', { quote: incoming });
+          deadline: timestamp + 600n,
+        };
+        runtime.latestBlockTimestamp = timestamp;
+        if (state.cards.pay.phase === 'awaiting-approval') {
+          runtime.oldAuthorizationActive = true;
+          state = setCard(state, 'pay', { phase: 'confirm-terms', reason: 'TERMS_CHANGED', proposedQuote: incoming });
+        } else if (state.cards.pay.phase === 'confirm-terms') {
+          state = setCard(state, 'pay', { proposedQuote: incoming });
+        } else {
+          runtime.quoteStartedAt = event.startedAt;
+          state = setCard(state, 'pay', { quote: incoming, reason: undefined });
+        }
       }
+    } else if (event.type === 'chain-timestamp') {
+      const timestamp = chainTimestamp(event.latestBlockTimestamp);
+      if (timestamp !== undefined && (runtime.latestBlockTimestamp === undefined || timestamp > runtime.latestBlockTimestamp)) {
+        runtime.latestBlockTimestamp = timestamp;
+      }
+    } else if (event.type === 'invalidate-quote') {
+      runtime.quoteStartedAt = undefined;
+      state = setCard(state, 'pay', { quote: undefined, proposedQuote: undefined, phase: 'needs-preparation', reason: 'QUOTE_STALE' });
     } else if (event.type === 'reservation-ack') {
       runtime.reservationAck.add(event.card);
     } else if (event.type === 'awaiting-approval') {
@@ -268,6 +418,21 @@ export function createMockUiController({ scope, store, clock, scenario }: {
         chainOutcome: 'finalized-success', receiptState: needsReceipt ? 'pending' : 'none',
       });
       state = appendAttempt(state, event.operationId, event.attemptId);
+      if (runtime.interactive && event.amountWei !== undefined
+        && (event.card === 'deposit' || event.card === 'withdraw')
+        && !runtime.publicEffects.has(event.operationId)) {
+        const delta = event.card === 'deposit' ? -event.amountWei : event.amountWei;
+        runtime.publicEffects.set(event.operationId, delta);
+        state = { ...state, publicEthWei: state.publicEthWei + delta };
+      }
+      if (runtime.interactive && (event.card === 'pay' || event.card === 'withdraw')) {
+        const selected = state.selectedInput[event.card];
+        if (selected !== undefined && state.utxos.some((item) => item.id === selected.id && item.available)) {
+          state = { ...state,
+            utxos: state.utxos.map((item) => item.id === selected.id ? { ...item, available: false } : item),
+            availablePrivateWei: state.availablePrivateWei - selected.amountWei };
+        }
+      }
     } else if (event.type === 'receipt-invalid') {
       state = setCard(state, event.card, { phase: 'receipt-invalid', reason: 'RECEIPT_INVALID' });
       state = setOperation(state, event.operationId, { receiptState: 'invalid' });
@@ -276,7 +441,8 @@ export function createMockUiController({ scope, store, clock, scenario }: {
       if (operation?.chainOutcome === 'finalized-success') {
         if (!runtime.countedOutputs.has(event.outputId)) {
           runtime.countedOutputs.set(event.outputId, { operationId: event.operationId, amountWei: event.amountWei });
-          state = { ...state, availablePrivateWei: state.availablePrivateWei + event.amountWei };
+          state = { ...state, availablePrivateWei: state.availablePrivateWei + event.amountWei,
+            utxos: [...state.utxos, { id: event.outputId, amountWei: event.amountWei, available: true }] };
         }
         state = setCard(state, event.card, { phase: 'complete' });
         state = setOperation(state, event.operationId, { receiptState: 'confirmed' });
@@ -285,13 +451,21 @@ export function createMockUiController({ scope, store, clock, scenario }: {
       runtime.retryEligible.delete(event.operationId);
       runtime.resumeEligible.delete(event.operationId);
       let removed = 0n;
+      const removedOutputIds = new Set<string>();
       for (const [outputId, item] of runtime.countedOutputs) {
         if (item.operationId === event.operationId) {
           removed += item.amountWei;
+          removedOutputIds.add(outputId);
           runtime.countedOutputs.delete(outputId);
         }
       }
-      state = { ...state, availablePrivateWei: state.availablePrivateWei - removed, isStale: true };
+      state = { ...state, availablePrivateWei: state.availablePrivateWei - removed, isStale: true,
+        utxos: state.utxos.filter((item) => !removedOutputIds.has(item.id)) };
+      const publicEffect = runtime.publicEffects.get(event.operationId);
+      if (publicEffect !== undefined) {
+        state = { ...state, publicEthWei: state.publicEthWei - publicEffect };
+        runtime.publicEffects.delete(event.operationId);
+      }
       state = setCard(state, event.card, { phase: 'unknown', reason: 'RESULT_UNKNOWN' });
       state = setOperation(state, event.operationId, { chainOutcome: 'unknown', receiptState: 'none' });
     } else if (event.type === 'attempt-failed') {
@@ -323,8 +497,33 @@ export function createMockUiController({ scope, store, clock, scenario }: {
         reason: event.reason,
         input: event.input ?? state.cards[event.card].input,
       });
+    } else if (event.type === 'preparation') {
+      const preparation: PreparationView = {
+        wallet: event.wallet ?? state.preparation.wallet,
+        network: event.network ?? state.preparation.network,
+        key: event.key ?? state.preparation.key,
+        faucet: event.faucet ?? state.preparation.faucet,
+        gas: event.gas ?? state.preparation.gas,
+      };
+      state = { ...state, preparation, connection: preparation.wallet ? 'connected' : 'disconnected',
+        currentScope: preparation.wallet ? state.scope : undefined };
+    } else if (event.type === 'utxos') {
+      state = { ...state, utxos: event.utxos,
+        availablePrivateWei: event.utxos.filter((item) => item.available).reduce((sum, item) => sum + item.amountWei, 0n) };
+    } else if (event.type === 'public-balance') {
+      state = { ...state, publicEthWei: event.amountWei };
+    } else if (event.type === 'reward-request') {
+      const existing = state.rewardRequests.find((item) => item.requestId === event.requestId);
+      const next = { requestId: event.requestId, status: event.status, operationId: event.operationId };
+      state = { ...state, rewardRequests: existing
+        ? state.rewardRequests.map((item) => item.requestId === event.requestId ? next : item)
+        : [...state.rewardRequests, next] };
+    }
+    if ('operationId' in event && 'card' in event) {
+      state = { ...state, operationCards: { ...state.operationCards, [event.operationId]: event.card } };
     }
     runtime.state = state;
+    refreshInteractive(runtime);
     if (key === scopeKey(activeScope)) notify();
   }
 
@@ -354,9 +553,30 @@ export function createMockUiController({ scope, store, clock, scenario }: {
       if (action.type === 'start') {
         runtime.state = setCard(runtime.state, action.card, { phase: 'preparing' });
         entries.push({ kind: 'start', scope: activeScope });
+      } else if (action.type === 'new-operation') {
+        runtime.state = setCard(runtime.state, action.card, { phase: 'invalid-input', input: {}, reason: 'INVALID_DECIMAL',
+          approvalPurpose: undefined, quote: undefined, proposedQuote: undefined });
+        if (action.card === 'pay') runtime.quoteStartedAt = undefined;
+        refreshInteractive(runtime);
+      } else if (action.type === 'connect-wallet' || action.type === 'switch-network'
+        || action.type === 'prepare-recipient-key' || action.type === 'refresh-balances') {
+        const field = action.type === 'connect-wallet' ? 'wallet' : action.type === 'switch-network' ? 'network'
+          : action.type === 'prepare-recipient-key' ? 'key' : 'faucet';
+        runtime.state = { ...runtime.state,
+          preparation: { ...runtime.state.preparation, [field]: true,
+            ...(action.type === 'refresh-balances' ? { gas: true } : {}) },
+          ...(action.type === 'connect-wallet' ? { connection: 'connected' as const, currentScope: activeScope } : {}),
+          ...(action.type === 'refresh-balances' ? { publicEthWei: 20n * 10n ** 15n } : {}),
+        };
+        refreshInteractive(runtime);
       } else if (action.type === 'edit') {
         const card = runtime.state.cards[action.card];
-        runtime.state = setCard(runtime.state, action.card, { input: { ...card.input, [action.field]: action.value } });
+        const staleDraft = action.card === 'pay' && card.reason === 'QUOTE_STALE';
+        const reconsiderTerms = action.card === 'pay' && card.phase === 'confirm-terms' && !runtime.oldAuthorizationActive;
+        runtime.state = setCard(runtime.state, action.card, { input: { ...card.input, [action.field]: action.value },
+          ...(staleDraft ? { reason: undefined, quote: undefined, phase: 'invalid-input' as const } : {}),
+          ...(reconsiderTerms ? { reason: undefined, proposedQuote: undefined, phase: 'invalid-input' as const } : {}) });
+        refreshInteractive(runtime);
       } else if (action.type === 'confirm-terms') {
         runtime.state = setCard(runtime.state, 'pay', { phase: 'preparing', reason: undefined,
           quote: runtime.state.cards.pay.proposedQuote ?? runtime.state.cards.pay.quote, proposedQuote: undefined });

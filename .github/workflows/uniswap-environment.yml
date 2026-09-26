@@ -40,7 +40,7 @@ jobs:
           pnpm build
           pnpm test
           pnpm check
-          node --test tests/environment/uniswap-*.test.mjs
+          node --test --test-concurrency=1 tests/environment/uniswap-*.test.mjs
       - name: Deploy and verify local assets
         shell: bash
         run: |
