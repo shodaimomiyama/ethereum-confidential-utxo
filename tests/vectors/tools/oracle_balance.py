@@ -237,5 +237,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
+    if args.out.resolve() == (ROOT / 'tests/vectors/cases').resolve():
+        raise SystemExit('choose a separate output directory')
     args.out.mkdir(parents=True, exist_ok=True)
     (args.out / "balance.json").write_text(json.dumps(generate(), indent=2) + "\n")

@@ -33,7 +33,10 @@ test('RFC 9180 A.2.1 base mode known ciphertext decrypts', async () => {
 test('fixed application packet derives info before operation ID', async () => {
   const generated = await generateHpkeCases();
   assert.deepEqual(generated.hpke, hpke);
-  assert.deepEqual(generated.application, application);
+  const base = structuredClone(application);
+  base[1].expected.rangeProofs = [];
+  base[1].expected.rangeProofStatus = 'pending-v3-two-outputs';
+  assert.deepEqual(generated.application, base);
   const normal = find('VEC-07-RECEIPT-VALID');
   const { input, expected } = normal;
   assert.equal(bytes(input.info).length, 32);
@@ -139,8 +142,8 @@ test('transfer with change and full withdrawal share coherent input state', asyn
   assert.equal(transfer.input.inputIds.length, 1);
   assert.equal(transfer.input.outputs.length, 2);
   assert.equal(transfer.expected.receipts.length, 2);
-  assert.equal(transfer.expected.rangeProofStatus, 'pending-v3-two-outputs');
-  assert.deepEqual(transfer.expected.rangeProofs, []);
+  assert.equal(transfer.expected.rangeProofStatus, 'valid-v3-two-outputs');
+  assert.equal(transfer.expected.rangeProofs.length, 2);
   assert.equal(withdrawal.input.inputIds[0], transfer.expected.outputIds[1].hash);
   assert.equal(withdrawal.input.outputs.length, 0);
   assert.deepEqual(withdrawal.expected.receipts, []);

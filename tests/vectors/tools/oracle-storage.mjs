@@ -2,7 +2,7 @@ import { createCipheriv, createDecipheriv, scrypt as scryptCallback } from 'node
 import { promisify } from 'node:util';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, join } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { pathToFileURL, fileURLToPath } from 'node:url';
 
 const scrypt = promisify(scryptCallback);
 const MAX_FILE = 16 * 1024 * 1024;
@@ -181,6 +181,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   const index = process.argv.indexOf('--out');
   if (index < 0 || !process.argv[index + 1]) throw new Error('usage: oracle-storage.mjs --out <directory>');
   const out = resolve(process.argv[index + 1]);
+  if (out === resolve(fileURLToPath(new URL('../cases', import.meta.url)))) {
+    throw new Error('choose a separate output directory');
+  }
   mkdirSync(out, { recursive: true });
   writeFileSync(join(out, 'storage.json'), `${JSON.stringify(await generateCases(), null, 2)}\n`);
 }

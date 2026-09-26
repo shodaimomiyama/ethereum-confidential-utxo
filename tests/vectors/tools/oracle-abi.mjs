@@ -407,6 +407,9 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     throw new Error('Usage: node oracle-abi.mjs --out <directory>');
   }
   const output = resolve(process.argv[3]);
+  if (output === resolve(fileURLToPath(new URL('../cases', import.meta.url)))) {
+    throw new Error('choose a separate output directory');
+  }
   mkdirSync(output, { recursive: true });
   const { operations, invalidOperations, authorization } = await generateAbiCases();
   writeFileSync(join(output, 'operation.json'), JSON.stringify(operations, null, 2) + '\n');

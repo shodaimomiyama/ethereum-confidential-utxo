@@ -146,6 +146,7 @@ def read_evidence():
 
 
 def build_cases():
+    from oracle_range_prover import verify
     vectors, profile, parameters, java = read_evidence()
     ordered = {(v['role'], v['index']): v for v in vectors['generators']}
     group = [{
@@ -221,6 +222,8 @@ def build_cases():
         proof = next(p for p in java['proofs'] if p['label'] == label)
         assert validate_proof_shape(proof)
         assert replay_trace(proof, profile, parameters) == proof['transcriptTrace']['stages']
+        if verify(proof, parameters, profile) != proof['expectedValid']:
+            raise ValueError('EXP-08 proof equation mismatch: ' + label)
         cases.append({'id': 'VEC-04-' + suffix, 'profile': 'range-bp-v3',
                       'source': 'EXP-08 java-result.json, Java and EVM verifier results',
                       'stage': 'range-proof',
@@ -238,13 +241,21 @@ def build_cases():
                       'oracle': 'tools/oracle_v3.py#replay_trace',
                       'consumers': ['#28', '#27']})
     base = cases[0]['id']
+    original_proof = java['proofs'][0]
     for name, field, new, stage in [
         ('OPERATION-ID-CHANGED', 'operationId', '0x' + 'ff'*32, 'transcript'),
         ('OUTPUT-INDEX-CHANGED', 'outputIndex', '1', 'transcript'),
         ('SHORT-L', 'ls', cases[0]['input']['ls'][:-1], 'proof-shape'),
+        ('LONG-L', 'ls', cases[0]['input']['ls'] + ['0'], 'proof-shape'),
+        ('SHORT-R', 'rs', cases[0]['input']['rs'][:-1], 'proof-shape'),
         ('SCALAR-Q', 'scalars', [str(Q)] + cases[0]['input']['scalars'][1:], 'proof-shape'),
+        ('C-RANGE-CHANGED', 'coords', ['1', '2'] + cases[0]['input']['coords'][2:], 'proof-equation'),
+        ('X-EQUAL-P', 'coords', [str(P)] + cases[0]['input']['coords'][1:], 'proof-shape'),
+        ('OFF-CURVE', 'coords', ['1', '1'] + cases[0]['input']['coords'][2:], 'proof-shape'),
         ('PROOF-POINT-IDENTITY', 'coords', cases[0]['input']['coords'][:2] + ['0', '0'] + cases[0]['input']['coords'][4:], 'proof-equation'),
     ]:
+        if verify({**original_proof, field: new}, parameters, profile):
+            raise ValueError('mutated v3 proof was accepted: ' + name)
         cases.append({'id': 'VEC-04-' + name, 'profile': 'range-bp-v3',
                       'source': 'EXP-08 java-result.json mutation of ' + base,
                       'stage': stage, 'input': {field: new},
