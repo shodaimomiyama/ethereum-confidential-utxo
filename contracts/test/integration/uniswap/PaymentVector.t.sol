@@ -37,10 +37,7 @@ contract PaymentVectorTest {
 
     function test_emitIndependentPaymentDigest() public {
         bytes32 digest = paymentDigest();
-        require(
-            digest == 0x65b68bd6858a7947aef50aa010ad17946ee527a79ebc0d7185603fbfe70f157c,
-            "payment digest"
-        );
+        require(digest == 0x65b68bd6858a7947aef50aa010ad17946ee527a79ebc0d7185603fbfe70f157c, "payment digest");
         emit PaymentDigest(digest);
     }
 }

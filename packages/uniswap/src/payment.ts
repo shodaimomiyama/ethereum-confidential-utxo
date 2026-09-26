@@ -86,7 +86,7 @@ export function assertWithdrawalBinding(
   withdrawal: WithdrawalBindingInput,
   terms: PaymentTerms,
   deployment: PaymentDeployment,
-  computeOperationId: () => OperationId,
+  computeOperationId: (request: WithdrawalBindingInput) => OperationId,
   rangeProofCount: number,
 ): void {
   checkTerms(terms, 1n, deployment.adapter);
@@ -103,7 +103,7 @@ export function assertWithdrawalBinding(
     || !sameAddress(withdrawal.destination, deployment.adapter)
     || !sameAddress(terms.token, deployment.token)
     || forbiddenRecipients.some((recipient) => sameAddress(terms.recipient, recipient))
-    || computeOperationId().toLowerCase() !== terms.operationId.toLowerCase()) {
+    || computeOperationId(withdrawal).toLowerCase() !== terms.operationId.toLowerCase()) {
     throw new SchemaError('INVALID_FIELD', 'withdrawalBinding');
   }
 }

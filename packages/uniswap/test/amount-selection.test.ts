@@ -23,6 +23,14 @@ it.each(['', '0', '0.0', '-1', '+1', '1e-3', '1.', '.1', '01', ' 1', '1 ', '0.00
   expect(() => parseEthAmount(value)).toThrow();
 });
 
+it('distinguishes empty, zero, malformed and overflowing amounts', () => {
+  expect(() => parseEthAmount('')).toThrowError(expect.objectContaining({ code: 'EMPTY_AMOUNT' }));
+  expect(() => parseEthAmount('0.0')).toThrowError(expect.objectContaining({ code: 'ZERO_AMOUNT' }));
+  expect(() => parseEthAmount('1e-3')).toThrowError(expect.objectContaining({ code: 'INVALID_DECIMAL' }));
+  expect(() => parseEthAmount('115792089237316195423570985008687907853269984665640564039458'))
+    .toThrowError(expect.objectContaining({ code: 'AMOUNT_OVERFLOW' }));
+});
+
 it('requires a positive quote and calculates the integer minimum', () => {
   expect(automaticMinimum(1n)).toBe(1n);
   expect(automaticMinimum(199n)).toBe(197n);

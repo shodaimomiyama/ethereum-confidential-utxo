@@ -39,8 +39,8 @@ export type SubmissionOutcome =
 
 export interface RecoveryPorts {
   readEvidence(saved: SavedReservation): Promise<{ readonly evidence: RecoveryEvidence; readonly currentInput: CurrentInput }>;
-  executeResumeOriginal(saved: SavedReservation, evidence: RecoveryEvidence): Promise<SubmissionOutcome>;
-  executeRetryAttempt(saved: SavedReservation, evidence: RecoveryEvidence): Promise<SubmissionOutcome>;
+  restoreOriginal(saved: SavedReservation, evidence: RecoveryEvidence): Promise<{ readonly prepared: PreparedBase; readonly signatures: AuthorizationSignatures }>;
+  restoreForRetry(saved: SavedReservation, evidence: RecoveryEvidence): Promise<{ readonly prepared: PreparedBase; readonly signatures: AuthorizationSignatures }>;
   releaseAndPrepareChangedTerms(saved: SavedReservation, evidence: RecoveryEvidence, input: unknown): Promise<PreparedPay>;
 }
 
@@ -55,7 +55,7 @@ export interface PaymentPorts {
   clock: MonotonicClock;
   latestBlockTime(): Promise<bigint>;
   encrypt(plaintext: Uint8Array, context: { readonly scope: Scope; readonly recordId: Bytes32; readonly revision: number }): Promise<EncryptedBundle>;
-  sealContent(prepared: PreparedBase, signatures: AuthorizationSignatures, attemptId?: AttemptId): Uint8Array;
+  sealContent(prepared: PreparedBase, signatures: AuthorizationSignatures, attemptId?: AttemptId, txHash?: TxHash): Uint8Array;
   signPool(payload: Readonly<Record<string, unknown>>): Promise<`0x${string}`>;
   signPayment(prepared: PreparedPay): Promise<`0x${string}`>;
   createAttempt(prepared: PreparedBase, signatures: AuthorizationSignatures): AttemptId;
@@ -100,6 +100,11 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
       || saved.record.attemptIds.join('\u0000') !== expected.attemptIds.join('\u0000')) {
       throw new PaymentProcessError('INPUT_RESERVED');
     }
+    if (saved.record.encryptedBundle.ciphertext !== expected.encryptedBundle.ciphertext
+      || saved.record.encryptedBundle.nonce !== expected.encryptedBundle.nonce
+      || saved.record.encryptedBundle.tag !== expected.encryptedBundle.tag) {
+      throw new PaymentProcessError('INPUT_RESERVED');
+    }
   }
 
   async function encryptRecord(record: OperationRecord, data: Uint8Array, revision: number): Promise<OperationRecord> {
@@ -122,7 +127,10 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
         && found.revision === revision
         && sameHash(found.record.contentHash, expected.contentHash)
         && found.record.signatureStarted === expected.signatureStarted
-        && found.record.attemptIds.join('\u0000') === expected.attemptIds.join('\u0000')) {
+        && found.record.attemptIds.join('\u0000') === expected.attemptIds.join('\u0000')
+        && found.record.encryptedBundle.ciphertext === expected.encryptedBundle.ciphertext
+        && found.record.encryptedBundle.nonce === expected.encryptedBundle.nonce
+        && found.record.encryptedBundle.tag === expected.encryptedBundle.tag) {
         return found;
       }
       throw cause;
@@ -137,6 +145,22 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
       throw new PaymentProcessError('TERMS_EXPIRED');
     }
     assertScope(prepared.record.scope);
+  }
+
+  async function persistKnownHash(
+    saved: SavedReservation,
+    prepared: PreparedBase,
+    signatures: AuthorizationSignatures,
+    attemptId: AttemptId,
+    txHash: TxHash,
+  ): Promise<void> {
+    const revision = saved.revision + 1;
+    const bytes = ports.sealContent(prepared, signatures, attemptId, txHash);
+    const record = await encryptRecord(saved.record, bytes, revision);
+    const updated = await recoverAck(record, revision,
+      () => ports.reservations.update(record, saved.revision, revision));
+    assertScope(saved.record.scope);
+    assertSaved(updated, record, revision);
   }
 
   async function authorize(preparedInput: PreparedBase, confirmedContentHash: Bytes32, isPay: boolean): Promise<OperationRef> {
@@ -209,6 +233,9 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
       outcome = { kind: 'unknown' };
     }
     assertScope(initialScope);
+    if (outcome.kind === 'submitted') {
+      await persistKnownHash(attempted, prepared, signatures, attemptId, outcome.txHash);
+    }
     return {
       scope: initialScope,
       operationId: prepared.record.operationId,
@@ -249,9 +276,55 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
     if (inspectOperation(saved, evidence, currentInput).action !== action) {
       throw new PaymentProcessError('RECOVERY_BLOCKED');
     }
+    if ((action === 'resume-original' || action === 'retry-attempt') && !saved.record.signatureStarted) {
+      throw new PaymentProcessError('RECOVERY_BLOCKED');
+    }
     const result = await execute(recovery, saved, evidence);
     assertScope(scope);
     return result;
+  }
+
+  async function submitRecovered(
+    saved: SavedReservation,
+    restored: { readonly prepared: PreparedBase; readonly signatures: AuthorizationSignatures },
+  ): Promise<SubmissionOutcome> {
+    const { prepared, signatures } = restored;
+    assertScope(saved.record.scope);
+    if (!sameScope(prepared.record.scope, saved.record.scope)
+      || !sameHash(prepared.record.recordId, saved.record.recordId)
+      || !sameHash(prepared.record.inputId, saved.record.inputId)
+      || !sameHash(prepared.record.contentHash, saved.record.contentHash)
+      || !sameHash(prepared.record.operationId, saved.record.operationId)
+      || prepared.record.kind !== saved.record.kind
+      || (prepared.record.kind === 'pay' && saved.record.kind === 'pay'
+        && (!sameHash(prepared.record.paymentId, saved.record.paymentId)
+          || prepared.record.deadline !== saved.record.deadline
+          || signatures.payment === undefined))) {
+      throw new PaymentProcessError('RECOVERY_BLOCKED');
+    }
+    await ports.validatePrepared(prepared);
+    assertScope(saved.record.scope);
+    const attemptId = ports.createAttempt(prepared, signatures);
+    if (saved.record.attemptIds.includes(attemptId)) throw new PaymentProcessError('RECOVERY_BLOCKED');
+    const nextRevision = saved.revision + 1;
+    const attemptBytes = ports.sealContent(prepared, signatures, attemptId);
+    const attemptedRecord = await encryptRecord({
+      ...saved.record, attemptIds: [...saved.record.attemptIds, attemptId],
+    }, attemptBytes, nextRevision);
+    const attempted = await recoverAck(attemptedRecord, nextRevision,
+      () => ports.reservations.update(attemptedRecord, saved.revision, nextRevision));
+    assertScope(saved.record.scope);
+    assertSaved(attempted, attemptedRecord, nextRevision);
+    let outcome: SubmissionOutcome;
+    try {
+      outcome = await ports.submit(prepared, signatures, attemptId);
+    } catch {
+      return { kind: 'unknown' };
+    }
+    if (outcome.kind === 'submitted') {
+      await persistKnownHash(attempted, prepared, signatures, attemptId, outcome.txHash);
+    }
+    return outcome;
   }
 
   return {
@@ -260,9 +333,9 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
     authorizePay: (prepared, confirmation) => authorize(prepared, confirmation, true),
     authorizeFullWithdraw: (prepared, confirmation) => authorize(prepared, confirmation, false),
     resumeOriginal: (recordId) => recover(recordId, 'resume-original',
-      (recovery, saved, evidence) => recovery.executeResumeOriginal(saved, evidence)),
+      async (recovery, saved, evidence) => submitRecovered(saved, await recovery.restoreOriginal(saved, evidence))),
     retryAttempt: (recordId) => recover(recordId, 'retry-attempt',
-      (recovery, saved, evidence) => recovery.executeRetryAttempt(saved, evidence)),
+      async (recovery, saved, evidence) => submitRecovered(saved, await recovery.restoreForRetry(saved, evidence))),
     prepareChangedTerms: (recordId, input) => recover(recordId, 'change-terms',
       (recovery, saved, evidence) => recovery.releaseAndPrepareChangedTerms(saved, evidence, input)),
   };

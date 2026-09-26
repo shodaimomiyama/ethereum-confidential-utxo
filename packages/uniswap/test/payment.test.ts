@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest';
 import { assertWithdrawalBinding, paymentDigest } from '../src/payment.js';
+import type { WithdrawalBindingInput } from '../src/payment.js';
 import type { PaymentTerms } from '../src/payment.js';
 import type { Address, InputId, OperationId } from '../src/domain.js';
 
@@ -46,7 +47,10 @@ it('rejects withdrawal mismatch and forbidden recipients', () => {
     inputIds: [inputId], outputs: [{ owner }],
   };
   const deployment = { adapter, token, pool: address('6'), router: address('7'), factory: address('8'), weth: address('9'), pair: address('a') };
-  const computeId = () => operationId;
+  const computeId = (request: WithdrawalBindingInput) => {
+    expect(request).toBe(withdrawal);
+    return operationId;
+  };
   expect(() => assertWithdrawalBinding(withdrawal, terms, deployment, computeId, 1)).not.toThrow();
   expect(() => assertWithdrawalBinding({ ...withdrawal, destination: owner }, terms, deployment, computeId, 1)).toThrow();
   expect(() => assertWithdrawalBinding(withdrawal, { ...terms, recipient: adapter }, deployment, computeId, 1)).toThrow();

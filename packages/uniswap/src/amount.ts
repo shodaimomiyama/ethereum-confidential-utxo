@@ -5,13 +5,15 @@ const UINT256_MAX = (1n << 256n) - 1n;
 const ETH_DECIMAL = /^(0|[1-9][0-9]*)(?:\.([0-9]{1,18}))?$/;
 
 export function parseEthAmount(input: string): bigint {
+  if (input === '') throw new SchemaError('EMPTY_AMOUNT', 'amount');
   const match = ETH_DECIMAL.exec(input);
   if (match === null) throw new SchemaError('INVALID_DECIMAL', 'amount');
   const whole = match[1];
   if (whole === undefined) throw new SchemaError('INVALID_DECIMAL', 'amount');
   const fraction = (match[2] ?? '').padEnd(18, '0');
   const wei = BigInt(whole) * WEI_PER_ETH + BigInt(fraction);
-  if (wei === 0n || wei > UINT256_MAX) throw new SchemaError('INVALID_DECIMAL', 'amount');
+  if (wei === 0n) throw new SchemaError('ZERO_AMOUNT', 'amount');
+  if (wei > UINT256_MAX) throw new SchemaError('AMOUNT_OVERFLOW', 'amount');
   return wei;
 }
 

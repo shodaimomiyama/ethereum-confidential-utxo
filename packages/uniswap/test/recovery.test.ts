@@ -25,6 +25,9 @@ const evidence = (overrides: Partial<RecoveryEvidence> = {}): RecoveryEvidence =
 
 it('resumes the original signed operation after a confirmed unsubmitted approval rejection', () => {
   expect(inspectOperation(saved(), evidence(), { state: 'unspent' }).action).toBe('resume-original');
+  expect(inspectOperation(saved('pay', ['rejected']), evidence({
+    attempts: [{ id: 'rejected', outcome: 'not-submitted' }],
+  }), { state: 'unspent' }).action).toBe('resume-original');
 });
 
 it('rechecks when a lost submission response leaves execution unknown', () => {
@@ -38,6 +41,14 @@ it('does not retry while another attempt is pending or unknown', () => {
   ] }), { state: 'unspent' }).action).toBe('recheck');
   expect(inspectOperation(record, evidence({ attempts: [
     { id: 'failed', outcome: 'finalized-failure' }, { id: 'pending', outcome: 'unknown' },
+  ] }), { state: 'unspent' }).action).toBe('recheck');
+});
+
+it('does not accept duplicate evidence IDs in place of an unresolved attempt', () => {
+  const record = saved('pay', ['first', 'second']);
+  expect(inspectOperation(record, evidence({ attempts: [
+    { id: 'first', outcome: 'finalized-failure' },
+    { id: 'first', outcome: 'finalized-failure' },
   ] }), { state: 'unspent' }).action).toBe('recheck');
 });
 

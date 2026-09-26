@@ -2,7 +2,7 @@ import type { SavedReservation } from './reservation.js';
 
 export interface AttemptEvidence {
   readonly id: string;
-  readonly outcome: 'finalized-failure' | 'finalized-success' | 'pending' | 'unknown';
+  readonly outcome: 'finalized-failure' | 'finalized-success' | 'not-submitted' | 'pending' | 'unknown';
 }
 
 export interface RecoveryEvidence {
@@ -43,14 +43,21 @@ export function inspectOperation(
   }
   const recordedIds = new Set<string>(saved.record.attemptIds);
   if (evidence.attempts.length !== recordedIds.size
+    || new Set(evidence.attempts.map((attempt) => attempt.id)).size !== recordedIds.size
     || evidence.attempts.some((attempt) => !recordedIds.has(attempt.id)
-      || attempt.outcome !== 'finalized-failure')) {
+      || !['finalized-failure', 'not-submitted'].includes(attempt.outcome))) {
     return { action: 'recheck', reason: 'RESULT_UNKNOWN' };
   }
   if (saved.record.kind === 'pay' && evidence.blockTime > saved.record.deadline) {
     return { action: 'change-terms' };
   }
-  if (recordedIds.size > 0) return { action: 'retry-attempt' };
+  if (recordedIds.size > 0) {
+    if (evidence.attempts.some((attempt) => attempt.outcome === 'finalized-failure')) {
+      return { action: 'retry-attempt' };
+    }
+    if (!evidence.submissionKnownAbsent) return { action: 'recheck', reason: 'RESULT_UNKNOWN' };
+    return { action: 'resume-original' };
+  }
   if (!evidence.submissionKnownAbsent) {
     return { action: 'recheck', reason: 'RESULT_UNKNOWN' };
   }

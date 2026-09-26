@@ -20,9 +20,11 @@ const record = parseOperationRecord({
 
 function setup() {
   const calls: string[] = [];
+  const sealedHashes: string[] = [];
   const reservations = createMemoryReservationPort();
   let currentScope = scope;
   let now = 0;
+  let attemptNumber = 0;
   let refreshChanges = false;
   const prepared: PreparedPay = {
     record, privateBytes: new Uint8Array([1, 2]), poolAuthorization: { operationId: record.operationId },
@@ -48,14 +50,17 @@ function setup() {
       calls.push(`encrypt:${context.revision}`);
       return { ciphertext: 'AQID', nonce: `0x${String(context.revision).padStart(2, '0').repeat(12)}`, tag: `0x${'01'.repeat(16)}` };
     },
-    sealContent: () => new Uint8Array([1, 2, 3]),
+    sealContent: (_prepared, _signatures, _attemptId, txHash) => {
+      if (txHash !== undefined) sealedHashes.push(txHash);
+      return new Uint8Array([1, 2, 3]);
+    },
     signPool: async () => { calls.push('sign-pool'); return '0x11'; },
     signPayment: async () => { calls.push('sign-payment'); return '0x22'; },
-    createAttempt: () => { calls.push('create-attempt'); return 'attempt-1' as never; },
+    createAttempt: () => { calls.push('create-attempt'); attemptNumber += 1; return `attempt-${attemptNumber}` as never; },
     submit: async () => { calls.push('submit'); return { kind: 'submitted', txHash: blockHash as never }; },
   };
   return {
-    calls, reservations, prepared, ports,
+    calls, sealedHashes, reservations, prepared, ports,
     setNow: (value: number) => { now = value; },
     switchScope: () => { currentScope = { ...scope, owner: `0x${'66'.repeat(20)}` as never }; },
     changeRefresh: () => { refreshChanges = true; },
@@ -71,8 +76,9 @@ it('prepares before reservation and signs only after both durable ACKs', async (
   expect(fixture.calls).toEqual([
     'prepare', 'encrypt:1', 'reserve', 'encrypt:2', 'update',
     'sign-pool', 'sign-payment', 'encrypt:3', 'update',
-    'create-attempt', 'encrypt:4', 'update', 'submit',
+    'create-attempt', 'encrypt:4', 'update', 'submit', 'encrypt:5', 'update',
   ]);
+  expect(fixture.sealedHashes).toEqual([blockHash]);
   expect((await fixture.reservations.get(scope, record.recordId))?.record.signatureStarted).toBe(true);
 });
 
@@ -182,15 +188,17 @@ it('allows only the recovery action supported by a fresh finalized view', async 
   };
   fixture.ports.recovery = {
     readEvidence: async () => ({ evidence: failedEvidence, currentInput: { state: 'unspent' } }),
-    executeResumeOriginal: async () => { actions.push('resume'); return { kind: 'unknown' }; },
-    executeRetryAttempt: async () => { actions.push('retry'); return { kind: 'unknown' }; },
+    restoreOriginal: async () => { actions.push('resume'); return { prepared: fixture.prepared, signatures: { pool: '0x11', payment: '0x22' } }; },
+    restoreForRetry: async () => { actions.push('retry'); return { prepared: fixture.prepared, signatures: { pool: '0x11', payment: '0x22' } }; },
     releaseAndPrepareChangedTerms: async () => { actions.push('change'); return fixture.prepared; },
   };
   const client = createPaymentClient(fixture.ports);
   await expect(client.resumeOriginal(recordId as never)).rejects.toMatchObject({ code: 'RECOVERY_BLOCKED' });
   expect(actions).toEqual([]);
-  expect((await client.retryAttempt(recordId as never)).kind).toBe('unknown');
+  expect((await client.retryAttempt(recordId as never)).kind).toBe('submitted');
   expect(actions).toEqual(['retry']);
+  expect((await fixture.reservations.get(scope, record.recordId))?.record.attemptIds).toEqual(['attempt-1', 'attempt-2']);
+  expect(fixture.sealedHashes).toEqual([blockHash, blockHash]);
 });
 
 it('does not execute recovery when reservation state rolls back or an attempt is unresolved', async () => {
@@ -207,8 +215,8 @@ it('does not execute recovery when reservation state rolls back or an attempt is
       },
       currentInput: { state: 'unspent' },
     }),
-    executeResumeOriginal: async () => { actions.push('resume'); return { kind: 'unknown' }; },
-    executeRetryAttempt: async () => { actions.push('retry'); return { kind: 'unknown' }; },
+    restoreOriginal: async () => { actions.push('resume'); return { prepared: fixture.prepared, signatures: { pool: '0x11', payment: '0x22' } }; },
+    restoreForRetry: async () => { actions.push('retry'); return { prepared: fixture.prepared, signatures: { pool: '0x11', payment: '0x22' } }; },
     releaseAndPrepareChangedTerms: async () => { actions.push('change'); return fixture.prepared; },
   };
   const client = createPaymentClient(fixture.ports);
@@ -233,11 +241,39 @@ it('blocks recovery after a detected storage rollback even when chain evidence p
       },
       currentInput: { state: 'unspent' },
     }),
-    executeResumeOriginal: async () => { actions.push('resume'); return { kind: 'unknown' }; },
-    executeRetryAttempt: async () => { actions.push('retry'); return { kind: 'unknown' }; },
+    restoreOriginal: async () => { actions.push('resume'); return { prepared: fixture.prepared, signatures: { pool: '0x11', payment: '0x22' } }; },
+    restoreForRetry: async () => { actions.push('retry'); return { prepared: fixture.prepared, signatures: { pool: '0x11', payment: '0x22' } }; },
     releaseAndPrepareChangedTerms: async () => { actions.push('change'); return fixture.prepared; },
   };
   await expect(createPaymentClient(fixture.ports).retryAttempt(recordId as never))
     .rejects.toMatchObject({ code: 'RECOVERY_BLOCKED' });
   expect(actions).toEqual([]);
+});
+
+it('persists exactly one retry attempt before submitting when two callers race', async () => {
+  const fixture = setup();
+  await createPaymentClient(fixture.ports).authorizePay(fixture.prepared, fixture.prepared.record.contentHash);
+  fixture.ports.recovery = {
+    readEvidence: async () => ({
+      evidence: {
+        finalized: true, blockTime: 599n, paymentSucceeded: false,
+        submissionKnownAbsent: false,
+        attempts: [{ id: 'attempt-1', outcome: 'finalized-failure' }],
+        storageAvailability: 'healthy',
+      },
+      currentInput: { state: 'unspent' },
+    }),
+    restoreOriginal: async () => ({ prepared: fixture.prepared, signatures: { pool: '0x11', payment: '0x22' } }),
+    restoreForRetry: async () => ({ prepared: fixture.prepared, signatures: { pool: '0x11', payment: '0x22' } }),
+    releaseAndPrepareChangedTerms: async () => fixture.prepared,
+  };
+  let recoverySubmits = 0;
+  fixture.ports.submit = async () => { recoverySubmits += 1; return { kind: 'submitted', txHash: blockHash as never }; };
+  const client = createPaymentClient(fixture.ports);
+  const results = await Promise.allSettled([
+    client.retryAttempt(recordId as never), client.retryAttempt(recordId as never),
+  ]);
+  expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+  expect(recoverySubmits).toBe(1);
+  expect((await fixture.reservations.get(scope, record.recordId))?.record.attemptIds).toHaveLength(2);
 });
