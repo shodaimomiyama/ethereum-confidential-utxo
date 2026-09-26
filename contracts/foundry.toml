@@ -9,3 +9,4 @@ via_ir = false
 evm_version = "cancun"
 ast = true
 extra_output = ["storageLayout"]
+fs_permissions = [{ access = "read", path = "test/fixtures" }]
