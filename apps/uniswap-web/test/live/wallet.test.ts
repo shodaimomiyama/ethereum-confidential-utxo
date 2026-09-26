@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import type { DeploymentId } from '@confidential-utxo/uniswap';
+import { paymentAuthorizationTypedData, type Address, type DeploymentId, type OperationId } from '@confidential-utxo/uniswap';
 import { ConnectionEpoch } from '../../src/live/scope.js';
 import { createMetaMaskWallet, type Eip1193Provider } from '../../src/live/wallet.js';
 
@@ -79,6 +79,34 @@ it('returns a scoped value and sends purpose-specific methods', async () => {
   const tx = await wallet.sendTransaction({ to: bob });
   expect(tx.value).toBe(`0x${'55'.repeat(32)}`);
   expect(provider.calls.at(-1)).toEqual({ method: 'eth_sendTransaction', params: [{ to: bob, from: alice }] });
+});
+
+it('serializes payment typed data bigint values without losing precision', async () => {
+  const provider = new Provider();
+  const largeChainId = (1n << 80n) + 123n;
+  const largeAmount = (1n << 200n) + 456n;
+  provider.chain = `0x${largeChainId.toString(16)}`;
+  const wallet = createMetaMaskWallet(provider, deploymentId, () => ({ chainId: largeChainId, pool }));
+  await wallet.connect();
+  const typed = paymentAuthorizationTypedData({
+    operationId: `0x${'aa'.repeat(32)}` as OperationId,
+    owner: alice as Address,
+    ethAmount: largeAmount,
+    token: bob as Address,
+    minAmountOut: largeAmount - 1n,
+    recipient: pool as Address,
+    deadline: 600n,
+  }, largeChainId, pool as Address);
+  await wallet.typedSign(typed, 'payment-authorization');
+  const request = provider.calls.at(-1);
+  expect(request?.method).toBe('eth_signTypedData_v4');
+  const signed = JSON.parse((request?.params?.[1] as string)) as {
+    domain: { chainId: string }; message: { ethAmount: string; minAmountOut: string; deadline: string };
+  };
+  expect(signed.domain.chainId).toBe(largeChainId.toString());
+  expect(signed.message.ethAmount).toBe(largeAmount.toString());
+  expect(signed.message.minAmountOut).toBe((largeAmount - 1n).toString());
+  expect(signed.message.deadline).toBe('600');
 });
 
 it('maps refusal without leaking provider message or signature data', async () => {

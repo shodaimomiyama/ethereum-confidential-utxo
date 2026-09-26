@@ -2,7 +2,7 @@ import { expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { operationId as coreOperationId } from '@confidential-utxo/core';
 import type { OperationRequest } from '@confidential-utxo/core';
-import { assertWithdrawalBinding, paymentDigest } from '../src/payment.js';
+import { assertWithdrawalBinding, paymentAuthorizationTypedData, paymentDigest } from '../src/payment.js';
 import type { WithdrawalBindingInput } from '../src/payment.js';
 import type { PaymentTerms } from '../src/payment.js';
 import type { Address, OperationId } from '../src/domain.js';
@@ -40,7 +40,12 @@ it('rejects invalid term ranges before hashing', () => {
     { ...terms, minAmountOut: 1n << 256n },
     { ...terms, deadline: 0n },
     { ...terms, deadline: 1n << 64n },
-  ]) expect(() => paymentDigest(bad, 31337n, adapter)).toThrow();
+  ]) {
+    expect(() => paymentDigest(bad, 31337n, adapter)).toThrow();
+    expect(() => paymentAuthorizationTypedData(bad, 31337n, adapter)).toThrow();
+  }
+  expect(() => paymentAuthorizationTypedData(terms, 0n, adapter)).toThrow();
+  expect(() => paymentAuthorizationTypedData(terms, 31337n, address('0'))).toThrow();
 });
 
 it('rejects withdrawal mismatch and forbidden recipients', () => {

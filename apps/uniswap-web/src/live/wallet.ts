@@ -245,7 +245,7 @@ export function createMetaMaskWallet(
       }
       const captured = capture();
       let serialized: string | undefined;
-      try { serialized = JSON.stringify(data); }
+      try { serialized = JSON.stringify(data, (_key, value: unknown) => typeof value === 'bigint' ? value.toString() : value); }
       catch { throw new WalletError('INVALID_REQUEST'); }
       if (serialized === undefined) throw new WalletError('INVALID_REQUEST');
       return invoke(captured, 'eth_signTypedData_v4', [captured.requestedScope.owner, serialized], parseString);
