@@ -5,7 +5,7 @@ from pathlib import Path
 from oracle_v3 import (
     P, Q, check_point, commitment, derive_parameters_hash,
     replay_trace, validate_proof_shape, build_cases,
-    first_v3_challenge,
+    first_v3_challenge, valid_withdraw_amount,
 )
 
 
@@ -33,6 +33,33 @@ class V3OracleTests(unittest.TestCase):
         proof = next(p for p in self.java["proofs"] if p["label"] == "amount-1-blinding-0")
         self.assertEqual(proof["coords"][:2], ["0", "0"])
         self.assertTrue(proof["expectedValid"])
+
+    def test_commitments_match_independent_exp08_values(self):
+        value_base = tuple(map(int, self.parameters["base"][:2]))
+        blinding_base = tuple(map(int, self.parameters["base"][2:]))
+        group = json.loads((ROOT / 'tests/vectors/cases/group.json').read_text())
+        for label in ('amount-1-blinding-42', 'amount-max-blinding-42',
+                      'amount-1-blinding-0'):
+            proof = next(p for p in self.java['proofs'] if p['label'] == label)
+            point = commitment(int(proof['originalAmount']),
+                               int(proof['testOnlyCommitmentBlinding']),
+                               value_base, blinding_base)
+            self.assertEqual([str(point[0]), str(point[1])], proof['originalCommitment'])
+            case = next(c for c in group if c['id'] == 'VEC-03-COMMITMENT-' + label.upper())
+            self.assertEqual(case['expected']['point'], proof['originalCommitment'])
+
+    def test_public_withdraw_bound_is_twice_max_utxo(self):
+        max_utxo = 2**64
+        max_withdraw = 2**65
+        self.assertFalse(valid_withdraw_amount(0))
+        self.assertTrue(valid_withdraw_amount(max_utxo))
+        self.assertTrue(valid_withdraw_amount(max_withdraw))
+        self.assertFalse(valid_withdraw_amount(max_withdraw + 1))
+        group = json.loads((ROOT / 'tests/vectors/cases/group.json').read_text())
+        by_id = {case['id']: case for case in group}
+        self.assertEqual(by_id['VEC-03-WITHDRAW-MAX']['input']['w'], str(max_withdraw))
+        self.assertEqual(by_id['VEC-03-WITHDRAW-MAX']['expected']['decision'], 'accept')
+        self.assertEqual(by_id['VEC-03-WITHDRAW-OVER-MAX']['expected']['decision'], 'reject')
 
     def test_point_canonicality_is_separate_from_proof_validity(self):
         self.assertTrue(check_point(0, 0))

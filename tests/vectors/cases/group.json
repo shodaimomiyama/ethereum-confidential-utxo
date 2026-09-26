@@ -588,5 +588,166 @@
       "#27",
       "#28"
     ]
+  },
+  {
+    "id": "VEC-03-COMMITMENT-AMOUNT-1-BLINDING-42",
+    "profile": "bn254-v3",
+    "source": "EXP-08 java-result.json#proofs/amount-1-blinding-42",
+    "stage": "commitment",
+    "input": {
+      "amount": "1",
+      "blinding": "42",
+      "valueBase": [
+        "12730586376239396577779996276718232087903100639305218386364088504561595411059",
+        "11546560963110481742356578822308548249278318971213841271481263934160486303484"
+      ],
+      "blindingBase": [
+        "10761899322201753907488574554624072832672186484354855590619514852343117816213",
+        "13379372057202721286017964291077114196925452861447087137187819632002026932859"
+      ]
+    },
+    "expected": {
+      "point": [
+        "21533582629281939526921435647265581117977747645082545229043878186233294791992",
+        "16158829402862057906122574632640420554362262628113172376154035104654592859641"
+      ],
+      "decision": "accept"
+    },
+    "oracle": "tools/oracle_v3.py#commitment; independent EXP-08 originalCommitment",
+    "consumers": [
+      "#26",
+      "#27",
+      "#28"
+    ]
+  },
+  {
+    "id": "VEC-03-COMMITMENT-AMOUNT-MAX-BLINDING-42",
+    "profile": "bn254-v3",
+    "source": "EXP-08 java-result.json#proofs/amount-max-blinding-42",
+    "stage": "commitment",
+    "input": {
+      "amount": "18446744073709551616",
+      "blinding": "42",
+      "valueBase": [
+        "12730586376239396577779996276718232087903100639305218386364088504561595411059",
+        "11546560963110481742356578822308548249278318971213841271481263934160486303484"
+      ],
+      "blindingBase": [
+        "10761899322201753907488574554624072832672186484354855590619514852343117816213",
+        "13379372057202721286017964291077114196925452861447087137187819632002026932859"
+      ]
+    },
+    "expected": {
+      "point": [
+        "6516161976747433294761014649277478677725933099585960273340283588607061088684",
+        "11760275391993554111070408814338575718689178477497585054293197298796739273486"
+      ],
+      "decision": "accept"
+    },
+    "oracle": "tools/oracle_v3.py#commitment; independent EXP-08 originalCommitment",
+    "consumers": [
+      "#26",
+      "#27",
+      "#28"
+    ]
+  },
+  {
+    "id": "VEC-03-COMMITMENT-AMOUNT-1-BLINDING-0",
+    "profile": "bn254-v3",
+    "source": "EXP-08 java-result.json#proofs/amount-1-blinding-0",
+    "stage": "commitment",
+    "input": {
+      "amount": "1",
+      "blinding": "0",
+      "valueBase": [
+        "12730586376239396577779996276718232087903100639305218386364088504561595411059",
+        "11546560963110481742356578822308548249278318971213841271481263934160486303484"
+      ],
+      "blindingBase": [
+        "10761899322201753907488574554624072832672186484354855590619514852343117816213",
+        "13379372057202721286017964291077114196925452861447087137187819632002026932859"
+      ]
+    },
+    "expected": {
+      "point": [
+        "12730586376239396577779996276718232087903100639305218386364088504561595411059",
+        "11546560963110481742356578822308548249278318971213841271481263934160486303484"
+      ],
+      "decision": "accept"
+    },
+    "oracle": "tools/oracle_v3.py#commitment; independent EXP-08 originalCommitment",
+    "consumers": [
+      "#26",
+      "#27",
+      "#28"
+    ]
+  },
+  {
+    "id": "VEC-03-WITHDRAW-ZERO",
+    "profile": "bn254-v3",
+    "source": "docs/design.md#d-06-入力数と公開出金額の上限",
+    "stage": "public-withdraw-boundary",
+    "input": {
+      "w": "0"
+    },
+    "expected": {
+      "decision": "reject"
+    },
+    "oracle": "tools/oracle_v3.py#valid_withdraw_amount",
+    "consumers": [
+      "#27",
+      "#28"
+    ]
+  },
+  {
+    "id": "VEC-03-WITHDRAW-UTXO-MAX",
+    "profile": "bn254-v3",
+    "source": "docs/design.md#d-06-入力数と公開出金額の上限",
+    "stage": "public-withdraw-boundary",
+    "input": {
+      "w": "18446744073709551616"
+    },
+    "expected": {
+      "decision": "accept"
+    },
+    "oracle": "tools/oracle_v3.py#valid_withdraw_amount",
+    "consumers": [
+      "#27",
+      "#28"
+    ]
+  },
+  {
+    "id": "VEC-03-WITHDRAW-MAX",
+    "profile": "bn254-v3",
+    "source": "docs/design.md#d-06-入力数と公開出金額の上限",
+    "stage": "public-withdraw-boundary",
+    "input": {
+      "w": "36893488147419103232"
+    },
+    "expected": {
+      "decision": "accept"
+    },
+    "oracle": "tools/oracle_v3.py#valid_withdraw_amount",
+    "consumers": [
+      "#27",
+      "#28"
+    ]
+  },
+  {
+    "id": "VEC-03-WITHDRAW-OVER-MAX",
+    "profile": "bn254-v3",
+    "source": "docs/design.md#d-06-入力数と公開出金額の上限",
+    "stage": "public-withdraw-boundary",
+    "input": {
+      "w": "36893488147419103233"
+    },
+    "expected": {
+      "decision": "reject"
+    },
+    "oracle": "tools/oracle_v3.py#valid_withdraw_amount",
+    "consumers": [
+      "#27",
+      "#28"
+    ]
   }
 ]

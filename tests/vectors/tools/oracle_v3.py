@@ -36,6 +36,11 @@ def commitment(value, blinding, value_base, blinding_base):
     return add(multiply(value_base, value), multiply(blinding_base, blinding))
 
 
+def valid_withdraw_amount(value):
+    """Public w may spend both maximum-value inputs, unlike one UTXO amount."""
+    return 1 <= value <= 2**65
+
+
 def derive_parameters_hash(vectors):
     by_role = {(v['role'], v['index']): v for v in vectors['generators']}
     ordered = [by_role['valueBase', 0], by_role['blindingBase', 0]]
@@ -177,6 +182,36 @@ def build_cases():
                       'source': 'docs/design.md#範囲証明', 'stage': 'group-boundary',
                       'input': value, 'expected': {'decision': decision},
                       'oracle': 'tools/oracle_v3.py', 'consumers': ['#26', '#27', '#28']})
+    value_base = tuple(map(int, parameters['base'][:2]))
+    blinding_base = tuple(map(int, parameters['base'][2:]))
+    for label in ('amount-1-blinding-42', 'amount-max-blinding-42',
+                  'amount-1-blinding-0'):
+        proof = next(p for p in java['proofs'] if p['label'] == label)
+        amount = int(proof['originalAmount'])
+        blinding = int(proof['testOnlyCommitmentBlinding'])
+        derived = commitment(amount, blinding, value_base, blinding_base)
+        recorded = proof['originalCommitment']
+        if [str(derived[0]), str(derived[1])] != recorded:
+            raise ValueError('EXP-08 originalCommitment mismatch: ' + label)
+        group.append({'id': 'VEC-03-COMMITMENT-' + label.upper(),
+                      'profile': 'bn254-v3',
+                      'source': 'EXP-08 java-result.json#proofs/' + label,
+                      'stage': 'commitment',
+                      'input': {'amount': str(amount), 'blinding': str(blinding),
+                                'valueBase': [str(x) for x in value_base],
+                                'blindingBase': [str(x) for x in blinding_base]},
+                      'expected': {'point': recorded, 'decision': 'accept'},
+                      'oracle': 'tools/oracle_v3.py#commitment; independent EXP-08 originalCommitment',
+                      'consumers': ['#26', '#27', '#28']})
+    for name, amount in [('ZERO', 0), ('UTXO-MAX', 2**64),
+                         ('MAX', 2**65), ('OVER-MAX', 2**65+1)]:
+        group.append({'id': 'VEC-03-WITHDRAW-' + name, 'profile': 'bn254-v3',
+                      'source': 'docs/design.md#d-06-入力数と公開出金額の上限',
+                      'stage': 'public-withdraw-boundary',
+                      'input': {'w': str(amount)},
+                      'expected': {'decision': 'accept' if valid_withdraw_amount(amount) else 'reject'},
+                      'oracle': 'tools/oracle_v3.py#valid_withdraw_amount',
+                      'consumers': ['#27', '#28']})
     cases = []
     labels = [('amount-1-blinding-42', 'VALID-MIN'),
               ('amount-max-blinding-42', 'VALID-MAX'),
