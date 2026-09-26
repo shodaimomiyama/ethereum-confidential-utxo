@@ -89,7 +89,7 @@ These five failures are easy to miss in a proof that only covers happy paths. Th
 - [ ] **Step 2: Execute scenarios and observe failures.**
 - [ ] **Step 3: Implement logical identity and certificate validation.** Distinguish abstract trust in a verifier from the actual field comparisons. Do not define `validCert` as a bare submitted Boolean.
 - [ ] **Step 4: Write deposit replay scenario.** After one validated deposit 10, a second use of the same logical ID with an additional 10 ETH rejects without mint; another deposit 10 with new randomness and fresh authorization accepts. The cross-path variant is added in Task 4.
-- [ ] **Step 5: Add MODEL-02 and MODEL-04 symbolic claims.** Field changes cannot be accepted under the old certificate; H and input consumption independently prevent reuse; independent operations can execute in either order when neither consumes the other's inputs.
+- [ ] **Step 5: Add MODEL-02 and MODEL-04 symbolic claims.** Field changes cannot be accepted under the old certificate; H and input consumption independently prevent reuse. Show two independent deposits in either order here; the general disjoint-operation commutation lemma over arbitrary maps is completed with accepted-history reasoning in Task 6. Keep MODEL-04 incomplete until then.
 - [ ] **Step 6: Prove and commit** `feat(formal): bind authorization and reject logical replay`.
 
 ### Task 4: Abstract paths P/Q and current-state checks

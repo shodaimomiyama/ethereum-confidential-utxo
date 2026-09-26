@@ -1,6 +1,6 @@
-requires "model.k"
+requires "auth.k"
 module UTXO-OPERATIONS
-  imports UTXO-MODEL
+  imports UTXO-AUTH
 
   rule validInput(U:Map, S:Set, Owner:Int, I:Int)
     => I in_keys(U) andBool notBool (I in S)
@@ -115,6 +115,18 @@ module UTXO-OPERATIONS
     => rejected(St, invalidOperation)
     requires notBool validShape(St, Transfer)
         andBool isTransferOrWithdraw(Transfer)
+
+  rule apply(state(U:Map, S:Set, H:Set, B:Int, A:Int, E:Int),
+             validatedTransfer(Op:Int, _Owner:Int, _Inputs:List, _Recipient:Int,
+                               _T:Int, _RecipientId:Int, _ChangeId:Int), _C:Context)
+    => rejected(state(U, S, H, B, A, E), invalidOperation)
+    requires Op in H
+
+  rule apply(state(U:Map, S:Set, H:Set, B:Int, A:Int, E:Int),
+             validatedWithdraw(Op:Int, _Owner:Int, _Inputs:List, _W:Int,
+                               _Destination:Int, _ChangeId:Int), _C:Context)
+    => rejected(state(U, S, H, B, A, E), invalidOperation)
+    requires Op in H
 
   syntax Bool ::= isTransferOrWithdraw(ValidatedOperation) [function]
   rule isTransferOrWithdraw(validatedTransfer(_, _, _, _, _, _, _)) => true

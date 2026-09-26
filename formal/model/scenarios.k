@@ -1,7 +1,9 @@
 requires "operations.k"
+requires "auth.k"
 
 module UTXO-SCENARIOS
   imports UTXO-OPERATIONS
+  imports UTXO-AUTH
 
   claim <k> apply(initial(7), validatedDeposit(1, 100, 10, 10, 1), execContext(1, 1))
           => accepted(state(1 |-> utxo(100, 10), .Set, SetItem(1), 17, 10, 7)) </k>
@@ -80,4 +82,129 @@ module UTXO-SCENARIOS
 
   claim <k> apply(state(1 |-> utxo(100, 10), .Set, .Set, 10, 10, 0), validatedWithdraw(2, 100, ListItem(1), 11, 200, 2), execContext(1, 1)) => rejected(state(1 |-> utxo(100, 10), .Set, .Set, 10, 10, 0), invalidOperation) </k> [label(S-13-withdraw-over)]
 
+
+  claim <k> validate(initial(0),
+          authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500),
+          authCert(7, 1, 100,
+            logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)),
+            domain(1, 1), 1, 100, 900),
+          authContext(1, 1, 1, 1, 50, 7, ListItem(authCert(7, 1, 100,
+            logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)),
+            domain(1, 1), 1, 100, 900))))
+          => checked(validatedDeposit(1, 100, 10, 10, 1)) </k>
+    [label(S-09-valid-deposit-authorization)]
+
+  claim <k> validate(initial(0),
+          authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500),
+          authCert(7, 1, 101,
+            logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)),
+            domain(1, 1), 1, 100, 900),
+          authContext(1, 1, 1, 1, 50, 7, ListItem(authCert(7, 1, 101,
+            logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)),
+            domain(1, 1), 1, 100, 900))))
+          => rejected(state(.Map, .Set, .Set, 0, 0, 0), invalidOperation) </k>
+    [label(S-09-wrong-owner)]
+  claim <k> validate(initial(0), authIntent(validatedDeposit(1, 100, 11, 11, 1), 77, 0, 500), authCert(7, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), authContext(1, 1, 1, 1, 50, 7, ListItem(authCert(7, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))))
+          => rejected(state(.Map, .Set, .Set, 0, 0, 0), invalidOperation) </k>
+    [label(S-09-amount)]
+
+  claim <k> validate(initial(0), authIntent(validatedDeposit(2, 100, 10, 10, 1), 77, 0, 500), authCert(7, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), authContext(1, 1, 1, 1, 50, 7, ListItem(authCert(7, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))))
+          => rejected(state(.Map, .Set, .Set, 0, 0, 0), invalidOperation) </k>
+    [label(S-09-output-id)]
+
+  claim <k> validate(initial(0), authIntent(validatedDeposit(1, 100, 10, 10, 2), 77, 0, 500), authCert(7, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), authContext(1, 1, 1, 1, 50, 7, ListItem(authCert(7, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))))
+          => rejected(state(.Map, .Set, .Set, 0, 0, 0), invalidOperation) </k>
+    [label(S-09-operation-id)]
+
+  claim <k> validate(initial(0), authIntent(validatedDeposit(1, 100, 10, 10, 1), 78, 0, 500), authCert(7, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), authContext(1, 1, 1, 1, 50, 7, ListItem(authCert(7, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))))
+          => rejected(state(.Map, .Set, .Set, 0, 0, 0), invalidOperation) </k>
+    [label(S-09-receipt-packet)]
+
+  claim <k> validate(initial(0), authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 501), authCert(7, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), authContext(1, 1, 1, 1, 50, 7, ListItem(authCert(7, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))))
+          => rejected(state(.Map, .Set, .Set, 0, 0, 0), invalidOperation) </k>
+    [label(S-09-randomness)]
+
+  claim <k> validate(initial(0), authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), authCert(7, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), authContext(2, 1, 1, 1, 50, 7, ListItem(authCert(7, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))))
+          => rejected(state(.Map, .Set, .Set, 0, 0, 0), invalidOperation) </k>
+    [label(S-09-chain)]
+
+  claim <k> validate(initial(0), authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), authCert(7, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), authContext(1, 2, 1, 1, 50, 7, ListItem(authCert(7, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))))
+          => rejected(state(.Map, .Set, .Set, 0, 0, 0), invalidOperation) </k>
+    [label(S-09-pool)]
+
+  claim <k> validate(initial(0), authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), authCert(7, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), authContext(1, 1, 1, 2, 50, 7, ListItem(authCert(7, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))))
+          => rejected(state(.Map, .Set, .Set, 0, 0, 0), invalidOperation) </k>
+    [label(S-09-version)]
+
+  claim <k> validate(initial(0), authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), authCert(7, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), authContext(1, 1, 2, 1, 50, 7, ListItem(authCert(7, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))))
+          => rejected(state(.Map, .Set, .Set, 0, 0, 0), invalidOperation) </k>
+    [label(S-09-rule)]
+
+  claim <k> validate(initial(0), authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), authCert(7, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), authContext(1, 1, 1, 1, 50, 8, ListItem(authCert(7, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))))
+          => rejected(state(.Map, .Set, .Set, 0, 0, 0), invalidOperation) </k>
+    [label(S-09-issuer)]
+
+  claim <k> validate(initial(0), authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), authCert(7, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), authContext(1, 1, 1, 1, 50, 7, .List))
+          => rejected(state(.Map, .Set, .Set, 0, 0, 0), invalidOperation) </k>
+    [label(S-09-untrusted-seal)]
+
+  claim <k> validate(initial(0), authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), authCert(7, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), authContext(1, 1, 1, 1, 101, 7, ListItem(authCert(7, 1, 100, logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))))
+          => rejected(state(.Map, .Set, .Set, 0, 0, 0), invalidOperation) </k>
+    [label(S-09-expired)]
+
+  claim <k> validate(initial(0), authIntent(validatedTransfer(2, 100, ListItem(1), 201, 3, 2, 3), 77, 78, 500), authCert(7, 1, 100, logicalId(authIntent(validatedTransfer(2, 100, ListItem(1), 200, 3, 2, 3), 77, 78, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), authContext(1, 1, 1, 1, 50, 7, ListItem(authCert(7, 1, 100, logicalId(authIntent(validatedTransfer(2, 100, ListItem(1), 200, 3, 2, 3), 77, 78, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))))
+          => rejected(state(.Map, .Set, .Set, 0, 0, 0), invalidOperation) </k>
+    [label(S-09-transfer-recipient)]
+
+  claim <k> validate(initial(0), authIntent(validatedTransfer(2, 100, ListItem(9), 200, 3, 2, 3), 77, 78, 500), authCert(7, 1, 100, logicalId(authIntent(validatedTransfer(2, 100, ListItem(1), 200, 3, 2, 3), 77, 78, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), authContext(1, 1, 1, 1, 50, 7, ListItem(authCert(7, 1, 100, logicalId(authIntent(validatedTransfer(2, 100, ListItem(1), 200, 3, 2, 3), 77, 78, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))))
+          => rejected(state(.Map, .Set, .Set, 0, 0, 0), invalidOperation) </k>
+    [label(S-09-transfer-input)]
+
+  claim <k> validate(initial(0), authIntent(validatedTransfer(2, 100, ListItem(1), 200, 3, 2, 3), 77, 79, 500), authCert(7, 1, 100, logicalId(authIntent(validatedTransfer(2, 100, ListItem(1), 200, 3, 2, 3), 77, 78, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), authContext(1, 1, 1, 1, 50, 7, ListItem(authCert(7, 1, 100, logicalId(authIntent(validatedTransfer(2, 100, ListItem(1), 200, 3, 2, 3), 77, 78, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))))
+          => rejected(state(.Map, .Set, .Set, 0, 0, 0), invalidOperation) </k>
+    [label(S-09-transfer-change-packet)]
+
+  claim <k> validate(initial(0), authIntent(validatedWithdraw(2, 100, ListItem(1), 3, 201, 2), 0, 77, 500), authCert(7, 1, 100, logicalId(authIntent(validatedWithdraw(2, 100, ListItem(1), 3, 200, 2), 0, 77, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), authContext(1, 1, 1, 1, 50, 7, ListItem(authCert(7, 1, 100, logicalId(authIntent(validatedWithdraw(2, 100, ListItem(1), 3, 200, 2), 0, 77, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))))
+          => rejected(state(.Map, .Set, .Set, 0, 0, 0), invalidOperation) </k>
+    [label(S-09-withdraw-destination)]
+
+  claim <k> validate(initial(0), authIntent(validatedWithdraw(2, 100, ListItem(1), 4, 200, 2), 0, 77, 500), authCert(7, 1, 100, logicalId(authIntent(validatedWithdraw(2, 100, ListItem(1), 3, 200, 2), 0, 77, 500), domain(1, 1)), domain(1, 1), 1, 100, 900), authContext(1, 1, 1, 1, 50, 7, ListItem(authCert(7, 1, 100, logicalId(authIntent(validatedWithdraw(2, 100, ListItem(1), 3, 200, 2), 0, 77, 500), domain(1, 1)), domain(1, 1), 1, 100, 900))))
+          => rejected(state(.Map, .Set, .Set, 0, 0, 0), invalidOperation) </k>
+    [label(S-09-withdraw-amount)]
+
+  claim <k> apply(state(1 |-> utxo(100, 10), .Set, SetItem(7), 10, 10, 0),
+                  validatedDeposit(1, 100, 10, 10, 7), execContext(1, 1))
+          => rejected(state(1 |-> utxo(100, 10), .Set, SetItem(7), 10, 10, 0),
+                      invalidOperation) </k>
+    [label(S-17-deposit-replay-with-new-eth)]
+
+  claim <k> apply(state(1 |-> utxo(100, 10), .Set, SetItem(7), 10, 10, 0),
+                  validatedDeposit(2, 100, 10, 10, 8), execContext(1, 1))
+          => accepted(state((1 |-> utxo(100, 10)) (2 |-> utxo(100, 10)),
+                            .Set, SetItem(7) SetItem(8), 20, 20, 0)) </k>
+    [label(S-17-fresh-same-amount-deposit)]
+
+  claim <k> apply(state(1 |-> utxo(100, 10), .Set, SetItem(7), 10, 10, 0),
+                  validatedTransfer(7, 100, ListItem(1), 200, 3, 2, 3), execContext(1, 1))
+          => rejected(state(1 |-> utxo(100, 10), .Set, SetItem(7), 10, 10, 0),
+                      invalidOperation) </k>
+    [label(S-10-transfer-operation-id-replay)]
+
+  claim <k> apply(state(1 |-> utxo(100, 10), .Set, SetItem(7), 10, 10, 0),
+                  validatedWithdraw(7, 100, ListItem(1), 3, 200, 2), execContext(1, 1))
+          => rejected(state(1 |-> utxo(100, 10), .Set, SetItem(7), 10, 10, 0),
+                      invalidOperation) </k>
+    [label(S-10-withdraw-operation-id-replay)]
+
+  claim <k> validate(initial(0),
+          authIntent(validatedDeposit(1, 100, 11, 11, 1), 77, 0, 500),
+          authCert(7, 1, 100,
+            logicalId(authIntent(validatedDeposit(1, 100, 11, 11, 1), 77, 0, 500), domain(1, 1)),
+            domain(1, 1), 1, 100, 900),
+          authContext(1, 1, 1, 1, 50, 7,
+            ListItem(authCert(7, 1, 100,
+              logicalId(authIntent(validatedDeposit(1, 100, 10, 10, 1), 77, 0, 500), domain(1, 1)),
+              domain(1, 1), 1, 100, 900))))
+          => rejected(state(.Map, .Set, .Set, 0, 0, 0), invalidOperation) </k>
+    [label(S-09-forged-certificate-reusing-seal)]
 endmodule
