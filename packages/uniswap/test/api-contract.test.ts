@@ -93,7 +93,7 @@ it('validates success response shape for every route', () => {
     ['POST /v1/auth/challenge', { challengeId: id, nonce: hash, issuedAt: 0, expiresAt: 300000 }],
     ['POST /v1/auth/verify', { sessionExpiresAt: 1800000 }],
     ['PUT /v1/operations/{id}', { scope, record: payRecord, revision: 1 }],
-    ['GET /v1/operations', { records: [{ scope, record: payRecord, revision: 1 }] }],
+    ['GET /v1/operations', { availability: 'healthy', records: [{ scope, record: payRecord, revision: 1 }] }],
     ['POST /v1/rewards', { reward: rewardRecord }],
     ['GET /v1/rewards', { rewards: [rewardRecord] }],
     ['GET /v1/rewards/{id}', { reward: rewardRecord }],

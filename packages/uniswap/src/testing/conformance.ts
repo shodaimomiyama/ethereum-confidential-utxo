@@ -15,6 +15,7 @@ export interface HttpScenarioHarness {
   readonly transport: ApiTransport;
   readonly clock: ManualClock;
   readonly store: { readonly control: StoreControl };
+  rejectAuth(reason: 'wrong-domain' | 'wrong-chain' | 'wrong-owner' | 'invalid-signature'): void;
 }
 
 function request(path: string, method: string, body?: unknown, cookie?: string): Request {
@@ -67,6 +68,7 @@ export async function runHttpScenario(scenario: HttpScenario, harness: HttpScena
     if (step.kind === 'challenge') await challenge();
     else if (step.kind === 'verify') await verify(step.status, step.code);
     else if (step.kind === 'clock') clock.set(step.at);
+    else if (step.kind === 'reject-auth') harness.rejectAuth(step.reason);
     else if (step.kind === 'lose-ack') store.control.loseNextAck(step.route);
     else if (step.kind === 'unavailable') store.control.setUnavailable(true);
     else if (step.kind === 'rollback') store.control.simulateRollback();

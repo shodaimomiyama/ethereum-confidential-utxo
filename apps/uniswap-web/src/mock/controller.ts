@@ -117,15 +117,15 @@ function derive(runtime: Runtime, now: number): ViewState {
       allowed.add(`edit:${card}`);
     }
     if (phase === 'ready') {
-      if (card === 'pay' && !quoteValid(runtime.quoteStartedAt, now)) {
+      if (state.storageAvailability !== 'healthy') {
+        reasons[`start:${card}`] = 'SERVICE_UNAVAILABLE';
+      } else if (card === 'pay' && !quoteValid(runtime.quoteStartedAt, now)) {
         reasons['start:pay'] = 'QUOTE_STALE';
-      } else if (card === 'reward' && state.cards.reward.phase === 'unknown') {
-        reasons['start:reward'] = 'RESULT_UNKNOWN';
       } else {
         allowed.add(`start:${card}`);
       }
     }
-    if (card === 'reward' && phase === 'complete') allowed.add('start:reward');
+    if (card === 'reward' && phase === 'complete' && state.storageAvailability === 'healthy') allowed.add('start:reward');
     if (phase === 'confirm-terms') {
       if (card === 'pay' && !runtime.oldAuthorizationActive) allowed.add('confirm-terms');
       else reasons['confirm-terms'] = 'AUTHORIZATION_ACTIVE';
@@ -136,11 +136,12 @@ function derive(runtime: Runtime, now: number): ViewState {
     }
   }
   for (const operationId of runtime.retryEligible) {
-    if (state.operations.some((operation) => operation.operationId === operationId)) allowed.add('retry-attempt');
+    if (state.operations.some((operation) => operation.operationId === operationId && operation.chainOutcome === 'finalized-failure')) allowed.add('retry-attempt');
   }
   for (const operationId of runtime.resumeEligible) {
-    if (state.operations.some((operation) => operation.operationId === operationId)) allowed.add('resume-original');
+    if (state.operations.some((operation) => operation.operationId === operationId && operation.chainOutcome === 'not-submitted')) allowed.add('resume-original');
   }
+  if (state.rewardRequests.some((reward) => reward.status !== 'received')) allowed.add('recheck-reward');
   if (state.cards.pay.phase === 'confirmed-receipt-pending'
     || state.cards.pay.phase === 'receipt-invalid'
     || state.cards.reward.phase === 'confirmed-receipt-pending') {
@@ -162,6 +163,7 @@ export function createMockUiController({ scope, store, clock, scenario }: {
   let disposed = false;
 
   function hydrate(runtime: Runtime): Runtime {
+    runtime.state = { ...runtime.state, storageAvailability: store.availability() };
     try {
       for (const saved of store.operations.list(runtime.state.scope)) {
         if (runtime.state.operations.some((operation) => operation.operationId === saved.record.operationId)) continue;
@@ -172,8 +174,14 @@ export function createMockUiController({ scope, store, clock, scenario }: {
           ...(saved.record.kind === 'pay' ? { paymentId: saved.record.paymentId } : {}),
         });
       }
+      const rewards = store.rewards.list(runtime.state.scope).map(({ requestId, status, operationId }) => ({ requestId, status, operationId }));
+      const unfinished = rewards.find((reward) => reward.status !== 'received' && reward.status !== 'ended-without-distribution');
+      runtime.state = { ...runtime.state, rewardRequests: rewards };
+      if (unfinished !== undefined) {
+        runtime.state = setCard(runtime.state, 'reward', { phase: 'unknown', reason: 'RESULT_UNKNOWN' });
+      }
     } catch {
-      runtime.state = { ...runtime.state, isStale: true };
+      runtime.state = { ...runtime.state, isStale: true, storageAvailability: store.availability() };
     }
     return runtime;
   }
@@ -193,7 +201,9 @@ export function createMockUiController({ scope, store, clock, scenario }: {
   }
 
   function snapshot(): ViewState {
-    return structuredClone(derive(active(), clock.now()));
+    const runtime = active();
+    runtime.state = { ...runtime.state, storageAvailability: store.availability() };
+    return structuredClone(derive(runtime, clock.now()));
   }
 
   function inject(event: ScenarioEvent): void {
@@ -207,15 +217,21 @@ export function createMockUiController({ scope, store, clock, scenario }: {
     }
     let state = runtime.state;
     if (event.type === 'quote') {
-      runtime.quoteStartedAt = event.startedAt;
-      state = setCard(state, 'pay', {
-        quote: {
+      const incoming = {
           startedAt: event.startedAt,
           quoteOut: event.quoteOut,
           minAmountOut: (event.quoteOut * 99n / 100n) > 0n ? event.quoteOut * 99n / 100n : 1n,
           deadline: event.latestBlockTimestamp + 600,
-        },
-      });
+      };
+      if (state.cards.pay.phase === 'awaiting-approval') {
+        runtime.oldAuthorizationActive = true;
+        state = setCard(state, 'pay', { phase: 'confirm-terms', reason: 'TERMS_CHANGED', proposedQuote: incoming });
+      } else if (state.cards.pay.phase === 'confirm-terms') {
+        state = setCard(state, 'pay', { proposedQuote: incoming });
+      } else {
+        runtime.quoteStartedAt = event.startedAt;
+        state = setCard(state, 'pay', { quote: incoming });
+      }
     } else if (event.type === 'reservation-ack') {
       runtime.reservationAck.add(event.card);
     } else if (event.type === 'awaiting-approval') {
@@ -225,15 +241,21 @@ export function createMockUiController({ scope, store, clock, scenario }: {
     } else if (event.type === 'preparing') {
       state = setCard(state, event.card, { phase: 'preparing' });
     } else if (event.type === 'submitted') {
+      runtime.retryEligible.delete(event.operationId);
+      runtime.resumeEligible.delete(event.operationId);
       state = setCard(state, event.card, { phase: 'pending' });
       const current = state.operations.find((operation) => operation.operationId === event.operationId);
       const hashes = event.txHash === undefined ? current?.txHashes ?? [] : [...(current?.txHashes ?? []), event.txHash];
       state = setOperation(state, event.operationId, { chainOutcome: 'pending', txHashes: hashes });
       state = appendAttempt(state, event.operationId, event.attemptId);
     } else if (event.type === 'unknown') {
+      runtime.retryEligible.delete(event.operationId);
+      runtime.resumeEligible.delete(event.operationId);
       state = setCard(state, event.card, { phase: 'unknown', reason: 'RESULT_UNKNOWN' });
       state = setOperation(state, event.operationId, { chainOutcome: 'unknown' });
     } else if (event.type === 'finalized-success') {
+      runtime.retryEligible.delete(event.operationId);
+      runtime.resumeEligible.delete(event.operationId);
       const needsReceipt = event.card !== 'withdraw';
       state = setCard(state, event.card, { phase: needsReceipt ? 'confirmed-receipt-pending' : 'complete' });
       state = setOperation(state, event.operationId, {
@@ -254,6 +276,8 @@ export function createMockUiController({ scope, store, clock, scenario }: {
         state = setOperation(state, event.operationId, { receiptState: 'confirmed' });
       }
     } else if (event.type === 'reorg') {
+      runtime.retryEligible.delete(event.operationId);
+      runtime.resumeEligible.delete(event.operationId);
       let removed = 0n;
       for (const [outputId, item] of runtime.countedOutputs) {
         if (item.operationId === event.operationId) {
@@ -265,10 +289,19 @@ export function createMockUiController({ scope, store, clock, scenario }: {
       state = setCard(state, event.card, { phase: 'unknown', reason: 'RESULT_UNKNOWN' });
       state = setOperation(state, event.operationId, { chainOutcome: 'unknown', receiptState: 'none' });
     } else if (event.type === 'attempt-failed') {
-      state = setCard(state, event.card, { phase: 'failed' });
-      state = setOperation(state, event.operationId, { chainOutcome: 'finalized-failure' });
       state = appendAttempt(state, event.operationId, event.attemptId);
-      if (!event.otherAttemptPending && event.inputUnspent && event.deadlineValid) {
+      const knownSuccess = state.operations.some((operation) => operation.operationId === event.operationId && operation.chainOutcome === 'finalized-success');
+      if (knownSuccess) {
+        runtime.retryEligible.delete(event.operationId);
+      } else if (event.otherAttemptPending) {
+        state = setCard(state, event.card, { phase: 'pending' });
+        state = setOperation(state, event.operationId, { chainOutcome: 'pending' });
+        runtime.retryEligible.delete(event.operationId);
+      } else {
+        state = setCard(state, event.card, { phase: 'failed' });
+        state = setOperation(state, event.operationId, { chainOutcome: 'finalized-failure' });
+      }
+      if (!knownSuccess && !event.otherAttemptPending && event.inputUnspent && event.deadlineValid) {
         runtime.retryEligible.add(event.operationId);
       } else runtime.retryEligible.delete(event.operationId);
     } else if (event.type === 'original-unsent') {
@@ -306,6 +339,7 @@ export function createMockUiController({ scope, store, clock, scenario }: {
         return { kind: 'accepted' };
       }
       const runtime = active();
+      runtime.state = { ...runtime.state, storageAvailability: store.availability() };
       const view = derive(runtime, clock.now());
       const key = actionKey(action);
       if (!view.allowedActions.includes(key)) {
@@ -318,11 +352,13 @@ export function createMockUiController({ scope, store, clock, scenario }: {
         const card = runtime.state.cards[action.card];
         runtime.state = setCard(runtime.state, action.card, { input: { ...card.input, [action.field]: action.value } });
       } else if (action.type === 'confirm-terms') {
-        runtime.state = setCard(runtime.state, 'pay', { phase: 'preparing', reason: undefined });
+        runtime.state = setCard(runtime.state, 'pay', { phase: 'preparing', reason: undefined,
+          quote: runtime.state.cards.pay.proposedQuote ?? runtime.state.cards.pay.quote, proposedQuote: undefined });
       } else if (action.type === 'retry-attempt' || action.type === 'resume-original') {
         const eligible = action.type === 'retry-attempt' ? runtime.retryEligible : runtime.resumeEligible;
         if (!eligible.has(action.operationId)
-          || !runtime.state.operations.some((operation) => operation.operationId === action.operationId)) {
+          || !runtime.state.operations.some((operation) => operation.operationId === action.operationId
+            && operation.chainOutcome === (action.type === 'retry-attempt' ? 'finalized-failure' : 'not-submitted'))) {
           return { kind: 'blocked', reason: 'NOT_ALLOWED' };
         }
         runtime.retryEligible.delete(action.operationId);
@@ -336,7 +372,15 @@ export function createMockUiController({ scope, store, clock, scenario }: {
           runtime.state = { ...runtime.state, isStale: true };
         }
         entries.push({ kind: 'recheck', scope: activeScope, operationId: action.operationId });
+      } else if (action.type === 'recheck-reward') {
+        if (!runtime.state.rewardRequests.some((reward) => reward.requestId === action.requestId)) {
+          return { kind: 'blocked', reason: 'NOT_ALLOWED' };
+        }
+        hydrate(runtime);
+        runtime.state = { ...runtime.state, checkedAt: clock.now() };
+        entries.push({ kind: 'recheck', scope: activeScope });
       } else if (action.type === 'resync') {
+        hydrate(runtime);
         runtime.state = { ...runtime.state, checkedAt: clock.now() };
         entries.push({ kind: 'resync', scope: activeScope });
       }

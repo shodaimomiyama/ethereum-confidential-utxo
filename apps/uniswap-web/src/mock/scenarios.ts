@@ -18,8 +18,10 @@ export function initialScenario(scope: Scope, scenario: string): ViewState {
     availablePrivateWei: 0n,
     pendingPrivateWei: 0n,
     isStale: false,
+    storageAvailability: 'healthy',
     cards,
     operations: [],
+    rewardRequests: [],
     allowedActions: [],
     reasons: {},
   };

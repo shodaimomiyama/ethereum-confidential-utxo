@@ -108,7 +108,10 @@ export interface ApiSuccessResponseMap {
   };
   readonly 'POST /v1/auth/verify': { readonly sessionExpiresAt: number };
   readonly 'PUT /v1/operations/{id}': SavedOperation & { readonly scope: Scope };
-  readonly 'GET /v1/operations': { readonly records: readonly (SavedOperation & { readonly scope: Scope })[] };
+  readonly 'GET /v1/operations': {
+    readonly availability: 'healthy' | 'rollback';
+    readonly records: readonly (SavedOperation & { readonly scope: Scope })[];
+  };
   readonly 'POST /v1/rewards': { readonly reward: RewardRecord };
   readonly 'GET /v1/rewards': { readonly rewards: readonly RewardRecord[] };
   readonly 'GET /v1/rewards/{id}': { readonly reward: RewardRecord };
@@ -388,7 +391,10 @@ function parseApiResponseValue(route: ApiRoute, status: number, body: unknown): 
   }
   if (route === 'GET /v1/operations') {
     if (!Array.isArray(object.records)) throw new SchemaError('INVALID_FIELD', 'records');
-    return { records: object.records.map((item: unknown) => {
+    if (object.availability !== 'healthy' && object.availability !== 'rollback') {
+      throw new SchemaError('INVALID_FIELD', 'availability');
+    }
+    return { availability: object.availability, records: object.records.map((item: unknown) => {
       const saved = parseJsonObject(item, 'records');
       const scope = parseScope(saved.scope);
       return {

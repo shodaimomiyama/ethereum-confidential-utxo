@@ -1,4 +1,4 @@
-import type { OperationRef, Scope } from '@confidential-utxo/uniswap';
+import type { OperationId, OperationRef, RequestId, RewardStatus, Scope } from '@confidential-utxo/uniswap';
 
 export type Card = 'reward' | 'pay' | 'deposit' | 'withdraw';
 
@@ -66,6 +66,13 @@ export interface CardState {
     readonly minAmountOut: bigint;
     readonly deadline: number;
   };
+  readonly proposedQuote?: CardState['quote'];
+}
+
+export interface RewardRequestRef {
+  readonly requestId: RequestId;
+  readonly status: RewardStatus;
+  readonly operationId?: OperationId;
 }
 
 export interface ViewState {
@@ -75,8 +82,10 @@ export interface ViewState {
   readonly pendingPrivateWei: bigint;
   readonly checkedAt?: number;
   readonly isStale: boolean;
+  readonly storageAvailability: 'healthy' | 'unavailable' | 'rollback';
   readonly cards: Readonly<Record<Card, CardState>>;
   readonly operations: readonly OperationRef[];
+  readonly rewardRequests: readonly RewardRequestRef[];
   readonly allowedActions: readonly string[];
   readonly reasons: Readonly<Record<string, ReasonCode>>;
 }

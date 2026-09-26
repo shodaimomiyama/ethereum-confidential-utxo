@@ -19,6 +19,7 @@ interface Session {
 
 export interface MockHttpControl {
   reset(): void;
+  rejectNextAuth(reason: 'wrong-domain' | 'wrong-chain' | 'wrong-owner' | 'invalid-signature'): void;
 }
 
 export interface MockHttp {
@@ -39,8 +40,8 @@ function jsonBody(value: unknown): string {
   return JSON.stringify(value, (_key, item: unknown) => typeof item === 'bigint' ? item.toString() : item);
 }
 
-function apiError(status: number, code: ApiError['code'], allowedActions: readonly string[] = []): Response {
-  const error: ApiError = { code, message: code, allowedActions };
+function apiError(status: number, code: ApiError['code'], allowedActions: readonly string[] = [], field?: string): Response {
+  const error: ApiError = { code, message: code, allowedActions, ...(field === undefined ? {} : { field }) };
   return new Response(jsonBody({ error }), {
     status,
     headers: { 'content-type': 'application/json' },
@@ -48,7 +49,7 @@ function apiError(status: number, code: ApiError['code'], allowedActions: readon
 }
 
 function mapFailure(error: unknown, route?: ApiRoute): Response {
-  if (error instanceof SchemaError) return apiError(400, 'INVALID_REQUEST');
+  if (error instanceof SchemaError) return apiError(400, 'INVALID_REQUEST', [], error.field);
   if (error instanceof StoreError) {
     if (error.code === 'UNAVAILABLE') return apiError(503, 'SERVICE_UNAVAILABLE', ['recheck']);
     if (error.code === 'NOT_FOUND') return apiError(404, 'NOT_FOUND');
@@ -70,6 +71,7 @@ export function createMockHttp({ store, clock }: {
   const challenges = new Map<string, Challenge>();
   const sessions = new Map<string, Session>();
   let counter = 0;
+  let rejectAuth: 'wrong-domain' | 'wrong-chain' | 'wrong-owner' | 'invalid-signature' | undefined;
 
   const fetch: ApiTransport = async (request) => {
     let parsed: ParsedApiRequest;
@@ -80,7 +82,7 @@ export function createMockHttp({ store, clock }: {
       parsed = parseApiRequest(request.method, url.pathname + url.search, body);
     } catch (error) {
       if (error instanceof SyntaxError || error instanceof SchemaError) {
-        return apiError(400, 'INVALID_REQUEST');
+        return apiError(400, 'INVALID_REQUEST', [], error instanceof SchemaError ? error.field : undefined);
       }
       throw error;
     }
@@ -104,6 +106,10 @@ export function createMockHttp({ store, clock }: {
         }
         if (challenge.used) return apiError(401, 'CHALLENGE_USED');
         if (clock.now() > challenge.expiresAt) return apiError(401, 'CHALLENGE_EXPIRED');
+        if (rejectAuth !== undefined) {
+          rejectAuth = undefined;
+          return apiError(401, 'UNAUTHENTICATED');
+        }
         // This is an explicit mock authentication decision, not SIWE signature verification.
         challenge.used = true;
         counter += 1;
@@ -127,7 +133,7 @@ export function createMockHttp({ store, clock }: {
           const saved = store.operations.put(parsed.record, parsed.expectedRevision);
           result = { scope, ...saved };
         } else if (route === 'GET /v1/operations') {
-          result = { records: store.operations.list(scope).map((saved) => ({ scope, ...saved })) };
+          result = { availability: store.availability(), records: store.operations.list(scope).map((saved) => ({ scope, ...saved })) };
         } else if (route === 'POST /v1/rewards') {
           if (parsed.reward === undefined) throw new SchemaError('INVALID_FIELD', 'reward');
           result = { reward: store.rewards.create(parsed.reward) };
@@ -166,7 +172,9 @@ export function createMockHttp({ store, clock }: {
         challenges.clear();
         sessions.clear();
         counter = 0;
+        rejectAuth = undefined;
       },
+      rejectNextAuth(reason) { rejectAuth = reason; },
     },
   };
 }

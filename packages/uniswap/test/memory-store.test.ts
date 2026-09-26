@@ -99,3 +99,11 @@ it('cannot replace a reserved operation or payment under a later revision', () =
     expect(() => store.operations.put({ ...original, deadline: 601n }, 1)).toThrowError(/CONFLICT/);
   }
 });
+
+it('rejects reuse of a scoped record ID on another input', () => {
+  const store = createMemoryStore();
+  const original = record('pay');
+  store.operations.put(original, 0);
+  expect(() => store.operations.put({ ...original, inputId: `0x${'55'.repeat(32)}` as never }, 0)).toThrowError(/CONFLICT/);
+  expect(store.operations.get(scope, original.recordId)?.record.inputId).toBe(original.inputId);
+});

@@ -123,3 +123,24 @@ it('separates 409 conflicts, 503 outage, and secret-free errors', async () => {
   expect(outage.status).toBe(503);
   expect(JSON.stringify(await outage.json())).not.toContain(sig);
 });
+
+it('exposes rollback in read responses so clients cannot mistake it for an empty store', async () => {
+  const store = createMemoryStore();
+  const http = createMockHttp({ store, clock: createManualClock(0) });
+  const cookie = await login(http);
+  store.control.simulateRollback('partial');
+  const response = await http.fetch(request(`/v1/operations?deploymentId=local-v1&owner=${owner}`, 'GET', undefined, cookie));
+  expect((await response.json() as { availability: string }).availability).toBe('rollback');
+});
+
+it('rejects controlled invalid authentication decisions and identifies invalid fields safely', async () => {
+  const http = createMockHttp({ store: createMemoryStore(), clock: createManualClock(0) });
+  const challenge = await http.fetch(request('/v1/auth/challenge', 'POST', { scope }));
+  const { challengeId } = await challenge.json() as { challengeId: string };
+  http.control.rejectNextAuth('wrong-domain');
+  const denied = await http.fetch(request('/v1/auth/verify', 'POST', { scope, challengeId, siweMessage: 'synthetic SIWE', signature: sig }));
+  expect(denied.status).toBe(401);
+  const cookie = await login(http);
+  const invalid = await http.fetch(request('/v1/rewards', 'POST', { ...reward, amountWei: '1.5' }, cookie));
+  expect((await invalid.json() as { error: { field: string } }).error.field).toBe('amountWei');
+});

@@ -30,6 +30,7 @@ export interface StoreControl {
 export interface MemoryStore {
   readonly operations: OperationStore;
   readonly rewards: RewardStore;
+  availability(): 'healthy' | 'unavailable' | 'rollback';
   readonly control: StoreControl;
 }
 
@@ -94,11 +95,17 @@ export function createMemoryStore(seed: StoreSeed = {}): MemoryStore {
 
   reset(seed);
   return {
+    availability: () => health,
     operations: {
       put(record, expectedRevision) {
         writable();
         const key = operationKey(record);
         const existing = operations.get(key);
+        if (existing === undefined && [...operations.values()].some(({ record: saved }) =>
+          scopeKey(saved.scope) === scopeKey(record.scope)
+          && saved.recordId.toLowerCase() === record.recordId.toLowerCase())) {
+          throw new StoreError('CONFLICT');
+        }
         if (existing !== undefined) {
           if (existing.record.recordId.toLowerCase() !== record.recordId.toLowerCase()
             || existing.record.contentHash.toLowerCase() !== record.contentHash.toLowerCase()

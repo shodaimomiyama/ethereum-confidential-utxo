@@ -19,6 +19,6 @@ it('runs the HTTP contract scenarios against a supplied transport and store driv
     const store = createMemoryStore(scenario.seed);
     const clock = createManualClock(0);
     const mock = createMockHttp({ store, clock });
-    return { transport: mock.fetch, store, clock };
+    return { transport: mock.fetch, store, clock, rejectAuth: mock.control.rejectNextAuth };
   });
 });

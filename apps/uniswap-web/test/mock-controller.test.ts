@@ -192,3 +192,67 @@ it('restores a shared pending reservation when a second client is created', asyn
   expect(second.snapshot().cards.pay.phase).toBe('unknown');
   expect((await second.dispatch({ type: 'start', card: 'pay' })).kind).toBe('blocked');
 });
+
+it('revokes retry and resume when later evidence becomes unknown, successful, or reorganized', async () => {
+  const { ui } = setup();
+  ui.control.inject({ type: 'attempt-failed', card: 'pay', operationId, otherAttemptPending: false, inputUnspent: true, deadlineValid: true });
+  ui.control.inject({ type: 'unknown', card: 'pay', operationId });
+  expect((await ui.dispatch({ type: 'retry-attempt', operationId })).kind).toBe('blocked');
+  ui.control.inject({ type: 'original-unsent', card: 'pay', operationId, inputUnspent: true, deadlineValid: true });
+  ui.control.inject({ type: 'finalized-success', card: 'pay', operationId });
+  expect((await ui.dispatch({ type: 'resume-original', operationId })).kind).toBe('blocked');
+  ui.control.inject({ type: 'reorg', card: 'pay', operationId });
+  expect((await ui.dispatch({ type: 'retry-attempt', operationId })).kind).toBe('blocked');
+  expect(ui.control.journal().filter((entry) => entry.kind === 'send')).toHaveLength(0);
+});
+
+it('keeps a known logical success when an older attempt fails later', () => {
+  const { ui } = setup();
+  ui.control.inject({ type: 'finalized-success', card: 'pay', operationId, attemptId: 'newer' });
+  ui.control.inject({ type: 'attempt-failed', card: 'pay', operationId, attemptId: 'older', otherAttemptPending: false, inputUnspent: true, deadlineValid: true });
+  expect(ui.snapshot().operations[0]?.chainOutcome).toBe('finalized-success');
+  expect(ui.snapshot().cards.pay.phase).toBe('confirmed-receipt-pending');
+  expect(ui.snapshot().allowedActions).not.toContain('retry-attempt');
+});
+
+it('does not call a logical operation failed while another attempt is pending', () => {
+  const { ui } = setup();
+  ui.control.inject({ type: 'attempt-failed', card: 'pay', operationId, otherAttemptPending: true, inputUnspent: true, deadlineValid: true });
+  expect(ui.snapshot().operations[0]?.chainOutcome).toBe('pending');
+});
+
+it('blocks starts after a partial rollback or unavailable store', async () => {
+  const { ui, store } = setup();
+  store.control.simulateRollback('partial');
+  await ui.dispatch({ type: 'resync' });
+  expect(ui.snapshot().storageAvailability).toBe('rollback');
+  expect((await ui.dispatch({ type: 'start', card: 'reward' })).kind).toBe('blocked');
+  store.control.setUnavailable(true);
+  await ui.dispatch({ type: 'resync' });
+  expect((await ui.dispatch({ type: 'start', card: 'pay' })).kind).toBe('blocked');
+});
+
+it('rehydrates an accepted reward request without an operation ID', async () => {
+  const { ui, store, clock } = setup();
+  const requestId = operationId as never;
+  store.rewards.create({ scope, requestId, amountWei: 1n, recipientInfo: {
+    owner: scope.owner, publicKey: outputId as never, signature: `0x${'aa'.repeat(65)}`,
+  } });
+  ui.dispose();
+  const recreated = createMockUiController({ scope, store, clock, scenario: 'ready' });
+  expect(recreated.snapshot().rewardRequests[0]?.requestId).toBe(requestId);
+  expect((await recreated.dispatch({ type: 'start', card: 'reward' })).kind).toBe('blocked');
+  expect((await recreated.dispatch({ type: 'recheck-reward', requestId })).kind).toBe('accepted');
+});
+
+it('holds an authorized quote while exposing changed proposed terms', async () => {
+  const { ui } = setup();
+  ui.control.inject({ type: 'quote', startedAt: 0, quoteOut: 100n, latestBlockTimestamp: 10 });
+  ui.control.inject({ type: 'reservation-ack', card: 'pay' });
+  ui.control.inject({ type: 'awaiting-approval', card: 'pay', purpose: 'payment-authorization' });
+  ui.control.inject({ type: 'quote', startedAt: 1, quoteOut: 200n, latestBlockTimestamp: 11 });
+  expect(ui.snapshot().cards.pay.quote?.quoteOut).toBe(100n);
+  expect(ui.snapshot().cards.pay.proposedQuote?.quoteOut).toBe(200n);
+  expect(ui.snapshot().cards.pay.phase).toBe('confirm-terms');
+  expect((await ui.dispatch({ type: 'confirm-terms', card: 'pay' })).kind).toBe('blocked');
+});

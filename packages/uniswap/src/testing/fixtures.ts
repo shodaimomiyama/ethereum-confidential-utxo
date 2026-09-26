@@ -45,6 +45,7 @@ const rewardQuery = `/v1/rewards?deploymentId=local-v1&owner=${fixtureOwner}`;
 export type HttpStep =
   | { readonly kind: 'challenge' }
   | { readonly kind: 'verify'; readonly status: number; readonly code?: string }
+  | { readonly kind: 'reject-auth'; readonly reason: 'wrong-domain' | 'wrong-chain' | 'wrong-owner' | 'invalid-signature' }
   | { readonly kind: 'clock'; readonly at: number }
   | { readonly kind: 'lose-ack'; readonly route: string }
   | { readonly kind: 'unavailable' }
@@ -80,6 +81,11 @@ function scenario(id: string, steps: readonly HttpStep[], expected: HttpScenario
 const none = { reservations: 0, requests: 0, receipts: 0 };
 
 export const httpScenarios: readonly HttpScenario[] = [
+  ...(['wrong-domain', 'wrong-chain', 'wrong-owner', 'invalid-signature'] as const).map((reason) =>
+    scenario(`challenge/${reason}`, [
+      { kind: 'challenge' }, { kind: 'reject-auth', reason },
+      { kind: 'verify', status: 401, code: 'UNAUTHENTICATED' },
+    ], none, false)),
   scenario('challenge/reuse', [
     { kind: 'challenge' }, { kind: 'verify', status: 200 },
     { kind: 'verify', status: 401, code: 'CHALLENGE_USED' },
