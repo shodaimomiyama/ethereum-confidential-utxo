@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@confidential-utxo/uniswap": "workspace:*",
+    "@confidential-utxo/ethereum": "workspace:*",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "@hpke/dhkem-x25519": "1.8.0",

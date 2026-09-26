@@ -51,6 +51,9 @@ importers:
 
   apps/uniswap-web:
     dependencies:
+      '@confidential-utxo/ethereum':
+        specifier: workspace:*
+        version: link:../../packages/ethereum
       '@confidential-utxo/core':
         specifier: workspace:*
         version: link:../../packages/core
