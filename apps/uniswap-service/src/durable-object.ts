@@ -11,6 +11,7 @@ import { getServiceExtensions, makeServiceContext, registerServiceExtension } fr
 import { createCoreInputReader, getCoreHistoryProvider } from './core-reader.js';
 import { loadEthereumHistory } from './ethereum-provider.js';
 import { rewardExtension } from './rewards/extension.js';
+import { parseRewardSecrets, readRewardFunds } from './rewards/crypto.js';
 
 registerServiceExtension(rewardExtension);
 
@@ -79,8 +80,31 @@ export class UniswapServiceObject extends DurableObject<ServiceEnv> {
       for (const extension of getServiceExtensions()) {
         const route = extension.routes.find((handler) => handler.route === parsed.route);
         if (route !== undefined) {
-          const context = makeServiceContext(this.ctx.storage, recoveryGate, parsed.scope,
-            { deploymentId: parsed.scope.deploymentId, deployment: config, env: this.env });
+          const context = {
+            ...makeServiceContext(this.ctx.storage, recoveryGate, parsed.scope,
+              { deploymentId: parsed.scope.deploymentId, deployment: config, env: this.env }),
+            readRewardFunds: async (deploymentId: string): Promise<bigint | undefined> => {
+              if (deploymentId !== parsed.scope.deploymentId) return undefined;
+              const secrets = parseRewardSecrets(this.env.REWARD_SECRETS_JSON, deploymentId);
+              if (secrets === undefined) return undefined;
+              const provider = getCoreHistoryProvider();
+              let history;
+              try { history = provider === undefined
+                ? await loadEthereumHistory(deploymentId, config, this.env.RPC_DEPLOYMENTS_JSON)
+                : provider(deploymentId, config); }
+              catch { return undefined; }
+              const result = await readRewardFunds(history, { getKey: async (owner) => {
+                if (owner.toLowerCase() !== secrets.owner.toLowerCase()) throw new Error('REWARD_OWNER_MISMATCH');
+                return secrets.receiptKey;
+              } }, secrets.owner);
+              if (result.status !== 'complete') return undefined;
+              const contextPoint = await history.getContext(result.checkpoint);
+              if (!contextPoint.complete || contextPoint.value.chainId !== BigInt(config.chainId)
+                || contextPoint.value.pool.toLowerCase() !== config.pool.toLowerCase()
+                || contextPoint.value.finalityMode !== config.finalityMode) return undefined;
+              return result.available.reduce((total, coin) => total + coin.opening.amount, 0n);
+            },
+          };
           if (!parsed.route.startsWith('GET ')) context.ensureWritable();
           return await route.handle(parsed, context);
         }

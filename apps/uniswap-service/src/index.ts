@@ -8,6 +8,7 @@ export interface ServiceEnv {
   readonly DEPLOYMENTS_JSON: string;
   readonly RECOVERY_JSON: string;
   readonly RPC_DEPLOYMENTS_JSON?: string;
+  readonly REWARD_SECRETS_JSON?: string;
 }
 
 export { UniswapServiceObject };

@@ -26,6 +26,8 @@
 
 配布元の鍵はサーバー側で管理する。運営者とホストは配布元の鍵と配布額を扱う信頼対象となる。利用者の秘密鍵・受領鍵はサーバーへ渡さず、ブラウザ側で扱う。[Durable Objectsの公式制限](https://developers.cloudflare.com/durable-objects/platform/limits/)を参照し、無料枠での実暗号の処理時間、永続化、復旧を検証する（確認日: 2026-09-27）。
 
+報酬配布元の署名鍵、受領鍵、状態暗号化鍵は `REWARD_SECRETS_JSON` の環境別項目としてWorker Secretから供給する。SQLiteには鍵の平文を保存せず、draftと署名済みrawの保存暗号化にはAES-GCMを用い、環境・要求ID・版を追加認証データに結び付ける。復旧用バックアップにはSQLiteの全記録と対応するSecretの同一世代を揃えて保持する。鍵を失った場合、暗号化記録を復元できないため、未確定配布と旧試行の照合を終えるまで再開しない。
+
 ### 公開環境と交換先
 
 公開環境はEthereum Sepoliaとする。[Ethereumのネットワーク案内](https://ethereum.org/developers/docs/networks/)はSepoliaをアプリ開発向けとしている（確認日: 2026-09-27）。初回利用者が利用できるfaucet、RPC、Uniswap経路、流動性は公開配置前に確認し、不成立なら環境選択を見直す。ローカル検証と公開テストネット検証の区分は[接続仕様](specification.md#後続検証の対象となる環境)に従う。
