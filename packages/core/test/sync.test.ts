@@ -44,7 +44,7 @@ async function fixture() {
   };
   return { ...f, state: f, history, complete, owners: [owner], keys: { getKey: async () => hexToBytes(vector.expected.receipts[0].recipientPrivateKey) } };
 }
-it("rebuilds two creations and one spend by ID and feeds only confirmed coins to selection", async () => {
+it("AC-06: VEC-07-APPLICATION-DEPOSIT key supports repeated synthetic creation/spend history", async () => {
   const f = await fixture();
   const first = await synchronize(context, f);
   const second = await synchronize(context, f, first);
@@ -97,7 +97,7 @@ const failures: [string, (f: Fixture) => void][] = [
   ["missing ancestor creation", f => { f.operations.shift(); }],
   ["reorg during synchronization", f => { const get = f.history.getCanonicalHeader; f.history.getCanonicalHeader = async (number, point) => number === point.number ? { complete: false, reason: "HASH_MISMATCH" } : get(number, point); }],
 ];
-it.each(failures)("returns only stale previous state for %s", async (_, mutate) => {
+it.each(failures)("AC-06: returns only stale previous state for %s", async (_, mutate) => {
   const f = await fixture();
   const previous = await synchronize(context, f);
   expect(previous.status).toBe("complete");
@@ -114,7 +114,7 @@ it.each(failures)("returns only stale previous state for %s", async (_, mutate) 
   expect(JSON.stringify(result, (_, v) => typeof v === "bigint" ? String(v) : v)).not.toContain("private");
   if (previous.status === "complete") expect(previous.utxos[1]!.status).toBe("available");
 });
-it("rebuilds after finalized reorg reverting a creation", async () => {
+it("AC-07: rebuilds after finalized reorg reverting a creation", async () => {
   const f = await fixture();
   const previous = await synchronize(context, f);
   f.state.point.hash = hash("21");
@@ -123,7 +123,7 @@ it("rebuilds after finalized reorg reverting a creation", async () => {
   expect(result).toMatchObject({ status: "complete", checkpoint: { hash: hash("21") }, availableWei: 0n });
   if (result.status === "complete") expect(result.utxos).toHaveLength(1);
 });
-it("rebuilds after finalized reorg reverting a consumption", async () => {
+it("AC-07: rebuilds after finalized reorg reverting a consumption", async () => {
   const f = await fixture();
   const previous = await synchronize(context, f);
   f.state.point.hash = hash("21");

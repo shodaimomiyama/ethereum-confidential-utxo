@@ -24,7 +24,7 @@ function decode(input: Input) {
 }
 function base(id = "VEC-01-TRANSFER-CHANGE") { return structuredClone(vectors.find(v => v.id === id)!.input); }
 
-describe("canonical operation encoding", () => {
+describe("AC-01: canonical operation encoding", () => {
   it.each(vectors)("matches $id", ({ input, expected }) => {
     const { context, request } = decode(input);
     expect(operationPreimage(context, request)).toBe(expected.operationPreimage);
@@ -37,7 +37,7 @@ describe("canonical operation encoding", () => {
 
 type Binding = { id: string; baseCase: string; mutatedField: string; consumers: string[];
   input: { replacement: string | number }; expected: { operationId: Hex; operationPreimage: Hex; relation: string; baselineOperationId: Hex } };
-it.each(load<Binding>("operation-binding").filter(v => v.consumers.includes("#29")))("binds $id", vector => {
+it.each(load<Binding>("operation-binding").filter(v => v.consumers.includes("#29")))("AC-04: binds $id", vector => {
   const input = base(vector.baseCase);
   const field = vector.mutatedField;
   if (field.startsWith("outputs[0].")) {

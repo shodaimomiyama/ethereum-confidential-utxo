@@ -9,8 +9,8 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
-    "check": "tsc --noEmit --project tsconfig.json",
-    "test": "vitest run --config vitest.config.ts"
+    "check": "pnpm build && tsc --noEmit --project tsconfig.json",
+    "test": "pnpm build && vitest run --config vitest.config.ts"
   },
   "dependencies": {
     "@confidential-utxo/crypto": "workspace:*",

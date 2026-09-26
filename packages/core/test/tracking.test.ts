@@ -28,7 +28,7 @@ function history(): HistoryPort {
 function success(req = request): ObservedOperation {
   return { request: req, outputLogs: [], success: { operationId: operationId(context, req), blockNumber: point.number, blockHash: point.hash, transactionHash: hex(20), transactionIndex: 0, logIndex: 0 } };
 }
-it("does not infer logical success or receipt ownership from outer receipt success", () => {
+it("AC-08: does not infer logical success or receipt ownership from outer receipt success", () => {
   const result = trackAttempt(id, { txHash: hex(3), outer: "success", operation: "unconfirmed" }, []);
   expect(result.operation).toBe("unconfirmed");
   expect(result.receipt).toBe("unconfirmed");
@@ -86,7 +86,7 @@ it("saves and rechecks even zero-input deposits on every explicit preparation", 
   expect(p.history.getLatestOperationSuccess).toHaveBeenCalledTimes(2);
   expect(p.history.getFinalizedCheckpoint).toHaveBeenCalledTimes(2);
 });
-it.each(["unknown", "throw"])("withholds public submission after %s save", async mode => {
+it.each(["unknown", "throw"])("AC-09: VEC-02-RECIPIENT-SIGNATURE recipient withholds submission after %s save", async mode => {
   const p = ports();
   if (mode === "unknown") p.storage.saveDraft.mockImplementation(async () => "unknown");
   else p.storage.saveDraft.mockRejectedValue(new Error("opening-secret"));
@@ -103,7 +103,7 @@ it("projects only public fields", async () => {
     expect(result.submission.request.salt).toBe(d.request.salt);
   }
 });
-it("rejects restored draft ID, openings and signature tampering without leaking data", async () => {
+it("AC-09: rejects restored draft ID, openings and signature tampering without leaking data", async () => {
   const d = await draft();
   for (const bad of [{ ...d, operationId: hex(999) }, { ...d, openings: [] }, { ...d, outputIds: [] }, { ...d, signature: "0x" as Hex }]) {
     const p = ports();

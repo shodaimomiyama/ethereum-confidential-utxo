@@ -35,7 +35,7 @@ const recipientTypes = { RecipientInfo: [
   { name: "receiptFormat", type: "uint8" }, { name: "recipientInfoVersion", type: "uint8" },
 ] } as const;
 
-describe("authorization vectors", () => {
+describe("AC-01: authorization vectors", () => {
   it.each(vectors)("enforces $id", async ({ input, expected }) => {
     const ctx = { chainId: BigInt(input.chainId), pool: input.pool };
     const verification = input.receivePublicKey
@@ -86,7 +86,7 @@ it("rejects semantically invalid requests before asking the signer", async () =>
   await expect(authorizeOperation(context, operation, { signTypedData })).rejects.toBeInstanceOf(CoreFailure);
   expect(signTypedData).not.toHaveBeenCalled();
 });
-it("sanitizes signer refusal and invalid returned signatures", async () => {
+it("AC-04: sanitizes signer refusal and invalid returned signatures", async () => {
   for (const signTypedData of [async () => { throw new Error("secret request details"); }, async () => "0x" as Hex]) {
     await expect(authorizeOperation(context, request(), { signTypedData })).rejects.toMatchObject({ code: "SIGNATURE_REJECTED", message: "SIGNATURE_REJECTED:authorization.signer" });
   }

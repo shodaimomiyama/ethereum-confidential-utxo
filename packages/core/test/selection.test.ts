@@ -25,7 +25,7 @@ function failureCode(run: () => unknown) {
   throw new Error("expected CoreFailure");
 }
 
-describe("input selection", () => {
+describe("AC-03: input selection (synthetic state)", () => {
   it("selects one confirmed input and retains a representable remainder", () => {
     const chosen = selectInputs(context, [coin(1n, 10n)], { kind: 1, owner, amount: 3n });
     expect(chosen.map(c => c.id)).toEqual([id(1n)]);

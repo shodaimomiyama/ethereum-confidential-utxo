@@ -20,7 +20,7 @@ function fixture(vector = vectors[1]!) {
   const keyPort = { getKey: async () => hexToBytes(vector.expected.receipts[0]!.recipientPrivateKey) };
   return { observed, state, keyPort, owner: request.outputs[0]!.owner };
 }
-it.each(vectors.filter(v => v.input.outputs.length > 0))("independently receives $id without a LocalDraft", async vector => {
+it.each(vectors.filter(v => v.input.outputs.length > 0))("AC-05: independently receives $id without a LocalDraft", async vector => {
   const f = fixture(vector);
   const result = await inspectReceipt(f.observed, 0, f.owner, f.keyPort, f.state, checkpoint);
   expect(result.status).toBe("available");
@@ -86,7 +86,7 @@ it("checks packet bytes in the output event against the public request", async (
 type AbiLog = { topics: [Hex, ...Hex[]]; data: Hex; name: string; args: (string | string[])[] };
 const abiVectors = JSON.parse(readFileSync(new URL("../../../tests/vectors/cases/abi-observation.json", import.meta.url), "utf8")) as { id: string; input: { operationCase: string; logs?: AbiLog[] } }[];
 const operationVectors = JSON.parse(readFileSync(new URL("../../../tests/vectors/cases/operation.json", import.meta.url), "utf8")) as Vector[];
-it.each(abiVectors.filter(v => ["VEC-06-LOG-MISSING", "VEC-06-LOG-ORDER", "VEC-06-LOG-OUTPUT-ID", "VEC-06-LOG-PACKET"].includes(v.id)))("rejects observation vector $id before decryption", async vector => {
+it.each(abiVectors.filter(v => ["VEC-06-LOG-MISSING", "VEC-06-LOG-ORDER", "VEC-06-LOG-OUTPUT-ID", "VEC-06-LOG-PACKET"].includes(v.id)))("AC-05: rejects observation vector $id before decryption", async vector => {
   const f = fixture();
   const base = operationVectors.find(v => v.id === vector.input.operationCase)!;
   f.observed.request = { ...base.input, d: BigInt(base.input.d), w: BigInt(base.input.w), outputs: base.input.outputs.map(o => ({ owner: o.owner, commitment: { x: BigInt(o.Cx), y: BigInt(o.Cy) }, receiptFormat: 1, packet: o.packet })) };

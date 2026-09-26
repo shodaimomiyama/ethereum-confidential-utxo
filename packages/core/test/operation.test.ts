@@ -29,7 +29,7 @@ it("builds a real 1 wei deposit and excludes secrets from public submission", as
   const signature = await account.signTypedData(authorizationTypedData(context, draft.request));
   expect(Object.keys(toPublicSubmission({ ...draft, signature })).sort()).toEqual(["balanceProof", "rangeProofs", "request", "signature"]);
 });
-it("builds 10 → 3 + 7 and explicitly regenerates proofs without changing authorization", async () => {
+it("AC-04: VEC-02-RECIPIENT-SIGNATURE recipient supports 10 → 3 + 7 proof regeneration", async () => {
   const draft = await buildOperation({ kind: 1, owner: account.address, amount: 3n, recipient: recipient(), changeRecipient: recipient() }, context, { randomSalt: salt, inputs: [coin()] });
   expect(draft.request.kind).toBe(1);
   expect(draft.request.inputIds).toEqual([coin().id]);
@@ -73,7 +73,7 @@ type ApplicationVector = {
     balanceProof: { R: string[]; s: string }; rangeProofs: { coords: string[]; scalars: string[]; ls: string[]; rs: string[] }[] };
 };
 const applicationVectors = JSON.parse(readFileSync(new URL("../../../tests/vectors/cases/application-operation.json", import.meta.url), "utf8")) as ApplicationVector[];
-it.each(applicationVectors)("assembles independent fixed public fixture $id", ({ input, expected }) => {
+it.each(applicationVectors)("AC-02: assembles independent fixed public fixture $id", ({ input, expected }) => {
   const request = { ...input, d: BigInt(input.d), w: BigInt(input.w), outputs: input.outputs.map(o => ({ owner: o.owner, commitment: { x: BigInt(o.Cx), y: BigInt(o.Cy) }, receiptFormat: o.receiptFormat, packet: o.packet })) };
   const ctx = { ...context, chainId: BigInt(input.chainId), pool: input.pool };
   const balanceProof = { Rx: BigInt(expected.balanceProof.R[0]!), Ry: BigInt(expected.balanceProof.R[1]!), s: BigInt(expected.balanceProof.s) };
