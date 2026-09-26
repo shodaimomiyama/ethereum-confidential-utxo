@@ -29,6 +29,7 @@
 | [Confidential UTXOの要件定義](docs/requirements.md) | 本体の機能、安全性、機密性、形式証明、評価と再現性の受入条件 |
 | [Confidential UTXOの仕様](docs/specification.md) | 方式に依存しない状態遷移、認可、資産保存、受領と同期の規則 |
 | [Uniswap接続のPRD](docs/integration/uniswap/PRD.md) | Confidential UTXOから公開交換へ接続する際の要求と対象範囲 |
+| [Uniswap接続の要件定義](docs/integration/uniswap/requirements.md) | 部分支払い、認可と取消、機密性、コストと追試の受入条件 |
 
 ## 規約
 
