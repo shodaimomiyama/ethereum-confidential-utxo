@@ -1,6 +1,6 @@
-# 先行EIP/ERCの比較と実測計画
+# 先行EIP/ERCの比較と実測結果
 
-この資料は[Issue #10](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/10)における比較対象の選定と、後続の設計・評価に再利用するための調査記録である。要求と本体の正しい振る舞いは[PRD](../PRD.md)、[要件定義](../requirements.md)、[仕様](../specification.md)を正本とする。以下の採用判断は調査段階の判断であり、測定構成の実行可能性や本体の設計を確定しない。
+この資料は[Issue #10](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/10)で調べた比較対象と実測結果を、後続の設計・評価に再利用するための調査記録である。要求と本体の正しい振る舞いは[PRD](../PRD.md)、[要件定義](../requirements.md)、[仕様](../specification.md)を正本とする。先行方式の採用判断と実行結果は、本体の設計や保証を確定しない。
 
 確認日: 2026-09-26。対象版は、[EIP-8182 `59454e9`](https://github.com/ethereum/EIPs/blob/59454e9b9f577c8b9ed1246714f44990711e5751/EIPS/eip-8182.md)、[EIP-7503 `6766049`](https://github.com/ethereum/EIPs/blob/676604927b316a44195008e632778d4ca1101deb/EIPS/eip-7503.md)、[ERC-8086 `84e5d9f`](https://github.com/ethereum/ERCs/blob/84e5d9fba8b1ee31352bb67e515d3a5ab5662eba/ERCS/erc-8086.md)で固定する。各公式表示ページの状態はそれぞれ **Review / Core**、**Stagnant / Core**、**Draft / ERC**。参照実装の版は各行に記す。これらの状態、公開先、実装内容は確認後に変わり得る。
 
@@ -28,9 +28,9 @@
 
 ## 本体のケースとの対応
 
-以下は比較可能性の調査であり、成功した試験の記録ではない。本体の[S-01〜S-07](../specification.md#必須の動作シナリオ)と同じ金額・実入力数・実出力数に揃えられるかを、採用した実装で確認する。
+以下は本体の[S-01〜S-07](../specification.md#必須の動作シナリオ)とEIP-8182の操作を対応付けたものである。実行した範囲と結果は後述する。
 
-| 本体ケース | EIP-8182で試す経路 | 差と測定上の扱い |
+| 本体ケース | EIP-8182の対応経路 | 差と測定上の扱い |
 | --- | --- | --- |
 | S-01 入金10 | ETH `deposit`後に生成noteを消費 | 入金自体はpool証明不要。初回認可登録と受領データ掲載を分けて記録する。 |
 | S-02 10の全額送金 | 1実入力、受取人note 1実出力 | phantom入力とdummy出力を使用する。 |
@@ -57,22 +57,6 @@
 
 今回取得した値と、その構成・限界を後述する。公開値の空欄や不要な処理は0に置き換えない。各値について「今回の実行／外部資料」と「直接計測／算出／未確認」を区別する。
 
-## 実装・測定計画
-
-作業範囲と完了条件は[Issue #10](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/10)に従う。実行用コード・固定設定・生データ・再集計は`benchmarks/prior-eips/`に置く。以下は作業時に用いた段階と受入条件であり、各段階の到達範囲は結果節で示す。
-
-| 段階 | 目的と入力 | 編集対象・成果物 | 依存と受入条件 |
-| --- | --- | --- | --- |
-| 1. 候補調査 | 公式文書、著者資料、公開実装の版・保証・必要資産を確認 | 本資料の候補表と根拠 | 先行段階なし。EIPと実装の対応、欠落物、公開値の範囲を追跡可能にする。 |
-| 2. 構成選定 | EIP-8182の認可方式・生成器・受領方式を一組として選ぶ | `benchmarks/prior-eips/`の固定設定と差分記録 | 段階1に依存。pool・認可・配送が同じ実行経路でつながること、回路・鍵・ツールの取得元とhashを確認する。できなければ失敗条件を記録して適格代替を再調査する。 |
-| 3. 最小実行 | 固定した構成で証明を生成しローカルEthereumに送る | 最小実行スクリプト、receipt、成功・改ざん拒否・二重使用拒否の記録 | 段階2に依存。poolと選定認可の実検証、状態変化、受取人の後続使用を確認する。検証スキップのハーネスは根拠にしない。 |
-| 4. 計測追加 | S-01〜S-07の対応操作と配送・同期・初回処理の境界を計測 | 計測コード、機械可読設定、試行出力形式 | 段階3に依存。intrinsic・calldata・実行・返金の定義、witnessと前処理、公開履歴の条件を固定し、値がreceiptや時計測定と対応する。 |
-| 5. 反復測定 | 固定入力、環境、状態、反復数、統計量で成功・失敗を記録 | 全試行の生データ、ログ、集計コードと結果 | 段階4に依存。失敗や外れ値を隠さず、配送と証明を含む必要項目を同一構成で測る。初回費用と反復費用を混ぜない。 |
-| 6. 再現確認 | クリーンな作業ディレクトリで取得、準備、最小実行、測定、再集計 | 再現スクリプト、環境記録、再実行ログ | 段階5に依存。公開ツール・CPU・実資金なしで表が生データから再生成され、差を説明できる。 |
-| 7. 文書化 | 実測と機能・機密性・信頼前提を整理し#7へ引き継ぐ | 本資料の実測節、`README.md`の案内 | 段階6に依存。数値と出典、未達理由、再利用条件、ローカルリンクが確認できる。 |
-
-正式測定前にはOS、CPU、メモリ、並列数、ツールと依存版、EVM fork、実行上限、資産・金額・入出力・ダミー、木と履歴の状態、登録状態、warm-up、キャッシュ、試行数・集計・タイムアウトを固定する。予備実行で変えた条件は正式測定から分けて残す。認可方式と配送方式を変えた場合は別の測定構成とする。システムコントラクトの特別なgenesis配置や本番と異なるgas制限を使う場合も、結果の適用範囲に明記する。
-
 ## 今回の実行構成と結果
 
 参照実装は`639baaf7b29c22eb43ba6150140902ea8dbbbc46`に固定した。最初に試したNoir/UltraHonk認可は、[署名生成スクリプト](https://github.com/0xFacet/eip-8182-reference-implementation/blob/639baaf7b29c22eb43ba6150140902ea8dbbbc46/scripts/noir/gen_prover_toml.js)が16項目のEIP-712メッセージに署名する一方、同じコミットの[認可回路](https://github.com/0xFacet/eip-8182-reference-implementation/blob/639baaf7b29c22eb43ba6150140902ea8dbbbc46/circuits-noir/auth/src/main.nr)は旧7項目を検証するため、`nargo execute auth`で`signature invalid`となった。`nargo` beta.18とbeta.19で同じ失敗を確認した。[失敗記録](../../benchmarks/prior-eips/status.json)に試行経路を残した。回路やプロトコルを変更することは今回の許容範囲外である。
@@ -84,6 +68,8 @@
 Anvil 1.7.1のchain ID 1、Cancun、gas limit 30,000,000、code size制限解除で実行した。EIPのシステムコントラクト用[初期状態](https://github.com/0xFacet/eip-8182-reference-implementation/blob/639baaf7b29c22eb43ba6150140902ea8dbbbc46/assets/eip-8182/shielded-pool-state.json)をAnvil RPCで設置したため、poolのfork導入gasは測定していない。通常のEthereumで同じ状態やgas limitが利用可能という証拠ではない。各正式試行では`anvil_reset`を行い、同じgenesis時刻と登録前状態から開始した。
 
 ウォームアップ1回と正式3回を実行した。以下は[全試行の生データ](../../benchmarks/prior-eips/raw/repeated/)から[集計スクリプト](../../benchmarks/prior-eips/aggregate.mjs)で再生成した正式3回の中央値である。値は今回の実行によるものとし、gasと時間の計測範囲を区別する。
+
+[固定設定](../../benchmarks/prior-eips/config.json)と生データは同じGitコミットで公開した。この履歴だけでは、設定が正式測定より前に固定されていた時点を第三者が独立に確認できない。以下の値は生データから再集計でき、別checkoutで再測定もできるが、事前登録済みの測定計画の証拠とは扱わない。後続の比較測定では、設定を実行前に別コミットで記録する。
 
 | 項目 | 中央値 | 取得方法と範囲 |
 | --- | ---: | --- |
