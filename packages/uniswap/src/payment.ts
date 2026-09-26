@@ -1,5 +1,7 @@
 import { hashTypedData, isAddress } from 'viem';
-import type { Address, InputId, OperationId, PaymentId } from './domain.js';
+import { operationId as coreOperationId, validateOperationShape } from '@confidential-utxo/core';
+import type { LocalDraft } from '@confidential-utxo/core';
+import type { Address, OperationId, PaymentId } from './domain.js';
 import { SchemaError } from './schema.js';
 
 const UINT64_MAX = (1n << 64n) - 1n;
@@ -26,15 +28,7 @@ export interface PaymentDeployment {
   readonly pair: Address;
 }
 
-export interface WithdrawalBindingInput {
-  readonly kind: number;
-  readonly owner: Address;
-  readonly d: bigint;
-  readonly w: bigint;
-  readonly destination: Address;
-  readonly inputIds: readonly InputId[];
-  readonly outputs: readonly { readonly owner: Address }[];
-}
+export type WithdrawalBindingInput = Pick<LocalDraft, 'context' | 'request' | 'operationId' | 'rangeProofs'>;
 
 const paymentTypes = {
   PaymentAuthorization: [
@@ -86,24 +80,28 @@ export function assertWithdrawalBinding(
   withdrawal: WithdrawalBindingInput,
   terms: PaymentTerms,
   deployment: PaymentDeployment,
-  computeOperationId: (request: WithdrawalBindingInput) => OperationId,
-  rangeProofCount: number,
 ): void {
   checkTerms(terms, 1n, deployment.adapter);
+  const request = withdrawal.request;
+  validateOperationShape(request);
+  const computedId = coreOperationId(withdrawal.context, request);
   const forbiddenRecipients = [
     ZERO_ADDRESS, deployment.adapter, deployment.pool, deployment.router,
     deployment.factory, deployment.weth, deployment.token, deployment.pair,
   ];
-  if (withdrawal.kind !== 2 || withdrawal.d !== 0n
-    || withdrawal.inputIds.length !== 1 || withdrawal.outputs.length !== 1
-    || rangeProofCount !== 1
-    || !sameAddress(withdrawal.owner, terms.owner)
-    || !sameAddress(withdrawal.outputs[0]!.owner, terms.owner)
-    || withdrawal.w !== terms.ethAmount
-    || !sameAddress(withdrawal.destination, deployment.adapter)
+  if (request.kind !== 2 || request.d !== 0n
+    || request.inputIds.length !== 1 || request.outputs.length !== 1
+    || withdrawal.rangeProofs.length !== 1
+    || withdrawal.context.chainId <= 0n
+    || !sameAddress(withdrawal.context.pool, deployment.pool)
+    || !sameAddress(request.owner, terms.owner)
+    || !sameAddress(request.outputs[0]!.owner, terms.owner)
+    || request.w !== terms.ethAmount
+    || !sameAddress(request.destination, deployment.adapter)
     || !sameAddress(terms.token, deployment.token)
     || forbiddenRecipients.some((recipient) => sameAddress(terms.recipient, recipient))
-    || computeOperationId(withdrawal).toLowerCase() !== terms.operationId.toLowerCase()) {
+    || computedId.toLowerCase() !== withdrawal.operationId.toLowerCase()
+    || computedId.toLowerCase() !== terms.operationId.toLowerCase()) {
     throw new SchemaError('INVALID_FIELD', 'withdrawalBinding');
   }
 }

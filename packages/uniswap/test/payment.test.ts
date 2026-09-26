@@ -1,12 +1,14 @@
 import { expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { operationId as coreOperationId } from '@confidential-utxo/core';
+import type { OperationRequest } from '@confidential-utxo/core';
 import { assertWithdrawalBinding, paymentDigest } from '../src/payment.js';
 import type { WithdrawalBindingInput } from '../src/payment.js';
 import type { PaymentTerms } from '../src/payment.js';
-import type { Address, InputId, OperationId } from '../src/domain.js';
+import type { Address, OperationId } from '../src/domain.js';
 
 const address = (byte: string) => `0x${byte.repeat(40)}` as Address;
 const operationId = `0x${'11'.repeat(32)}` as OperationId;
-const inputId = `0x${'66'.repeat(32)}` as InputId;
 const owner = address('2');
 const token = address('3');
 const recipient = address('4');
@@ -42,18 +44,29 @@ it('rejects invalid term ranges before hashing', () => {
 });
 
 it('rejects withdrawal mismatch and forbidden recipients', () => {
-  const withdrawal = {
-    kind: 2, owner, d: 0n, w: terms.ethAmount, destination: adapter,
-    inputIds: [inputId], outputs: [{ owner }],
+  const vectors = JSON.parse(readFileSync(new URL('../../../tests/vectors/cases/operation.json', import.meta.url), 'utf8')) as
+    { id: string; input: Record<string, unknown> }[];
+  const source = vectors.find((vector) => vector.id === 'VEC-01-WITHDRAW-PARTIAL')?.input;
+  if (source === undefined) throw new Error('missing core vector');
+  const output = (source.outputs as { owner: string; Cx: string; Cy: string; receiptFormat: 1; packet: string }[])[0]!;
+  const context = {
+    chainId: 31337n, pool: source.pool as Address,
+    deploymentBlock: 1n, verifier: address('a'), parametersHash: `0x${'00'.repeat(32)}`,
+    finalityMode: 'local-simulated' as const,
   };
-  const deployment = { adapter, token, pool: address('6'), router: address('7'), factory: address('8'), weth: address('9'), pair: address('a') };
-  const computeId = (request: WithdrawalBindingInput) => {
-    expect(request).toBe(withdrawal);
-    return operationId;
-  };
-  expect(() => assertWithdrawalBinding(withdrawal, terms, deployment, computeId, 1)).not.toThrow();
-  expect(() => assertWithdrawalBinding({ ...withdrawal, destination: owner }, terms, deployment, computeId, 1)).toThrow();
-  expect(() => assertWithdrawalBinding(withdrawal, { ...terms, recipient: adapter }, deployment, computeId, 1)).toThrow();
-  expect(() => assertWithdrawalBinding(withdrawal, terms, deployment, () => `0x${'99'.repeat(32)}` as OperationId, 1)).toThrow();
-  expect(() => assertWithdrawalBinding(withdrawal, terms, deployment, computeId, 0)).toThrow();
+  const request = {
+    kind: 2 as const, owner: source.owner as Address, salt: source.salt,
+    inputIds: [(source.inputIds as string[])[0]],
+    outputs: [{ owner: output.owner, commitment: { x: BigInt(output.Cx), y: BigInt(output.Cy) }, receiptFormat: 1, packet: output.packet }],
+    d: 0n, w: 1n, destination: source.destination,
+  } as OperationRequest;
+  const id = coreOperationId(context as never, request) as OperationId;
+  const withdrawal: WithdrawalBindingInput = { context: context as never, request, operationId: id, rangeProofs: [{}] as never };
+  const paymentTerms: PaymentTerms = { ...terms, operationId: id, owner: request.owner as Address, ethAmount: 1n };
+  const deployment = { adapter: request.destination as Address, token, pool: context.pool, router: address('7'), factory: address('8'), weth: address('9'), pair: address('b') };
+  expect(() => assertWithdrawalBinding(withdrawal, paymentTerms, deployment)).not.toThrow();
+  expect(() => assertWithdrawalBinding({ ...withdrawal, request: { ...request, destination: owner } }, paymentTerms, deployment)).toThrow();
+  expect(() => assertWithdrawalBinding(withdrawal, { ...paymentTerms, recipient: deployment.adapter }, deployment)).toThrow();
+  expect(() => assertWithdrawalBinding({ ...withdrawal, request: { ...request, salt: `0x${'99'.repeat(32)}` } }, paymentTerms, deployment)).toThrow();
+  expect(() => assertWithdrawalBinding({ ...withdrawal, rangeProofs: [] }, paymentTerms, deployment)).toThrow();
 });

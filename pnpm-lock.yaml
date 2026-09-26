@@ -98,7 +98,11 @@ importers:
         specifier: 2.56.9
         version: 2.56.9(typescript@6.0.3)
 
-  packages/uniswap: {}
+  packages/uniswap:
+    dependencies:
+      '@confidential-utxo/core':
+        specifier: workspace:*
+        version: link:../core
 
 packages:
 
