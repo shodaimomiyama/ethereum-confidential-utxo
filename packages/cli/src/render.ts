@@ -23,6 +23,7 @@ export type CliResult =
   | { kind: "balance"; status: "available" | "unknown" | "stale"; amount?: PrivateBalance; checkpoint?: Checkpoint }
   | { kind: "backup"; status: "created"; path: string }
   | { kind: "restored"; status: "needs-resync"; owner: Address }
+  | { kind: "passphrase"; status: "changed" }
   | { kind: "error"; code: "INPUT" | "CONFIG" | "STORAGE" | "LOCK" | "RPC" | "UNKNOWN" | "FAILED" | "CONFLICT" };
 
 type RenderIO = { stdout: Writable; stderr: Writable; isTTY: boolean };
@@ -62,6 +63,7 @@ function publicDto(result: CliResult): Record<string, unknown> {
       ...(result.checkpoint ? { checkpoint: checkpoint(result.checkpoint) } : {}) };
     case "backup": return { schemaVersion: 1, kind: "backup", status: result.status, path: result.path };
     case "restored": return { schemaVersion: 1, kind: "restored", status: result.status, owner: result.owner };
+    case "passphrase": return { schemaVersion: 1, kind: "passphrase", status: result.status };
     case "error": return { schemaVersion: 1, kind: "error", code: result.code };
   }
 }

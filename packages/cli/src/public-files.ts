@@ -51,7 +51,7 @@ function parseRange(value: unknown) {
     return values;
   };
   return { coords: numbers(root.coords, P - 1n, 10), scalars: numbers(root.scalars, Q - 1n, 5),
-    ls: numbers(root.ls, P - 1n, 24), rs: numbers(root.rs, P - 1n, 24) };
+    ls: numbers(root.ls, P - 1n, 12), rs: numbers(root.rs, P - 1n, 12) };
 }
 function encodeRequest(request: OperationRequest) {
   return { kind: request.kind, owner: request.owner, salt: request.salt,

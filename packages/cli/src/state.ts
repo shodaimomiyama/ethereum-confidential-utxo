@@ -126,7 +126,7 @@ function rangeProof(value: unknown): RangeProof {
   const scalars = numbers(input.scalars, Q - 1n);
   const ls = numbers(input.ls, P - 1n);
   const rs = numbers(input.rs, P - 1n);
-  if (coords.length !== 10 || scalars.length !== 5 || ls.length !== 24 || rs.length !== 24) invalid();
+  if (coords.length !== 10 || scalars.length !== 5 || ls.length !== 12 || rs.length !== 12) invalid();
   return { coords, scalars, ls, rs };
 }
 function operation(value: unknown, expected: Context, owner: Address): StoredOperationV1 {
@@ -276,5 +276,22 @@ export async function updateOwnerState(directory: string, passphrase: Uint8Array
     if (!sameContext(next.context, current.context) || !same(next.owner, current.owner)) invalid();
     await persist(directory, passphrase, next);
     return structuredClone(next);
+  });
+}
+
+export function encodeOwnerSnapshot(state: WalletStateV1): Uint8Array {
+  return encodeState(normalized(state));
+}
+
+export function decodeOwnerSnapshot(bytes: Uint8Array): WalletStateV1 {
+  if (bytes.length > maxFileBytes) invalid();
+  return decodeState(bytes);
+}
+
+export async function replaceOwnerPassphrase(directory: string, oldPassphrase: Uint8Array,
+  newPassphrase: Uint8Array): Promise<void> {
+  await withWriterLock(directory, async () => {
+    const state = await readOwnerState(directory, oldPassphrase);
+    await persist(directory, newPassphrase, state);
   });
 }
