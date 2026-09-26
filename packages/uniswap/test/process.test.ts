@@ -293,7 +293,7 @@ it('reconciles only against the current scope and a healthy saved operation', as
         input: { blockHash, inputId: record.inputId, consumed: true },
         change: { blockHash, outputId: changeOutputId, owner: scope.owner },
       } as never,
-      receipt: { state: 'confirmed', outputId: changeOutputId, currentlyUnspent: true },
+      receipt: { status: 'available', utxo: { id: changeOutputId } } as never,
     }),
   };
   const client = createPaymentClient(fixture.ports);

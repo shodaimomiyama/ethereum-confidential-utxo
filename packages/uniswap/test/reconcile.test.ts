@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { reconcilePayment } from '../src/reconcile.js';
+import { coreReceiptResult, reconcilePayment } from '../src/reconcile.js';
 import type { FinalizedHistory } from '../src/reconcile.js';
 import type { OperationRef, Scope } from '../src/domain.js';
 import { parseOperationRecord } from '../src/api.js';
@@ -69,4 +69,16 @@ it('keeps chain success separate from invalid receipt and later-spent change', (
   const spentLater = reconcilePayment(ref, record, history(), receipt(false), 31337n);
   expect(spentLater.operation.chainOutcome).toBe('finalized-success');
   expect(spentLater.changeUsable).toBe(false);
+});
+
+it('adapts core receipt outcomes without treating later spending as payment failure', () => {
+  const available = coreReceiptResult({ status: 'available', utxo: { id: change } } as never);
+  const spent = coreReceiptResult({ status: 'spent', utxo: { id: change } } as never);
+  const unknown = coreReceiptResult({ status: 'unknown', reason: 'HISTORY_UNAVAILABLE' });
+  const invalid = coreReceiptResult({ status: 'inconsistent', reason: 'DECRYPT' });
+  expect(reconcilePayment(ref, record, history(), available, 31337n).changeUsable).toBe(true);
+  expect(reconcilePayment(ref, record, history(), spent, 31337n).operation.chainOutcome).toBe('finalized-success');
+  expect(reconcilePayment(ref, record, history(), spent, 31337n).changeUsable).toBe(false);
+  expect(reconcilePayment(ref, record, history(), unknown, 31337n).operation.receiptState).toBe('pending');
+  expect(reconcilePayment(ref, record, history(), invalid, 31337n).operation.receiptState).toBe('invalid');
 });

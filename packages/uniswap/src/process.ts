@@ -5,8 +5,9 @@ import type { MonotonicClock, PayQuote } from './quote.js';
 import { isQuoteFresh } from './quote.js';
 import { inspectOperation } from './recovery.js';
 import type { CurrentInput, RecoveryEvidence } from './recovery.js';
-import { reconcilePayment } from './reconcile.js';
-import type { CoreReceiptResult, FinalizedHistory, ReconciledPayment } from './reconcile.js';
+import { coreReceiptResult, reconcilePayment } from './reconcile.js';
+import type { FinalizedHistory, ReconciledPayment } from './reconcile.js';
+import type { ReceiptFailure, ReceivedUtxo } from '@confidential-utxo/core';
 
 export class PaymentProcessError extends Error {
   constructor(readonly code: 'TERMS_CHANGED' | 'SCOPE_CHANGED' | 'QUOTE_STALE' | 'TERMS_EXPIRED' | 'INPUT_RESERVED' | 'INPUT_INVALID' | 'RECOVERY_BLOCKED' | 'RECOVERY_UNAVAILABLE') {
@@ -50,7 +51,7 @@ export interface ReconciliationPorts {
   readonly expectedChainId: bigint;
   readFinalized(ref: OperationRef, saved: SavedReservation): Promise<{
     readonly history: FinalizedHistory;
-    readonly receipt: CoreReceiptResult;
+    readonly receipt: ReceivedUtxo | ReceiptFailure;
   }>;
 }
 
@@ -407,7 +408,7 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
       || !sameHash(latest.record.contentHash, saved.record.contentHash)) {
       throw new PaymentProcessError('RECOVERY_BLOCKED');
     }
-    return reconcilePayment(ref, saved.record, history, receipt, adapter.expectedChainId);
+    return reconcilePayment(ref, saved.record, history, coreReceiptResult(receipt), adapter.expectedChainId);
   }
 
   return {

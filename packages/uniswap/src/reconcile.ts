@@ -3,6 +3,7 @@ import type {
   PaymentId, ReceiptState,
 } from './domain.js';
 import type { OperationRecord } from './storage.js';
+import type { ReceiptFailure, ReceivedUtxo } from '@confidential-utxo/core';
 
 interface BlockRecord {
   readonly blockHash: Bytes32;
@@ -38,8 +39,21 @@ export interface FinalizedHistory {
 
 export interface CoreReceiptResult {
   readonly state: ReceiptState;
-  readonly outputId: Bytes32;
+  readonly outputId?: Bytes32;
   readonly currentlyUnspent: boolean;
+}
+
+export function coreReceiptResult(result: ReceivedUtxo | ReceiptFailure): CoreReceiptResult {
+  if (result.status === 'available' || result.status === 'spent') {
+    return {
+      state: 'confirmed', outputId: result.utxo.id as Bytes32,
+      currentlyUnspent: result.status === 'available',
+    };
+  }
+  return {
+    state: result.status === 'unknown' ? 'pending' : 'invalid',
+    currentlyUnspent: false,
+  };
 }
 
 export interface ReconciledPayment {
@@ -88,8 +102,9 @@ export function reconcilePayment(
     };
   }
 
-  const receiptState = sameHex(receipt.outputId, history.change?.outputId)
-    ? receipt.state : 'invalid';
+  const receiptState = receipt.state === 'pending' ? 'pending'
+    : receipt.state === 'invalid' ? 'invalid'
+      : sameHex(receipt.outputId, history.change?.outputId) ? 'confirmed' : 'invalid';
   return {
     operation: { ...ref, chainOutcome: 'finalized-success', receiptState },
     changeUsable: receiptState === 'confirmed' && receipt.currentlyUnspent,
