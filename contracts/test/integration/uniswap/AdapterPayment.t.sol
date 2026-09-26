@@ -23,6 +23,8 @@ contract PaymentToken {
 
 contract PaymentPool {
     uint8 public mode;
+    mapping(bytes32 => bool) public spent;
+    uint256 public liability = 100;
 
     function setMode(uint8 value) external {
         mode = value;
@@ -36,6 +38,9 @@ contract PaymentPool {
     ) external {
         if (mode == 5) revert("pool rejected");
         if (mode == 1) return;
+        require(!spent[request.inputIds[0]], "input already spent");
+        spent[request.inputIds[0]] = true;
+        liability -= request.w;
         uint256 amount = mode == 2 ? request.w - 1 : mode == 3 ? request.w + 1 : request.w;
         (bool paid,) = msg.sender.call{value: amount}("");
         require(paid, "pool payment failed");
@@ -54,6 +59,11 @@ contract PaymentRouter {
     PaymentToken public token;
     uint256 public outputAmount = 7;
     uint8 public mode;
+    uint256 public swappedEth;
+    address public reentryTarget;
+    bytes public reentryData;
+    bool public propagateReentry;
+    bytes4 public lastReentrySelector;
 
     constructor(address fixedFactory, address fixedWeth, PaymentToken fixedToken) {
         factory = fixedFactory;
@@ -65,6 +75,12 @@ contract PaymentRouter {
         mode = value;
     }
 
+    function setReentry(address target, bytes calldata data, bool propagate) external {
+        reentryTarget = target;
+        reentryData = data;
+        propagateReentry = propagate;
+    }
+
     function swapExactETHForTokens(uint256 minimum, address[] calldata path, address recipient, uint256)
         external
         payable
@@ -73,6 +89,12 @@ contract PaymentRouter {
         require(path.length == 2 && path[0] == WETH && path[1] == address(token), "wrong path");
         require(outputAmount >= minimum, "minimum not met");
         if (mode == 5) revert("router rejected");
+        if (reentryTarget != address(0)) {
+            (bool entered, bytes memory response) = reentryTarget.call(reentryData);
+            if (!entered && response.length >= 4) lastReentrySelector = bytes4(response);
+            if (propagateReentry || entered) require(entered, "reentry propagated");
+        }
+        swappedEth += msg.value;
         token.mint(recipient, mode == 4 ? outputAmount - 1 : outputAmount);
         amounts = new uint256[](mode == 1 ? 1 : 2);
         amounts[0] = mode == 2 ? msg.value - 1 : msg.value;
@@ -93,7 +115,7 @@ contract AdapterPaymentTest {
         PaymentToken token;
     }
 
-    function _deploy() private returns (Fixture memory fixture) {
+    function _deploy() internal returns (Fixture memory fixture) {
         fixture.pool = new PaymentPool();
         ConfigCode weth = new ConfigCode();
         fixture.token = new PaymentToken();
@@ -115,9 +137,16 @@ contract AdapterPaymentTest {
         vm.deal(address(fixture.pool), 100);
     }
 
-    function _pay(Fixture memory fixture, address recipient) private returns (bytes32 paymentId, uint256 output) {
+    function _paymentCall(Fixture memory fixture, address recipient)
+        internal
+        returns (
+            PoolTypes.OperationRequest memory request,
+            PoolTypes.RangeProofV3[] memory ranges,
+            UniswapPaymentAdapter.PaymentTerms memory terms,
+            bytes memory signature
+        )
+    {
         address owner = vm.addr(OWNER_KEY);
-        PoolTypes.OperationRequest memory request;
         request.kind = 2;
         request.owner = owner;
         request.salt = bytes32(uint256(1));
@@ -127,8 +156,8 @@ contract AdapterPaymentTest {
         request.outputs[0].owner = owner;
         request.w = 3;
         request.destination = address(fixture.adapter);
-        PoolTypes.RangeProofV3[] memory ranges = new PoolTypes.RangeProofV3[](1);
-        UniswapPaymentAdapter.PaymentTerms memory terms = UniswapPaymentAdapter.PaymentTerms({
+        ranges = new PoolTypes.RangeProofV3[](1);
+        terms = UniswapPaymentAdapter.PaymentTerms({
             operationId: _operationId(fixture.adapter, request),
             owner: owner,
             ethAmount: 3,
@@ -138,16 +167,18 @@ contract AdapterPaymentTest {
             deadline: type(uint64).max
         });
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(OWNER_KEY, fixture.adapter.paymentDigest(terms));
+        signature = abi.encodePacked(r, s, v);
+    }
+
+    function _pay(Fixture memory fixture, address recipient) internal returns (bytes32 paymentId, uint256 output) {
+        (
+            PoolTypes.OperationRequest memory request,
+            PoolTypes.RangeProofV3[] memory ranges,
+            UniswapPaymentAdapter.PaymentTerms memory terms,
+            bytes memory signature
+        ) = _paymentCall(fixture, recipient);
         vm.prank(address(0xBEEF));
-        return fixture.adapter
-            .pay(
-                request,
-                PoolTypes.BalanceProof(0, 0, 0),
-                ranges,
-                abi.encodePacked(r, s, v),
-                terms,
-                abi.encodePacked(r, s, v)
-            );
+        return fixture.adapter.pay(request, PoolTypes.BalanceProof(0, 0, 0), ranges, signature, terms, signature);
     }
 
     function _operationId(UniswapPaymentAdapter adapter, PoolTypes.OperationRequest memory request)
@@ -191,7 +222,7 @@ contract AdapterPaymentTest {
         return _pay(fixture, recipient);
     }
 
-    function _rejects(Fixture memory fixture) private returns (bool) {
+    function _rejects(Fixture memory fixture) internal returns (bool) {
         try this.invokePay(fixture, address(0xCAFE)) returns (bytes32, uint256) {
             return false;
         } catch {
