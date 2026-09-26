@@ -361,7 +361,45 @@ export async function generateAbiCases() {
       { decision: 'reject', reason: 'invalid signature or recipient info' },
       base.consumers, 'design signature and version rules'), baseCase, mutatedField };
   });
-  return { operations, invalidOperations, authorization: [...authorization, ...invalidAuthorizations] };
+  const alternateKey = '0x' + '02'.repeat(32);
+  const alternateWallet = new Wallet(alternateKey);
+  const alternateSigner = alternateWallet.address.toLowerCase();
+  const wrongOperationSignature = await alternateWallet.signTypedData(typedDomain, authTypes,
+    { ...authData, authScheme: 1, authVersion: 1 });
+  const wrongRecipientSignature = await alternateWallet.signTypedData(typedDomain, recipientTypes,
+    recipientData);
+  const orderHex = secpOrder.toString(16).padStart(64, '0');
+  const appendedSpecs = [
+    ['WRONG-SIGNER', authorization[0], 'signature-signer', 'signature.signer',
+      { signature: wrongOperationSignature, testOnlyPrivateKey: alternateKey },
+      'signer', { recoveredSigner: alternateSigner }],
+    ['RECIPIENT-WRONG-SIGNER', authorization[1], 'signature-signer', 'signature.signer',
+      { signature: wrongRecipientSignature, testOnlyPrivateKey: alternateKey },
+      'signer', { recoveredSigner: alternateSigner }],
+    ['OPERATION-SIG-AS-RECIPIENT', authorization[1], 'signature-cross-use', 'signature.type',
+      { signature: authSignature }, 'cross-use', { signedFor: 'OperationAuthorization' }],
+    ['RECIPIENT-SIG-AS-OPERATION', authorization[0], 'signature-cross-use', 'signature.type',
+      { signature: recipientSignature }, 'cross-use', { signedFor: 'RecipientInfo' }],
+    ['R-AT-ORDER', authorization[0], 'signature-format', 'signature.r',
+      { signature: '0x' + orderHex + authSignature.slice(66) }, 'format', {}],
+    ['S-AT-ORDER', authorization[0], 'signature-format', 'signature.s',
+      { signature: authSignature.slice(0, 66) + orderHex + authSignature.slice(130) },
+      'format', {}],
+    ['ZERO-OWNER', authorization[0], 'signature-owner', 'owner',
+      { owner: ZERO_ADDRESS }, 'owner', {}],
+    ['RECOVERY-FAILURE', authorization[0], 'signature-recovery', 'signature.recovery',
+      { signature: '0x' + '5'.padStart(64, '0') + '1'.padStart(64, '0') + '1b' },
+      'recovery', {}],
+  ];
+  const appended = appendedSpecs.map(([name, base, stage, mutatedField, change,
+    failureClass, detail]) => ({
+    ...caseEntry(`VEC-02-${name}`, stage, { ...base.input, ...change },
+      { decision: 'reject', failureClass, ...detail }, base.consumers,
+      'ethers 6.13.4 signing; viem 2.56.9 digest; independent ethers recovery'),
+    baseCase: base.id, mutatedField,
+  }));
+  return { operations, invalidOperations,
+    authorization: [...authorization, ...invalidAuthorizations, ...appended] };
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

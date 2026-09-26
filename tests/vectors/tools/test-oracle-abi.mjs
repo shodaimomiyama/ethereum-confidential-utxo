@@ -4,7 +4,8 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { AbiCoder, TypedDataEncoder, keccak256 as ethersKeccak } from 'ethers';
+import { createHash } from 'node:crypto';
+import { AbiCoder, TypedDataEncoder, keccak256 as ethersKeccak, recoverAddress } from 'ethers';
 import { inputIdsHash, buildOperation, authorizationDigest, recipientInfoParts } from './oracle-abi.mjs';
 
 test('empty input list has a complete ABI preimage and known Keccak digest', () => {
@@ -117,4 +118,36 @@ test('generator writes seven operation shapes and signature cases to a separate 
   } finally {
     rmSync(output, { recursive: true, force: true });
   }
+});
+
+test('authorization corpus appends signer, cross-use, scalar-boundary and recovery cases', () => {
+  const cases = JSON.parse(readFileSync('tests/vectors/cases/authorization.json', 'utf8'));
+  assert.equal(createHash('sha256').update(JSON.stringify(cases.slice(0, 13))).digest('hex'),
+    '6ee86470d92b649e65f8cfe22760e18f01069274ed986235c46b4c33e9a9f359');
+  assert.deepEqual(cases.slice(13).map(item => item.id), [
+    'VEC-02-WRONG-SIGNER', 'VEC-02-RECIPIENT-WRONG-SIGNER',
+    'VEC-02-OPERATION-SIG-AS-RECIPIENT', 'VEC-02-RECIPIENT-SIG-AS-OPERATION',
+    'VEC-02-R-AT-ORDER', 'VEC-02-S-AT-ORDER',
+    'VEC-02-ZERO-OWNER', 'VEC-02-RECOVERY-FAILURE',
+  ]);
+  assert.deepEqual(cases.slice(13).map(item => item.stage), [
+    'signature-signer', 'signature-signer', 'signature-cross-use',
+    'signature-cross-use', 'signature-format', 'signature-format',
+    'signature-owner', 'signature-recovery',
+  ]);
+  assert.ok(cases.slice(13).every(item => item.expected.decision === 'reject'));
+  const wrong = cases.find(item => item.id === 'VEC-02-WRONG-SIGNER');
+  const base = cases.find(item => item.id === 'VEC-02-OPERATION-SIGNATURE');
+  assert.equal(wrong.input.operationId, base.input.operationId);
+  assert.equal(wrong.input.owner, base.input.owner);
+  assert.notEqual(recoverAddress(base.expected.digest, wrong.input.signature).toLowerCase(),
+    base.input.owner);
+  const rOrder = cases.find(item => item.id === 'VEC-02-R-AT-ORDER');
+  const sOrder = cases.find(item => item.id === 'VEC-02-S-AT-ORDER');
+  const order = BigInt('0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141');
+  assert.equal(BigInt('0x' + rOrder.input.signature.slice(2, 66)), order);
+  assert.equal(BigInt('0x' + sOrder.input.signature.slice(66, 130)), order);
+  const recovery = cases.find(item => item.id === 'VEC-02-RECOVERY-FAILURE');
+  assert.throws(() => recoverAddress(base.expected.digest, recovery.input.signature),
+    /square root/);
 });

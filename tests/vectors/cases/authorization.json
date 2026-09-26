@@ -374,5 +374,231 @@
     ],
     "baseCase": "VEC-02-RECIPIENT-SIGNATURE",
     "mutatedField": "recipientInfoVersion"
+  },
+  {
+    "id": "VEC-02-WRONG-SIGNER",
+    "profile": "operation-v1",
+    "source": "docs/design.md#操作の結合とabi",
+    "stage": "signature-signer",
+    "input": {
+      "chainId": "31337",
+      "pool": "0x1111111111111111111111111111111111111111",
+      "operationId": "0xda4a2c5b62f976c445f27cd49bce6d9da172dd43e3b662e4c962ff1ab6ada3e1",
+      "owner": "0x1a642f0e3c3af545e7acbd38b07251b3990914f1",
+      "authScheme": 1,
+      "authVersion": 1,
+      "signature": "0xa662d4ef05fb7c83a47994a554efc1b74282065375b6da4d4f5d9efdbadcc33d71a16c0c729582290358d18ae4f1b9c3d35bd131b442ec70f24f8bbfb7a387c31b",
+      "testOnlyPrivateKey": "0x0202020202020202020202020202020202020202020202020202020202020202"
+    },
+    "expected": {
+      "decision": "reject",
+      "failureClass": "signer",
+      "recoveredSigner": "0x5050a4f4b3f9338c3472dcc01a87c76a144b3c9c"
+    },
+    "oracle": "ethers 6.13.4 signing; viem 2.56.9 digest; independent ethers recovery",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-02-OPERATION-SIGNATURE",
+    "mutatedField": "signature.signer"
+  },
+  {
+    "id": "VEC-02-RECIPIENT-WRONG-SIGNER",
+    "profile": "operation-v1",
+    "source": "docs/design.md#操作の結合とabi",
+    "stage": "signature-signer",
+    "input": {
+      "chainId": "31337",
+      "pool": "0x1111111111111111111111111111111111111111",
+      "owner": "0x1a642f0e3c3af545e7acbd38b07251b3990914f1",
+      "receivePublicKey": "0x6666666666666666666666666666666666666666666666666666666666666666",
+      "receiptFormat": 1,
+      "recipientInfoVersion": 1,
+      "signature": "0xd9cba6d82560b0410819ae47ab4bb27e4daa6e54bf70cfa418e72d04be62c27e6b388ef558e02533256d1a9ec193e97b7e2264da3cc413f87d20e1ffbf16926a1b",
+      "testOnlyPrivateKey": "0x0202020202020202020202020202020202020202020202020202020202020202"
+    },
+    "expected": {
+      "decision": "reject",
+      "failureClass": "signer",
+      "recoveredSigner": "0x5050a4f4b3f9338c3472dcc01a87c76a144b3c9c"
+    },
+    "oracle": "ethers 6.13.4 signing; viem 2.56.9 digest; independent ethers recovery",
+    "consumers": [
+      "#28",
+      "#29"
+    ],
+    "baseCase": "VEC-02-RECIPIENT-SIGNATURE",
+    "mutatedField": "signature.signer"
+  },
+  {
+    "id": "VEC-02-OPERATION-SIG-AS-RECIPIENT",
+    "profile": "operation-v1",
+    "source": "docs/design.md#操作の結合とabi",
+    "stage": "signature-cross-use",
+    "input": {
+      "chainId": "31337",
+      "pool": "0x1111111111111111111111111111111111111111",
+      "owner": "0x1a642f0e3c3af545e7acbd38b07251b3990914f1",
+      "receivePublicKey": "0x6666666666666666666666666666666666666666666666666666666666666666",
+      "receiptFormat": 1,
+      "recipientInfoVersion": 1,
+      "signature": "0x316e9bb506fb4419e1665d5ed314fea9389ba6632a1463ae7570c6c962ca5b054f9650746a409daf19969b5349c9b5af26352b5a7bf0035a44d8c6e21923fb3b1b",
+      "testOnlyPrivateKey": "0x0101010101010101010101010101010101010101010101010101010101010101"
+    },
+    "expected": {
+      "decision": "reject",
+      "failureClass": "cross-use",
+      "signedFor": "OperationAuthorization"
+    },
+    "oracle": "ethers 6.13.4 signing; viem 2.56.9 digest; independent ethers recovery",
+    "consumers": [
+      "#28",
+      "#29"
+    ],
+    "baseCase": "VEC-02-RECIPIENT-SIGNATURE",
+    "mutatedField": "signature.type"
+  },
+  {
+    "id": "VEC-02-RECIPIENT-SIG-AS-OPERATION",
+    "profile": "operation-v1",
+    "source": "docs/design.md#操作の結合とabi",
+    "stage": "signature-cross-use",
+    "input": {
+      "chainId": "31337",
+      "pool": "0x1111111111111111111111111111111111111111",
+      "operationId": "0xda4a2c5b62f976c445f27cd49bce6d9da172dd43e3b662e4c962ff1ab6ada3e1",
+      "owner": "0x1a642f0e3c3af545e7acbd38b07251b3990914f1",
+      "authScheme": 1,
+      "authVersion": 1,
+      "signature": "0x73a2fa38dbc03fc212073beff10db01e096d5f2e999ce76d49d3b111cbd7fdde7c5a099d9c4da0cabfa015c7605197dba131a0833d8df6f76b4c993185f311e91c",
+      "testOnlyPrivateKey": "0x0101010101010101010101010101010101010101010101010101010101010101"
+    },
+    "expected": {
+      "decision": "reject",
+      "failureClass": "cross-use",
+      "signedFor": "RecipientInfo"
+    },
+    "oracle": "ethers 6.13.4 signing; viem 2.56.9 digest; independent ethers recovery",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-02-OPERATION-SIGNATURE",
+    "mutatedField": "signature.type"
+  },
+  {
+    "id": "VEC-02-R-AT-ORDER",
+    "profile": "operation-v1",
+    "source": "docs/design.md#操作の結合とabi",
+    "stage": "signature-format",
+    "input": {
+      "chainId": "31337",
+      "pool": "0x1111111111111111111111111111111111111111",
+      "operationId": "0xda4a2c5b62f976c445f27cd49bce6d9da172dd43e3b662e4c962ff1ab6ada3e1",
+      "owner": "0x1a642f0e3c3af545e7acbd38b07251b3990914f1",
+      "authScheme": 1,
+      "authVersion": 1,
+      "signature": "0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd03641414f9650746a409daf19969b5349c9b5af26352b5a7bf0035a44d8c6e21923fb3b1b",
+      "testOnlyPrivateKey": "0x0101010101010101010101010101010101010101010101010101010101010101"
+    },
+    "expected": {
+      "decision": "reject",
+      "failureClass": "format"
+    },
+    "oracle": "ethers 6.13.4 signing; viem 2.56.9 digest; independent ethers recovery",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-02-OPERATION-SIGNATURE",
+    "mutatedField": "signature.r"
+  },
+  {
+    "id": "VEC-02-S-AT-ORDER",
+    "profile": "operation-v1",
+    "source": "docs/design.md#操作の結合とabi",
+    "stage": "signature-format",
+    "input": {
+      "chainId": "31337",
+      "pool": "0x1111111111111111111111111111111111111111",
+      "operationId": "0xda4a2c5b62f976c445f27cd49bce6d9da172dd43e3b662e4c962ff1ab6ada3e1",
+      "owner": "0x1a642f0e3c3af545e7acbd38b07251b3990914f1",
+      "authScheme": 1,
+      "authVersion": 1,
+      "signature": "0x316e9bb506fb4419e1665d5ed314fea9389ba6632a1463ae7570c6c962ca5b05fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd03641411b",
+      "testOnlyPrivateKey": "0x0101010101010101010101010101010101010101010101010101010101010101"
+    },
+    "expected": {
+      "decision": "reject",
+      "failureClass": "format"
+    },
+    "oracle": "ethers 6.13.4 signing; viem 2.56.9 digest; independent ethers recovery",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-02-OPERATION-SIGNATURE",
+    "mutatedField": "signature.s"
+  },
+  {
+    "id": "VEC-02-ZERO-OWNER",
+    "profile": "operation-v1",
+    "source": "docs/design.md#操作の結合とabi",
+    "stage": "signature-owner",
+    "input": {
+      "chainId": "31337",
+      "pool": "0x1111111111111111111111111111111111111111",
+      "operationId": "0xda4a2c5b62f976c445f27cd49bce6d9da172dd43e3b662e4c962ff1ab6ada3e1",
+      "owner": "0x0000000000000000000000000000000000000000",
+      "authScheme": 1,
+      "authVersion": 1,
+      "signature": "0x316e9bb506fb4419e1665d5ed314fea9389ba6632a1463ae7570c6c962ca5b054f9650746a409daf19969b5349c9b5af26352b5a7bf0035a44d8c6e21923fb3b1b",
+      "testOnlyPrivateKey": "0x0101010101010101010101010101010101010101010101010101010101010101"
+    },
+    "expected": {
+      "decision": "reject",
+      "failureClass": "owner"
+    },
+    "oracle": "ethers 6.13.4 signing; viem 2.56.9 digest; independent ethers recovery",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-02-OPERATION-SIGNATURE",
+    "mutatedField": "owner"
+  },
+  {
+    "id": "VEC-02-RECOVERY-FAILURE",
+    "profile": "operation-v1",
+    "source": "docs/design.md#操作の結合とabi",
+    "stage": "signature-recovery",
+    "input": {
+      "chainId": "31337",
+      "pool": "0x1111111111111111111111111111111111111111",
+      "operationId": "0xda4a2c5b62f976c445f27cd49bce6d9da172dd43e3b662e4c962ff1ab6ada3e1",
+      "owner": "0x1a642f0e3c3af545e7acbd38b07251b3990914f1",
+      "authScheme": 1,
+      "authVersion": 1,
+      "signature": "0x000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000011b",
+      "testOnlyPrivateKey": "0x0101010101010101010101010101010101010101010101010101010101010101"
+    },
+    "expected": {
+      "decision": "reject",
+      "failureClass": "recovery"
+    },
+    "oracle": "ethers 6.13.4 signing; viem 2.56.9 digest; independent ethers recovery",
+    "consumers": [
+      "#27",
+      "#29",
+      "#30"
+    ],
+    "baseCase": "VEC-02-OPERATION-SIGNATURE",
+    "mutatedField": "signature.recovery"
   }
 ]

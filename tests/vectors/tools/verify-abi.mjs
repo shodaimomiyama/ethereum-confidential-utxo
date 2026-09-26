@@ -56,7 +56,7 @@ function verifyOperation(caseData) {
   assert.deepEqual(expected.outputIds, outputIds, caseData.id);
 }
 
-function verifyAuthorization(caseData) {
+function verifyAuthorization(caseData, authorizationById) {
   const input = caseData.input;
   const domain = { name: 'Ethereum Confidential UTXO', version: '1',
     chainId: BigInt(input.chainId), verifyingContract: input.pool };
@@ -88,16 +88,57 @@ function verifyAuthorization(caseData) {
   const versionValid = operation ? input.authScheme === 1 && input.authVersion === 1
     : input.receiptFormat === 1 && input.recipientInfoVersion === 1;
   let actualDecision = 'reject';
-  if (formatValid && versionValid) {
+  let failureClass = input.owner.toLowerCase() ===
+    '0x0000000000000000000000000000000000000000' ? 'owner' :
+    !formatValid ? 'format' : !versionValid ? 'version' : 'signer';
+  let recovered;
+  if (failureClass === 'signer') {
     try {
-      if (recoverAddress(digest, signature).toLowerCase() === input.owner.toLowerCase()) {
+      recovered = recoverAddress(digest, signature).toLowerCase();
+      if (recovered === input.owner.toLowerCase()) {
         actualDecision = 'accept';
       }
     } catch {
-      actualDecision = 'reject';
+      failureClass = 'recovery';
     }
   }
+  if (caseData.stage === 'signature-cross-use') {
+    assert.equal(failureClass, 'signer', caseData.id);
+    const oppositeId = caseData.expected.signedFor === 'OperationAuthorization' ?
+      'VEC-02-OPERATION-SIGNATURE' : 'VEC-02-RECIPIENT-SIGNATURE';
+    const source = authorizationById.get(oppositeId);
+    assert.equal(signature, source.input.signature, caseData.id);
+    const sourceInput = source.input;
+    const sourceDomain = { name: 'Ethereum Confidential UTXO', version: '1',
+      chainId: BigInt(sourceInput.chainId), verifyingContract: sourceInput.pool };
+    const sourceTypes = oppositeId === 'VEC-02-OPERATION-SIGNATURE' ?
+      { OperationAuthorization: [
+        { name: 'operationId', type: 'bytes32' }, { name: 'owner', type: 'address' },
+        { name: 'authScheme', type: 'uint8' }, { name: 'authVersion', type: 'uint8' },
+      ] } : { RecipientInfo: [
+        { name: 'owner', type: 'address' }, { name: 'receivePublicKey', type: 'bytes32' },
+        { name: 'receiptFormat', type: 'uint8' },
+        { name: 'recipientInfoVersion', type: 'uint8' },
+      ] };
+    const sourceValue = oppositeId === 'VEC-02-OPERATION-SIGNATURE' ? {
+      operationId: sourceInput.operationId, owner: sourceInput.owner,
+      authScheme: sourceInput.authScheme, authVersion: sourceInput.authVersion,
+    } : {
+      owner: sourceInput.owner, receivePublicKey: sourceInput.receivePublicKey,
+      receiptFormat: sourceInput.receiptFormat,
+      recipientInfoVersion: sourceInput.recipientInfoVersion,
+    };
+    assert.equal(recoverAddress(TypedDataEncoder.hash(sourceDomain, sourceTypes, sourceValue),
+      signature).toLowerCase(), sourceInput.owner, caseData.id);
+    failureClass = 'cross-use';
+  }
   assert.equal(actualDecision, caseData.expected.decision, caseData.id);
+  if (caseData.expected.failureClass) {
+    assert.equal(failureClass, caseData.expected.failureClass, caseData.id);
+    if (caseData.expected.recoveredSigner) {
+      assert.equal(recovered, caseData.expected.recoveredSigner, caseData.id);
+    }
+  }
   if (actualDecision === 'accept') {
     assert.equal(caseData.expected.domainSeparator.hash, TypedDataEncoder.hashDomain(domain), caseData.id);
     assert.equal(caseData.expected.digest, digest, caseData.id);
@@ -108,5 +149,6 @@ const directory = resolve(process.argv[2] ?? 'tests/vectors/cases');
 const operations = JSON.parse(readFileSync(join(directory, 'operation.json'), 'utf8'));
 const authorization = JSON.parse(readFileSync(join(directory, 'authorization.json'), 'utf8'));
 for (const caseData of operations) verifyOperation(caseData);
-for (const caseData of authorization) verifyAuthorization(caseData);
+const authorizationById = new Map(authorization.map(item => [item.id, item]));
+for (const caseData of authorization) verifyAuthorization(caseData, authorizationById);
 console.log(`Independently checked ${operations.length} operations and ${authorization.length} authorization cases`);
