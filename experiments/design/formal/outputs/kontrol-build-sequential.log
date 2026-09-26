@@ -1,0 +1,319 @@
+INFO 2026-09-26 00:39:17,578 pyk.utils - [PID=8][exec] kompile --version
+INFO 2026-09-26 00:39:18,522 pyk.utils - [PID=8][stdo] K version:    v7.1.337
+INFO 2026-09-26 00:39:18,523 pyk.utils - [PID=8][stdo] Build date:   Thu Jun 18 07:59:56 CDT 2026
+INFO 2026-09-26 00:39:18,527 pyk.utils - [PID=8][done] status=0 time=0.946s
+🔨 Building Kontrol project 🔨
+INFO 2026-09-26 00:39:18,548 kontrol.kompile - Detected updates to contracts.
+INFO 2026-09-26 00:39:18,562 kontrol.foundry - Processing contract files: [PosixPath('out/VerifierSlice.t.sol/VerifierSliceTest.json'), PosixPath('out/alt_bn128.sol/alt_bn128.json')]
+INFO 2026-09-26 00:39:18,571 pyk.kast.outer - Loading JSON definition: /home/user/.cache/kdist-1356d38/kontrol/base/compiled.json
+INFO 2026-09-26 00:39:18,951 pyk.kast.outer - Converting JSON definition to Kast: /home/user/.cache/kdist-1356d38/kontrol/base/compiled.json
+INFO 2026-09-26 00:39:20,804 kontrol.kompile - Wrote file: out/kompiled/foundry.k
+INFO 2026-09-26 00:39:20,812 pyk.ktool.kompile - [PID=61][exec] kompile out/kompiled/foundry.k --main-module KONTROL-MAIN -I /home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics -I /home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/plugin -I /home/user/.local/lib/python3.10/site-packages/kontrol/kdist --md-selector 'k & ! symbolic' --hook-namespaces 'JSON KRYPTO' --emit-json --backend llvm --llvm-kompile-type c -ccopt -std=c++20 -ccopt -lssl -ccopt -lcrypto -ccopt -lsecp256k1 -ccopt /home/user/.cache/kdist-1356d38/evm-semantics/plugin/krypto.a -ccopt -Wno-deprecated-declarations --output-definition out/kompiled/llvm-library --type-inference-mode simplesub --verbose -Wno non-exhaustive-match,missing-syntax-module
+INFO 2026-09-26 00:39:23,069 pyk.ktool.kompile - [PID=61][stdo] Parse command line options                                   =  0.059s
+INFO 2026-09-26 00:39:23,463 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(Auto imported prelude)
+INFO 2026-09-26 00:39:23,635 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/usr/include/kframework/builtin/prelude.md)
+INFO 2026-09-26 00:39:23,785 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/usr/include/kframework/builtin/kast.md)
+INFO 2026-09-26 00:39:24,584 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/usr/include/kframework/builtin/domains.md)
+INFO 2026-09-26 00:39:25,391 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/workspace/out/kompiled/foundry.k)
+INFO 2026-09-26 00:39:25,422 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kontrol/kdist/kontrol.md)
+INFO 2026-09-26 00:39:25,454 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kontrol/kdist/foundry.md)
+INFO 2026-09-26 00:39:25,643 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kontrol/kdist/cheatcodes.md)
+INFO 2026-09-26 00:39:25,689 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/abi.md)
+INFO 2026-09-26 00:39:25,874 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/evm.md)
+INFO 2026-09-26 00:39:25,888 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/data.md)
+INFO 2026-09-26 00:39:25,941 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/evm-types.md)
+INFO 2026-09-26 00:39:25,998 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/word.md)
+INFO 2026-09-26 00:39:26,009 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/json-rpc.md)
+INFO 2026-09-26 00:39:26,015 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/usr/include/kframework/builtin/json.md)
+INFO 2026-09-26 00:39:26,041 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/serialization.md)
+INFO 2026-09-26 00:39:26,055 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/plugin/plugin/krypto.md)
+INFO 2026-09-26 00:39:26,066 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/network.md)
+INFO 2026-09-26 00:39:26,089 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/gas.md)
+INFO 2026-09-26 00:39:26,122 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/schedule.md)
+INFO 2026-09-26 00:39:26,131 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/requests.md)
+INFO 2026-09-26 00:39:26,141 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/buf.md)
+INFO 2026-09-26 00:39:26,148 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kontrol/kdist/hevm.md)
+INFO 2026-09-26 00:39:26,153 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/hashed-locations.md)
+INFO 2026-09-26 00:39:26,155 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/edsl.md)
+INFO 2026-09-26 00:39:26,159 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/optimizations.md)
+INFO 2026-09-26 00:39:26,166 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/lemmas/lemmas.k)
+INFO 2026-09-26 00:39:26,169 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/lemmas/bitwise-simplification.k)
+INFO 2026-09-26 00:39:26,178 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/lemmas/bytes-simplification.k)
+INFO 2026-09-26 00:39:26,198 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/lemmas/evm-int-simplification.k)
+INFO 2026-09-26 00:39:26,208 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/lemmas/int-simplification.k)
+INFO 2026-09-26 00:39:26,213 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/lemmas/slot-updates.k)
+INFO 2026-09-26 00:39:26,214 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/lemmas/summarization-simplification.k)
+INFO 2026-09-26 00:39:26,219 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/summaries.k)
+INFO 2026-09-26 00:39:26,222 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/add-summary.k)
+INFO 2026-09-26 00:39:26,223 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/addmod-summary.k)
+INFO 2026-09-26 00:39:26,225 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/address-summary.k)
+INFO 2026-09-26 00:39:26,226 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/and-summary.k)
+INFO 2026-09-26 00:39:26,227 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/balance-normal-summary.k)
+INFO 2026-09-26 00:39:26,228 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/balance-owise-summary.k)
+INFO 2026-09-26 00:39:26,229 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/blockhash-summary.k)
+INFO 2026-09-26 00:39:26,229 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/byte-summary.k)
+INFO 2026-09-26 00:39:26,230 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/calldatacopy-summary.k)
+INFO 2026-09-26 00:39:26,231 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/calldataload-summary.k)
+INFO 2026-09-26 00:39:26,232 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/calldatasize-summary.k)
+INFO 2026-09-26 00:39:26,233 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/caller-summary.k)
+INFO 2026-09-26 00:39:26,234 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/chainid-summary.k)
+INFO 2026-09-26 00:39:26,234 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/codecopy-summary.k)
+INFO 2026-09-26 00:39:26,236 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/codesize-summary.k)
+INFO 2026-09-26 00:39:26,236 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/coinbase-summary.k)
+INFO 2026-09-26 00:39:26,237 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/difficulty-summary.k)
+INFO 2026-09-26 00:39:26,238 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/div-summary.k)
+INFO 2026-09-26 00:39:26,238 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/dup-summary.k)
+INFO 2026-09-26 00:39:26,239 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/eq-summary.k)
+INFO 2026-09-26 00:39:26,240 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/evmor-summary.k)
+INFO 2026-09-26 00:39:26,241 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/exp-summary.k)
+INFO 2026-09-26 00:39:26,242 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/gas-summary.k)
+INFO 2026-09-26 00:39:26,242 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/gaslimit-summary.k)
+INFO 2026-09-26 00:39:26,243 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/gasprice-summary.k)
+INFO 2026-09-26 00:39:26,244 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/gt-summary.k)
+INFO 2026-09-26 00:39:26,244 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/invalid-summary.k)
+INFO 2026-09-26 00:39:26,245 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/iszero-summary.k)
+INFO 2026-09-26 00:39:26,246 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/jumpdest-summary.k)
+INFO 2026-09-26 00:39:26,247 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/log-summary.k)
+INFO 2026-09-26 00:39:26,247 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/lt-summary.k)
+INFO 2026-09-26 00:39:26,248 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/mcopy-summary.k)
+INFO 2026-09-26 00:39:26,249 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/mload-summary.k)
+INFO 2026-09-26 00:39:26,250 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/mod-summary.k)
+INFO 2026-09-26 00:39:26,252 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/msize-summary.k)
+INFO 2026-09-26 00:39:26,253 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/mstore-summary.k)
+INFO 2026-09-26 00:39:26,254 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/mstore8-summary.k)
+INFO 2026-09-26 00:39:26,255 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/mulmod-summary.k)
+INFO 2026-09-26 00:39:26,257 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/not-summary.k)
+INFO 2026-09-26 00:39:26,258 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/number-summary.k)
+INFO 2026-09-26 00:39:26,259 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/origin-summary.k)
+INFO 2026-09-26 00:39:26,260 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/pc-summary.k)
+INFO 2026-09-26 00:39:26,260 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/pop-summary.k)
+INFO 2026-09-26 00:39:26,261 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/prevrandao-summary.k)
+INFO 2026-09-26 00:39:26,262 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/push-summary.k)
+INFO 2026-09-26 00:39:26,264 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/pushzero-summary.k)
+INFO 2026-09-26 00:39:26,265 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/return-summary.k)
+INFO 2026-09-26 00:39:26,266 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/returndatacopy-summary.k)
+INFO 2026-09-26 00:39:26,266 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/returndatasize-summary.k)
+INFO 2026-09-26 00:39:26,267 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/revert-summary.k)
+INFO 2026-09-26 00:39:26,268 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/sar-summary.k)
+INFO 2026-09-26 00:39:26,268 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/sdiv-summary.k)
+INFO 2026-09-26 00:39:26,269 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/selfbalance-summary.k)
+INFO 2026-09-26 00:39:26,272 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/sgt-summary.k)
+INFO 2026-09-26 00:39:26,274 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/sha3-summary.k)
+INFO 2026-09-26 00:39:26,275 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/shl-summary.k)
+INFO 2026-09-26 00:39:26,276 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/shr-summary.k)
+INFO 2026-09-26 00:39:26,278 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/signextend-summary.k)
+INFO 2026-09-26 00:39:26,281 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/sload-summary.k)
+INFO 2026-09-26 00:39:26,282 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/slt-summary.k)
+INFO 2026-09-26 00:39:26,282 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/smod-summary.k)
+INFO 2026-09-26 00:39:26,286 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/sstore-summary.k)
+INFO 2026-09-26 00:39:26,287 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/stop-summary.k)
+INFO 2026-09-26 00:39:26,288 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/sub-summary.k)
+INFO 2026-09-26 00:39:26,289 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/swap-summary.k)
+INFO 2026-09-26 00:39:26,290 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/timestamp-summary.k)
+INFO 2026-09-26 00:39:26,292 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/tload-summary.k)
+INFO 2026-09-26 00:39:26,293 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/tstore-summary.k)
+INFO 2026-09-26 00:39:26,293 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/undefined-summary.k)
+INFO 2026-09-26 00:39:26,294 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/xor-summary.k)
+INFO 2026-09-26 00:39:26,306 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kontrol/kdist/assert.md)
+INFO 2026-09-26 00:39:26,310 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kontrol/kdist/no_stack_checks.md)
+INFO 2026-09-26 00:39:26,311 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kontrol/kdist/no_code_size_checks.md)
+INFO 2026-09-26 00:39:26,315 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kontrol/kdist/keccak.md)
+INFO 2026-09-26 00:39:26,321 pyk.ktool.kompile - [PID=61][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kontrol/kdist/kontrol_lemmas.md)
+INFO 2026-09-26 00:39:27,435 pyk.ktool.kompile - [PID=61][stdo] Outer parsing [107 modules]                                  =  4.368s
+INFO 2026-09-26 00:39:31,316 pyk.ktool.kompile - [PID=61][stdo] Parse configurations [0/5 declarations]                      =  3.878s
+INFO 2026-09-26 00:39:37,030 pyk.ktool.kompile - [PID=61][stdo]   New scanner: KONTROL-MAIN-RULE-CELLS                       =  4.462s
+INFO 2026-09-26 00:39:37,087 pyk.ktool.kompile - [PID=61][stdo] Parse rules [0/3056 rules]                                   =  5.775s
+INFO 2026-09-26 00:39:40,658 pyk.ktool.kompile - [PID=61][stdo] Validate parsed definition                                   =  3.568s
+INFO 2026-09-26 00:40:21,905 pyk.ktool.kompile - [PID=61][stdo] Apply compile pipeline and validate definition               = 41.246s
+INFO 2026-09-26 00:40:22,877 pyk.ktool.kompile - [PID=61][stdo]   Emit parsed & compiled JSON                                =  0.944s
+INFO 2026-09-26 00:40:22,946 pyk.ktool.kompile - [PID=61][stdo] Kompile to kore                                              =  1.045s
+INFO 2026-09-26 00:40:24,578 pyk.ktool.kompile - [PID=61][stdo] Save to disk                                                 =  1.629s
+INFO 2026-09-26 00:40:29,013 pyk.ktool.kompile - [PID=61][stdo]   Print definition.kore                                      =  4.428s
+INFO 2026-09-26 00:40:42,726 pyk.ktool.kompile - [PID=61][stdo]   Write decision tree                                        = 13.714s
+INFO 2026-09-26 00:40:42,735 pyk.ktool.kompile - [PID=61][stdo]   ┌Executing: llvm-kompile /workspace/out/kompiled/llvm-library/definition.kore /workspace/out/kompiled/llvm-library/dt c -o /workspace/out/kompiled/llvm-library/interpreter -- -std=c++20 -lssl -lcrypto -lsecp256k1 /home/user/.cache/kdist-1356d38/evm-semantics/plugin/krypto.a -Wno-deprecated-declarations
+INFO 2026-09-26 00:41:11,378 pyk.ktool.kompile - [PID=61][stdo]   └interpreter: c                                            = 28.650s
+INFO 2026-09-26 00:41:11,378 pyk.ktool.kompile - [PID=61][stdo] Backend                                                      = 46.803s
+INFO 2026-09-26 00:41:11,387 pyk.ktool.kompile - [PID=61][stdo] Cleanup                                                      =  0.009s
+INFO 2026-09-26 00:41:11,389 pyk.ktool.kompile - [PID=61][stdo] Total                                                        = 01m 48s
+INFO 2026-09-26 00:41:11,478 pyk.ktool.kompile - [PID=61][done] status=0 time=110.666s
+INFO 2026-09-26 00:41:11,486 pyk.ktool.kompile - [PID=188][exec] kompile out/kompiled/foundry.k --main-module KONTROL-MAIN -I /home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics -I /home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/plugin -I /home/user/.local/lib/python3.10/site-packages/kontrol/kdist --md-selector 'k & ! concrete' --hook-namespaces 'JSON KRYPTO' --emit-json --backend haskell --output-definition out/kompiled --type-inference-mode simplesub --verbose -Wno non-exhaustive-match,missing-syntax-module
+INFO 2026-09-26 00:41:13,733 pyk.ktool.kompile - [PID=188][stdo] Parse command line options                                   =  0.055s
+INFO 2026-09-26 00:41:14,090 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(Auto imported prelude)
+INFO 2026-09-26 00:41:14,268 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/usr/include/kframework/builtin/prelude.md)
+INFO 2026-09-26 00:41:14,415 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/usr/include/kframework/builtin/kast.md)
+INFO 2026-09-26 00:41:15,228 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/usr/include/kframework/builtin/domains.md)
+INFO 2026-09-26 00:41:16,018 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/workspace/out/kompiled/foundry.k)
+INFO 2026-09-26 00:41:16,050 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kontrol/kdist/kontrol.md)
+INFO 2026-09-26 00:41:16,095 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kontrol/kdist/foundry.md)
+INFO 2026-09-26 00:41:16,319 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kontrol/kdist/cheatcodes.md)
+INFO 2026-09-26 00:41:16,367 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/abi.md)
+INFO 2026-09-26 00:41:16,622 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/evm.md)
+INFO 2026-09-26 00:41:16,652 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/data.md)
+INFO 2026-09-26 00:41:16,706 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/evm-types.md)
+INFO 2026-09-26 00:41:16,740 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/word.md)
+INFO 2026-09-26 00:41:16,748 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/json-rpc.md)
+INFO 2026-09-26 00:41:16,755 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/usr/include/kframework/builtin/json.md)
+INFO 2026-09-26 00:41:16,782 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/serialization.md)
+INFO 2026-09-26 00:41:16,805 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/plugin/plugin/krypto.md)
+INFO 2026-09-26 00:41:16,815 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/network.md)
+INFO 2026-09-26 00:41:16,834 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/gas.md)
+INFO 2026-09-26 00:41:16,852 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/schedule.md)
+INFO 2026-09-26 00:41:16,858 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/requests.md)
+INFO 2026-09-26 00:41:16,863 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/buf.md)
+INFO 2026-09-26 00:41:16,865 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kontrol/kdist/hevm.md)
+INFO 2026-09-26 00:41:16,881 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/hashed-locations.md)
+INFO 2026-09-26 00:41:16,884 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/edsl.md)
+INFO 2026-09-26 00:41:16,890 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/optimizations.md)
+INFO 2026-09-26 00:41:16,898 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/lemmas/lemmas.k)
+INFO 2026-09-26 00:41:16,901 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/lemmas/bitwise-simplification.k)
+INFO 2026-09-26 00:41:16,910 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/lemmas/bytes-simplification.k)
+INFO 2026-09-26 00:41:16,929 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/lemmas/evm-int-simplification.k)
+INFO 2026-09-26 00:41:16,937 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/lemmas/int-simplification.k)
+INFO 2026-09-26 00:41:16,939 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/lemmas/slot-updates.k)
+INFO 2026-09-26 00:41:16,940 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/lemmas/summarization-simplification.k)
+INFO 2026-09-26 00:41:16,942 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/summaries.k)
+INFO 2026-09-26 00:41:16,945 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/add-summary.k)
+INFO 2026-09-26 00:41:16,947 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/addmod-summary.k)
+INFO 2026-09-26 00:41:16,948 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/address-summary.k)
+INFO 2026-09-26 00:41:16,949 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/and-summary.k)
+INFO 2026-09-26 00:41:16,950 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/balance-normal-summary.k)
+INFO 2026-09-26 00:41:16,951 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/balance-owise-summary.k)
+INFO 2026-09-26 00:41:16,952 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/blockhash-summary.k)
+INFO 2026-09-26 00:41:16,952 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/byte-summary.k)
+INFO 2026-09-26 00:41:16,953 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/calldatacopy-summary.k)
+INFO 2026-09-26 00:41:16,954 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/calldataload-summary.k)
+INFO 2026-09-26 00:41:16,955 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/calldatasize-summary.k)
+INFO 2026-09-26 00:41:16,955 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/caller-summary.k)
+INFO 2026-09-26 00:41:16,956 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/chainid-summary.k)
+INFO 2026-09-26 00:41:16,956 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/codecopy-summary.k)
+INFO 2026-09-26 00:41:16,957 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/codesize-summary.k)
+INFO 2026-09-26 00:41:16,958 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/coinbase-summary.k)
+INFO 2026-09-26 00:41:16,959 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/difficulty-summary.k)
+INFO 2026-09-26 00:41:16,959 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/div-summary.k)
+INFO 2026-09-26 00:41:16,960 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/dup-summary.k)
+INFO 2026-09-26 00:41:16,960 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/eq-summary.k)
+INFO 2026-09-26 00:41:16,961 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/evmor-summary.k)
+INFO 2026-09-26 00:41:16,962 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/exp-summary.k)
+INFO 2026-09-26 00:41:16,962 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/gas-summary.k)
+INFO 2026-09-26 00:41:16,963 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/gaslimit-summary.k)
+INFO 2026-09-26 00:41:16,964 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/gasprice-summary.k)
+INFO 2026-09-26 00:41:16,964 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/gt-summary.k)
+INFO 2026-09-26 00:41:16,964 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/invalid-summary.k)
+INFO 2026-09-26 00:41:16,965 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/iszero-summary.k)
+INFO 2026-09-26 00:41:16,965 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/jumpdest-summary.k)
+INFO 2026-09-26 00:41:16,966 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/log-summary.k)
+INFO 2026-09-26 00:41:16,967 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/lt-summary.k)
+INFO 2026-09-26 00:41:16,967 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/mcopy-summary.k)
+INFO 2026-09-26 00:41:16,968 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/mload-summary.k)
+INFO 2026-09-26 00:41:16,969 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/mod-summary.k)
+INFO 2026-09-26 00:41:16,971 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/msize-summary.k)
+INFO 2026-09-26 00:41:16,971 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/mstore-summary.k)
+INFO 2026-09-26 00:41:16,972 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/mstore8-summary.k)
+INFO 2026-09-26 00:41:16,973 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/mulmod-summary.k)
+INFO 2026-09-26 00:41:16,975 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/not-summary.k)
+INFO 2026-09-26 00:41:16,976 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/number-summary.k)
+INFO 2026-09-26 00:41:16,977 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/origin-summary.k)
+INFO 2026-09-26 00:41:16,978 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/pc-summary.k)
+INFO 2026-09-26 00:41:16,979 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/pop-summary.k)
+INFO 2026-09-26 00:41:16,980 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/prevrandao-summary.k)
+INFO 2026-09-26 00:41:16,981 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/push-summary.k)
+INFO 2026-09-26 00:41:16,982 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/pushzero-summary.k)
+INFO 2026-09-26 00:41:16,983 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/return-summary.k)
+INFO 2026-09-26 00:41:16,984 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/returndatacopy-summary.k)
+INFO 2026-09-26 00:41:16,984 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/returndatasize-summary.k)
+INFO 2026-09-26 00:41:16,985 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/revert-summary.k)
+INFO 2026-09-26 00:41:16,989 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/sar-summary.k)
+INFO 2026-09-26 00:41:16,989 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/sdiv-summary.k)
+INFO 2026-09-26 00:41:16,990 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/selfbalance-summary.k)
+INFO 2026-09-26 00:41:16,991 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/sgt-summary.k)
+INFO 2026-09-26 00:41:16,991 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/sha3-summary.k)
+INFO 2026-09-26 00:41:16,992 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/shl-summary.k)
+INFO 2026-09-26 00:41:16,993 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/shr-summary.k)
+INFO 2026-09-26 00:41:16,993 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/signextend-summary.k)
+INFO 2026-09-26 00:41:16,996 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/sload-summary.k)
+INFO 2026-09-26 00:41:16,997 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/slt-summary.k)
+INFO 2026-09-26 00:41:16,998 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/smod-summary.k)
+INFO 2026-09-26 00:41:16,999 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/sstore-summary.k)
+INFO 2026-09-26 00:41:16,999 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/stop-summary.k)
+INFO 2026-09-26 00:41:17,000 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/sub-summary.k)
+INFO 2026-09-26 00:41:17,000 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/swap-summary.k)
+INFO 2026-09-26 00:41:17,002 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/timestamp-summary.k)
+INFO 2026-09-26 00:41:17,003 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/tload-summary.k)
+INFO 2026-09-26 00:41:17,004 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/tstore-summary.k)
+INFO 2026-09-26 00:41:17,004 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/undefined-summary.k)
+INFO 2026-09-26 00:41:17,005 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/summaries/xor-summary.k)
+INFO 2026-09-26 00:41:17,015 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kontrol/kdist/assert.md)
+INFO 2026-09-26 00:41:17,018 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kontrol/kdist/no_stack_checks.md)
+INFO 2026-09-26 00:41:17,019 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kontrol/kdist/no_code_size_checks.md)
+INFO 2026-09-26 00:41:17,022 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kontrol/kdist/keccak.md)
+INFO 2026-09-26 00:41:17,026 pyk.ktool.kompile - [PID=188][stdo] Importing: Source(/home/user/.local/lib/python3.10/site-packages/kontrol/kdist/kontrol_lemmas.md)
+INFO 2026-09-26 00:41:18,104 pyk.ktool.kompile - [PID=188][stdo] Outer parsing [124 modules]                                  =  4.371s
+INFO 2026-09-26 00:41:21,553 pyk.ktool.kompile - [PID=188][stdo]   New scanner: FOUNDRY-CHEAT-CODES-CONFIG-CELLS              =  2.286s
+INFO 2026-09-26 00:41:21,600 pyk.ktool.kompile - [PID=188][stdo]   New scanner: FOUNDRY-CONFIG-CELLS                          =  2.329s
+INFO 2026-09-26 00:41:24,064 pyk.ktool.kompile - [PID=188][stdo]   New scanner: STDOUT-STREAM-CONFIG-CELLS                    =  0.908s
+INFO 2026-09-26 00:41:24,956 pyk.ktool.kompile - [PID=188][stdo]   New scanner: EVM-CONFIG-CELLS                              =  1.906s
+INFO 2026-09-26 00:41:25,257 pyk.ktool.kompile - [PID=188][stdo]   New scanner: STDIN-STREAM-CONFIG-CELLS                     =  0.945s
+INFO 2026-09-26 00:41:27,650 pyk.ktool.kompile - [PID=188][stdo] Parse configurations [5/5 declarations]                      =  9.545s
+INFO 2026-09-26 00:41:32,354 pyk.ktool.kompile - [PID=188][stdo]   New scanner: KONTROL-MAIN-RULE-CELLS                       =  4.436s
+INFO 2026-09-26 00:42:09,886 pyk.ktool.kompile - [PID=188][stdo]   New scanner: K-IO-RULE-CELLS                               =  0.972s
+INFO 2026-09-26 00:42:51,373 pyk.ktool.kompile - [PID=188][stdo]   New scanner: STDOUT-STREAM-RULE-CELLS                      =  0.953s
+INFO 2026-09-26 00:42:52,584 pyk.ktool.kompile - [PID=188][stdo]   New scanner: STDIN-STREAM-RULE-CELLS                       =  0.989s
+INFO 2026-09-26 00:42:56,087 pyk.ktool.kompile - [PID=188][stdo] Parse rules [3439/3439 rules]                                = 01m 28s
+INFO 2026-09-26 00:43:00,348 pyk.ktool.kompile - [PID=188][stdo] Validate parsed definition                                   =  4.260s
+INFO 2026-09-26 00:43:44,408 pyk.ktool.kompile - [PID=188][stdo] Apply compile pipeline and validate definition               = 44.059s
+INFO 2026-09-26 00:43:45,284 pyk.ktool.kompile - [PID=188][stdo]   Emit parsed & compiled JSON                                =  0.841s
+INFO 2026-09-26 00:43:45,344 pyk.ktool.kompile - [PID=188][stdo] Kompile to kore                                              =  0.939s
+INFO 2026-09-26 00:43:47,352 pyk.ktool.kompile - [PID=188][stdo] Save to disk                                                 =  2.005s
+INFO 2026-09-26 00:43:51,868 pyk.ktool.kompile - [PID=188][stdo]   Print definition.kore                                      =  4.509s
+INFO 2026-09-26 00:43:52,071 pyk.ktool.kompile - [PID=188][stde] [Warning] Compiler: Variable 'B2' defined but not used. Prefix variable name
+INFO 2026-09-26 00:43:52,072 pyk.ktool.kompile - [PID=188][stde] with underscore if this is intentional.
+INFO 2026-09-26 00:43:52,072 pyk.ktool.kompile - [PID=188][stde] 	Source(/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics/lemmas/bytes-simplification.k)
+INFO 2026-09-26 00:43:52,072 pyk.ktool.kompile - [PID=188][stde] 	Location(301,25,301,27)
+INFO 2026-09-26 00:43:52,072 pyk.ktool.kompile - [PID=188][stde] 	301 |	      ( B1:Bytes +Bytes B2:Bytes ) [ I:Int ] => B1 [ I ]
+INFO 2026-09-26 00:43:52,073 pyk.ktool.kompile - [PID=188][stde] 	    .	                        ^~
+INFO 2026-09-26 00:43:52,073 pyk.ktool.kompile - [PID=188][stde] [Error] Critical: Haskell backend reported errors validating compiled
+INFO 2026-09-26 00:43:52,073 pyk.ktool.kompile - [PID=188][stde] definition.
+INFO 2026-09-26 00:43:52,073 pyk.ktool.kompile - [PID=188][stde] Examine output to see errors.
+INFO 2026-09-26 00:43:52,402 pyk.ktool.kompile - [PID=188][done] status=113 time=160.916s
+An error occurred while building your Kontrol project: Command '('kompile', 
+'out/kompiled/foundry.k', '--main-module', 'KONTROL-MAIN', '-I', 
+'/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics', 
+'-I', '/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/plugin', 
+'-I', '/home/user/.local/lib/python3.10/site-packages/kontrol/kdist', 
+'--md-selector', 'k & ! concrete', '--hook-namespaces', 'JSON KRYPTO', 
+'--emit-json', '--backend', 'haskell', '--output-definition', 'out/kompiled', 
+'--type-inference-mode', 'simplesub', '--verbose', '-Wno', 
+'non-exhaustive-match,missing-syntax-module')' returned non-zero exit status 
+113.
+Traceback (most recent call last):
+  File "/workspace/build_sequential.py", line 18, in <module>
+    main()
+  File "/home/user/.local/lib/python3.10/site-packages/kontrol/__main__.py", line 131, in main
+    execute(options)
+  File "/home/user/.local/lib/python3.10/site-packages/kontrol/__main__.py", line 167, in exec_build
+    raise e
+  File "/home/user/.local/lib/python3.10/site-packages/kontrol/__main__.py", line 158, in exec_build
+    foundry_kompile(
+  File "/home/user/.local/lib/python3.10/site-packages/kontrol/kompile.py", line 161, in foundry_kompile
+    kevm_kompile(
+  File "/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kompile.py", line 70, in kevm_kompile
+    return run_kompile(
+  File "/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kompile.py", line 218, in run_kompile
+    [future.result() for future in futures]
+  File "/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kompile.py", line 218, in <listcomp>
+    [future.result() for future in futures]
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 458, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/usr/lib/python3.10/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kompile.py", line 205, in _kompile_haskell
+    kompile_haskell(
+  File "/home/user/.local/lib/python3.10/site-packages/pyk/ktool/kompile.py", line 335, in __call__
+    proc_res = run_process_2(
+  File "/home/user/.local/lib/python3.10/site-packages/pyk/utils.py", line 527, in run_process_2
+    res.check_returncode()
+  File "/usr/lib/python3.10/subprocess.py", line 457, in check_returncode
+    raise CalledProcessError(self.returncode, self.args, self.stdout,
+subprocess.CalledProcessError: Command '('kompile', 'out/kompiled/foundry.k', '--main-module', 'KONTROL-MAIN', '-I', '/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics', '-I', '/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/plugin', '-I', '/home/user/.local/lib/python3.10/site-packages/kontrol/kdist', '--md-selector', 'k & ! concrete', '--hook-namespaces', 'JSON KRYPTO', '--emit-json', '--backend', 'haskell', '--output-definition', 'out/kompiled', '--type-inference-mode', 'simplesub', '--verbose', '-Wno', 'non-exhaustive-match,missing-syntax-module')' returned non-zero exit status 113.

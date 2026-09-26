@@ -89,6 +89,7 @@ The technical source documents are in Japanese. Both READMEs link to the same so
 | [Core PRD](docs/PRD.md) | Problem, intended users, initial scope, and standardization goals |
 | [Core requirements](docs/requirements.md) | Functional, security, confidentiality, proof, evaluation, and reproducibility acceptance criteria |
 | [Core specification](docs/specification.md) | State transitions, authorization, asset conservation, receipt, and synchronization rules |
+| [Core design (draft)](docs/design.md) | Protocol rules, authorization, receipt and synchronization, verification plans, and adoption evidence |
 | [Uniswap integration PRD](docs/integration/uniswap/PRD.md) | Partial public payments from confidential ETH and reuse of the remainder |
 | [Uniswap integration requirements](docs/integration/uniswap/requirements.md) | Authorization, rollback, confidentiality, cost, and reproducibility criteria |
 | [Prior-EIP comparison](docs/research/prior-eip-comparison.md) | Comparison scope, measurement conditions, raw evidence, and limitations |

@@ -1,0 +1,26 @@
+{
+  "experiment": "EXP-07A",
+  "question": "Can the proposed BN254 v2 profile derive and pin 130 distinct canonical G1 generators with an explicitly encoded role, index and domain using gnark-crypto HashToG1?",
+  "designDecision": "Replace the experimental EXP-03 generator derivation only if the candidate produces reproducible vectors, passes canonical/on-curve/non-identity/distinctness checks, and can be independently checked from pinned inputs and dependency version.",
+  "affectedRequirements": ["SEC-01", "PRIV-01", "FV-03"],
+  "scope": "Design-stage parameter derivation feasibility. No range-proof fixture, transcript, full verifier, PoC operation or formal-proof completion is claimed.",
+  "dependency": "github.com/consensys/gnark-crypto v0.20.1",
+  "encoding": {
+    "dstAscii": "ECU_BP_BN254_G1_V2",
+    "messageHexPrefix": "45435502",
+    "messageFormat": "ASCII ECU || one byte 0x02 || one byte role || uint32 big-endian index",
+    "roles": {"blindingBase": 1, "valueBase": 2, "vectorG": 3, "vectorH": 4},
+    "indices": "0 for each base; 0 through 63 for each vector"
+  },
+  "method": [
+    "Pin Go module version and checksum and record the source hash of the derivation program.",
+    "Derive 130 G1 points with HashToG1 using the fixed DST and message encoding.",
+    "Check each point is canonical, on BN254 G1, non-identity, and pairwise distinct; record ordered SHA-256 digest and a compact vector file.",
+    "Rerun the generator in a fresh process and compare the output digest."
+  ],
+  "decision": {
+    "pass": "Retain HashToG1 as the v2 generator candidate and proceed to transcript and range-proof interoperability checks; no cryptographic adoption yet.",
+    "fail": "Reject this encoding or implementation and inspect the cause before selecting another profile.",
+    "neverImplied": ["Unknown discrete logarithm relations proved", "Bulletproof soundness proved", "Full v2 profile accepted", "PoC implementation complete"]
+  }
+}

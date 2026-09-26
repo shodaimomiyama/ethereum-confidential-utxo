@@ -1,0 +1,38 @@
+{
+  "experiment": "EXP-12",
+  "question": "Does the corrected direct KEVM claim over exact optimized v3 verifier runtime complete when the Docker VM has sufficient temporary memory?",
+  "affectedDecision": "Design-stage formal verification feasibility for the chosen v3 verifier under FV-03 and FV-04",
+  "priorEvidence": {
+    "exp11": "Direct symbolic claim parsed and entered target runtime, then kore-rpc returned an empty response after one OOM kill under a 4096 MiB Docker Desktop VM; no property was proved.",
+    "exp10": "The previous direct claim was rejected by K compiler due to unbound RHS anonymous variable."
+  },
+  "target": {
+    "sourceRuntime": "../exp09/runtime.hex",
+    "bytes": 8467,
+    "keccak256": "0xaff25bc27e32f19321b9e062965a418b2be7d5df872164865f58398c3ad015c5",
+    "sha256": "724fac3aad23842c1462df4ad8eca960581d14de26d42e4d1ca792a7ac35b073"
+  },
+  "claim": "Reuse EXP-11's direct KEVM claim: malformed verify calldata has ls.length=0 and rs.length=12, while coords[0] is an arbitrary uint256. Prove final EVMC_REVERT on exact v3 runtime with callValue=0.",
+  "method": [
+    "Record the host and Docker VM memory, confirm no other Docker containers are running, and copy the exact original Docker Desktop settings-store.json outside the repository.",
+    "Temporarily raise Docker Desktop MemoryMiB from 4096 to 8192, retain SwapMiB at 1024, restart and verify applied VM memory. A preliminary 4096 MiB swap allocation failed because the Docker VM disk lacked space; this is recorded in settings-change.json. Reuse pinned image, source hashes and unchanged EXP-11 claim.",
+    "Run one bounded direct proof with saved KCFG, inspect proof status, admitted/vacuous/pending nodes, target runtime identity, exit status and OOM events. Restore the exact original Docker settings bytes and restart Docker Desktop regardless of proof outcome."
+  ],
+  "decision": {
+    "pass": "Exact target runtime and symbolic calldata are linked, initial constraint is satisfiable, proof PASSED with no admitted, vacuous, pending, failing, stuck or bounded nodes, and final EVMC_REVERT is reached without OOM.",
+    "fail": "Counterexample on the exact runtime under the specified ABI or a bytecode mismatch.",
+    "unverified": "Setup failure, un-restored settings, OOM, timeout, or incomplete proof. Do not infer verifier-wide correctness."
+  },
+  "limits": {
+    "pinnedImage": "runtimeverificationinc/kontrol@sha256:858f004144d61b005997f56bb8b7cd15673850286c96e0e5ec0502d9c9a9e204",
+    "schedule": "BYZANTIUM",
+    "proofSeconds": 900,
+    "cpuLimit": 4,
+    "containerMemoryGiB": 8,
+    "temporaryDockerVmMemoryMiB": 8192,
+    "temporaryDockerVmSwapMiB": 1024,
+    "restoreOriginalDockerSettings": true,
+    "noFullVerifierOrPoolImplementation": true
+  },
+  "scopeLimit": "One early input rejection feasibility proof only, not full verifier soundness, Pool correctness, gas or PoC completion."
+}

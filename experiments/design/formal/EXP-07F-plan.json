@@ -1,0 +1,29 @@
+{
+  "experiment": "EXP-07F",
+  "question": "Did EXP-06 exhaust its proof budget while running the large vm.etch harness setup, before reaching the optimized verifier runtime?",
+  "affectedDecision": "Whether Kontrol can plausibly be applied to representative optimized verifier code during design selection; this is not an FV-03 or FV-04 proof.",
+  "method": [
+    "Read only the saved EXP-06 KCFG and record its edges, pending node, execution context, and code identity compactly.",
+    "Compare the same early-rejection test and pinned Kontrol/KEVM environment with the 7821-byte literal and a minimal reverting runtime stub. Change only the bytecode literal in the stub harness.",
+    "Compile the stub with the same solc 0.4.19 optimizer settings, run a concrete Foundry test, then cap each symbolic proof run at 90 seconds. Inspect the retained KCFG even when timed out."
+  ],
+  "comparisonLimit": "The stub deliberately does not prove any property of RangeProofVerifier. It diagnoses setup cost only. The large case reuses the exact EXP-06 artifact; no new candidate verifier is implemented.",
+  "decision": {
+    "setupBottleneckSupported": "The large-case pending node remains in the test harness before a call to the verifier, while the stub case reaches its external call or terminates within the same bound.",
+    "setupBottleneckNotEstablished": "Both cases fail to reach their external call, or the result cannot be attributed to the changed runtime literal.",
+    "notAFormalFeasibilityProof": "Even a completed stub claim establishes no claim about the full verifier runtime or later proof obligations."
+  },
+  "limits": {
+    "serializationSeconds": 60,
+    "concreteTestSeconds": 60,
+    "proofSecondsPerCase": 90,
+    "dockerWallSecondsPerCase": 180,
+    "cpuLimit": 4,
+    "containerMemoryLimitGiB": 8,
+    "temporaryFilesystemMiB": 512,
+    "noFullKRebuild": true,
+    "noGlobalDockerConfigurationChange": true,
+    "noUserCacheDeletion": true
+  },
+  "pinnedKontrolImage": "runtimeverificationinc/kontrol@sha256:858f004144d61b005997f56bb8b7cd15673850286c96e0e5ec0502d9c9a9e204"
+}

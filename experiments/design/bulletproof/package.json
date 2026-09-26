@@ -1,0 +1,9 @@
+{
+  "name": "confidential-utxo-rangeproof-experiment",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "ethers": "6.13.4",
+    "solc": "0.4.19"
+  }
+}

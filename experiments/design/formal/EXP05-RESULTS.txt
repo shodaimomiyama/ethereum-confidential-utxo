@@ -1,0 +1,128 @@
+EXP-05: Kontrol の環境診断と修正版実コードの局所証明
+
+結果
+
+固定 Kontrol/KEVM 環境で、次の 3 件の機械証明が完了した。
+
+対象                             命題                          proof 秒    nodes
+EXP-02 の旧 library / solc0.4.26  正規入力の sub 結果が q 未満    307.552      15
+EXP-03 の修正版 / solc0.4.19      neg(uint256(0)) == 0           137.615       3
+同じ修正版 artifact              正規入力の sub 結果が q 未満    322.425      15
+
+いずれも Kontrol list は ProofStatus.PASSED、admitted=False、
+pending/failing/vacuous/stuck/refuted/bounded=0、追加 subproof=0。
+3 件は逐次実行し、各命題の上限は 600 秒だった。OOM は観測していない。
+詳細は exp05-summary.json と各 claim の記録に保存した。
+
+sub の入力は ABI の uint256 left/right。命題の前提は left<q かつ right<q。
+q = 21888242871839275222246405745257275088548364400416034343698204186575808495617
+harness は前提外で return するため、非正規入力の拒否は証明していない。
+今回の sub 命題は出力範囲だけであり、整数差との合同関係も別の義務となる。
+neg は固定したゼロ入力だけであり、任意の scalar に対する命題ではない。
+
+対象コードとの対応
+
+修正版 library は EXP-03 の alt_bn128.sol と byte-identical。
+SHA-256: b5db410990b99ac6ec25dc56a85f89cc9963126af11cc8b0f9385f74015ddd7c
+修正版 harness artifact SHA-256:
+a11ca5b7e63aa1370e4c09137b61fedccd4f556c58f7a4481308b7f1dbfff940
+修正版 harness deployed bytecode SHA-256:
+345c6a79f5de1b8f301605ee4eac64de306d76c7a6f5eae1b07a3425d5c0d5d3
+
+exp05-bytecode-links.json は、APR proof の init node 内の Bytes token を
+復号し、artifact の deployedBytecode.object と全バイトを比較した結果。
+各 claim で 2 箇所一致した。JSON pointer と祖先 K cell 名も保存している。
+元ソース、harness、artifact、K 定義の before/after hash も一致した。
+
+修正版の証明対象は solc0.4.19、optimizer=false でコンパイルした別 harness。
+EXP-03 の full RangeProofVerifier の deployed bytecode と同一ではない。
+旧 claim は CANCUN、修正版 2 件は BYZANTIUM の EVM schedule を使用した。
+gas 計算は明示的に省略しており、gas 消費や out-of-gas の命題は含まない。
+
+今回確認できた環境障害
+
+ホストの空き容量は 270,801,736 KiB。一方 Docker VM の root filesystem は
+空き 0 KiB、inode 使用率 43%。実行ユーザー uid1010 が /tmp に mkdir
+すると ENOSPC になった。容量と inode を区別して記録した。
+
+同じ image、同じ definition SHA-256、同じ kore-exec コマンドで比較すると、
+通常 /tmp は無出力 exit1、コンテナ専用 tmpfs /tmp は serialize に成功した。
+後者は 11.206 秒で約 71.6 MB の serialized definition を生成した。
+public Haskell v0.1.155 の withBugReport は、一時ディレクトリ取得の例外も
+包括捕捉して ExitFailure1 にする。今回の観測と整合する。
+
+EXP-02 当時の df/ENOSPC の記録は残っていない。そのため、当時の無出力
+exit1 の原因も容量不足だったと遡って断定しない。
+
+その後 Kontrol telemetry が /home/user/.config/kprofile を作る際にも
+ENOSPC で停止した。実 image の pyk.telemetry が用意する環境変数
+KPROFILE_TELEMETRY_DISABLED=true を設定すると、この初期化を回避できた。
+container は常に network none。証明本体の意味論や条件は変更していない。
+
+資源と信頼境界
+
+image:
+runtimeverificationinc/kontrol@sha256:858f004144d61b005997f56bb8b7cd15673850286c96e0e5ec0502d9c9a9e204
+
+macOS ARM64 上の linux/amd64。CPU 4、container memory limit 8 GiB、追加 swap
+なし。ただし Docker VM の実効 RAM は 4,109,803,520 bytes（約 3.83 GiB）。
+/tmp tmpfs は 512 MiB。global Docker 設定、認証、Nix、ユーザー既存 image/cache
+を変更・削除していない。今回の container と tmpfs は終了時に自動削除した。
+
+VM RAM が 8 GiB 未満のため、full K build は繰り返していない。
+前回の foundry.k は generic KONTROL-FULL を import し、特定 bytecode の
+sentence を含まない。固定版 Kontrol は Foundry artifact の bytecode を
+証明初期状態へ投入するため、generic 定義を変更せずに再利用した。
+再利用時も通常の Haskell definition validation/serialization を実行した。
+
+独自 axiom、assume-defined、no-stack-checks、admitted node、trusted summary
+は追加していない。Kontrol/KEVM の意味論、Haskell backend、Z3、コンパイラ、
+通常の Kontrol test 初期化を信頼する局所的な証明である。
+
+再現
+
+必要な入力は、EXP-02 の src/test/out/kompiled と artifact、revised/ の
+source/artifact/manifest、今回の proof-plan JSON と Python scripts。
+K の生成成果物を再生成する場合は、固定 image と同じ KONTROL-MAIN 定義を
+使い、空き disk と十分な RAM を確保する。検証無効化で代替しない。
+
+  open -a Docker
+  python3 -B experiments/design/formal/replay_exp05.py legacy-sub --record exp05-replay-legacy-sub-001.json
+  python3 -B experiments/design/formal/replay_exp05.py revised-neg-zero --record exp05-replay-revised-zero-001.json
+  python3 -B experiments/design/formal/replay_exp05.py revised-sub --record exp05-replay-revised-sub-001.json
+
+旧 proof の成功した実行には KPROFILE_TELEMETRY_DISABLED=true が必要。
+成功時の正確な Docker 引数は exp05-existing-claim-offline.json の command。
+prove_exp05_existing.py の初回コマンドは telemetry ENOSPC を再現する記録であり、
+成功コマンドの代わりにはならない。replay_exp05.py は成功記録の Docker 引数を
+使い、現在の実験パスと専用 container 名だけを置き換えて再実行する。
+telemetry opt-out、tmpfs、固定 image、命題と上限は保持する。
+
+scripts は同名結果の上書きを拒否する。再実行には新しい結果名を使用し、
+元の成果物を保存する。各 JSON に実行コマンド、stdout/stderr、終了値、
+経過時間、proof graph を収録した。手動 driver の時刻ラベル 2 件の訂正は
+exp05-timestamp-corrections.json にあり、元記録は上書きしていない。
+
+未検証と次の条件
+
+非正規入力拒否、sub の合同関係、neg の全入力、precompile の成功/失敗境界、
+transcript、Bulletproof verifier 全体、UTXO 本体の状態遷移は今回の証明対象外。
+暗号学的安全性、FV-03/FV-04 全体の成立を主張しない。
+
+この環境でも generic 定義の再利用による局所 claim は実行可能になった。
+full build や広い証明へ進む前に、Docker 内の writable disk と実効 RAM を
+確保する必要がある。公式推奨は RAM16GB/swap16GB。今回の成功を、full verifier
+も同じ 3.83 GiB VM で完走する根拠にはしない。
+
+一次資料
+
+実 image の telemetry module と SHA-256: exp05-telemetry-module.json
+public source と SHA-256/行番号: exp05-primary-source-evidence.json
+Haskell の一時領域処理:
+https://github.com/runtimeverification/haskell-backend/blob/v0.1.155/kore/src/Kore/BugReport.hs
+generic K 定義生成:
+https://github.com/runtimeverification/kontrol/blob/0ac55eda300e64ec30300117fe71c02d6db59ab5/src/kontrol/kompile.py
+bytecode の初期状態投入:
+https://github.com/runtimeverification/kontrol/blob/0ac55eda300e64ec30300117fe71c02d6db59ab5/src/kontrol/prove.py#L771
+公式資源推奨:
+https://docs.runtimeverification.com/kontrol/overview/readme/installations

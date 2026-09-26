@@ -1,0 +1,11 @@
+{
+  "compiler": "0.4.19+commit.c4cbbb05.Emscripten.clang",
+  "sourceSha256": {
+    "alt_bn128.sol": "b5db410990b99ac6ec25dc56a85f89cc9963126af11cc8b0f9385f74015ddd7c",
+    "Transcript.sol": "ec87587e61dba283777e9a6fbe5e7f6dd5eea48320e5ac83861eb91a006e8545",
+    "RangeProofVerifier.sol": "0e64d8e4e5eb63cc9bfdf5336df0b95728d260ba8620d3cefc53831f20ece819"
+  },
+  "runtimeBytes": 8467,
+  "runtimeKeccak256": "0xaff25bc27e32f19321b9e062965a418b2be7d5df872164865f58398c3ad015c5",
+  "runtimeSha256": "724fac3aad23842c1462df4ad8eca960581d14de26d42e4d1ca792a7ac35b073"
+}

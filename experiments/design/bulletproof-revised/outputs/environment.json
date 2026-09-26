@@ -1,0 +1,12 @@
+{
+  "platform": "macOS-26.5-arm64-arm-64bit-Mach-O",
+  "architecture": "arm64",
+  "logicalCpuCount": 10,
+  "tools": {
+    "node": "v22.22.0",
+    "npm": "10.9.4",
+    "java": "openjdk version \"23\" 2024-09-17\nOpenJDK Runtime Environment Temurin-23+37 (build 23+37)\nOpenJDK 64-Bit Server VM Temurin-23+37 (build 23+37, mixed mode, sharing)",
+    "javac": "javac 23",
+    "anvil": "anvil Version: 1.7.1\nCommit SHA: 4072e48705af9d93e3c0f6e29e93b5e9a40caed8\nBuild Timestamp: 2026-05-08T07:54:31.470926000Z (1778226871)\nBuild Profile: dist"
+  }
+}

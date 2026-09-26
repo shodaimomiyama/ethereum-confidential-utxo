@@ -1,0 +1,34 @@
+{
+  "experiment": "EXP-07A",
+  "status": "passed within defined generator-derivation scope",
+  "environment": "Go 1.26.4 darwin/arm64; github.com/consensys/gnark-crypto v0.20.1 pinned by go.mod and go.sum",
+  "commands": [
+    "go mod tidy",
+    "go run . > vectors.json",
+    "go run . | shasum -a 256",
+    "python3 verify_vectors.py",
+    "go vet ./..."
+  ],
+  "result": {
+    "generatorCount": 130,
+    "allCanonicalOnCurveNonidentityDistinct": true,
+    "gnarkSubgroupChecksPassed": true,
+    "secondProcessOutputMatches": true,
+    "orderedCoordinatesSha256": "8755cb06eb0fe82e46d0c35a79591dd590a7bbbbb4ac66436c560f9823af5d5e",
+    "vectorsJsonSha256": "8f8eda0da4a0ee2be1dc081f22f4f41ef1331cdab991403510aae36017408601"
+  },
+  "sourceSha256": {
+    "main.go": "91344b117ec3c1f296bb099c1a90b7a5478fa92e1819f8b0d06379e18f4d3928",
+    "verify_vectors.py": "025a79ae05c8c4f373e613c92daa7b4a03eecde32d427138d9ae008d30c3751e",
+    "go.mod": "75f3c836a2432c221c15f08cf69ca0486d87a6283691ff43262cc9c9840e51f3",
+    "go.sum": "93fed06e3b50eda2fd15b31bce7ea377e26b610b3f8e24386e442f62eec6fda6"
+  },
+  "decision": "Keep this HashToG1 derivation as a candidate for the v2 profile. The EXP-03 v1 proof fixtures and bytecode are not evidence for v2 interoperability.",
+  "unverified": [
+    "Unknown discrete logarithm relations between points",
+    "Security of the complete Bulletproof profile",
+    "v2 transcript and prover/verifier interoperability",
+    "EVM gas and full operation compatibility",
+    "Formal verification of the v2 verifier"
+  ]
+}

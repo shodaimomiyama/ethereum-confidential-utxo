@@ -1,0 +1,77 @@
+(node:85935) V8: /Users/momiyamashodai/orca/workspaces/ethereum-confidential-utxo/docs-design-doc/experiments/design/bulletproof/node_modules/solc/soljson.js:3 Invalid asm.js: Invalid member of stdlib
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "stage": "fresh-4",
+  "succeeded": true,
+  "observations": [
+    {
+      "label": "value-0",
+      "expectedValid": true,
+      "calldataBytes": 868,
+      "accepted": true,
+      "returned": true,
+      "callMilliseconds": 24.090458000000126,
+      "gasUsed": "409935",
+      "transactionHash": "0xc53b799e7a6146dfd9ba3ef9a39246fb48543b6f0443ef79259943b86e38b419",
+      "matchesExpectation": true
+    },
+    {
+      "label": "value-1",
+      "expectedValid": true,
+      "calldataBytes": 868,
+      "accepted": true,
+      "returned": true,
+      "callMilliseconds": 15.74075000000039,
+      "gasUsed": "410033",
+      "transactionHash": "0x5747aaf0b036167fd62bf5ed71f34efc57540093fd437c47fecc50f2b6ea5300",
+      "matchesExpectation": true
+    },
+    {
+      "label": "value-15",
+      "expectedValid": true,
+      "calldataBytes": 868,
+      "accepted": true,
+      "returned": true,
+      "callMilliseconds": 15.033374999999978,
+      "gasUsed": "409947",
+      "transactionHash": "0xcf314be1bc084bfb650ca316c3ef3a58b777a8f31a387be3ffeb343dbd4baefe",
+      "matchesExpectation": true
+    },
+    {
+      "label": "value--1",
+      "expectedValid": false,
+      "calldataBytes": 868,
+      "accepted": false,
+      "returned": true,
+      "callMilliseconds": 17.184958999999708,
+      "matchesExpectation": true
+    },
+    {
+      "label": "value-16",
+      "expectedValid": false,
+      "calldataBytes": 868,
+      "accepted": false,
+      "returned": true,
+      "callMilliseconds": 19.333374999999705,
+      "matchesExpectation": true
+    },
+    {
+      "label": "value-0-modified-tauX",
+      "expectedValid": false,
+      "calldataBytes": 868,
+      "accepted": false,
+      "returned": true,
+      "callMilliseconds": 13.774584000000232,
+      "matchesExpectation": true
+    },
+    {
+      "label": "value-0-modified-commitment",
+      "expectedValid": false,
+      "calldataBytes": 868,
+      "accepted": false,
+      "returned": true,
+      "callMilliseconds": 14.017084000000068,
+      "matchesExpectation": true
+    }
+  ]
+}

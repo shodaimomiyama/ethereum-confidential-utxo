@@ -1,0 +1,112 @@
+Compiling 2 files with Solc 0.4.26
+Solc 0.4.26 finished in 179.49ms
+Compiler run successful with warnings:
+Warning: Variable is shadowed in inline assembly by an instruction of the same name
+src/alt_bn128.sol:12:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name
+    function add(G1Point p1, G1Point p2) internal view returns (G1Point r) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: Variable is shadowed in inline assembly by an instruction of the same name
+src/alt_bn128.sol:48:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name
+    function add(uint256 x, uint256 y) internal pure returns (uint256) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: Variable is shadowed in inline assembly by an instruction of the same name
+src/alt_bn128.sol:44:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name
+    function eq(G1Point p1, G1Point p2) internal returns (bool) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: Variable is shadowed in inline assembly by an instruction of the same name
+src/alt_bn128.sol:72:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name
+    function exp(uint256 base, uint256 exponent) internal view returns (uint256) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: Variable is shadowed in inline assembly by an instruction of the same name
+src/alt_bn128.sol:60:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name
+    function mod(uint256 x) internal pure returns (uint256) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: Variable is shadowed in inline assembly by an instruction of the same name
+src/alt_bn128.sol:25:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name
+    function mul(G1Point p, uint256 s) internal view returns (G1Point r) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: Variable is shadowed in inline assembly by an instruction of the same name
+src/alt_bn128.sol:52:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name
+    function mul(uint256 x, uint256 y) internal pure returns (uint256) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: Variable is shadowed in inline assembly by an instruction of the same name
+src/alt_bn128.sol:64:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name
+    function sub(uint256 x, uint256 y) internal pure returns (uint256) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: Variable is shadowed in inline assembly by an instruction of the same name
+src/alt_bn128.sol:12:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name
+    function add(G1Point p1, G1Point p2) internal view returns (G1Point r) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: Variable is shadowed in inline assembly by an instruction of the same name
+src/alt_bn128.sol:48:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name
+    function add(uint256 x, uint256 y) internal pure returns (uint256) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: Variable is shadowed in inline assembly by an instruction of the same name
+src/alt_bn128.sol:44:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name
+    function eq(G1Point p1, G1Point p2) internal returns (bool) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: Variable is shadowed in inline assembly by an instruction of the same name
+src/alt_bn128.sol:72:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name
+    function exp(uint256 base, uint256 exponent) internal view returns (uint256) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: Variable is shadowed in inline assembly by an instruction of the same name
+src/alt_bn128.sol:60:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name
+    function mod(uint256 x) internal pure returns (uint256) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: Variable is shadowed in inline assembly by an instruction of the same name
+src/alt_bn128.sol:25:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name
+    function mul(G1Point p, uint256 s) internal view returns (G1Point r) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: Variable is shadowed in inline assembly by an instruction of the same name
+src/alt_bn128.sol:52:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name
+    function mul(uint256 x, uint256 y) internal pure returns (uint256) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: Variable is shadowed in inline assembly by an instruction of the same name
+src/alt_bn128.sol:64:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name
+    function sub(uint256 x, uint256 y) internal pure returns (uint256) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: Variable is shadowed in inline assembly by an instruction of the same name
+src/alt_bn128.sol:12:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name
+    function add(G1Point p1, G1Point p2) internal view returns (G1Point r) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: Variable is shadowed in inline assembly by an instruction of the same name
+src/alt_bn128.sol:48:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name
+    function add(uint256 x, uint256 y) internal pure returns (uint256) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: Variable is shadowed in inline assembly by an instruction of the same name
+src/alt_bn128.sol:44:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name
+    function eq(G1Point p1, G1Point p2) internal returns (bool) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: Variable is shadowed in inline assembly by an instruction of the same name
+src/alt_bn128.sol:72:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name
+    function exp(uint256 base, uint256 exponent) internal view returns (uint256) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: Variable is shadowed in inline assembly by an instruction of the same name
+src/alt_bn128.sol:60:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name
+    function mod(uint256 x) internal pure returns (uint256) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: Variable is shadowed in inline assembly by an instruction of the same name
+src/alt_bn128.sol:25:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name
+    function mul(G1Point p, uint256 s) internal view returns (G1Point r) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: Variable is shadowed in inline assembly by an instruction of the same name
+src/alt_bn128.sol:52:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name
+    function mul(uint256 x, uint256 y) internal pure returns (uint256) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: Variable is shadowed in inline assembly by an instruction of the same name
+src/alt_bn128.sol:64:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name
+    function sub(uint256 x, uint256 y) internal pure returns (uint256) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: Function state mutability can be restricted to pure
+src/alt_bn128.sol:37:5: Warning: Function state mutability can be restricted to pure
+    function neg(G1Point p) internal returns (G1Point) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: Function state mutability can be restricted to pure
+src/alt_bn128.sol:44:5: Warning: Function state mutability can be restricted to pure
+    function eq(G1Point p1, G1Point p2) internal returns (bool) {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: Function state mutability can be restricted to pure
+test/VerifierSlice.t.sol:21:5: Warning: Function state mutability can be restricted to pure
+    function test_negZeroReturnsNoncanonicalScalar() public {
+    ^ (Relevant source part starts here and spans across multiple lines).
+Warning: unable to lint. Solar only supports Solidity versions prior to 0.8.0

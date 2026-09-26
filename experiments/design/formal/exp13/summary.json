@@ -1,0 +1,18 @@
+{
+  "experiment": "EXP-13",
+  "classification": "unverified",
+  "claimProved": false,
+  "counterexampleObserved": false,
+  "evidence": {
+    "setupAttempt": "setup-failure-result.json",
+    "boundedHostRun": "host-run-2.json",
+    "claim": "../exp11/direct-symbolic-spec.k",
+    "runtimeSha256": "724fac3aad23842c1462df4ad8eca960581d14de26d42e4d1ca792a7ac35b073"
+  },
+  "observations": [
+    "The first booster launch stopped before proof execution because the copied definition lacked the existing llvm-library directory.",
+    "The corrected booster launch ran for 611.619 seconds under a 600-second proof limit, then the evidence-copy step raised a filesystem error and no run-result.json or complete proof snapshot was retained.",
+    "The available host output contains no PROOF PASSED result or counterexample; the proof outcome itself cannot be independently inspected from the saved evidence."
+  ],
+  "limits": "This run does not establish either the representative rejection claim or verifier-wide correctness. The result-copy failure also prevents classification of the underlying prover stop as a confirmed proof timeout or an OOM event."
+}

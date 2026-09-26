@@ -89,6 +89,7 @@ bash benchmarks/prior-eips/recipient/run.sh /tmp/eip8182-clean http://127.0.0.1:
 | [本体PRD](docs/PRD.md) | 課題、対象者、初期範囲、標準化の目的 |
 | [本体要件定義](docs/requirements.md) | 機能、安全性、機密性、形式証明、評価と再現性の受入条件 |
 | [本体仕様](docs/specification.md) | 状態遷移、認可、資産保存、受領と同期の規則 |
+| [本体設計（草案）](docs/design.md) | 方式、認可、受領と同期、検証計画、採用判断の根拠 |
 | [Uniswap接続PRD](docs/integration/uniswap/PRD.md) | 機密ETHからの公開部分支払いと残額の再利用 |
 | [Uniswap接続要件定義](docs/integration/uniswap/requirements.md) | 認可、取消、機密性、コストと追試の受入条件 |
 | [先行EIPの比較調査](docs/research/prior-eip-comparison.md) | 比較範囲、測定条件、生データと限界 |

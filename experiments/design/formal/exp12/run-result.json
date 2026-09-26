@@ -1,0 +1,71 @@
+{
+  "startedUtc": "2026-09-26T10:51:25.908339+00:00",
+  "targetRuntimeSha256": "724fac3aad23842c1462df4ad8eca960581d14de26d42e4d1ca792a7ac35b073",
+  "definitionSha256": "fb62ff4829ce8939340144d26aa9aa5cac09223b3081259b72f45363f8f0ef07",
+  "serialization": {
+    "command": [
+      "kore-exec",
+      "/tmp/exp12/kompiled/definition.kore",
+      "--module",
+      "KONTROL-MAIN",
+      "--serialize",
+      "--output",
+      "/tmp/exp12/kompiled/haskellDefinition.bin"
+    ],
+    "exitCode": 0,
+    "timedOut": false,
+    "seconds": 9.165,
+    "stdoutTail": "",
+    "stderrTail": ""
+  },
+  "proof": {
+    "command": [
+      "kevm",
+      "prove",
+      "/tmp/exp12/direct-symbolic-spec.k",
+      "--definition",
+      "/tmp/exp12/kompiled",
+      "--spec-module",
+      "EXP11-SYMBOLIC-SPEC",
+      "--save-directory",
+      "/tmp/exp12/proof",
+      "--no-use-booster",
+      "--workers",
+      "1",
+      "--max-frontier-parallel",
+      "1",
+      "--force-sequential",
+      "--reinit",
+      "-I",
+      "/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics",
+      "-I",
+      "/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/plugin"
+    ],
+    "exitCode": null,
+    "timedOut": true,
+    "seconds": 900.091,
+    "stdoutTail": "",
+    "stderrTail": "WARNING 2026-09-26 05:51:35,669 kevm_pyk.__main__ - Ignoring --equation-max-local-steps for non-booster server: kore-rpc\n"
+  },
+  "proofSnapshotFiles": [
+    "digest",
+    "direct-symbolic-spec.k.parsed.json.pukk674c",
+    "EXP11-SYMBOLIC-SPEC.wrong-left-length/proof.json",
+    "EXP11-SYMBOLIC-SPEC.wrong-left-length/kcfg/kcfg.json",
+    "EXP11-SYMBOLIC-SPEC.wrong-left-length/kcfg/nodes/6.json",
+    "EXP11-SYMBOLIC-SPEC.wrong-left-length/kcfg/nodes/7.json",
+    "EXP11-SYMBOLIC-SPEC.wrong-left-length/kcfg/nodes/1.json",
+    "EXP11-SYMBOLIC-SPEC.wrong-left-length/kcfg/nodes/2.json",
+    "EXP11-SYMBOLIC-SPEC.wrong-left-length/kcfg/nodes/3.json",
+    "EXP11-SYMBOLIC-SPEC.wrong-left-length/kcfg/nodes/8.json",
+    "EXP11-SYMBOLIC-SPEC.wrong-left-length/kcfg/nodes/4.json",
+    "EXP11-SYMBOLIC-SPEC.wrong-left-length/kcfg/nodes/5.json",
+    "EXP11-SYMBOLIC-SPEC.wrong-left-length/kcfg/nodes/9.json",
+    ".kprove-2026-09-26-05-51-38-543-bfd6ed8f-5f0c-4290-bd36-ebb57c2d7709/spec.kore"
+  ],
+  "memory": {
+    "memory.max": "8589934592\n",
+    "memory.peak": "1999654912\n",
+    "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n"
+  }
+}

@@ -1,0 +1,99 @@
+usage: kontrol build [-h] [--verbose] [--debug] [-I INCLUDES]
+                     [--main-module MAIN_MODULE]
+                     [--syntax-module SYNTAX_MODULE]
+                     [--md-selector MD_SELECTOR] [--depth DEPTH]
+                     [--output-definition DEFINITION_DIR] [--backend BACKEND]
+                     [--type-inference-mode TYPE_INFERENCE_MODE] [--emit-json]
+                     [-ccopt CCOPTS] [--no-llvm-kompile] [--with-llvm-library]
+                     [--enable-llvm-debug]
+                     [--llvm-kompile-type LLVM_KOMPILE_TYPE]
+                     [--llvm-kompile-output LLVM_KOMPILE_OUTPUT]
+                     [--read-only-kompiled-directory] [-O0] [-O1] [-O2] [-O3]
+                     [--enable-search] [--coverage] [--gen-bison-parser]
+                     [--gen-glr-bison-parser] [--bison-lists]
+                     [--llvm-proof-hint-instrumentation]
+                     [--llvm-proof-hint-debugging] [--llvm-hidden-visibility]
+                     [--no-exc-wrap] [--ignore-warnings IGNORE_WARNINGS]
+                     [--top-cell TOP_CELL]
+                     [--foundry-project-root FOUNDRY_ROOT]
+                     [--enum-constraints] [--config-file CONFIG_FILE]
+                     [--config-profile CONFIG_PROFILE] [--no-O2] [--regen]
+                     [--rekompile] [--no-forge-build] [--no-silence-warnings]
+                     [--no-metadata] [--no-keccak-lemmas] [--auxiliary-lemmas]
+                     [--require REQUIRES] [--module-import IMPORTS]
+
+options:
+  -h, --help            show this help message and exit
+  --verbose, -v         Verbose output.
+  --debug               Debug output.
+  -I INCLUDES           Directories to lookup K definitions in.
+  --main-module MAIN_MODULE
+                        Name of the main module.
+  --syntax-module SYNTAX_MODULE
+                        Name of the syntax module.
+  --md-selector MD_SELECTOR
+                        Code selector expression to use when reading markdown.
+  --depth DEPTH         Maximum depth to execute to.
+  --output-definition DEFINITION_DIR, --definition DEFINITION_DIR
+                        Path to kompile definition to.
+  --backend BACKEND     K backend to target with compilation.
+  --type-inference-mode TYPE_INFERENCE_MODE
+                        Mode for doing K rule type inference in.
+  --emit-json           Emit JSON definition after compilation.
+  -ccopt CCOPTS         Additional arguments to pass to llvm-kompile.
+  --no-llvm-kompile     Do not run llvm-kompile process.
+  --with-llvm-library   Make kompile generate a dynamic llvm library.
+  --enable-llvm-debug   Make kompile generate debug symbols for llvm.
+  --llvm-kompile-type LLVM_KOMPILE_TYPE
+                        Mode to kompile LLVM backend in.
+  --llvm-kompile-output LLVM_KOMPILE_OUTPUT
+                        Location to put kompiled LLVM backend at.
+  --read-only-kompiled-directory
+                        Generated a kompiled directory that K will not attempt
+                        to write to afterwards.
+  -O0                   Optimization level 0.
+  -O1                   Optimization level 1.
+  -O2                   Optimization level 2.
+  -O3                   Optimization level 3.
+  --enable-search       Enable search mode on LLVM backend krun.
+  --coverage            Enable logging semantic rule coverage measurement.
+  --gen-bison-parser    Generate standalone Bison parser for program sort.
+  --gen-glr-bison-parser
+                        Generate standalone GLR Bison parser for program sort.
+  --bison-lists         Disable List{Sort} parsing to make grammar LR(1) for
+                        Bison parser.
+  --llvm-proof-hint-instrumentation
+                        Enable proof hint generation in LLVM backend
+                        kompilation.
+  --llvm-proof-hint-debugging
+                        Enable additional proof hint debugging information in
+                        LLVM backend kompilation.
+  --llvm-hidden-visibility
+                        Whether to make all symbols hidden by default in LLVM
+                        backend kompilation.
+  --no-exc-wrap         Do not wrap the output on the CLI.
+  --ignore-warnings IGNORE_WARNINGS, -Wno IGNORE_WARNINGS
+                        Ignore provided warnings
+  --top-cell TOP_CELL   Set the top cell for the definition.
+  --foundry-project-root FOUNDRY_ROOT
+                        Path to Foundry project root directory.
+  --enum-constraints    Add constraints for enum function arguments and
+                        storage slots.
+  --config-file CONFIG_FILE
+                        Path to Pyk config file.
+  --config-profile CONFIG_PROFILE
+                        Config profile to be used.
+  --no-O2               Do not use optimization level 2.
+  --regen               Regenerate foundry.k even if it already exists.
+  --rekompile           Rekompile foundry.k even if kompiled definition
+                        already exists.
+  --no-forge-build      Do not call 'forge build' during kompilation.
+  --no-silence-warnings
+                        Do not silence K compiler warnings.
+  --no-metadata         Do not append cbor or bytecode_hash metadata to
+                        bytecode.
+  --no-keccak-lemmas    Do not include assumptions on keccak properties.
+  --auxiliary-lemmas    Include auxiliary Kontrol lemmas.
+  --require REQUIRES    Extra K requires to include in generated output.
+  --module-import IMPORTS
+                        Extra modules to import into generated main module.

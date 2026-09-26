@@ -1,0 +1,205 @@
+[
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:22:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function add(G1Point first, G1Point second) internal view returns (G1Point sum) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:57:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function add(uint256 first, uint256 second) internal pure returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:53:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function eq(G1Point first, G1Point second) internal pure returns (bool) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:82:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function exp(uint256 base, uint256 exponent) internal view returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:35:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function mul(G1Point point, uint256 scalar) internal view returns (G1Point product) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:62:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function mul(uint256 first, uint256 second) internal pure returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:67:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function sub(uint256 first, uint256 second) internal pure returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:22:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function add(G1Point first, G1Point second) internal view returns (G1Point sum) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:57:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function add(uint256 first, uint256 second) internal pure returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:53:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function eq(G1Point first, G1Point second) internal pure returns (bool) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:82:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function exp(uint256 base, uint256 exponent) internal view returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:35:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function mul(G1Point point, uint256 scalar) internal view returns (G1Point product) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:62:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function mul(uint256 first, uint256 second) internal pure returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:67:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function sub(uint256 first, uint256 second) internal pure returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:22:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function add(G1Point first, G1Point second) internal view returns (G1Point sum) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:57:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function add(uint256 first, uint256 second) internal pure returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:53:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function eq(G1Point first, G1Point second) internal pure returns (bool) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:82:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function exp(uint256 base, uint256 exponent) internal view returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:35:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function mul(G1Point point, uint256 scalar) internal view returns (G1Point product) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:62:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function mul(uint256 first, uint256 second) internal pure returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:67:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function sub(uint256 first, uint256 second) internal pure returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:30:23: Warning: The \"staticcall\" instruction is only available after the Metropolis hard fork. Before that it acts as an invalid instruction.\n            if iszero(staticcall(not(0), 6, input, 0x80, sum, 0x40)) { revert(0, 0) }\n                      ^--------^\n",
+    "message": "The \"staticcall\" instruction is only available after the Metropolis hard fork. Before that it acts as an invalid instruction.",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:31:26: Warning: The \"returndatasize\" instruction is only available after the Metropolis hard fork. Before that it acts as an invalid instruction.\n            if iszero(eq(returndatasize, 0x40)) { revert(0, 0) }\n                         ^------------^\n",
+    "message": "The \"returndatasize\" instruction is only available after the Metropolis hard fork. Before that it acts as an invalid instruction.",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:42:23: Warning: The \"staticcall\" instruction is only available after the Metropolis hard fork. Before that it acts as an invalid instruction.\n            if iszero(staticcall(not(0), 7, input, 0x60, product, 0x40)) { revert(0, 0) }\n                      ^--------^\n",
+    "message": "The \"staticcall\" instruction is only available after the Metropolis hard fork. Before that it acts as an invalid instruction.",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:43:26: Warning: The \"returndatasize\" instruction is only available after the Metropolis hard fork. Before that it acts as an invalid instruction.\n            if iszero(eq(returndatasize, 0x40)) { revert(0, 0) }\n                         ^------------^\n",
+    "message": "The \"returndatasize\" instruction is only available after the Metropolis hard fork. Before that it acts as an invalid instruction.",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:93:23: Warning: The \"staticcall\" instruction is only available after the Metropolis hard fork. Before that it acts as an invalid instruction.\n            if iszero(staticcall(not(0), 5, input, 0xc0, output, 0x20)) { revert(0, 0) }\n                      ^--------^\n",
+    "message": "The \"staticcall\" instruction is only available after the Metropolis hard fork. Before that it acts as an invalid instruction.",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:94:26: Warning: The \"returndatasize\" instruction is only available after the Metropolis hard fork. Before that it acts as an invalid instruction.\n            if iszero(eq(returndatasize, 0x20)) { revert(0, 0) }\n                         ^------------^\n",
+    "message": "The \"returndatasize\" instruction is only available after the Metropolis hard fork. Before that it acts as an invalid instruction.",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "VerificationHarness.sol:15:30: Warning: The \"staticcall\" instruction is only available after the Metropolis hard fork. Before that it acts as an invalid instruction.\n            let succeeded := staticcall(gas, target, buffer, calldatasize, buffer, 0x20)\n                             ^--------^\n",
+    "message": "The \"staticcall\" instruction is only available after the Metropolis hard fork. Before that it acts as an invalid instruction.",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "VerificationHarness.sol:16:41: Warning: The \"returndatasize\" instruction is only available after the Metropolis hard fork. Before that it acts as an invalid instruction.\n            if iszero(and(succeeded, eq(returndatasize, 0x20))) { revert(0, 0) }\n                                        ^------------^\n",
+    "message": "The \"returndatasize\" instruction is only available after the Metropolis hard fork. Before that it acts as an invalid instruction.",
+    "severity": "warning",
+    "type": "Warning"
+  }
+]

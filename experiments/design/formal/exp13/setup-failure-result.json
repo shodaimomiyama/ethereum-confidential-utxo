@@ -1,0 +1,60 @@
+{
+  "startedUtc": "2026-09-26T11:10:16.089496+00:00",
+  "targetRuntimeSha256": "724fac3aad23842c1462df4ad8eca960581d14de26d42e4d1ca792a7ac35b073",
+  "definitionSha256": "fb62ff4829ce8939340144d26aa9aa5cac09223b3081259b72f45363f8f0ef07",
+  "serialization": {
+    "command": [
+      "kore-exec",
+      "/tmp/exp13/kompiled/definition.kore",
+      "--module",
+      "KONTROL-MAIN",
+      "--serialize",
+      "--output",
+      "/tmp/exp13/kompiled/haskellDefinition.bin"
+    ],
+    "exitCode": 0,
+    "timedOut": false,
+    "seconds": 10.654,
+    "stdoutTail": "",
+    "stderrTail": ""
+  },
+  "proof": {
+    "command": [
+      "kevm",
+      "prove",
+      "/tmp/exp13/direct-symbolic-spec.k",
+      "--definition",
+      "/tmp/exp13/kompiled",
+      "--spec-module",
+      "EXP11-SYMBOLIC-SPEC",
+      "--save-directory",
+      "/tmp/exp13/proof",
+      "--use-booster",
+      "--workers",
+      "1",
+      "--max-frontier-parallel",
+      "1",
+      "--force-sequential",
+      "--reinit",
+      "-I",
+      "/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/evm-semantics",
+      "-I",
+      "/home/user/.local/lib/python3.10/site-packages/kevm_pyk/kproj/plugin"
+    ],
+    "exitCode": 1,
+    "timedOut": false,
+    "seconds": 54.302,
+    "stdoutTail": "",
+    "stderrTail": "Traceback (most recent call last):\n  File \"/home/user/.local/bin/kevm\", line 8, in <module>\n    sys.exit(main())\n  File \"/home/user/.local/lib/python3.10/site-packages/kevm_pyk/__main__.py\", line 110, in main\n    execute(options)\n  File \"/home/user/.local/lib/python3.10/site-packages/kevm_pyk/__main__.py\", line 409, in exec_prove\n    results: list[tuple[bool, list[str] | None]] = process_pool.map(_init_and_run_proof, curr_claim_list)\n  File \"/home/user/.local/lib/python3.10/site-packages/kevm_pyk/__main__.py\", line 154, in map\n    return [f(x) for x in xs]\n  File \"/home/user/.local/lib/python3.10/site-packages/kevm_pyk/__main__.py\", line 154, in <listcomp>\n    return [f(x) for x in xs]\n  File \"/home/user/.local/lib/python3.10/site-packages/kevm_pyk/__main__.py\", line 314, in _init_and_run_proof\n    with legacy_explore(\n  File \"/usr/lib/python3.10/contextlib.py\", line 135, in __enter__\n    return next(self.gen)\n  File \"/home/user/.local/lib/python3.10/site-packages/kevm_pyk/utils.py\", line 377, in legacy_explore\n    with cterm_symbolic(\n  File \"/usr/lib/python3.10/contextlib.py\", line 135, in __enter__\n    return next(self.gen)\n  File \"/home/user/.local/lib/python3.10/site-packages/pyk/cterm/symbolic.py\", line 437, in cterm_symbolic\n    with kore_server(\n  File \"/home/user/.local/lib/python3.10/site-packages/pyk/kore/rpc.py\", line 1600, in kore_server\n    return BoosterServer(booster_args)\n  File \"/home/user/.local/lib/python3.10/site-packages/pyk/kore/rpc.py\", line 1499, in __init__\n    super().__init__(args)\n  File \"/home/user/.local/lib/python3.10/site-packages/pyk/kore/rpc.py\", line 1292, in __init__\n    self._validate()\n  File \"/home/user/.local/lib/python3.10/site-packages/pyk/kore/rpc.py\", line 1502, in _validate\n    check_dir_path(self._llvm_kompiled_dir)\n  File \"/home/user/.local/lib/python3.10/site-packages/pyk/utils.py\", line 657, in check_dir_path\n    raise ValueError(f'Directory does not exist: {path}')\nValueError: Directory does not exist: /tmp/exp13/kompiled/llvm-library\n"
+  },
+  "proofSnapshotFiles": [
+    "digest",
+    "direct-symbolic-spec.k.parsed.json.j1602xue",
+    ".kprove-2026-09-26-06-10-30-437-8f7fda44-2d3d-470d-ba9b-51cab86c83ae/spec.kore"
+  ],
+  "memory": {
+    "memory.max": "4294967296\n",
+    "memory.peak": "1915183104\n",
+    "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n"
+  }
+}

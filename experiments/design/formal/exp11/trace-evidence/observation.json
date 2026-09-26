@@ -1,0 +1,14 @@
+{
+  "experiment": "EXP-11",
+  "sourceRun": "../run-result-2.json",
+  "sourceSnapshot": "../proof-snapshot-2/EXP11-SYMBOLIC-SPEC.wrong-left-length/kcfg/nodes/10.json",
+  "publishedNode": "node-10.json",
+  "publishedNodeSha256": "b008f4b7184189902b031c28d132f414343ced9570ad97387c30595da35be27e",
+  "nodeId": 10,
+  "programBytes": 8467,
+  "programSha256": "724fac3aad23842c1462df4ad8eca960581d14de26d42e4d1ca792a7ac35b073",
+  "matchesExp09Runtime": true,
+  "pc": 504,
+  "interpretation": "A pending KCFG node has a program byte-for-byte equal to the v3 deployed runtime and a nonzero PC within that runtime. This is runtime reachability only; the claim was not proved.",
+  "limits": "No full trace, call-depth claim, rejection-site proof, precompile-exclusion proof, or completed symbolic proof follows from this node."
+}

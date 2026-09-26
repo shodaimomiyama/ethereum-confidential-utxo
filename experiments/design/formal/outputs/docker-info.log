@@ -1,0 +1,9 @@
+{
+  "ServerVersion": "28.3.0",
+  "OSType": "linux",
+  "Architecture": "aarch64",
+  "NCPU": 8,
+  "MemTotal": 4109803520,
+  "Driver": "overlay2",
+  "KernelVersion": "6.10.14-linuxkit"
+}

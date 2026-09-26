@@ -1,0 +1,16 @@
+Picked up JAVA_TOOL_OPTIONS: -Xmx2g
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -----------------< edu.stanford.cs.crypto:efficientct >-----------------
+[INFO] Building efficientct 1.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.8.1:build-classpath (default-cli) @ efficientct ---
+[INFO] Skipped writing classpath file '/Users/momiyamashodai/orca/workspaces/ethereum-confidential-utxo/docs-design-doc/experiments/design/bulletproof/.cache/classpath.txt'.  No changes found.
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.214 s
+[INFO] Finished at: 2026-09-26T15:44:46+09:00
+[INFO] ------------------------------------------------------------------------

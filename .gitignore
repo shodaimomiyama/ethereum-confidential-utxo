@@ -1,0 +1,10 @@
+# Rebuildable experiment dependencies and generated artifacts.
+**/node_modules/
+**/.cache/
+**/__pycache__/
+**/cache/
+**/out/
+**/proof-snapshot*/
+**/*proof-snapshot*/
+*.pyc
+.DS_Store

@@ -1,0 +1,10 @@
+{
+  "experiment": "EXP-07B v1 comparison",
+  "hardfork": "prague",
+  "gasLimit": 16777216,
+  "scope": "Direct transaction to standalone RangeProofVerifier.verify, amount=1 and blinding=42; no harness, probe, Pool or PoK",
+  "gasUsed": "3804977",
+  "runtimeBytes": 7821,
+  "runtimeKeccak256": "0xc564092c0bb2103402b7f8f715ad57b4bd42704c166f53fd7f9f824d376ff3fd",
+  "parametersHash": "0xe821fd9270e0c24773647d479012c2b4f4a6f5576f6bd09881e8838a0ca29d51"
+}

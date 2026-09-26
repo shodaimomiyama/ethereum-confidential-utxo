@@ -1,0 +1,95 @@
+docker.io/runtimeverificationinc/kontrol@sha256:858f004144d61b005997f56bb8b7cd15673850286c96e0e5ec0502d9c9a9e204: Pulling from runtimeverificationinc/kontrol
+37aaf24cf781: Pulling fs layer
+68ebb1df9503: Pulling fs layer
+65d194c9c9e1: Pulling fs layer
+efb70fd03f95: Pulling fs layer
+5f1d45389a09: Pulling fs layer
+c1fbbebf0502: Pulling fs layer
+974e5f174b7a: Pulling fs layer
+b19f61fb663a: Pulling fs layer
+8e4b89438025: Pulling fs layer
+0dce7f5a76f9: Pulling fs layer
+c28cf74694ec: Pulling fs layer
+e7c94b3eebf4: Pulling fs layer
+88a2fe8e2f5d: Pulling fs layer
+4f4fb700ef54: Pulling fs layer
+4adb9846c974: Pulling fs layer
+ce8535180f91: Pulling fs layer
+61ccc30d386a: Pulling fs layer
+c4ec86a29945: Pulling fs layer
+efda6a5e71a0: Pulling fs layer
+c28cf74694ec: Waiting
+e7c94b3eebf4: Waiting
+88a2fe8e2f5d: Waiting
+4f4fb700ef54: Waiting
+4adb9846c974: Waiting
+ce8535180f91: Waiting
+61ccc30d386a: Waiting
+c4ec86a29945: Waiting
+efda6a5e71a0: Waiting
+c1fbbebf0502: Waiting
+974e5f174b7a: Waiting
+b19f61fb663a: Waiting
+8e4b89438025: Waiting
+0dce7f5a76f9: Waiting
+efb70fd03f95: Waiting
+5f1d45389a09: Waiting
+68ebb1df9503: Verifying Checksum
+68ebb1df9503: Download complete
+37aaf24cf781: Verifying Checksum
+37aaf24cf781: Download complete
+5f1d45389a09: Verifying Checksum
+5f1d45389a09: Download complete
+37aaf24cf781: Pull complete
+68ebb1df9503: Pull complete
+efb70fd03f95: Verifying Checksum
+efb70fd03f95: Download complete
+974e5f174b7a: Verifying Checksum
+974e5f174b7a: Download complete
+65d194c9c9e1: Verifying Checksum
+65d194c9c9e1: Download complete
+8e4b89438025: Verifying Checksum
+8e4b89438025: Download complete
+c1fbbebf0502: Verifying Checksum
+c1fbbebf0502: Download complete
+65d194c9c9e1: Pull complete
+efb70fd03f95: Pull complete
+5f1d45389a09: Pull complete
+c28cf74694ec: Verifying Checksum
+c28cf74694ec: Download complete
+c1fbbebf0502: Pull complete
+974e5f174b7a: Pull complete
+0dce7f5a76f9: Verifying Checksum
+0dce7f5a76f9: Download complete
+b19f61fb663a: Verifying Checksum
+b19f61fb663a: Download complete
+88a2fe8e2f5d: Verifying Checksum
+88a2fe8e2f5d: Download complete
+e7c94b3eebf4: Verifying Checksum
+e7c94b3eebf4: Download complete
+4f4fb700ef54: Download complete
+ce8535180f91: Verifying Checksum
+ce8535180f91: Download complete
+61ccc30d386a: Verifying Checksum
+61ccc30d386a: Download complete
+c4ec86a29945: Verifying Checksum
+c4ec86a29945: Download complete
+b19f61fb663a: Pull complete
+8e4b89438025: Pull complete
+0dce7f5a76f9: Pull complete
+c28cf74694ec: Pull complete
+4adb9846c974: Verifying Checksum
+4adb9846c974: Download complete
+e7c94b3eebf4: Pull complete
+88a2fe8e2f5d: Pull complete
+4f4fb700ef54: Pull complete
+4adb9846c974: Pull complete
+ce8535180f91: Pull complete
+61ccc30d386a: Pull complete
+c4ec86a29945: Pull complete
+efda6a5e71a0: Verifying Checksum
+efda6a5e71a0: Download complete
+efda6a5e71a0: Pull complete
+Digest: sha256:858f004144d61b005997f56bb8b7cd15673850286c96e0e5ec0502d9c9a9e204
+Status: Downloaded newer image for runtimeverificationinc/kontrol@sha256:858f004144d61b005997f56bb8b7cd15673850286c96e0e5ec0502d9c9a9e204
+docker.io/runtimeverificationinc/kontrol@sha256:858f004144d61b005997f56bb8b7cd15673850286c96e0e5ec0502d9c9a9e204

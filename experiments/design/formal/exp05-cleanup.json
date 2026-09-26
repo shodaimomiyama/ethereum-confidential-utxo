@@ -1,0 +1,26 @@
+{
+  "at_utc": "2026-09-26T07:22:03.998967+00:00",
+  "initial_observation": "Docker daemon unavailable before this EXP-05 turn; started with open -a Docker.",
+  "preserved": "All user images, caches, volumes and stopped containers; no global settings changed.",
+  "running_before_stop": {
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "desktop_stop": {
+    "command": [
+      "docker",
+      "desktop",
+      "stop"
+    ],
+    "exit_code": 0,
+    "stdout": "\u2713 Stopping Docker Desktop\n",
+    "stderr": "",
+    "duration_seconds": 6.554
+  },
+  "after_stop": {
+    "exit_code": 1,
+    "stdout": "\n",
+    "stderr": "Cannot connect to the Docker daemon at unix:///Users/momiyamashodai/.docker/run/docker.sock. Is the docker daemon running?\n"
+  }
+}

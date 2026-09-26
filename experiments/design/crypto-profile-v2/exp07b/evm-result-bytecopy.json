@@ -1,0 +1,73 @@
+{
+  "experiment": "EXP-07B",
+  "compiler": "0.4.19+commit.c4cbbb05.Emscripten.clang",
+  "optimizerRuns": 200,
+  "sourceSha256": {
+    "alt_bn128.sol": "b5db410990b99ac6ec25dc56a85f89cc9963126af11cc8b0f9385f74015ddd7c",
+    "Transcript.sol": "1d36318168c210c3bf453ec48bd9b72c53ce08d3c51af54e6be48fe640dd5800",
+    "RangeProofVerifier.sol": "8b46afab30dfe4c0f7cfe04478949fb11b2556b190eb2e0ee97b5091e555c580",
+    "TranscriptProbe.sol": "7ceb7ae9a59a1d86754c619f481b62da777dad46f31533cc11ddff5d03d00a07"
+  },
+  "constructorParametersHash": "0x8586da43dac1bfdfc6741c00fb62e8cc17e2ee0777f31f88e92c7369212c41ea",
+  "runtimeBytes": 8865,
+  "observations": [
+    {
+      "label": "amount-1-blinding-42",
+      "expectedValid": true,
+      "accepted": true,
+      "returnedNormally": true,
+      "matchesJava": true,
+      "matchesExpectation": true
+    },
+    {
+      "label": "amount-max-blinding-42",
+      "expectedValid": true,
+      "accepted": true,
+      "returnedNormally": true,
+      "matchesJava": true,
+      "matchesExpectation": true
+    },
+    {
+      "label": "amount-1-blinding-0",
+      "expectedValid": true,
+      "accepted": true,
+      "returnedNormally": true,
+      "matchesJava": true,
+      "matchesExpectation": true
+    },
+    {
+      "label": "amount-over-max",
+      "expectedValid": false,
+      "accepted": false,
+      "returnedNormally": true,
+      "matchesJava": true,
+      "matchesExpectation": true
+    },
+    {
+      "label": "changed-operation-id",
+      "expectedValid": false,
+      "accepted": false,
+      "returnedNormally": true,
+      "matchesJava": true
+    }
+  ],
+  "deployment": {
+    "gasUsed": "8042236",
+    "runtimeKeccak256": "0xf0070f516367c406eee5e6364e39057fe7bf233ab7bc5e6d908c7b8d6afbf846"
+  },
+  "transcriptStagesChecked": [
+    "y",
+    "z",
+    "x",
+    "u",
+    "inner",
+    "round",
+    "round",
+    "round",
+    "round",
+    "round",
+    "round"
+  ],
+  "validProofTransactionGasUsed": "11188919",
+  "passed": true
+}

@@ -1,0 +1,6 @@
+{
+  "revisedProfileChecksSucceeded": true,
+  "productionAdoptionEstablished": false,
+  "formalProofsCompleted": 0,
+  "gasScope": "Single range proof, with a transaction harness requiring true; no UTXO logic"
+}

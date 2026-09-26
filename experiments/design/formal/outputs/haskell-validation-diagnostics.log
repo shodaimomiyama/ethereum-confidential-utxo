@@ -1,0 +1,42 @@
+[
+  {
+    "command": [
+      "kore-exec",
+      "/workspace/out/kompiled/definition.kore",
+      "--module",
+      "KONTROL-MAIN",
+      "--output",
+      "/workspace/out/kompiled/haskellDefinition.bin",
+      "--serialize",
+      "--log-level",
+      "debug"
+    ],
+    "exit_code": 1,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "kore-parser",
+      "--no-print-definition",
+      "/workspace/out/kompiled/definition.kore"
+    ],
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "kore-exec",
+      "/missing-exp02-definition.kore",
+      "--module",
+      "KONTROL-MAIN",
+      "--serialize",
+      "--log-level",
+      "debug"
+    ],
+    "exit_code": 1,
+    "stdout": "",
+    "stderr": ""
+  }
+]

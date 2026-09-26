@@ -1,0 +1,278 @@
+
+
+kore-exec --help
+KORE_EXEC_OPTS=''
+
+kore-exec - an interpreter for Kore definitions
+
+Usage: kore-exec [--version] 
+                 [
+                   [--search SEARCH_FILE [--bound BOUND]
+                     --searchType SEARCH_TYPE] DEFINITION_FILE 
+                   [--pattern PATTERN_FILE] [--output PATTERN_OUTPUT_FILE]
+                   --module MODULE [--breadth BREADTH] [--depth DEPTH] 
+                   [--strategy STRATEGY] [--smt-timeout SMT_TIMEOUT] 
+                   [--smt-retry-limit SMT_RETRY_LIMIT] [--smt-rlimit SMT_RLIMIT]
+                   [--smt-reset-interval SMT_RESET_INTERVAL] 
+                   [--smt-prelude SMT_PRELUDE] [--smt SOLVER] 
+                   [--smt-tactic SMT_TACTIC] [--smt-arg SMT_ARG] [--log ARG] 
+                   [--log-format ARG] [--log-level ARG] 
+                   [--enable-log-timestamps | --disable-log-timestamps] 
+                   [--log-entries ARG] [--solver-transcript ARG] 
+                   [--sqlog FILENAME] [--warnings-to-errors] 
+                   [--error-entries ARG] 
+                   [--debug-apply-equation EQUATION_IDENTIFIER] 
+                   [--debug-attempt-equation EQUATION_IDENTIFIER] 
+                   [--debug-equation EQUATION_IDENTIFIER] 
+                   [--debug-attempt-rewrite REWRITE_RULE_IDENTIFIER] 
+                   [--debug-apply-rewrite REWRITE_RULE_IDENTIFIER] 
+                   [--debug-rewrite REWRITE_RULE_IDENTIFIER] 
+                   [--trace-rewrites FILENAME] 
+                   [--prove SPEC_FILE --spec-module SPEC_MODULE 
+                     [--graph-search GRAPH_SEARCH] [--save-proofs ARG] 
+                     [--disable-stuck-check] [--min-depth MIN_DEPTH] 
+                     [--allow-vacuous] [--set-step-timeout INT] 
+                     [--moving-average]] [--execute-to-branch] 
+                   [--rts-statistics FILENAME] 
+                   [--bug-report REPORT_FILE | --no-bug-report] 
+                   [--max-counterexamples MAX_COUNTEREXAMPLES] 
+                   [--[no-]serialize]]
+
+  Uses Kore definition in DEFINITION_FILE to execute pattern in PATTERN_FILE.
+
+Available options:
+  --version                Print version information
+  --search SEARCH_FILE     Kore source file representing pattern to search for.
+                           Needs --module.
+  --bound BOUND            Maximum number of solutions.
+  --searchType SEARCH_TYPE Search type (selects potential solutions): ONE,
+                           FINAL, STAR, PLUS
+  DEFINITION_FILE          Kore definition file to verify and use for execution
+  --pattern PATTERN_FILE   Verify and execute the Kore pattern found in
+                           PATTERN_FILE.
+  --output PATTERN_OUTPUT_FILE
+                           Output file to contain final Kore pattern.
+  --module MODULE          The name of the main module in the Kore definition.
+  --breadth BREADTH        Allow up to BREADTH parallel execution branches.
+  --depth DEPTH            Execute up to DEPTH steps.
+  --strategy STRATEGY      Select rewrites using STRATEGY.
+  --smt-timeout SMT_TIMEOUT
+                           Timeout for calls to the SMT solver, in milliseconds
+  --smt-retry-limit SMT_RETRY_LIMIT
+                           Limit how many times an SMT query can be retried
+                           (with scaling timeouts)
+  --smt-rlimit SMT_RLIMIT  Resource limit for calls to the SMT solver
+  --smt-reset-interval SMT_RESET_INTERVAL
+                           Reset the solver after this number of queries
+  --smt-prelude SMT_PRELUDE
+                           Path to the SMT prelude file
+  --smt SOLVER             SMT solver for checking constraints: z3, none
+  --smt-tactic SMT_TACTIC  Z3 tactic to use when checking satisfiability.
+                           Example: (check-sat-using smt)
+  --smt-arg SMT_ARG        Argument passed to Z3
+  --log ARG                Name of the log file
+  --log-format ARG         Log format: standard, oneline, json
+  --log-level ARG          Log level: debug, info, warning, error, or critical
+  --enable-log-timestamps  Enable log timestamps
+  --disable-log-timestamps Disable log timestamps
+  --log-entries ARG        Log entries: comma-separated list logs entries to enable
+                           Available entry types:
+                               DebugSolverSend: log commands sent to SMT solver
+                               DebugSolverRecv: log responses received from SMT solver
+                               DebugTransition: log proof state
+                               DebugAppliedRewriteRules: log applied rewrite rules
+                               DebugAppliedLabeledRewriteRule: log applied rewrite rule with label
+                               DebugRewriteRulesRemainder: log rewrite rules remainder
+                               DebugAttemptedRewriteRules: log attempted rewrite rules
+                               DebugSubstitutionSimplifier: log non-\bottom results when normalizing unification solutions
+                               WarnFunctionWithoutEvaluators: warn when encountering a function with no definition
+                               WarnSymbolSMTRepresentation: warn when a symbol cannot be translated for the SMT solver, despite being given an explicit translation
+                               WarnStepTimeout: warn when a step has timed out
+                               WarnStuckClaimState: distinguish the ways a proof can become stuck
+                               WarnDepthLimitExceeded: warn when depth limit is exceeded
+                               WarnClaimRHSIsBottom: warn when the right-hand side of a claim is bottom
+                               WarnConfigIsBottom: warn when the configuration is bottom
+                               WarnIfLowProductivity: warn when productivty (MUT time / Total time) drops below 90%
+                               WarnTrivialClaim: warn when a claim is proven without taking any steps
+                               WarnUnexploredBranches: indicate whether and how many unexplored branches existed when failing.
+                               DebugRetrySolverQuery: warning raised when the solver failed to decide the satisfiability of a formula, indicating that the solver was reset and the formula retried
+                               DebugUnifyBottom: log failed unification
+                               DebugEvaluateCondition: log every predicate evaluated by the SMT solver
+                               LogMessage: 
+                               DebugAttemptUnification: log unification attempts
+                               InfoReachability: log reachability proof steps
+                               InfoExecBreadth: log number of concurrent branches
+                               InfoUserLog: user-specified log message
+                               DebugAttemptEquation: log equation application attempts
+                               DebugApplyEquation: log equation application successes
+                               DebugUnification: 
+                               DebugTerm: 
+                               InfoProofDepth: log depth of proof graph
+                               InfoExecDepth: log depth of execution graph
+                               DebugBeginClaim: log starting claims
+                               DebugProven: log proven claims
+                               WarnUnsimplifiedPredicate: warn when a predicate is not simplified
+                               WarnUnsimplifiedCondition: warn when a condition is not simplified
+                               WarnRestartSolver: warning raised to notify the user that the solver has crashed and the backend will attempt to restart it, reinitialise it and continue execution
+                               DebugCreatedSubstitution: log every substitution created when applying semantic rules
+                               DebugInitialClaim: log every claim before proving it
+                               DebugInitialPattern: log initial pattern before rewriting
+                               DebugFinalPatterns: log final patterns after rewriting
+                               DebugRewriteTrace: log rewrite substitutions
+                               LogJsonRpcServer: log JSON RPC Server messages
+                               DebugContext: Debug message to signify an action's context
+                               InfoJsonRpcProcessRequest: log valid requests to the JSON RPC server
+                               InfoJsonRpcCancelRequest: log cancelled request to the JSON RPC server
+                               ErrorBottomTotalFunction: errors raised when a total function is undefined
+                               ErrorEquationRightFunction: errors raised when right-hand side of equation is not a function pattern
+                               ErrorEquationsSameMatch: errors raised when two equations from a function definition can match the same term
+                               ErrorOutOfDate: 
+                               ErrorParse: 
+                               ErrorVerify: 
+                               ErrorException: log internal errors
+                               ErrorRewriteLoop: 
+                               ErrorRewritesInstantiation: log rewrite instantiation errors
+                               DecidePredicateUnknown: error or a warning when the solver cannot decide the satisfiability of a formula
+  --solver-transcript ARG  Name of the file for the SMT solver transcript.
+  --sqlog FILENAME         Write the structured query log to FILENAME.
+  --warnings-to-errors     Turn warnings into errors
+  --error-entries ARG      Turn arbitrary log entries into errors
+                           Available entry types:
+                               DebugSolverSend: log commands sent to SMT solver
+                               DebugSolverRecv: log responses received from SMT solver
+                               DebugTransition: log proof state
+                               DebugAppliedRewriteRules: log applied rewrite rules
+                               DebugAppliedLabeledRewriteRule: log applied rewrite rule with label
+                               DebugRewriteRulesRemainder: log rewrite rules remainder
+                               DebugAttemptedRewriteRules: log attempted rewrite rules
+                               DebugSubstitutionSimplifier: log non-\bottom results when normalizing unification solutions
+                               WarnFunctionWithoutEvaluators: warn when encountering a function with no definition
+                               WarnSymbolSMTRepresentation: warn when a symbol cannot be translated for the SMT solver, despite being given an explicit translation
+                               WarnStepTimeout: warn when a step has timed out
+                               WarnStuckClaimState: distinguish the ways a proof can become stuck
+                               WarnDepthLimitExceeded: warn when depth limit is exceeded
+                               WarnClaimRHSIsBottom: warn when the right-hand side of a claim is bottom
+                               WarnConfigIsBottom: warn when the configuration is bottom
+                               WarnIfLowProductivity: warn when productivty (MUT time / Total time) drops below 90%
+                               WarnTrivialClaim: warn when a claim is proven without taking any steps
+                               WarnUnexploredBranches: indicate whether and how many unexplored branches existed when failing.
+                               DebugRetrySolverQuery: warning raised when the solver failed to decide the satisfiability of a formula, indicating that the solver was reset and the formula retried
+                               DebugUnifyBottom: log failed unification
+                               DebugEvaluateCondition: log every predicate evaluated by the SMT solver
+                               LogMessage: 
+                               DebugAttemptUnification: log unification attempts
+                               InfoReachability: log reachability proof steps
+                               InfoExecBreadth: log number of concurrent branches
+                               InfoUserLog: user-specified log message
+                               DebugAttemptEquation: log equation application attempts
+                               DebugApplyEquation: log equation application successes
+                               DebugUnification: 
+                               DebugTerm: 
+                               InfoProofDepth: log depth of proof graph
+                               InfoExecDepth: log depth of execution graph
+                               DebugBeginClaim: log starting claims
+                               DebugProven: log proven claims
+                               WarnUnsimplifiedPredicate: warn when a predicate is not simplified
+                               WarnUnsimplifiedCondition: warn when a condition is not simplified
+                               WarnRestartSolver: warning raised to notify the user that the solver has crashed and the backend will attempt to restart it, reinitialise it and continue execution
+                               DebugCreatedSubstitution: log every substitution created when applying semantic rules
+                               DebugInitialClaim: log every claim before proving it
+                               DebugInitialPattern: log initial pattern before rewriting
+                               DebugFinalPatterns: log final patterns after rewriting
+                               DebugRewriteTrace: log rewrite substitutions
+                               LogJsonRpcServer: log JSON RPC Server messages
+                               DebugContext: Debug message to signify an action's context
+                               InfoJsonRpcProcessRequest: log valid requests to the JSON RPC server
+                               InfoJsonRpcCancelRequest: log cancelled request to the JSON RPC server
+  --debug-apply-equation EQUATION_IDENTIFIER
+                           Log every succesfully applied equation that matches
+                           EQUATION_IDENTIFIER, which may be the name of a
+                           symbol or a rule. The name of a symbol may be a Kore
+                           identifier or a K label, which will match any
+                           equation where the named symbol occurs on the
+                           left-hand side. The name of a rule is given with the
+                           K module name as a dot-separated prefix:
+                           'MODULE-NAME.rule-name'. This option may be specified
+                           multiple times to log multiple equations.
+  --debug-attempt-equation EQUATION_IDENTIFIER
+                           Log every attempt to apply an equation that matches
+                           EQUATION_IDENTIFIER, which may be the name of a
+                           symbol or a rule. It will not be mentioned whether
+                           the application succeeds or not. The name of a symbol
+                           may be a Kore identifier or a K label, which will
+                           match any equation where the named symbol occurs on
+                           the left-hand side. The name of a rule is given with
+                           the K module name as a dot-separated prefix:
+                           'MODULE-NAME.rule-name'. This option may be specified
+                           multiple times to log multiple equations.
+  --debug-equation EQUATION_IDENTIFIER
+                           Log every attempt to apply or successful application
+                           of an equation that matches EQUATION_IDENTIFIER,
+                           which may be the name of a symbol or a rule. The name
+                           of a symbol may be a Kore identifier or a K label,
+                           which will match any equation where the named symbol
+                           occurs on the left-hand side. The name of a rule is
+                           given with the K module name as a dot-separated
+                           prefix: 'MODULE-NAME.rule-name'. This option may be
+                           specified multiple times to log multiple equations.
+  --debug-attempt-rewrite REWRITE_RULE_IDENTIFIER
+                           Log every attempt to apply an rewrite rule that
+                           matches REWRITE_RULE_IDENTIFIER, which may be the
+                           name of a symbol or a rule. It will not be mentioned
+                           whether the application succeeds or not. The name of
+                           a symbol may be a Kore identifier or a K label, which
+                           will match any equation where the named symbol occurs
+                           on the left-hand side. The name of a rule is given
+                           with the K module name as a dot-separated prefix:
+                           'MODULE-NAME.rule-name'. This option may be specified
+                           multiple times to log multiple equations.
+  --debug-apply-rewrite REWRITE_RULE_IDENTIFIER
+                           Log every succesfully applied rewrite rule that
+                           matches REWRITE_RULE_IDENTIFIER, which may be the
+                           name of a symbol or a rule. The name of a symbol may
+                           be a Kore identifier or a K label, which will match
+                           any equation where the named symbol occurs on the
+                           left-hand side. The name of a rule is given with the
+                           K module name as a dot-separated prefix:
+                           'MODULE-NAME.rule-name'. This option may be specified
+                           multiple times to log multiple equations.
+  --debug-rewrite REWRITE_RULE_IDENTIFIER
+                           Log every attempt to apply or successful application
+                           of an rewrite rule that matches
+                           REWRITE_RULE_IDENTIFIER, which may be the name of a
+                           symbol or a rule. The name of a symbol may be a Kore
+                           identifier or a K label, which will match any
+                           equation where the named symbol occurs on the
+                           left-hand side. The name of a rule is given with the
+                           K module name as a dot-separated prefix:
+                           'MODULE-NAME.rule-name'. This option may be specified
+                           multiple times to log multiple equations.
+  --trace-rewrites FILENAME
+                           Output rewrite trace to a YAML file
+  --prove SPEC_FILE        Kore source file representing spec to be proven.Needs
+                           --spec-module.
+  --spec-module SPEC_MODULE
+                           The name of the main module in the spec to be proven.
+  --graph-search GRAPH_SEARCH
+                           Search order of the execution graph. Either
+                           breadth-first or depth-first. Default is
+                           breadth-first.
+  --save-proofs ARG        The file in which to save the proven claims in case
+                           the prover fails.
+  --disable-stuck-check    Disable the heuristic for detecting stuck states.
+  --min-depth MIN_DEPTH    Force the prover to execute at least n steps.
+  --allow-vacuous          Enables discharging #Bottom paths as #Top at
+                           implication checking time.
+  --set-step-timeout INT   Set a timeout for one step in seconds.
+  --moving-average         Enable timeout based on moving average.
+  --execute-to-branch      Execute until the proof branches.
+  --rts-statistics FILENAME
+                           Write runtime statistics to FILENAME in JSON format.
+  --bug-report REPORT_FILE Generate reproducible example of bug at
+                           REPORT_FILE.tar.gz
+  --no-bug-report          Disables the creation of a bug report.
+  --max-counterexamples MAX_COUNTEREXAMPLES
+                           Specify the maximum number of counterexamples.
+  --[no-]serialize         Enable/disable serialization of initialized
+                           definition to disk. [default: disabled]
+  -h,--help                Show this help text

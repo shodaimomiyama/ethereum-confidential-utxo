@@ -1,0 +1,296 @@
+[
+  {
+    "component": "general",
+    "formattedMessage": "EfficientInnerProductVerifier.sol:2:1: Warning: Experimental features are turned on. Do not use experimental features on live deployments.\npragma experimental ABIEncoderV2;\n^-------------------------------^\n",
+    "message": "Experimental features are turned on. Do not use experimental features on live deployments.",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "RangeProofVerifier.sol:2:1: Warning: Experimental features are turned on. Do not use experimental features on live deployments.\npragma experimental ABIEncoderV2;\n^-------------------------------^\n",
+    "message": "Experimental features are turned on. Do not use experimental features on live deployments.",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "EfficientInnerProductVerifier.sol:70:9: Warning: This declaration shadows an existing declaration.\n        alt_bn128.G1Point[m] hs,\n        ^---------------------^\nEfficientInnerProductVerifier.sol:14:5: The shadowed declaration is here:\n    alt_bn128.G1Point[m] public hs;\n    ^----------------------------^\n\n",
+    "message": "This declaration shadows an existing declaration.",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "EfficientInnerProductVerifier.sol:71:9: Warning: This declaration shadows an existing declaration.\n        alt_bn128.G1Point H\n        ^-----------------^\nEfficientInnerProductVerifier.sol:15:5: The shadowed declaration is here:\n    alt_bn128.G1Point public H;\n    ^------------------------^\n\n",
+    "message": "This declaration shadows an existing declaration.",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "EfficientInnerProductVerifier.sol:118:48: Warning: This declaration shadows an existing declaration.\n    function multiExpHsInversed(uint256[m] ss, alt_bn128.G1Point[m] hs) internal view returns (alt_bn128.G1Point h) {\n                                               ^---------------------^\nEfficientInnerProductVerifier.sol:14:5: The shadowed declaration is here:\n    alt_bn128.G1Point[m] public hs;\n    ^----------------------------^\n\n",
+    "message": "This declaration shadows an existing declaration.",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "RangeProofVerifier.sol:155:84: Warning: This declaration shadows an existing declaration.\n    function commit(alt_bn128.G1Point[m] ps, uint256[m] ss) internal view returns (alt_bn128.G1Point commit) {\n                                                                                   ^----------------------^\nRangeProofVerifier.sol:155:5: The shadowed declaration is here:\n    function commit(alt_bn128.G1Point[m] ps, uint256[m] ss) internal view returns (alt_bn128.G1Point commit) {\n    ^\nSpanning multiple lines.\n\n",
+    "message": "This declaration shadows an existing declaration.",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "RangeProofVerifier.sol:174:58: Warning: This declaration shadows an existing declaration.\n    function powers(uint256 base) internal pure returns (uint256[m] powers) {\n                                                         ^---------------^\nRangeProofVerifier.sol:174:5: The shadowed declaration is here:\n    function powers(uint256 base) internal pure returns (uint256[m] powers) {\n    ^\nSpanning multiple lines.\n\n",
+    "message": "This declaration shadows an existing declaration.",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:12:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function add(G1Point p1, G1Point p2) internal view returns (G1Point r) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:48:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function add(uint256 x, uint256 y) internal pure returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:44:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function eq(G1Point p1, G1Point p2) internal returns (bool) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:72:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function exp(uint256 base, uint256 exponent) internal view returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:60:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function mod(uint256 x) internal pure returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:25:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function mul(G1Point p, uint256 s) internal view returns (G1Point r) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:52:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function mul(uint256 x, uint256 y) internal pure returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:64:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function sub(uint256 x, uint256 y) internal pure returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:12:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function add(G1Point p1, G1Point p2) internal view returns (G1Point r) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:48:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function add(uint256 x, uint256 y) internal pure returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:44:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function eq(G1Point p1, G1Point p2) internal returns (bool) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:72:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function exp(uint256 base, uint256 exponent) internal view returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:60:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function mod(uint256 x) internal pure returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:25:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function mul(G1Point p, uint256 s) internal view returns (G1Point r) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:52:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function mul(uint256 x, uint256 y) internal pure returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:64:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function sub(uint256 x, uint256 y) internal pure returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:12:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function add(G1Point p1, G1Point p2) internal view returns (G1Point r) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:48:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function add(uint256 x, uint256 y) internal pure returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:44:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function eq(G1Point p1, G1Point p2) internal returns (bool) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:72:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function exp(uint256 base, uint256 exponent) internal view returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:60:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function mod(uint256 x) internal pure returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:25:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function mul(G1Point p, uint256 s) internal view returns (G1Point r) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:52:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function mul(uint256 x, uint256 y) internal pure returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:64:5: Warning: Variable is shadowed in inline assembly by an instruction of the same name\n    function sub(uint256 x, uint256 y) internal pure returns (uint256) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Variable is shadowed in inline assembly by an instruction of the same name",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:19:23: Warning: The \"staticcall\" instruction is only available after the Metropolis hard fork. Before that it acts as an invalid instruction.\n            if iszero(staticcall(not(0), 6, input, 0x80, r, 0x40)) {\n                      ^--------^\n",
+    "message": "The \"staticcall\" instruction is only available after the Metropolis hard fork. Before that it acts as an invalid instruction.",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:31:23: Warning: The \"staticcall\" instruction is only available after the Metropolis hard fork. Before that it acts as an invalid instruction.\n            if iszero(staticcall(not(0), 7, input, 0x60, r, 0x40)) {\n                      ^--------^\n",
+    "message": "The \"staticcall\" instruction is only available after the Metropolis hard fork. Before that it acts as an invalid instruction.",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:82:23: Warning: The \"staticcall\" instruction is only available after the Metropolis hard fork. Before that it acts as an invalid instruction.\n            if iszero(staticcall(not(0), 5, input, 0xc0, output, 0x20)) {\n                      ^--------^\n",
+    "message": "The \"staticcall\" instruction is only available after the Metropolis hard fork. Before that it acts as an invalid instruction.",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "EfficientInnerProductVerifier.sol:92:32: Warning: Result of shift has type uint8 and thus might overflow. Silence this warning by converting the literal to the expected type.\n            for (uint8 j = 0; (1 << j) + i < m; ++j) {\n                               ^----^\n",
+    "message": "Result of shift has type uint8 and thus might overflow. Silence this warning by converting the literal to the expected type.",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "EfficientInnerProductVerifier.sol:93:33: Warning: Result of shift has type uint8 and thus might overflow. Silence this warning by converting the literal to the expected type.\n                uint8 i1 = i + (1 << j);\n                                ^----^\n",
+    "message": "Result of shift has type uint8 and thus might overflow. Silence this warning by converting the literal to the expected type.",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "VerificationHarness.sol:15:30: Warning: The \"staticcall\" instruction is only available after the Metropolis hard fork. Before that it acts as an invalid instruction.\n            let succeeded := staticcall(gas, target, buffer, calldatasize, buffer, 0x20)\n                             ^--------^\n",
+    "message": "The \"staticcall\" instruction is only available after the Metropolis hard fork. Before that it acts as an invalid instruction.",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "VerificationHarness.sol:16:41: Warning: The \"returndatasize\" instruction is only available after the Metropolis hard fork. Before that it acts as an invalid instruction.\n            if iszero(and(succeeded, eq(returndatasize, 0x20))) { revert(0, 0) }\n                                        ^------------^\n",
+    "message": "The \"returndatasize\" instruction is only available after the Metropolis hard fork. Before that it acts as an invalid instruction.",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "RangeProofVerifier.sol:115:14: Warning: Function declared as view, but this expression (potentially) modifies the state and thus requires non-payable (the default) or payable.\n        if (!b.rhs.eq(b.lhs)) {\n             ^-------------^\n",
+    "message": "Function declared as view, but this expression (potentially) modifies the state and thus requires non-payable (the default) or payable.",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "RangeProofVerifier.sol:125:23: Warning: Function declared as view, but this expression (potentially) modifies the state and thus requires non-payable (the default) or payable.\n        b.P = b.P.add(peddersenBaseH.mul(proof.mu).neg());\n                      ^--------------------------------^\n",
+    "message": "Function declared as view, but this expression (potentially) modifies the state and thus requires non-payable (the default) or payable.",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:37:5: Warning: Function state mutability can be restricted to pure\n    function neg(G1Point p) internal returns (G1Point) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Function state mutability can be restricted to pure",
+    "severity": "warning",
+    "type": "Warning"
+  },
+  {
+    "component": "general",
+    "formattedMessage": "alt_bn128.sol:44:5: Warning: Function state mutability can be restricted to pure\n    function eq(G1Point p1, G1Point p2) internal returns (bool) {\n    ^\nSpanning multiple lines.\n",
+    "message": "Function state mutability can be restricted to pure",
+    "severity": "warning",
+    "type": "Warning"
+  }
+]

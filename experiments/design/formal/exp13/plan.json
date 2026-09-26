@@ -1,0 +1,36 @@
+{
+  "experiment": "EXP-13",
+  "question": "Can the pinned KEVM booster backend complete the same direct symbolic rejection claim over the exact optimized v3 runtime within a bounded design-stage run?",
+  "affectedDecision": "Design-stage feasibility of FV-03/FV-04 for the chosen v3 verifier",
+  "priorEvidence": {
+    "exp11": "The corrected claim parsed and entered the exact v3 runtime, but kore-rpc died after an OOM kill under the 4 GiB Docker VM.",
+    "exp12": "At a temporary 8 GiB Docker VM limit, the same non-booster proof had no OOM but remained incomplete at 900 seconds. The original Docker settings were restored."
+  },
+  "target": {
+    "sourceRuntime": "../exp09/runtime.hex",
+    "bytes": 8467,
+    "keccak256": "0xaff25bc27e32f19321b9e062965a418b2be7d5df872164865f58398c3ad015c5",
+    "sha256": "724fac3aad23842c1462df4ad8eca960581d14de26d42e4d1ca792a7ac35b073"
+  },
+  "claim": "Unchanged EXP-11 direct KEVM claim: verify ABI left array length 0 and right array length 12, coords[0] symbolic uint256, callValue 0, final EVMC_REVERT.",
+  "method": [
+    "Use the pinned Kontrol image and exact existing runtime, KEVM definition and claim; change only the backend option from --no-use-booster to --use-booster.",
+    "The first setup attempt omitted the existing llvm-library directory while copying the definition. Preserve its setup-failure result, include the exact existing LLVM artifacts, and repeat once without altering the claim or runtime.",
+    "Run once with a 600-second proof limit on the restored default Docker VM configuration. Save raw command results, KCFG and cgroup memory events.",
+    "Classify success only if the proof is non-vacuously complete without admitted, pending, failing, stuck or bounded nodes; otherwise retain a precise unresolved finding."
+  ],
+  "decision": {
+    "pass": "Exact runtime and satisfiable symbolic claim are linked; non-vacuous proof PASSED with no unproven nodes.",
+    "fail": "A counterexample disproves the stated claim on the exact runtime.",
+    "unverified": "Backend setup failure, OOM, timeout, crash, or incomplete proof. No verifier-wide correctness inference."
+  },
+  "limits": {
+    "pinnedImage": "runtimeverificationinc/kontrol@sha256:858f004144d61b005997f56bb8b7cd15673850286c96e0e5ec0502d9c9a9e204",
+    "schedule": "BYZANTIUM",
+    "proofSeconds": 600,
+    "cpuLimit": 4,
+    "containerMemoryGiB": 4,
+    "noFullVerifierOrPoolImplementation": true
+  },
+  "scopeLimit": "One early input rejection feasibility claim only, not full verifier soundness, Pool correctness, gas or PoC completion."
+}

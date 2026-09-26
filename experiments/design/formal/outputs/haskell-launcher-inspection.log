@@ -1,0 +1,3 @@
+/usr/bin/kore-exec
+native ELF binary
+CompletedProcess(args=['kore-exec', '--version'], returncode=0, stdout='0.1.155\n', stderr='')

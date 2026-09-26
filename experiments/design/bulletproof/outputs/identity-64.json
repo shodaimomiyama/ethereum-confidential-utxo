@@ -1,0 +1,14 @@
+{
+  "value": "0",
+  "blinding": "0",
+  "isIdentity": true,
+  "evmSubmitted": false,
+  "proverGenerated": false,
+  "exception": "java.lang.NullPointerException: Cannot invoke \"org.bouncycastle.math.ec.ECFieldElement.toBigInteger()\" because the return value of \"org.bouncycastle.math.ec.ECPoint.getAffineXCoord()\" is null",
+  "stackTrace": [
+    "edu.stanford.cs.crypto.efficientct.util.ProofUtils.computeChallenge(ProofUtils.java:30)",
+    "edu.stanford.cs.crypto.efficientct.util.ProofUtils.computeChallenge(ProofUtils.java:36)",
+    "edu.stanford.cs.crypto.efficientct.rangeproof.RangeProofProver.generateProof(RangeProofProver.java:42)",
+    "DiagnoseIdentity.main(DiagnoseIdentity.java:25)"
+  ]
+}
