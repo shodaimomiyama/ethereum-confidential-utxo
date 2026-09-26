@@ -198,3 +198,27 @@ it('rejects a switch when the provider reports the wrong target', async () => {
   await expect(wallet.connect()).rejects.toMatchObject({ code: 'CHAIN_MISMATCH' });
   await expect(wallet.switchChain(31337n)).rejects.toMatchObject({ code: 'SCOPE_CHANGED' });
 });
+
+it('rejects when a first-connect subscriber switches the account during notification', async () => {
+  const { provider, wallet } = setup();
+  wallet.subscribe(event => {
+    if (event.scope?.owner === alice) provider.emit('accountsChanged', [bob]);
+  });
+  await expect(wallet.connect()).rejects.toMatchObject({ code: 'SCOPE_CHANGED' });
+});
+
+it('rejects when a first-connect subscriber disposes the wallet during notification', async () => {
+  const { wallet } = setup();
+  wallet.subscribe(event => {
+    if (event.scope?.owner === alice) wallet.dispose();
+  });
+  await expect(wallet.connect()).rejects.toMatchObject({ code: 'SCOPE_CHANGED' });
+});
+
+it('rejects when a first-connect subscriber switches the chain during notification', async () => {
+  const { provider, wallet } = setup();
+  wallet.subscribe(event => {
+    if (event.scope?.owner === alice) provider.emit('chainChanged', '0x1');
+  });
+  await expect(wallet.connect()).rejects.toMatchObject({ code: 'SCOPE_CHANGED' });
+});

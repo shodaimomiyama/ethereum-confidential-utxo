@@ -192,8 +192,13 @@ export function createMetaMaskWallet(
       const connectionChanged = owner !== nextOwner || chainId !== nextChain;
       owner = nextOwner;
       chainId = nextChain;
+      const completedEpoch = epochs.current() + (connectionChanged ? 1 : 0);
       if (connectionChanged) changed();
-      if (!sameDeployment(expected)) throw new WalletError('SCOPE_CHANGED');
+      const deploymentCurrent = sameDeployment(expected);
+      if (disposed || !epochs.isCurrent(completedEpoch) || owner !== nextOwner
+        || chainId !== nextChain || !deploymentCurrent) {
+        throw new WalletError('SCOPE_CHANGED');
+      }
       if (nextChain !== expected.chainId) throw new WalletError('CHAIN_MISMATCH');
       const resultScope: Scope = { deploymentId, owner: nextOwner };
       return { value: resultScope, scope: resultScope, epoch: epochs.current() };
