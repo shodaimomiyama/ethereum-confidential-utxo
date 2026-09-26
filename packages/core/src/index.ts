@@ -27,3 +27,5 @@ export { buildOperation, regenerateProofs, toPublicSubmission } from "./operatio
 export type { BuildIntent, BuildDependencies, PublicSubmission } from "./operation.js";
 export { inspectReceipt } from "./receipt.js";
 export type { ReceivedUtxo, ReceiptFailure, ReceiptState } from "./receipt.js";
+export { synchronize } from "./sync.js";
+export type { SyncResult, SyncPorts, StaleSnapshot } from "./sync.js";

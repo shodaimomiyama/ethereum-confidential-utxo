@@ -60,6 +60,16 @@ export type ObservedOperation = {
     transactionIndex: number;
     logIndex: number;
   };
+  /** InputConsumed evidence; synchronization requires every input log. */
+  inputLogs?: {
+    operationId: Hex;
+    inputId: Hex;
+    blockNumber: bigint;
+    blockHash: Hex;
+    transactionHash: Hex;
+    transactionIndex: number;
+    logIndex: number;
+  }[];
   outputLogs: {
     operationId: Hex;
     output: PublicOutput;
@@ -75,6 +85,12 @@ export type ObservedOperation = {
 
 export interface HistoryPort {
   getFinalizedCheckpoint(): Promise<Checkpoint | null>;
+  getContext(point: Checkpoint): Promise<Observation<Context>>;
+  /** Complete only when the header is canonical ancestry of point (including point itself).
+   * The envelope blockHash binds that ancestry assertion to point.hash.
+   */
+  getCanonicalHeader(number: bigint, point: Checkpoint): Promise<Observation<{ number: bigint; hash: Hex }>>;
+  /** All Pool operations in the inclusive range, with complete success/input/output logs. */
   getOperations(fromBlock: bigint, point: Checkpoint): Promise<Observation<ObservedOperation[]>>;
   getUtxo(id: Hex, point: Checkpoint): Promise<Observation<UtxoState>>;
   getOperationSuccess(id: Hex, point: Checkpoint): Promise<Observation<OperationSuccess>>;
