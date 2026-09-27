@@ -11,3 +11,4 @@ export { createScopedEthereumBridge, type ScopedEthereumBridge, type ScopedEther
 export { createAdapterSubmit, type AdapterSubmitDependencies } from './adapter-submit.js';
 export { createScopedRewardClient, RewardRequestUncertain,
   type ScopedRewardClient, type ScopedRewardDependencies } from './reward-client.js';
+export { createPaymentSubmit, type PaymentSubmitDependencies } from './payment-submit.js';
