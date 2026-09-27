@@ -1,5 +1,5 @@
 import { keccak_256 } from "@noble/hashes/sha3.js";
-import { bytesToBigInt, concat, tag, word } from "./bytes.js";
+import { bytesHex, bytesToBigInt, concat, tag, word } from "./bytes.js";
 import { CryptoFailure } from "./errors.js";
 import { G, H, PARAMETERS_HASH_V3 } from "./fixed-parameters.js";
 import { M, modq, mul, neg, parsePoint, pointBytes, Q, samePoint, sum, type G1Point } from "./group.js";
@@ -75,7 +75,7 @@ export function balanceChallengeTrace(
     );
     const candidate = bytesToBigInt(keccak_256(preimage));
     const accepted = candidate > 0n && candidate < Q;
-    trace.push({ counter, preimage: `0x${Buffer.from(preimage).toString("hex")}`, candidate, accepted });
+    trace.push({ counter, preimage: `0x${bytesHex(preimage)}`, candidate, accepted });
     if (accepted) return trace;
   }
   throw new CryptoFailure("CHALLENGE_EXHAUSTED", "balance");

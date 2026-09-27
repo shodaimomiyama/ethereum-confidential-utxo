@@ -9,8 +9,8 @@ import { initialScenario } from './scenarios.js';
 
 export type ScenarioEvent = (
   | { readonly type: 'preparing'; readonly card: Card }
-  | { readonly type: 'quote'; readonly startedAt: number; readonly quoteOut: bigint; readonly latestBlockTimestamp: number }
-  | { readonly type: 'chain-timestamp'; readonly latestBlockTimestamp: number }
+  | { readonly type: 'quote'; readonly startedAt: number; readonly quoteOut: bigint; readonly latestBlockTimestamp: number | bigint }
+  | { readonly type: 'chain-timestamp'; readonly latestBlockTimestamp: number | bigint }
   | { readonly type: 'reservation-ack'; readonly card: 'pay' | 'withdraw' }
   | { readonly type: 'awaiting-approval'; readonly card: Card; readonly purpose: ApprovalPurpose }
   | { readonly type: 'submitted'; readonly card: Card; readonly operationId: OperationId; readonly attemptId?: string; readonly txHash?: TxHash }
@@ -204,9 +204,10 @@ function quoteValid(startedAt: number | undefined, now: number): boolean {
 
 const maximumDeadline = (1n << 64n) - 1n;
 
-function chainTimestamp(value: number): bigint | undefined {
-  if (!Number.isSafeInteger(value) || value < 0) return undefined;
+function chainTimestamp(value: number | bigint): bigint | undefined {
+  if (typeof value === 'number' && (!Number.isSafeInteger(value) || value < 0)) return undefined;
   const timestamp = BigInt(value);
+  if (timestamp < 0n) return undefined;
   return timestamp + 600n <= maximumDeadline ? timestamp : undefined;
 }
 

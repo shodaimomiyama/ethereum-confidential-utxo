@@ -6,7 +6,10 @@ export type SchemaErrorCode =
   | 'INVALID_BYTES32'
   | 'INVALID_ADDRESS'
   | 'INVALID_REVISION'
-  | 'INVALID_FIELD';
+  | 'INVALID_FIELD'
+  | 'EMPTY_AMOUNT'
+  | 'ZERO_AMOUNT'
+  | 'AMOUNT_OVERFLOW';
 
 export class SchemaError extends Error {
   constructor(
@@ -40,7 +43,7 @@ export function parseBytes32(value: unknown, field?: string): Bytes32 {
   if (typeof value !== 'string' || !/^0x[0-9a-fA-F]{64}$/.test(value)) {
     throw new SchemaError('INVALID_BYTES32', field);
   }
-  return value as Bytes32;
+  return value.toLowerCase() as Bytes32;
 }
 
 export function parseAddress(value: unknown, field?: string): Address {

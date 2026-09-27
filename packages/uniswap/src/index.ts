@@ -1,4 +1,18 @@
 export const contractVersion = '1' as const;
+export { automaticMinimum, parseEthAmount } from './amount.js';
+export { selectPayInput } from './selection.js';
+export type { PayInput } from './selection.js';
+export { defaultTerms, fetchPayQuote, isQuoteFresh } from './quote.js';
+export type { MonotonicClock, PayQuote, QuoteReader, RouteAddresses } from './quote.js';
+export type { ReleaseEvidence, ReservationPort, SavedReservation, VerifiedReleaseState } from './reservation.js';
+export { inspectOperation } from './recovery.js';
+export type { AttemptEvidence, CurrentInput, RecoveryDecision, RecoveryEvidence } from './recovery.js';
+export { coreReceiptResult, reconcilePayment } from './reconcile.js';
+export type { CoreReceiptResult, FinalizedHistory, ReconciledPayment } from './reconcile.js';
+export { assertWithdrawalBinding, decodeAdapterError, encodePayCall, paymentDigest } from './payment.js';
+export type { AdapterError, PaymentDeployment, PaymentTerms, WithdrawalBindingInput } from './payment.js';
+export { createPaymentClient, PaymentProcessError } from './process.js';
+export type { AuthorizationSignatures, PaymentClient, PaymentPorts, PreparedFullWithdraw, PreparedPay, ReconciliationPorts, RecoveryPorts, SubmissionOutcome } from './process.js';
 export type {
   Address,
   AttemptId,
@@ -35,7 +49,9 @@ export type {
 export { StoreError } from './storage.js';
 export type {
   EncryptedBundle,
+  FinalizedCheckpoint,
   OperationRecord,
+  OperationStatus,
   OperationStore,
   RewardRecord,
   RewardRequest,
@@ -44,4 +60,5 @@ export type {
   SavedOperation,
   SignedRecipientInfo,
   StoreErrorCode,
+  StoredOperation,
 } from './storage.js';
