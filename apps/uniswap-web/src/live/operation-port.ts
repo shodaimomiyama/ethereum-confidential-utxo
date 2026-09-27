@@ -260,7 +260,7 @@ export function createOperationPort(deps: OperationPortDependencies): OperationP
       let keyReady = false;
       try { context.recordKey(); context.check(); keyReady = true; } catch { context.check(); }
       view = { ...view, preparation: { ...view.preparation, key: keyReady } };
-      if (projected.core.status === 'complete' && view.storageAvailability === 'healthy'
+      if (projected.core.status === 'complete' && !view.isStale && view.storageAvailability === 'healthy'
         && keyReady && deps.recomputeReady) {
         const ready = await deps.recomputeReady({ scope, context, core: projected.core, view });
         check(scope, context);
