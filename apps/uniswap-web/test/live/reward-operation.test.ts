@@ -3,7 +3,8 @@ import type { ReceivedUtxo } from '@confidential-utxo/core';
 import type { Address, Bytes32, RequestId, RewardRecord, RewardStatus, Scope, TxHash } from '@confidential-utxo/uniswap';
 import type { ViewState } from '../../src/contracts/index.js';
 import type { OperationContext } from '../../src/live/operations.js';
-import { createRewardOperation } from '../../src/live/reward-operation.js';
+import { HttpFailure } from '../../src/live/http.js';
+import { createRewardOperation, type RewardRequestMarker } from '../../src/live/reward-operation.js';
 import { RewardRequestUncertain, type ScopedRewardClient } from '../../src/live/reward-client.js';
 
 const scope = { deploymentId: 'local-v1', owner: `0x${'11'.repeat(20)}` } as Scope;
@@ -28,10 +29,19 @@ function fixture() {
   let epoch = 1;
   const context = { scope, epoch: 1, check: () => { if (epoch !== 1) throw new Error('SCOPE_CHANGED'); } } as OperationContext;
   const client = { request: vi.fn(async () => record('accepted')), recheck: vi.fn(async () => record('pending')),
-    list: vi.fn(async () => [record('queued')]), markReceived: vi.fn(async () => record('received')) } satisfies ScopedRewardClient;
+    list: vi.fn(async (): Promise<RewardRecord[]> => []), markReceived: vi.fn(async () => record('received')) } satisfies ScopedRewardClient;
   const newRequestId = vi.fn(() => requestId);
-  const adapter = createRewardOperation({ snapshot: () => snapshot, client: () => client, newRequestId });
-  return { adapter, client, context, newRequestId, get snapshot() { return snapshot; },
+  let saved: RequestId | undefined;
+  const marker = { read: vi.fn(async (): ReturnType<RewardRequestMarker['read']> => saved
+      ? { kind: 'saved', requestId: saved } : { kind: 'absent' }),
+    reserve: vi.fn(async (_scope: Scope, id: RequestId): Promise<'saved' | 'occupied' | 'unknown'> => {
+      if (saved) return 'occupied'; saved = id; return 'saved'; }),
+    replace: vi.fn(async (_scope: Scope, expected: RequestId, next: RequestId | undefined): Promise<'saved' | 'mismatch' | 'unknown'> => {
+      if (saved?.toLowerCase() !== expected.toLowerCase()) return 'mismatch';
+      saved = next; return 'saved'; }) } satisfies RewardRequestMarker;
+  const makeAdapter = () => createRewardOperation({ snapshot: () => snapshot, client: () => client, marker, newRequestId });
+  const adapter = makeAdapter();
+  return { adapter, makeAdapter, client, marker, context, newRequestId, get snapshot() { return snapshot; },
     publish: (next: ViewState) => { snapshot = next; }, advance: () => { epoch++; } };
 }
 
@@ -39,6 +49,9 @@ it('starts one fixed request, exposes only public references, and does not infer
   const f = fixture();
   const result = await f.adapter.start(scope, { amount: '0.000000000000000007' }, f.context);
   expect(f.client.request).toHaveBeenCalledWith('7', requestId);
+  expect(f.marker.reserve).toHaveBeenCalledWith(scope, requestId);
+  expect(f.client.list).toHaveBeenCalledTimes(1);
+  expect(f.marker.reserve.mock.invocationCallOrder[0]).toBeLessThan(f.client.request.mock.invocationCallOrder[0]!);
   expect(result.view.cards.reward.phase).toBe('pending');
   expect(result.view.rewardRequests).toEqual([{ requestId, status: 'accepted', operationId }]);
   expect(result.view.allowedActions).toContain('recheck-reward');
@@ -59,6 +72,88 @@ it('keeps the request ID after an uncertain POST and rechecks without another PO
   expect(f.client.request).toHaveBeenCalledTimes(1);
   expect(f.newRequestId).toHaveBeenCalledTimes(1);
   expect(checked.view.rewardRequests[0]?.status).toBe('pending');
+});
+
+it('recovers an active service request after reload before allocating an ID', async () => {
+  const f = fixture();
+  f.client.list.mockResolvedValueOnce([record('queued', otherId)]);
+  f.client.recheck.mockResolvedValueOnce(record('queued', otherId));
+  const result = await f.makeAdapter().start(scope, { amount: '9' }, f.context);
+  expect(f.client.recheck).toHaveBeenCalledWith(otherId);
+  expect(f.marker.reserve).toHaveBeenCalledWith(scope, otherId);
+  expect(result.view.rewardRequests).toEqual([{ requestId: otherId, status: 'queued', operationId }]);
+  expect(f.newRequestId).not.toHaveBeenCalled();
+  expect(f.client.request).not.toHaveBeenCalled();
+  f.publish(state());
+  f.client.recheck.mockResolvedValueOnce(record('pending', otherId));
+  await f.makeAdapter().start(scope, { amount: '9' }, f.context);
+  expect(f.client.recheck).toHaveBeenLastCalledWith(otherId);
+});
+
+it('recovers the durable ID in a new adapter instance even when the service list is empty', async () => {
+  const f = fixture();
+  f.client.request.mockRejectedValueOnce(new RewardRequestUncertain(requestId, new Error('lost ACK')));
+  await f.adapter.start(scope, { amount: '0.000000000000000007' }, f.context);
+  f.publish(state());
+  const result = await f.makeAdapter().start(scope, { amount: '8' }, f.context);
+  expect(f.client.recheck).toHaveBeenCalledWith(requestId);
+  expect(result.view.rewardRequests[0]?.requestId).toBe(requestId);
+  expect(f.newRequestId).toHaveBeenCalledTimes(1);
+  expect(f.client.request).toHaveBeenCalledTimes(1);
+});
+
+it('recovers the existing service request on PENDING_REQUEST without another POST', async () => {
+  const f = fixture();
+  f.client.request.mockRejectedValueOnce(new HttpFailure('api', 'PENDING_REQUEST'));
+  f.client.list.mockResolvedValueOnce([]).mockResolvedValueOnce([record('pending', otherId)]);
+  f.client.recheck.mockResolvedValueOnce(record('pending', otherId)).mockResolvedValueOnce(record('pending', otherId));
+  const result = await f.adapter.start(scope, { amount: '0.000000000000000007' }, f.context);
+  expect(f.client.list).toHaveBeenCalledTimes(2);
+  expect(f.client.recheck).toHaveBeenCalledWith(otherId);
+  expect(result.view.rewardRequests[0]?.requestId).toBe(otherId);
+  expect(f.client.request).toHaveBeenCalledTimes(1);
+  expect(f.marker.replace).toHaveBeenCalledWith(scope, requestId, otherId);
+  f.publish(state());
+  await f.makeAdapter().start(scope, { amount: '2' }, f.context);
+  expect(f.client.recheck).toHaveBeenLastCalledWith(otherId);
+  expect(f.client.request).toHaveBeenCalledTimes(1);
+});
+
+it('fails closed when durable marker reservation loses its ACK', async () => {
+  const f = fixture();
+  f.marker.reserve.mockResolvedValueOnce('unknown');
+  await expect(f.adapter.start(scope, { amount: '1' }, f.context)).rejects.toThrow('RESULT_UNKNOWN');
+  expect(f.client.request).not.toHaveBeenCalled();
+  f.marker.read.mockResolvedValueOnce({ kind: 'unknown' });
+  await expect(f.makeAdapter().start(scope, { amount: '1' }, f.context)).rejects.toThrow('RESULT_UNKNOWN');
+  expect(f.newRequestId).toHaveBeenCalledTimes(1);
+});
+
+it.each(['received', 'ended-without-distribution'] as const)(
+  'clears a %s durable ID only after authoritative GET and durable ACK, then starts a distinct request', async status => {
+  const f = fixture();
+  await f.adapter.start(scope, { amount: '0.000000000000000007' }, f.context);
+  f.publish(state());
+  f.client.recheck.mockResolvedValueOnce(record(status));
+  f.client.request.mockResolvedValueOnce(record('accepted', otherId));
+  f.newRequestId.mockReturnValueOnce(otherId);
+  const next = await f.makeAdapter().start(scope, { amount: '0.000000000000000007' }, f.context);
+  expect(f.marker.replace).toHaveBeenCalledWith(scope, requestId, undefined);
+  expect(f.client.request).toHaveBeenCalledWith('7', otherId);
+  expect(next.view.rewardRequests.map(item => item.requestId)).toEqual([requestId, otherId]);
+});
+
+it('keeps the old marker when terminal evidence or clear ACK is missing', async () => {
+  const f = fixture();
+  await f.adapter.start(scope, { amount: '0.000000000000000007' }, f.context);
+  f.publish(state());
+  f.client.recheck.mockRejectedValueOnce(new HttpFailure('api', 'NOT_FOUND'));
+  await expect(f.makeAdapter().start(scope, { amount: '1' }, f.context)).rejects.toThrow();
+  f.client.recheck.mockResolvedValueOnce(record('ended-without-distribution'));
+  f.marker.replace.mockResolvedValueOnce('unknown');
+  await expect(f.makeAdapter().start(scope, { amount: '1' }, f.context)).rejects.toThrow('RESULT_UNKNOWN');
+  expect(f.client.request).toHaveBeenCalledTimes(1);
+  expect(f.newRequestId).toHaveBeenCalledTimes(1);
 });
 
 it.each([['accepted', 'pending'], ['queued', 'pending'], ['processing', 'pending'], ['pending', 'pending'],
