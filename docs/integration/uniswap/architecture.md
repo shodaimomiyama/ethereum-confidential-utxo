@@ -50,6 +50,8 @@ Uniswap公開デモには、本体 #36 の検証用とは別アドレスの専�
 
 環境ごとに一つのSQLite DOへ、操作予約、暗号化操作記録、報酬要求、配布用UTXOの管理、配布の暗号処理をまとめる方針を合意した。停止・無料枠超過・復旧中は環境全体の新規操作に影響することを許容する。処理を別サーバーへ自動移管して、重複配布の可能性を作らない。
 
+報酬用の運営者操作は公開HTTPに置かず、Worker内部から環境DOの `stopRewardForDeployment`、`resumeRewardForDeployment`、`endUnsignedRewardForDeployment`、`cancelSignedRewardForDeployment` を呼ぶ。内部呼出しには `REWARD_OPERATOR_TOKEN` を使用し、要求者のsessionとは分離する。停止理由の管理、未署名要求の終了、署名済み要求の取消、復元後の再開は同じDO台帳で処理する。復元後の再開にはDBの完全性とfinalizedチェーン照合を運営者が確認し、DB外の配置ゲートも解除する。現段階で公開運営者UIや自動復元を提供しない。
+
 ### サイトとローカル検証
 
 サイトはReact、Vite、TypeScriptによる静的配信とする。紹介ページと4カードを提供し、証明生成はブラウザのWeb Workerで実行する。本体の共通処理を再利用し、UIへ金額検証・符号化・受領規則を重複実装しない。依存の完全版とWeb Workerでの実行可能性は実装後に確認する。[Reactの構成案内](https://react.dev/learn/build-a-react-app-from-scratch)を参照する（確認日: 2026-09-27）。
@@ -161,6 +163,8 @@ DepositとWithdrawは本体の入口を使い、接続Adapterを経由しない�
 ### 停止と復旧
 
 DO、RPC、永続化のいずれかを照合できない場合、未実行と決めず確認不能を表示する。新しい予約・認可・報酬配布を停止し、既存署名や取引を削除して進めない。既に公開した取引はサーバー停止中にも実行され得るため、復旧時はチェーンを照合してからキューを進める。
+
+報酬の利用可否は共通の復旧ゲートを優先し、その後に報酬固有のRPC、配布資金、gas、Secrets、運営者停止、実行枠を判定する。停止理由と受領可否を区別し、配布資金・gas不足の間は確定済み受領通知を処理する。共通ゲートが停止した場合は受領通知も保留する。配布依存の実行資源とリスクは[#47](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/47)、復旧の実取引検証は[#48](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/48)へ引き渡す。
 
 古いバックアップへの巻戻りは、チェーン再走査だけで復旧済みとしない。未提出認可と予約の欠落を排除できない場合は、全損時と同様に新規処理を停止する。
 
