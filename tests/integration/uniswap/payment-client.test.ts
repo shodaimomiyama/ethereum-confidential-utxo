@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from 'node:net';
 import { spawn } from 'node:child_process';
-import { createPublicClient, createWalletClient, hexToBytes, http, parseEventLogs, publicActions } from 'viem';
+import { createPublicClient, createTestClient, createWalletClient, decodeFunctionData, encodeFunctionData, hexToBytes, http, parseEventLogs, publicActions } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { foundry } from 'viem/chains';
 import { expect, it } from 'vitest';
@@ -58,11 +58,12 @@ async function withAnvil(run: (url: string) => Promise<void>) {
   } finally { child.kill('SIGTERM'); }
 }
 
-async function runPayment(highMinimum: boolean) {
+async function runPayment(mode: 'success' | 'minimum-failure' | 'expired') {
   await withAnvil(async url => {
     const directory = mkdtempSync(join(tmpdir(), 'ecu-payment-client-'));
     try {
       const rpc = createPublicClient({ transport: http(url) });
+      const testRpc = createTestClient({ mode: 'anvil', transport: http(url) });
       const wallet = createWalletClient({ account: holder, chain: foundry, transport: http(url) }).extend(publicActions);
       const assets = await deployLocalAssets({ url, chainId: 31337, generation: 'payment-client-test',
         holder: holder.address, lpRecipient: holder.address });
@@ -136,7 +137,7 @@ async function runPayment(highMinimum: boolean) {
       context, { inputs: initial.utxos, randomSalt: () => randomBytes(32) });
       const terms: PaymentTerms = { operationId: parseBytes32(draft.operationId) as unknown as OperationId,
         owner: parseAddress(owner.address), ethAmount: quote.inputWei, token: parseAddress(token),
-        minAmountOut: highMinimum ? quote.quoteOut * 2n : defaults.minAmountOut,
+        minAmountOut: mode === 'minimum-failure' ? quote.quoteOut * 2n : defaults.minAmountOut,
         recipient: parseAddress(recipient), deadline: defaults.deadline };
       assertWithdrawalBinding(draft, terms, deployment);
       const paymentId = paymentDigest(terms, context.chainId, adapter);
@@ -196,6 +197,28 @@ async function runPayment(highMinimum: boolean) {
           expect(candidate.record.operationId).toBe(record.operationId);
           expect(attemptId).toBe('attempt-1');
           const data = encodePayCall(draft, terms, deployment, signatures.pool, signatures.payment!);
+          if (mode === 'success') {
+            await expect(rpc.call({ to: adapter, data, gas: 20_000_000n })).resolves.toBeDefined();
+            const decoded = decodeFunctionData({ abi: adapterAbi, data });
+            const args = decoded.args as readonly unknown[];
+            const mutations: PaymentTerms[] = [
+              { ...terms, ethAmount: terms.ethAmount + 1n },
+              { ...terms, token: parseAddress(recipient) },
+              { ...terms, minAmountOut: terms.minAmountOut + 1n },
+              { ...terms, recipient: parseAddress(holder.address) },
+              { ...terms, deadline: terms.deadline + 1n },
+            ];
+            for (const mutated of mutations) {
+              const tampered = encodeFunctionData({ abi: adapterAbi, functionName: 'pay',
+                args: [args[0], args[1], args[2], args[3], mutated, args[5]] as never });
+              await expect(rpc.call({ to: adapter, data: tampered, gas: 20_000_000n })).rejects.toThrow();
+            }
+          }
+          if (mode === 'expired') {
+            await testRpc.increaseTime({ seconds: 601 });
+            await testRpc.mine({ blocks: 1 });
+            expect((await rpc.getBlock()).timestamp).toBeGreaterThan(terms.deadline);
+          }
           submittedHash = await wallet.sendTransaction({ to: adapter, data, gas: 20_000_000n });
           return { kind: 'submitted' as const, txHash: submittedHash as TxHash };
         },
@@ -241,6 +264,7 @@ async function runPayment(highMinimum: boolean) {
       const payment = createPaymentClient(ports);
       const before = await rpc.readContract({ address: token, abi: tokenAbi,
         functionName: 'balanceOf', args: [recipient] }) as bigint;
+      const submitterBalanceBefore = await rpc.getBalance({ address: holder.address });
       const ref = await payment.authorizePay(await payment.preparePay(undefined), record.contentHash);
       expect(ref.chainOutcome).toBe('pending');
       const saved = await reservations.get(scope, record.recordId);
@@ -265,12 +289,14 @@ async function runPayment(highMinimum: boolean) {
         functionName: 'isPaymentExecuted', args: [paymentId] });
       const after = await rpc.readContract({ address: token, abi: tokenAbi,
         functionName: 'balanceOf', args: [recipient] }) as bigint;
-      if (highMinimum) {
+      if (mode !== 'success') {
         expect(receipt.status).toBe('reverted');
+        expect(receipt.logs.filter(log => same(log.address, adapter))).toHaveLength(0);
         expect(inputState[0]).toBe(1);
         expect(changeState[0]).toBe(0);
         expect(paid).toBe(false);
         expect(after).toBe(before);
+        expect(await rpc.getBalance({ address: holder.address })).toBeLessThan(submitterBalanceBefore);
         const operation = await history.getOperationSuccess(draft.operationId,
           (await history.getFinalizedCheckpoint())!);
         expect(operation.complete && operation.value.executed).toBe(false);
@@ -316,7 +342,7 @@ async function runPayment(highMinimum: boolean) {
         }
       }
       const sourceHash = createHash('sha256').update(readFileSync('contracts/src/integration/uniswap/UniswapPaymentAdapter.sol')).digest('hex');
-      process.stdout.write(`# payment-client-evidence ${JSON.stringify({ scenario: highMinimum ? 'minimum-failure' : 'payment-success',
+      process.stdout.write(`# payment-client-evidence ${JSON.stringify({ scenario: mode === 'success' ? 'payment-success' : mode,
         ethereumDependencyCommit,
         poolRuntimeSha256: poolManifest.artifacts.pool, adapterRuntimeSha256: connection.contracts.adapter.runtimeSha256,
         adapterSourceSha256: sourceHash, uniswapArtifactPairHash: uniswap.pairInitCodeHash,
@@ -329,6 +355,8 @@ async function runPayment(highMinimum: boolean) {
 }
 
 it('Pay submits through the real Adapter, reconciles finality, and receives change through core',
-  async () => runPayment(false), 180_000);
+  async () => runPayment('success'), 180_000);
 it('a too-high minimum reverts the whole Pay without consuming the input',
-  async () => runPayment(true), 180_000);
+  async () => runPayment('minimum-failure'), 180_000);
+it('an expired authorization reverts the whole Pay without consuming the input',
+  async () => runPayment('expired'), 180_000);

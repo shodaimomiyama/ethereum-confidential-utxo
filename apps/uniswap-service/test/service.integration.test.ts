@@ -3,6 +3,7 @@ import { runInDurableObject } from 'cloudflare:test';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { createSiweMessage } from 'viem/siwe';
 import { expect, it } from 'vitest';
+import { parseApiResponse } from '@confidential-utxo/uniswap';
 import type { Scope } from '@confidential-utxo/uniswap';
 import type { Checkpoint, Context, HistoryPort } from '@confidential-utxo/core';
 import worker from '../src/index.js';
@@ -68,6 +69,9 @@ it('restores a committed operation in a second authenticated browser session', a
     body: JSON.stringify({ scope, expectedRevision: 0, record }),
   }), serviceEnv);
   expect(saved.status).toBe(200);
+  const acknowledged = parseApiResponse('PUT /v1/operations/{id}', saved.status, await saved.json());
+  expect('reservationState' in acknowledged && acknowledged.reservationState).toBe('active');
+  expect('revision' in acknowledged && acknowledged.revision).toBe(1);
   const competingId = `0x${'b3'.repeat(32)}`;
   const competing = await worker.fetch(new Request(`https://site.test/v1/operations/${competingId}`, {
     method: 'PUT', headers: { origin: 'https://site.test', cookie: firstCookie },
@@ -80,7 +84,9 @@ it('restores a committed operation in a second authenticated browser session', a
   const query = `https://site.test/v1/operations?deploymentId=local-v1&owner=${account.address}`;
   const first = await worker.fetch(new Request(query, { headers: { cookie: firstCookie } }), serviceEnv);
   expect(first.status).toBe(200);
-  expect((await first.json() as { records: { record: { recordId: string } }[] }).records[0]?.record.recordId).toBe(recordId);
+  const listed = parseApiResponse('GET /v1/operations', first.status, await first.json());
+  expect('records' in listed && listed.records[0]?.record.recordId).toBe(recordId);
+  expect('records' in listed && listed.records[0]?.reservationState).toBe('active');
   const secondCookie = await login(account);
   const second = await worker.fetch(new Request(query, { headers: { cookie: secondCookie } }), serviceEnv);
   expect(second.status).toBe(200);

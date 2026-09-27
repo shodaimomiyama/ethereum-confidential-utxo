@@ -87,6 +87,32 @@ it('prepares before reservation and signs only after both durable ACKs', async (
   expect((await fixture.reservations.get(scope, record.recordId))?.record.signatureStarted).toBe(true);
 });
 
+it('exports a signed Pay without creating or submitting an attempt', async () => {
+  const fixture = setup();
+  const client = createPaymentClient(fixture.ports);
+  const ref = await client.authorizePayForExport(fixture.prepared, fixture.prepared.record.contentHash);
+  expect(ref.chainOutcome).toBe('not-submitted');
+  expect(ref.attemptIds).toEqual([]);
+  expect(ref.txHashes).toEqual([]);
+  expect(fixture.calls).toEqual([
+    'encrypt:1', 'reserve', 'encrypt:2', 'update',
+    'sign-pool', 'sign-payment', 'encrypt:3', 'update',
+  ]);
+  expect((await fixture.reservations.get(scope, record.recordId))?.revision).toBe(3);
+  fixture.ports.recovery = {
+    readEvidence: async () => ({ evidence: {
+      finalized: true, blockTime: 100n, paymentSucceeded: false,
+      submissionKnownAbsent: true, attempts: [], storageAvailability: 'healthy',
+    }, currentInput: { state: 'unspent' } }),
+    restoreOriginal: async () => ({ prepared: fixture.prepared, signatures: { pool: '0x11', payment: '0x22' } }),
+    restoreForRetry: async () => { throw new Error('unused'); },
+    releaseOriginal: async () => { throw new Error('unused'); },
+  };
+  const outcome = await createPaymentClient(fixture.ports).resumeOriginal(recordId as never);
+  expect(outcome.kind).toBe('submitted');
+  expect(fixture.calls.filter(call => call === 'submit')).toHaveLength(1);
+});
+
 it('keeps the wallet closed when the reservation service is unavailable', async () => {
   const fixture = setup();
   fixture.reservations.control.setUnavailable(true);
@@ -213,7 +239,7 @@ it('rejects changed terms when the old reservation was not released', async () =
     .rejects.toMatchObject({ code: 'RECOVERY_BLOCKED' });
 });
 
-it.each([false, true])('requires a verified release before changed terms (lost ACK: %s)', async lostAck => {
+it.each([false, true])('requires a verified release and survives a restart before successor preparation (lost ACK: %s)', async lostAck => {
   const fixture = setup(true);
   await createPaymentClient(fixture.ports).authorizePay(fixture.prepared, fixture.prepared.record.contentHash);
   fixture.setBlockTime(601n);
@@ -226,7 +252,12 @@ it.each([false, true])('requires a verified release before changed terms (lost A
       operationId: nextId as never, paymentId: nextPaymentId as never,
       contentHash: nextHash as never, deadline: 1200n,
       signatureStarted: false, attemptIds: [] } };
-  fixture.ports.preparePay = async () => nextPrepared;
+  let interrupted = false;
+  let releases = 0;
+  fixture.ports.preparePay = async () => {
+    if (!interrupted) { interrupted = true; throw new Error('process stopped after release'); }
+    return nextPrepared;
+  };
   fixture.ports.recovery = {
     readEvidence: async () => ({ evidence: {
       finalized: true, blockTime: 601n, paymentSucceeded: false, submissionKnownAbsent: false,
@@ -235,6 +266,7 @@ it.each([false, true])('requires a verified release before changed terms (lost A
     restoreOriginal: async () => { throw new Error('unused'); },
     restoreForRetry: async () => { throw new Error('unused'); },
     releaseOriginal: async saved => {
+      releases++;
       const revision = saved.revision + 1;
       const encryptedBundle = await fixture.ports.encrypt(fixture.prepared.privateBytes,
         { scope, recordId: saved.record.recordId, revision });
@@ -245,7 +277,9 @@ it.each([false, true])('requires a verified release before changed terms (lost A
     },
   };
   const client = createPaymentClient(fixture.ports);
-  const changed = await client.prepareChangedTerms(recordId as never, 'new terms');
+  await expect(client.prepareChangedTerms(recordId as never, 'new terms')).rejects.toThrow('process stopped after release');
+  const changed = await createPaymentClient(fixture.ports).prepareChangedTerms(recordId as never, 'new terms');
+  expect(releases).toBe(1);
   expect(changed.record.paymentId).toBe(nextPaymentId);
   expect((await fixture.reservations.get(scope, record.recordId))?.reservationState).toBe('released');
   expect((await client.authorizePay(changed, changed.record.contentHash)).chainOutcome).toBe('pending');
