@@ -4,6 +4,7 @@ import { expect, it } from 'vitest';
 import { makeServiceContext } from '../src/extensions.js';
 import { runRewardAlarm } from '../src/rewards/queue.js';
 import { initializeEnvironment } from '../src/recovery.js';
+import { setRewardAvailability } from '../src/rewards/availability.js';
 
 it('dispatches by sequence after finalized without waiting for received', async () => {
   const ns = (env as unknown as { UNISWAP_STATE: DurableObjectNamespace }).UNISWAP_STATE;
@@ -29,7 +30,14 @@ it('dispatches by sequence after finalized without waiting for received', async 
     await runRewardAlarm(context, runner);
     await runRewardAlarm(context, runner);
     expect(sent).toEqual([ids[0]]);
-    state.storage.sql.exec(`UPDATE reward_requests SET status = 'finalized' WHERE request_id = ?`, ids[0]);
+    state.storage.sql.exec(`UPDATE reward_requests SET status = 'finalized', checkpoint_hash = ?
+      WHERE request_id = ?`, `0x${'cc'.repeat(32)}`, ids[0]);
+    setRewardAvailability(state.storage, 'local-v1', 'operator-stopped');
+    await runRewardAlarm(context, { ...runner, verifyFinalized: async () => undefined });
+    expect(state.storage.sql.exec<{ reason: string }>(
+      "SELECT reason FROM reward_availability WHERE deployment_id = 'local-v1'").toArray()[0]?.reason)
+      .toBe('operator-stopped');
+    setRewardAvailability(state.storage, 'local-v1', 'healthy');
     await runRewardAlarm(context, runner);
     expect(sent).toEqual(ids);
   });
@@ -60,6 +68,13 @@ it('stops later distribution when a finalized ancestor is reorged', async () => 
       'SELECT status FROM reward_requests WHERE request_id = ?', a).toArray()[0]?.status).toBe('unknown');
     expect(state.storage.sql.exec<{ status: string }>(
       'SELECT status FROM reward_requests WHERE request_id = ?', b).toArray()[0]?.status).toBe('unknown');
+    expect(state.storage.sql.exec<{ reason: string }>(
+      "SELECT reason FROM reward_availability WHERE deployment_id = 'local-v1'").toArray()[0]?.reason)
+      .toBe('restore-stopped');
+    await runRewardAlarm({ ...makeServiceContext(state.storage, { generation: 'test-g1', stopped: false }),
+      deploymentId: 'local-v1' }, {
+      dispatch: async () => {}, reconcile: async () => {}, verifyFinalized: async () => undefined,
+    });
     expect(state.storage.sql.exec<{ reason: string }>(
       "SELECT reason FROM reward_availability WHERE deployment_id = 'local-v1'").toArray()[0]?.reason)
       .toBe('restore-stopped');

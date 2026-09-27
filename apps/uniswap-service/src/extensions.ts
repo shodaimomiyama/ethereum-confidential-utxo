@@ -8,6 +8,7 @@ import type { HistoryPort } from '@confidential-utxo/core';
 
 export interface ServiceContext {
   readonly scope?: Scope;
+  readonly recoveryGate: RecoveryGate;
   readonly deploymentId?: string;
   readonly deployment?: DeploymentConfig;
   readonly env?: ServiceEnv;
@@ -46,7 +47,7 @@ export function makeServiceContext(
   trusted?: { deploymentId: string; deployment: DeploymentConfig; env: ServiceEnv },
 ): ServiceContext {
   return {
-    ...(scope === undefined ? {} : { scope }), storage,
+    ...(scope === undefined ? {} : { scope }), storage, recoveryGate: gate,
     ...(trusted === undefined ? {} : trusted),
     transactionSync: (callback) => storage.transactionSync(callback),
     ensureWritable: () => ensureWritable(storage, gate),

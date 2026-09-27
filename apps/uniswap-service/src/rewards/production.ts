@@ -76,6 +76,7 @@ export async function createProductionRewardRunner(service: ServiceContext): Pro
   }
 
   return {
+    async probe() { return (await readRewardFunds(history, keys, secrets.owner)).status === 'complete'; },
     async dispatch(requestId) {
       service.ensureWritable();
       const row = service.storage.sql.exec<{ owner: string; amount_wei: string; recipient_info_json: string }>(

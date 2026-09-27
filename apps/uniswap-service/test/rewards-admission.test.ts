@@ -7,6 +7,7 @@ import { makeServiceContext } from '../src/extensions.js';
 import { recipientInfoTypedData } from '@confidential-utxo/core';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { admitReward } from '../src/rewards/store.js';
+import { initializeEnvironment } from '../src/recovery.js';
 
 it('lists only the authenticated owner rewards from the shared SQLite DO', async () => {
   const ns = (env as unknown as { UNISWAP_STATE: DurableObjectNamespace }).UNISWAP_STATE;
@@ -93,6 +94,7 @@ it('reserves a submitted reward once and returns the same request after an ACK r
   const route = rewardExtension.routes.find((entry) => entry.route === 'POST /v1/rewards');
   expect(route).toBeDefined();
   await runInDurableObject(stub, async (_object, state) => {
+    initializeEnvironment(state.storage, { generation: 'test-g1', stopped: false, initialize: true });
     const context = {
       ...makeServiceContext(state.storage, { generation: 'test-g1', stopped: false }, request.scope, {
         deploymentId: 'local-v1',

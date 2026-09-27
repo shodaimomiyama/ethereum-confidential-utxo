@@ -1,7 +1,9 @@
 import type { ServiceContext } from '../extensions.js';
 import { createProductionRewardRunner } from './production.js';
+import { classifyRewardFailure, rewardAvailability, setRewardAvailability } from './availability.js';
 
 export type RewardQueueRunner = {
+  probe?(): Promise<boolean>;
   dispatch(requestId: string): Promise<void>;
   reconcile(requestId: string): Promise<void>;
   verifyFinalized(requestId: string, checkpointHash: string): Promise<boolean | undefined>;
@@ -21,15 +23,30 @@ export async function runRewardAlarm(context: ServiceContext, injected?: RewardQ
     ).toArray()[0];
     if (any === undefined) return;
   }
-  const runner = injected ?? await createProductionRewardRunner(context);
+  const initialAvailability = rewardAvailability(context.storage, context.recoveryGate, deploymentId);
+  if (!initialAvailability.distribute && initialAvailability.reason !== 'rpc-unavailable') return;
+  let runner: RewardQueueRunner;
+  try { runner = injected ?? await createProductionRewardRunner(context); }
+  catch (error) {
+    const reason = classifyRewardFailure(error);
+    setRewardAvailability(context.storage, deploymentId, reason);
+    if (reason === 'rpc-unavailable') await context.scheduleAlarm(Date.now() + 30_000);
+    return;
+  }
   const finalized = context.storage.sql.exec<QueueRow>(
     `SELECT request_id, status, checkpoint_hash FROM reward_requests
      WHERE deployment_id = ? AND status IN ('finalized', 'received') ORDER BY seq`, deploymentId,
   ).toArray();
   for (const row of finalized) {
     if (row.checkpoint_hash === null) continue;
-    const valid = await runner.verifyFinalized(row.request_id, row.checkpoint_hash);
-    if (valid === undefined) { await context.scheduleAlarm(Date.now() + 30_000); return; }
+    let valid: boolean | undefined;
+    try { valid = await runner.verifyFinalized(row.request_id, row.checkpoint_hash); }
+    catch { valid = undefined; }
+    if (valid === undefined) {
+      setRewardAvailability(context.storage, deploymentId, 'rpc-unavailable');
+      await context.scheduleAlarm(Date.now() + 30_000);
+      return;
+    }
     if (!valid) {
       context.storage.transactionSync(() => {
         const seq = context.storage.sql.exec<{ seq: number }>(
@@ -54,26 +71,34 @@ export async function runRewardAlarm(context: ServiceContext, injected?: RewardQ
       return;
     }
   }
-  const stopped = context.storage.sql.exec<{ reason: string }>(
-    'SELECT reason FROM reward_availability WHERE deployment_id = ?', deploymentId,
-  ).toArray()[0];
-  if (stopped !== undefined && stopped.reason !== 'healthy') return;
+  const availability = rewardAvailability(context.storage, context.recoveryGate, deploymentId);
+  if (!availability.distribute && availability.reason !== 'rpc-unavailable') return;
   const next = context.storage.sql.exec<QueueRow>(
     `SELECT request_id, status, checkpoint_hash FROM reward_requests
      WHERE deployment_id = ? AND status IN ('accepted', 'queued', 'processing', 'pending', 'unknown')
      ORDER BY seq LIMIT 1`, deploymentId,
   ).toArray()[0];
-  if (next === undefined) return;
-  if (next.status === 'pending' || next.status === 'unknown') {
-    await runner.reconcile(next.request_id);
-    await context.scheduleAlarm(Date.now() + 30_000);
+  if (next === undefined) {
+    if (availability.reason === 'rpc-unavailable' && await runner.probe?.() === true) {
+      setRewardAvailability(context.storage, deploymentId, 'healthy');
+    } else if (availability.reason === 'rpc-unavailable') {
+      await context.scheduleAlarm(Date.now() + 30_000);
+    }
     return;
   }
-  if (next.status === 'processing') {
-    await runner.reconcile(next.request_id);
-    await context.scheduleAlarm(Date.now() + 30_000);
-    return;
+  try {
+    if (next.status === 'pending' || next.status === 'unknown' || next.status === 'processing') {
+      await runner.reconcile(next.request_id);
+    } else {
+      await runner.dispatch(next.request_id);
+    }
+    if (availability.reason === 'rpc-unavailable' && await runner.probe?.() === true) {
+      setRewardAvailability(context.storage, deploymentId, 'healthy');
+    }
+  } catch (error) {
+    const reason = classifyRewardFailure(error);
+    setRewardAvailability(context.storage, deploymentId, reason);
+    if (reason !== 'rpc-unavailable') return;
   }
-  await runner.dispatch(next.request_id);
   await context.scheduleAlarm(Date.now() + 30_000);
 }
