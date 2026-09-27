@@ -57,6 +57,8 @@ it('holds refreshed terms until an explicit same-epoch confirmation and keeps th
   expect(fixture.signed).toHaveBeenCalledWith(expect.objectContaining({ record: expect.objectContaining({ contentHash: changedHash }) }), changedHash);
   expect(accepted.operation?.chainOutcome).toBe('unknown');
   expect(accepted.view.availablePrivateWei).toBe(10n);
+  expect(accepted.view.utxos[0]?.available).toBe(false);
+  expect(accepted.view.allowedActions).not.toContain('start:pay');
   expect(accepted.view.operations[0]?.operationId).toBe(id);
 });
 

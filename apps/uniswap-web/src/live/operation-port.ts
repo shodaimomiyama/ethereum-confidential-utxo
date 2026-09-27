@@ -130,7 +130,9 @@ export function createOperationPort(deps: OperationPortDependencies): OperationP
       reasons: { ...snapshot.reasons, [`start:${card}`]: reference.chainOutcome === 'pending' ? 'INPUT_RESERVED' : 'RESULT_UNKNOWN' },
       selectedInput: { ...snapshot.selectedInput, [card]: undefined },
     };
-    return result(scope, view, reference, card);
+    // #55 has reserved the input. A pending hash does not establish a new
+    // spendable set, so require a fresh #30 sync before another spend.
+    return result(scope, projectUnconfirmedSync(view), reference, card);
   }
   const port: OperationPort = {
     connectionChanged(previous, connection) { pending = undefined; lastAttempt = undefined; return projectConnectionChange(previous, connection); },
