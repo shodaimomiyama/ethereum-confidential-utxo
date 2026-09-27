@@ -88,25 +88,9 @@ importers:
       '@confidential-utxo/core':
         specifier: workspace:*
         version: link:../core
-      '@confidential-utxo/crypto':
-        specifier: workspace:*
-        version: link:../crypto
       '@confidential-utxo/ethereum':
         specifier: workspace:*
         version: link:../ethereum
-      viem:
-        specifier: 2.56.9
-        version: 2.56.9(typescript@6.0.3)(zod@4.4.3)
-    devDependencies:
-      '@types/node':
-        specifier: 24.10.1
-        version: 24.10.1
-      typescript:
-        specifier: 6.0.3
-        version: 6.0.3
-      vitest:
-        specifier: 4.1.11
-        version: 4.1.11(@types/node@24.10.1)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@7.3.6(@types/node@24.10.1))
 
   packages/core:
     dependencies:

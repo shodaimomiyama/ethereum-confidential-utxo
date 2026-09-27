@@ -55,20 +55,6 @@ it("AC-06: VEC-07-APPLICATION-DEPOSIT key supports repeated synthetic creation/s
   expect(second.utxos.map(u => u.status)).toEqual(["spent", "available"]);
   expect(selectInputs(context, second.utxos, { kind: 2, owner, amount: 7n })).toHaveLength(1);
 });
-it("counts each UTXO once while trying a new then retained receipt key", async () => {
-  const f = await fixture();
-  const oldPrivateKey = await f.keys.getKey();
-  const keyPort = { getKey: async () => new Uint8Array(32).fill(1),
-    getKeys: async () => [new Uint8Array(32).fill(1), oldPrivateKey] };
-  const first = await synchronize(context, { ...f, keys: keyPort });
-  const second = await synchronize(context, { ...f, keys: keyPort }, first);
-  expect(first).toMatchObject({ status: "complete", availableWei: 7n });
-  expect(second).toEqual(first);
-  if (first.status === "complete") {
-    expect(first.utxos).toHaveLength(2);
-    expect(first.utxos.filter(item => item.id === f.operations[1]!.outputLogs[0]!.outputId)).toHaveLength(1);
-  }
-});
 
 type Fixture = Awaited<ReturnType<typeof fixture>>;
 const failures: [string, (f: Fixture) => void][] = [

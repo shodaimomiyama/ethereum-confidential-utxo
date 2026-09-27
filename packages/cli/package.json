@@ -3,27 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "bin": {
-    "cutxo": "./dist/bin.js"
-  },
-  "exports": {
-    ".": "./dist/index.js"
-  },
-  "types": "./dist/index.d.ts",
-  "scripts": {
-    "build": "tsc --project tsconfig.build.json",
-    "check": "pnpm build && tsc --noEmit --project tsconfig.json",
-    "test": "pnpm build && pnpm --dir ../.. exec vitest run --config packages/cli/vitest.config.ts"
-  },
   "dependencies": {
     "@confidential-utxo/core": "workspace:*",
-    "@confidential-utxo/crypto": "workspace:*",
-    "@confidential-utxo/ethereum": "workspace:*",
-    "viem": "2.56.9"
-  },
-  "devDependencies": {
-    "@types/node": "24.10.1",
-    "typescript": "6.0.3",
-    "vitest": "4.1.11"
+    "@confidential-utxo/ethereum": "workspace:*"
   }
 }

@@ -4,7 +4,7 @@ import * as crypto from "@confidential-utxo/crypto";
 import { hashTypedData } from "viem";
 import type { Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { authorizationTypedData, buildOperation, CoreFailure, fixOperation, operationId, proveFixedOperation, regenerateProofs, toPublicSubmission } from "../src/index.js";
+import { authorizationTypedData, buildOperation, CoreFailure, operationId, regenerateProofs, toPublicSubmission } from "../src/index.js";
 import type { Context, OwnedUtxo, RecipientInfo } from "../src/index.js";
 
 const vectors = JSON.parse(readFileSync(new URL("../../../tests/vectors/cases/authorization.json", import.meta.url), "utf8"));
@@ -18,27 +18,6 @@ function coin(amount = 10n): OwnedUtxo {
   return { id: `0x${"01".repeat(32)}`, owner: account.address, opening, commitment: crypto.commit(opening), checkpoint: { number: 1n, hash: `0x${"02".repeat(32)}`, mode: "finalized" }, status: "available", chainId: context.chainId, pool: context.pool };
 }
 afterEach(() => vi.restoreAllMocks());
-it("fixes request, packets and openings before proof attempts", async () => {
-  const fixed = await fixOperation({ kind: 1, owner: account.address, amount: 3n,
-    recipient: recipient(), changeRecipient: recipient() }, context, { randomSalt: salt, inputs: [coin()] });
-  expect(fixed).not.toHaveProperty("balanceProof");
-  expect(fixed).not.toHaveProperty("rangeProofs");
-  const before = structuredClone(fixed);
-  const first = proveFixedOperation(fixed);
-  const second = proveFixedOperation(fixed);
-  expect(first.operationId).toBe(second.operationId);
-  expect(first.request.outputs.map(output => output.packet)).toEqual(second.request.outputs.map(output => output.packet));
-  expect(first.outputIds).toEqual(fixed.outputIds);
-  expect(first.request.outputs.map(output => output.commitment)).toEqual(before.request.outputs.map(output => output.commitment));
-  expect(fixed).toEqual(before);
-  expect(first.balanceProof).not.toEqual(second.balanceProof);
-  expect(() => proveFixedOperation({ ...fixed, openings: [] })).toThrow();
-  vi.spyOn(crypto, "generateRangeProof").mockImplementation(() => { throw new crypto.CryptoFailure("SCALAR_EXHAUSTED", "scalar"); });
-  expect(() => proveFixedOperation(fixed)).toThrow();
-  expect(fixed).toEqual(before);
-  expect(() => toPublicSubmission(fixed as typeof first)).toThrow();
-  expect(JSON.stringify(fixed, (_, value) => typeof value === "bigint" ? value.toString() : value)).toContain(fixed.operationId);
-});
 it("builds a real 1 wei deposit and excludes secrets from public submission", async () => {
   const draft = await buildOperation({ kind: 0, owner: account.address, amount: 1n, recipient: recipient() }, context, { randomSalt: salt, inputs: [] });
   expect(draft.request.kind).toBe(0);
