@@ -1,0 +1,44 @@
+{
+  "tool_lock": {
+    "source_branch": "origin/chore/4-project-setup",
+    "source_commit": "9a61cfb08b6249f7eb5a64f7570377a7f7c996f0",
+    "source_path": "formal/environment/run-smoke.sh",
+    "image": "runtimeverificationinc/kontrol@sha256:858f004144d61b005997f56bb8b7cd15673850286c96e0e5ec0502d9c9a9e204",
+    "k_version": "v7.1.337"
+  },
+  "backend": "haskell",
+  "command": [
+    "docker",
+    "run",
+    "--rm",
+    "--platform",
+    "linux/amd64",
+    "--memory",
+    "16g",
+    "-e",
+    "JAVA_OPTS=-Xmx8g",
+    "-v",
+    "/Users/momiyamashodai/orca/workspaces/ethereum-confidential-utxo/formal-model-32-state-and-path-pq:/work",
+    "-w",
+    "/work",
+    "runtimeverificationinc/kontrol@sha256:858f004144d61b005997f56bb8b7cd15673850286c96e0e5ec0502d9c9a9e204",
+    "kompile",
+    "formal/model/paths.k",
+    "--main-module",
+    "UTXO-PATHS",
+    "--syntax-module",
+    "UTXO-MODEL",
+    "--backend",
+    "haskell",
+    "-o",
+    "formal/model/.cache/compiled"
+  ],
+  "sources": {
+    "formal/model/model.k": "3c123539b0af51d017cfa39a07a5bd86cf691bbf29a4a94c1fdb3deeb9c3e566",
+    "formal/model/auth.k": "58dc105ca47f4ac31d75f589271ab4e8c032fcf1e0decd00162db66bf232cb9a",
+    "formal/model/operations.k": "e67c1ffb923dca49aa13736a53a8529fdffdb6e970ee2990ad7f8a0845d8c972",
+    "formal/model/paths.k": "88dd955c20fa1f0e857c7c1a64ce77bd6e9cc1f586ad1ecc503b87aca6513782"
+  },
+  "definition_sha256": "fa9b7507d5ccc377750a3a0c12da895e0589759aa08ab6778a163e68f4afe5a4",
+  "host": "macOS-26.5-arm64-arm-64bit-Mach-O"
+}
