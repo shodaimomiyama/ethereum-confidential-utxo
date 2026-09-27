@@ -1,5 +1,5 @@
 import type { OperationId, OperationRef, RequestId, Scope } from '@confidential-utxo/uniswap';
-import type { Card, UiAction, ViewState } from '../contracts/index.js';
+import type { Card, CardPhase, UiAction, ViewState } from '../contracts/index.js';
 import { sameScope } from './http.js';
 import type { KeySession } from './key-session.js';
 import type { RecoveryResult } from './recovery.js';
@@ -70,19 +70,85 @@ export interface OperationPort {
   failure(scope: Scope, action: UiAction, previous: ViewState, error: unknown): OperationResult;
 }
 
+const cards = ['reward', 'pay', 'deposit', 'withdraw'] as const;
+const safeWhileStale = (action: string): boolean => action === 'switch-scope' || action === 'resync'
+  || action === 'connect' || action === 'connect-wallet' || action === 'switch-network'
+  || action.startsWith('edit:') || action.startsWith('new-operation:')
+  || action === 'recheck' || action === 'recheck-reward';
+
+/** Keep the last scoped display, but withdraw every action that could use stale spendability. */
+export function projectUnconfirmedSync(previous: ViewState, availability: ViewState['storageAvailability'] = previous.storageAvailability): ViewState {
+  const reason = availability === 'healthy' ? 'RESULT_UNKNOWN' : 'SERVICE_UNAVAILABLE';
+  return { ...previous, isStale: true, storageAvailability: availability,
+    preparation: { ...previous.preparation, key: false },
+    selectedInput: {},
+    utxos: previous.utxos.map(utxo => ({ ...utxo, available: false })),
+    allowedActions: previous.allowedActions.filter(safeWhileStale),
+    operationActions: Object.fromEntries(Object.entries(previous.operationActions)
+      .map(([id, actions]) => [id, actions.filter(action => action === 'recheck')])),
+    reasons: { ...previous.reasons, ...Object.fromEntries(cards.map(card => [`start:${card}`, reason])) },
+  };
+}
+
+/** A new scope cannot inherit balances, drafts, operation IDs or reward requests. */
+export function projectScopeChange(previous: ViewState, scope: Scope): ViewState {
+  if (sameScope(previous.scope, scope)) return projectUnconfirmedSync(previous);
+  return { ...previous, scope, connection: 'disconnected', currentScope: undefined,
+    preparation: { wallet: false, network: false, key: false, faucet: false, gas: false },
+    utxos: [], selectedInput: {}, operationCards: {}, operationActions: {},
+    publicEthWei: 0n, availablePrivateWei: 0n, pendingPrivateWei: 0n, checkedAt: undefined,
+    isStale: true, cards: Object.fromEntries(cards.map(card => [card, { phase: 'needs-preparation', input: {} }])) as ViewState['cards'],
+    operations: [], rewardRequests: [], allowedActions: ['switch-scope', 'connect'], reasons: {},
+  };
+}
+
+/** Wallet events invalidate key material and all previously calculated spending choices. */
+export function projectConnectionChange(previous: ViewState, connection: WalletEvent): ViewState {
+  const same = connection.scope !== undefined && sameScope(previous.scope, connection.scope);
+  const stale = projectUnconfirmedSync(previous);
+  return { ...stale, connection: same ? 'connected' : 'disconnected',
+    currentScope: same ? previous.scope : undefined,
+    preparation: { ...stale.preparation, wallet: same, network: same, key: false },
+  };
+}
+
+/** A draft edit requires a fresh adapter decision before it becomes spendable. */
+export function projectDraft(previous: ViewState, action: Extract<UiAction, { type: 'edit' | 'new-operation' }>): ViewState {
+  const current = previous.cards[action.card];
+  const input = action.type === 'edit' ? { ...current.input, [action.field]: action.value } : {};
+  const next = { ...current, input, phase: 'invalid-input' as const, reason: 'INPUT_INVALID' as const,
+    approvalPurpose: undefined, quote: undefined, proposedQuote: undefined };
+  return { ...previous, cards: { ...previous.cards, [action.card]: next },
+    selectedInput: { ...previous.selectedInput, [action.card]: undefined },
+    allowedActions: previous.allowedActions.filter(key => key !== `start:${action.card}` && key !== 'confirm-terms'),
+    reasons: { ...previous.reasons, [`start:${action.card}`]: 'INPUT_INVALID' },
+  };
+}
+
+function phaseOf(operation: OperationRef, current: CardPhase): CardPhase {
+  if (operation.chainOutcome === 'unknown') return 'unknown';
+  if (operation.chainOutcome === 'pending') return 'pending';
+  if (operation.chainOutcome === 'finalized-failure') return 'failed';
+  if (operation.chainOutcome !== 'finalized-success') return current;
+  if (operation.receiptState === 'invalid') return 'receipt-invalid';
+  if (operation.receiptState === 'pending') return 'confirmed-receipt-pending';
+  if (operation.receiptState === 'confirmed' || operation.receiptState === 'none') return 'complete';
+  return current;
+}
+
 export function mapDecisionToView(previous: ViewState, result: OperationResult): ViewState {
   const { view, operation, card } = result;
   if (!sameScope(previous.scope, result.scope) || !sameScope(view.scope, result.scope)
     || view.operations.some(item => !sameScope(item.scope, result.scope))
     || (operation && !sameScope(operation.scope, result.scope))) throw new Error('SCOPE_CHANGED');
+  if (view.isStale === true || (view.storageAvailability !== undefined && view.storageAvailability !== 'healthy')) {
+    return projectUnconfirmedSync(previous, view.storageAvailability);
+  }
   if (!operation) return view;
   if (!card) throw new Error('OPERATION_CARD_REQUIRED');
   const state = view.cards[card];
   // This projects an already decided chain/receipt outcome; it never infers success from a hash.
-  const phase = operation.chainOutcome === 'finalized-success'
-    ? operation.receiptState === 'invalid' ? 'receipt-invalid'
-      : operation.receiptState === 'pending' ? 'confirmed-receipt-pending' : 'complete'
-    : state.phase;
+  const phase = phaseOf(operation, state.phase);
   return { ...view, operations: [...view.operations.filter(item => item.operationId !== operation.operationId), operation],
     operationCards: { ...view.operationCards, [operation.operationId]: card },
     cards: { ...view.cards, [card]: { ...state, phase } } };
