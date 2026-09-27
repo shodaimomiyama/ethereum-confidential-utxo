@@ -43,6 +43,12 @@ export interface OperationPortDependencies {
     readonly deploymentId: Scope['deploymentId']; readonly coreContext: Context;
     readonly history: HistoryPort; readonly keys: ReceiptKeyPort; readonly previousCore?: CoreSyncResult;
   };
+  /** Recompute actions from the new core snapshot and published card decisions; never reuse stale permissions. */
+  recomputeReady?(evidence: {
+    readonly scope: Scope; readonly context: OperationContext;
+    readonly core: Extract<CoreSyncResult, { readonly status: 'complete' }>;
+    readonly view: ViewState;
+  }): Promise<Pick<ViewState, 'cards' | 'allowedActions' | 'reasons' | 'selectedInput'>>;
   recheck(scope: Scope, operationId: OperationId, context: OperationContext, previous: ViewState): Promise<OperationResult>;
   resumeOriginal(scope: Scope, operationId: OperationId, context: OperationContext, previous: ViewState): Promise<OperationResult>;
   retryAttempt(scope: Scope, operationId: OperationId, context: OperationContext, previous: ViewState): Promise<OperationResult>;
@@ -118,9 +124,14 @@ export function createOperationPort(deps: OperationPortDependencies): OperationP
     // A new scoped #55 client accepts the refreshed decision as its initial private handle.
     return wrap(handle.scope, context, 'pay', next, deps.payment(context), handle.input);
   }
-  function operationView(scope: Scope, card: Card, reference: OperationRef): OperationResult {
+  function operationView(scope: Scope, card: PreparedHandle['card'], prepared: PaymentPrepared, reference: OperationRef): OperationResult {
     const snapshot = deps.snapshot();
-    if (!sameScope(scope, reference.scope)) throw new Error('SCOPE_CHANGED');
+    if (!sameScope(scope, reference.scope) || !same(reference.operationId, prepared.record.operationId)
+      || (card === 'pay' && (prepared.record.kind !== 'pay' || reference.paymentId === undefined
+        || !same(reference.paymentId, prepared.record.paymentId)))
+      || (card === 'withdraw' && (prepared.record.kind !== 'withdraw' || reference.paymentId !== undefined))) {
+      throw new Error('SCOPE_CHANGED');
+    }
     const view: ViewState = { ...snapshot, operations: [...snapshot.operations.filter(item => !same(item.operationId, reference.operationId)), reference],
       operationCards: { ...snapshot.operationCards, [reference.operationId]: card },
       operationActions: { ...snapshot.operationActions, [reference.operationId]: ['recheck'] },
@@ -139,6 +150,25 @@ export function createOperationPort(deps: OperationPortDependencies): OperationP
     switchScope(previous, scope) { pending = undefined; lastAttempt = undefined; return projectScopeChange(previous, scope); },
     async transition(scope, action: TransitionAction, previous, context) {
       check(scope, context);
+      if (action.type === 'connect' || action.type === 'switch-network') {
+        return result(scope, { ...previous,
+          preparation: { ...previous.preparation, wallet: true, network: true, key: false },
+          allowedActions: [...new Set([...previous.allowedActions.filter(item => !item.startsWith('start:')), 'prepare-key'])],
+        });
+      }
+      if (action.type === 'prepare-key') {
+        context.recordKey();
+        context.check();
+        return result(scope, { ...previous,
+          preparation: { ...previous.preparation, key: true },
+          allowedActions: [...new Set([...previous.allowedActions.filter(item => !item.startsWith('start:')), 'authenticate', 'resync'])],
+        });
+      }
+      if (action.type === 'authenticate') {
+        return result(scope, { ...previous,
+          allowedActions: [...new Set([...previous.allowedActions.filter(item => !item.startsWith('start:')), 'resync'])],
+        });
+      }
       if (action.type === 'edit' || action.type === 'new-operation') {
         if (action.card === 'pay') pending = undefined;
         return result(scope, projectDraft(previous, action));
@@ -207,8 +237,9 @@ export function createOperationPort(deps: OperationPortDependencies): OperationP
         throw error;
       }
       check(handle.scope, context);
+      const projected = operationView(handle.scope, handle.card, handle.prepared, reference);
       lastAttempt = undefined;
-      return operationView(handle.scope, handle.card, reference);
+      return projected;
     },
     async syncFinalized(scope, context, recovered) {
       const previous = check(scope, context);
@@ -225,7 +256,18 @@ export function createOperationPort(deps: OperationPortDependencies): OperationP
       if (fingerprint(resolved(scope)) !== expected) throw new Error('SCOPE_CHANGED');
       // Recovery may inform the caller's ports, but it cannot replace #30's chain evidence.
       void recovered;
-      return result(scope, projected.view);
+      let view = projected.view;
+      let keyReady = false;
+      try { context.recordKey(); context.check(); keyReady = true; } catch { context.check(); }
+      view = { ...view, preparation: { ...view.preparation, key: keyReady } };
+      if (projected.core.status === 'complete' && view.storageAvailability === 'healthy'
+        && keyReady && deps.recomputeReady) {
+        const ready = await deps.recomputeReady({ scope, context, core: projected.core, view });
+        check(scope, context);
+        if (fingerprint(resolved(scope)) !== expected) throw new Error('SCOPE_CHANGED');
+        view = { ...view, ...ready };
+      }
+      return result(scope, view);
     },
     startReward: (scope, input, context) => deps.reward.start(scope, input, context),
     recheckReward: (scope, requestId: RequestId, context) => deps.reward.recheck(scope, requestId, context),

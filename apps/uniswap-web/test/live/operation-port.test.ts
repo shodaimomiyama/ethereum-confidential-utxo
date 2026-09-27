@@ -38,9 +38,58 @@ function setup() {
     reward: {}, deposit: {}, coreSync: () => ({ deploymentId: scope.deploymentId, coreContext, history: {}, keys: {} }),
     recheck: vi.fn(), resumeOriginal: vi.fn(), retryAttempt: vi.fn(), receive: vi.fn() } as unknown as OperationPortDependencies;
   const port = createOperationPort(deps);
-  return { port, context, signed, refreshPay, publish: (view: ViewState) => { current = view; },
+  return { port, context, deps, signed, refreshPay, publish: (view: ViewState) => { current = view; },
     invalidate: () => { epoch++; }, setNow: (value: number) => { now = value; }, client };
 }
+
+it('accepts setup transitions only after the controller completed the scoped key and auth work', async () => {
+  const fixture = setup();
+  const keyReady = { ...fixture.context, recordKey: () => ({}) } as OperationContext;
+  const prepared = await fixture.port.transition(scope, { type: 'prepare-key' }, state(), keyReady);
+  expect(prepared.view.preparation.key).toBe(true);
+  expect(prepared.view.allowedActions).toContain('authenticate');
+  const authenticated = await fixture.port.transition(scope, { type: 'authenticate' }, prepared.view, keyReady);
+  expect(authenticated.view.allowedActions).toContain('resync');
+  await expect(fixture.port.transition(scope, { type: 'prepare-key' }, state(), fixture.context)).rejects.toThrow();
+});
+
+it('rejects a #55 operation reference for another operation and retains the original ID', async () => {
+  const fixture = setup();
+  fixture.setNow(10);
+  fixture.signed.mockResolvedValueOnce({ scope, operationId: `0x${'99'.repeat(32)}`, paymentId: `0x${'ff'.repeat(32)}`,
+    attemptIds: [], txHashes: [], chainOutcome: 'unknown', receiptState: 'none' });
+  const first = await fixture.port.preparePay(scope, { amount: '1' }, fixture.context);
+  await expect(fixture.port.authorize(first, fixture.context)).rejects.toThrow('SCOPE_CHANGED');
+  const failed = fixture.port.failure(scope, { type: 'start', card: 'pay' }, state(), new Error('SCOPE_CHANGED'));
+  expect(failed.view.operations[0]?.operationId).toBe(id);
+});
+
+it('restores scoped key readiness after complete core sync and uses only an injected fresh action decision', async () => {
+  const fixture = setup();
+  const blockHash = `0x${'66'.repeat(32)}` as `0x${string}`;
+  const checkpoint = { number: 4n, hash: blockHash, mode: 'finalized' as const };
+  const history = {
+    getFinalizedCheckpoint: async () => checkpoint,
+    getContext: async () => ({ complete: true, blockHash, value: coreContext }),
+    getOperations: async () => ({ complete: true, blockHash, value: [] }),
+    getCanonicalHeader: async () => ({ complete: true, blockHash, value: { number: 4n, hash: blockHash } }),
+  };
+  const recomputeReady = vi.fn(async ({ view }: { view: ViewState }) => ({
+    cards: view.cards, selectedInput: view.selectedInput, reasons: view.reasons,
+    allowedActions: ['resync', 'start:reward'],
+  }));
+  const deps = { ...fixture.deps, coreSync: () => ({ deploymentId: scope.deploymentId, coreContext, history, keys: {} }),
+    recomputeReady } as unknown as OperationPortDependencies;
+  const context = { ...fixture.context, recordKey: () => ({}) } as OperationContext;
+  const synced = await createOperationPort(deps).syncFinalized(scope, context);
+  expect(synced.view.preparation.key).toBe(true);
+  expect(recomputeReady).toHaveBeenCalledOnce();
+  expect(recomputeReady.mock.calls[0]![0].view.isStale).toBe(false);
+  expect(synced.view.allowedActions).toContain('start:reward');
+  const withoutDecision = await createOperationPort({ ...deps, recomputeReady: undefined }).syncFinalized(scope, context);
+  expect(withoutDecision.view.allowedActions).not.toContain('start:reward');
+  expect(withoutDecision.view.preparation.key).toBe(true);
+});
 
 it('holds refreshed terms until an explicit same-epoch confirmation and keeps the secret out of ViewState', async () => {
   const fixture = setup();
