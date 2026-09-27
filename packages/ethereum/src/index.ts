@@ -9,5 +9,5 @@ export { canonicalHeader, createEthereumRpc, defaultRpcPolicy, readPinnedCall, r
 export type { RpcConnection, RpcPolicy } from "./rpc.js";
 export { chunkInclusive, createHistoryPort, getPoolOperations } from "./history.js";
 export { encodePoolSubmission, submitPublicOperation, replaceSubmissionFee } from "./submission.js";
-export type { SendOptions, SendResult, SubmissionWallet } from "./submission.js";
+export type { PreparedSend, SendHooks, SendOptions, SendResult, SubmissionWallet } from "./submission.js";
 export { decodePoolFailure, observeAttempt } from "./observation.js";
