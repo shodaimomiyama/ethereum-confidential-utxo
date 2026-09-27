@@ -116,3 +116,19 @@ it('rejects a caller supplied payment content hash unrelated to displayed terms'
   expect(() => buildPreparedPayment(draft, { ...decision,
     identity: { ...decision.identity, contentHash: hash('f') as never } })).toThrow();
 });
+it('changes the confirmation hash for every displayed fixed payment term', async () => {
+  const { draft, decision } = await fixture('pay');
+  if (decision.kind !== 'pay') throw new Error('fixture');
+  const original = paymentContentHash(draft, decision.terms, decision.quote, deployment);
+  const changed = [
+    paymentContentHash(draft, { ...decision.terms, ethAmount: 8n }, decision.quote, deployment),
+    paymentContentHash(draft, { ...decision.terms, minAmountOut: 98n }, decision.quote, deployment),
+    paymentContentHash(draft, { ...decision.terms, deadline: 601n }, decision.quote, deployment),
+    paymentContentHash(draft, decision.terms, { ...decision.quote, quoteOut: 101n }, deployment),
+    paymentContentHash(draft, { ...decision.terms, recipient: deployment.token }, decision.quote, deployment),
+    paymentContentHash(draft, { ...decision.terms, token: deployment.pair }, decision.quote, deployment),
+  ];
+  for (const contentHash of changed) expect(contentHash).not.toBe(original);
+  expect(paymentContentHash(draft, decision.terms,
+    { ...decision.quote, blockHash: hash('f') as never, startedAtMs: 20 }, deployment)).toBe(original);
+});
