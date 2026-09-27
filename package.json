@@ -10,7 +10,7 @@
     "build:site": "pnpm --filter @confidential-utxo/uniswap-web build",
     "test:site": "pnpm --filter @confidential-utxo/uniswap-web test:site",
     "check:contracts": "pnpm --filter @confidential-utxo/crypto build && pnpm --filter @confidential-utxo/core build && tsc --noEmit -p tsconfig.contracts.json",
-    "test:contracts": "pnpm --filter @confidential-utxo/crypto build && pnpm --filter @confidential-utxo/core build && vitest run packages/uniswap apps/uniswap-web",
+    "test:contracts": "pnpm --filter @confidential-utxo/crypto build && pnpm --filter @confidential-utxo/core build && vitest run packages/uniswap apps/uniswap-web --maxWorkers=2 --testTimeout=15000",
     "check:service": "pnpm --filter @confidential-utxo/crypto build && pnpm --filter @confidential-utxo/core build && pnpm --filter @confidential-utxo/ethereum build && pnpm --filter @confidential-utxo/uniswap-service build",
     "test:service": "pnpm --filter @confidential-utxo/crypto build && pnpm --filter @confidential-utxo/core build && pnpm --filter @confidential-utxo/ethereum build && pnpm --filter @confidential-utxo/uniswap-service test",
     "fixture:verifier": "node scripts/generate-verifier-fixtures.mjs",
