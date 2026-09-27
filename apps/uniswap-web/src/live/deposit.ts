@@ -15,6 +15,15 @@ export interface DepositDependencies {
   /** Must durably save the secret draft; there is currently no production web binding. */
   readonly storage: StoragePort;
   readonly keys: ReceiptKeyPort;
+  /** Durable atomic claim, keyed by scope and operation ID. Only external reconciliation may clear a sent claim. */
+  readonly attempts: DepositAttemptGate;
+}
+
+export interface DepositAttemptGate {
+  claim(scope: Scope, operationId: OperationId): Promise<
+    { readonly status: 'claimed'; readonly token: string } | { readonly status: 'active' | 'unknown' }>;
+  /** Release only a claim for which the wallet send was never reached. */
+  release(scope: Scope, operationId: OperationId, token: string): Promise<'released' | 'unknown'>;
 }
 
 /** This handle contains a secret draft and must remain outside ViewState. */
@@ -33,7 +42,7 @@ export type DepositResult =
   | { readonly status: 'not-submitted'; readonly operationId: OperationId; readonly outputIds: readonly Hex[];
       readonly reason: 'authorization-required' | 'signature-rejected' | 'invalid' | 'storage-unknown' |
         'unconfirmed' | 'executed' | 'conflict' | 'submission-rejected' | 'insufficient-public-eth' |
-        'attempt-in-progress' | 'attempt-active' };
+        'attempt-in-progress' | 'attempt-active' | 'attempt-gate-unknown' };
 
 const same = (a: string, b: string): boolean => a.toLowerCase() === b.toLowerCase();
 const validHash = (value: unknown): value is Hex => typeof value === 'string' && /^0x[0-9a-fA-F]{64}$/.test(value);
@@ -118,6 +127,13 @@ export function createDepositCoordinator(deps: DepositDependencies) {
       const gate = await prepareSubmission(draft, { history: tracked.history, storage: deps.storage, keys: deps.keys });
       check();
       if (gate.status !== 'ready') return { status: 'not-submitted', ...id, reason: gate.status };
+      let claim: Awaited<ReturnType<DepositAttemptGate['claim']>>;
+      try { claim = await deps.attempts.claim(scope, prepared.operationId); }
+      catch { return { status: 'not-submitted', ...id, reason: 'attempt-gate-unknown' }; }
+      check();
+      if (claim.status !== 'claimed') return { status: 'not-submitted', ...id,
+        reason: claim.status === 'active' ? 'attempt-active' : 'attempt-gate-unknown' };
+      if (!claim.token) return { status: 'not-submitted', ...id, reason: 'attempt-gate-unknown' };
       // #30 checks public ETH >= the Deposit value plus the maximum gas cost before wallet send.
       try {
         check();
@@ -142,12 +158,15 @@ export function createDepositCoordinator(deps: DepositDependencies) {
           attemptState.set(prepared, 'active');
           return { status: 'unknown', ...id };
         }
-        if (!possibleSend && error instanceof EthereumFailure && error.code === 'SIMULATION_FAILED' &&
-          error.stage === 'submission.balance') {
-          return { status: 'not-submitted', ...id, reason: 'insufficient-public-eth' };
-        }
         if (possibleSend) attemptState.set(prepared, 'active');
-        return possibleSend ? { status: 'unknown', ...id } : { status: 'not-submitted', ...id, reason: 'submission-rejected' };
+        if (possibleSend) return { status: 'unknown', ...id };
+        let released: 'released' | 'unknown';
+        try { released = await deps.attempts.release(scope, prepared.operationId, claim.token); }
+        catch { released = 'unknown'; }
+        if (released !== 'released') return { status: 'not-submitted', ...id, reason: 'attempt-gate-unknown' };
+        return { status: 'not-submitted', ...id,
+          reason: error instanceof EthereumFailure && error.code === 'SIMULATION_FAILED' &&
+            error.stage === 'submission.balance' ? 'insufficient-public-eth' : 'submission-rejected' };
       }
       } finally { if (attemptState.get(prepared) === 'in-flight') attemptState.delete(prepared); }
     },

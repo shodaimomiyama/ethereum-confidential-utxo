@@ -1,7 +1,7 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import { prepareSubmission, verifyOperationAuthorization } from '@confidential-utxo/core';
 import { createScopedEthereumBridge } from '../../src/live/ethereum.js';
-import { createDepositCoordinator } from '../../src/live/deposit.js';
+import { createDepositCoordinator, type DepositAttemptGate } from '../../src/live/deposit.js';
 import type { LocalDraft } from '@confidential-utxo/core';
 import type { OperationContext } from '../../src/live/operations.js';
 import type { ScopedEthereumBridge } from '../../src/live/ethereum.js';
@@ -28,7 +28,25 @@ vi.mock('@confidential-utxo/core', async importOriginal => ({ ...await importOri
 }));
 vi.mock('../../src/live/ethereum.js', () => ({ createScopedEthereumBridge: vi.fn() }));
 
-function fixture() {
+function durableGate(): DepositAttemptGate & { claim: ReturnType<typeof vi.fn>; release: ReturnType<typeof vi.fn> } {
+  const active = new Set<string>();
+  const key = (value: Scope, operationId: string) => `${value.deploymentId}:${value.owner.toLowerCase()}:${operationId.toLowerCase()}`;
+  return {
+    claim: vi.fn(async (value: Scope, operationId: string) => {
+      const selected = key(value, operationId);
+      if (active.has(selected)) return { status: 'active' as const };
+      active.add(selected);
+      return { status: 'claimed' as const, token: selected };
+    }),
+    release: vi.fn(async (value: Scope, operationId: string, token: string) => {
+      if (token !== key(value, operationId) || !active.has(token)) return 'unknown' as const;
+      active.delete(token);
+      return 'released' as const;
+    }),
+  };
+}
+
+function fixture(attempts = durableGate()) {
   let epoch = 7;
   let current = verified;
   const typedSign = vi.fn(async () => ({ value: signature, scope, epoch: 7 }));
@@ -49,9 +67,9 @@ function fixture() {
   }) as unknown as ScopedEthereumBridge);
   const storage = { saveDraft: vi.fn(async () => 'saved' as const) };
   const keys = { getKey: vi.fn() };
-  const dependencies = { context, rpc: {} as RpcConnection, resolveVerified: () => current, storage, keys };
+  const dependencies = { context, rpc: {} as RpcConnection, resolveVerified: () => current, storage, keys, attempts };
   const coordinator = createDepositCoordinator(dependencies);
-  return { coordinator, typedSign, submitDeposit, sendTransaction, runCrypto, storage, keys,
+  return { coordinator, typedSign, submitDeposit, sendTransaction, runCrypto, storage, keys, attempts,
     anotherCoordinator: () => createDepositCoordinator(dependencies),
     advance: () => { epoch++; }, changeDeployment: () => { current = { ...verified, manifest: { ...verified.manifest, chainId: 1 } } as VerifiedDeployment; } };
 }
@@ -146,6 +164,29 @@ it('keeps an unknown attempted send active against later calls', async () => {
   expect(f.sendTransaction).toHaveBeenCalledOnce();
 });
 
+it('blocks a reconstructed handle with the same scoped operation ID after a pending send', async () => {
+  const attempts = durableGate();
+  const first = fixture(attempts);
+  const initial = await first.coordinator.prepare(10n, recipient);
+  expect((await first.coordinator.authorizeAndSubmit(initial, true)).status).toBe('pending');
+  const reloaded = fixture(attempts);
+  const reconstructed = await reloaded.coordinator.prepare(10n, recipient);
+  expect(reconstructed).not.toBe(initial);
+  expect(await reloaded.coordinator.authorizeAndSubmit(reconstructed, true)).toMatchObject({ status: 'not-submitted',
+    reason: 'attempt-active', operationId: id, outputIds: [outputId] });
+  expect(reloaded.submitDeposit).not.toHaveBeenCalled();
+  expect(attempts.claim).toHaveBeenCalledTimes(2);
+});
+
+it('fails closed when the durable claim ACK is unknown', async () => {
+  const f = fixture();
+  const prepared = await f.coordinator.prepare(10n, recipient);
+  f.attempts.claim.mockResolvedValueOnce({ status: 'unknown' });
+  expect(await f.coordinator.authorizeAndSubmit(prepared, true)).toMatchObject({ status: 'not-submitted',
+    reason: 'attempt-gate-unknown', operationId: id });
+  expect(f.submitDeposit).not.toHaveBeenCalled();
+});
+
 it('reports only the exact #30 public balance failure as insufficient public ETH', async () => {
   const f = fixture();
   const prepared = await f.coordinator.prepare(10n, recipient);
@@ -157,6 +198,7 @@ it('reports only the exact #30 public balance failure as insufficient public ETH
   expect(await f.coordinator.authorizeAndSubmit(prepared, true)).toMatchObject({ status: 'not-submitted',
     reason: 'submission-rejected', operationId: id });
   expect(f.submitDeposit).toHaveBeenCalledTimes(2);
+  expect(f.attempts.release).toHaveBeenCalledTimes(2);
 });
 
 it('blocks scope drift after signing and before the persistence gate', async () => {
