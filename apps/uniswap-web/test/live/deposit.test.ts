@@ -28,17 +28,17 @@ vi.mock('@confidential-utxo/core', async importOriginal => ({ ...await importOri
 }));
 vi.mock('../../src/live/ethereum.js', () => ({ createScopedEthereumBridge: vi.fn() }));
 
-function durableGate(): DepositAttemptGate & { claim: ReturnType<typeof vi.fn>; release: ReturnType<typeof vi.fn> } {
+function durableGate() {
   const active = new Set<string>();
   const key = (value: Scope, operationId: string) => `${value.deploymentId}:${value.owner.toLowerCase()}:${operationId.toLowerCase()}`;
   return {
-    claim: vi.fn(async (value: Scope, operationId: string) => {
+    claim: vi.fn<DepositAttemptGate['claim']>(async (value, operationId) => {
       const selected = key(value, operationId);
       if (active.has(selected)) return { status: 'active' as const };
       active.add(selected);
       return { status: 'claimed' as const, token: selected };
     }),
-    release: vi.fn(async (value: Scope, operationId: string, token: string) => {
+    release: vi.fn<DepositAttemptGate['release']>(async (value, operationId, token) => {
       if (token !== key(value, operationId) || !active.has(token)) return 'unknown' as const;
       active.delete(token);
       return 'released' as const;
@@ -185,6 +185,30 @@ it('fails closed when the durable claim ACK is unknown', async () => {
   expect(await f.coordinator.authorizeAndSubmit(prepared, true)).toMatchObject({ status: 'not-submitted',
     reason: 'attempt-gate-unknown', operationId: id });
   expect(f.submitDeposit).not.toHaveBeenCalled();
+});
+
+it('releases a durable claim when the wallet epoch drifts before the send starts', async () => {
+  const f = fixture();
+  const prepared = await f.coordinator.prepare(10n, recipient);
+  const claim = f.attempts.claim.getMockImplementation()!;
+  f.attempts.claim.mockImplementationOnce(async (selected: Scope, operationId: Parameters<DepositAttemptGate['claim']>[1]) => {
+    const ack = await claim(selected, operationId);
+    f.advance();
+    return ack;
+  });
+  await expect(f.coordinator.authorizeAndSubmit(prepared, true)).rejects.toThrow('SCOPE_CHANGED');
+  expect(f.attempts.release).toHaveBeenCalledWith(scope, id, expect.any(String));
+  expect(f.submitDeposit).not.toHaveBeenCalled();
+});
+
+it('fails closed when a pre-send release cannot be confirmed', async () => {
+  const f = fixture();
+  const prepared = await f.coordinator.prepare(10n, recipient);
+  f.submitDeposit.mockRejectedValueOnce(new EthereumFailure('SIMULATION_FAILED', 'submission.balance'));
+  f.attempts.release.mockResolvedValueOnce('unknown');
+  expect(await f.coordinator.authorizeAndSubmit(prepared, true)).toMatchObject({ status: 'not-submitted',
+    reason: 'attempt-gate-unknown', operationId: id });
+  expect(f.sendTransaction).not.toHaveBeenCalled();
 });
 
 it('reports only the exact #30 public balance failure as insufficient public ETH', async () => {

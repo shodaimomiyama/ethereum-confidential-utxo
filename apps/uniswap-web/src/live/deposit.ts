@@ -130,7 +130,6 @@ export function createDepositCoordinator(deps: DepositDependencies) {
       let claim: Awaited<ReturnType<DepositAttemptGate['claim']>>;
       try { claim = await deps.attempts.claim(scope, prepared.operationId); }
       catch { return { status: 'not-submitted', ...id, reason: 'attempt-gate-unknown' }; }
-      check();
       if (claim.status !== 'claimed') return { status: 'not-submitted', ...id,
         reason: claim.status === 'active' ? 'attempt-active' : 'attempt-gate-unknown' };
       if (!claim.token) return { status: 'not-submitted', ...id, reason: 'attempt-gate-unknown' };
@@ -154,16 +153,15 @@ export function createDepositCoordinator(deps: DepositDependencies) {
         attemptState.set(prepared, 'active');
         return { status: 'unknown', ...id, ...(validHash(result.attempt.txHash) ? { txHash: result.attempt.txHash } : {}) };
       } catch (error) {
-        try { check(); } catch {
+        if (possibleSend) {
           attemptState.set(prepared, 'active');
           return { status: 'unknown', ...id };
         }
-        if (possibleSend) attemptState.set(prepared, 'active');
-        if (possibleSend) return { status: 'unknown', ...id };
         let released: 'released' | 'unknown';
         try { released = await deps.attempts.release(scope, prepared.operationId, claim.token); }
         catch { released = 'unknown'; }
         if (released !== 'released') return { status: 'not-submitted', ...id, reason: 'attempt-gate-unknown' };
+        check();
         return { status: 'not-submitted', ...id,
           reason: error instanceof EthereumFailure && error.code === 'SIMULATION_FAILED' &&
             error.stage === 'submission.balance' ? 'insufficient-public-eth' : 'submission-rejected' };
