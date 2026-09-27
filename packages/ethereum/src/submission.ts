@@ -27,6 +27,10 @@ export type SendResult = { operationId: Hex; attempt: SubmissionAttempt; attempt
 export type RawSigner = { wallet: SubmissionWallet; account: LocalAccount };
 export type PreparedSignedRaw = { raw: Hex; hash: Hex; nonce: number; operationId: Hex;
   gas: bigint; maxFeePerGas: bigint; maxPriorityFeePerGas: bigint };
+export type PreparedSend = { operationId: Hex; account: Address; request: PublicSubmission;
+  calldata: Hex; value: bigint; nonce: number; gas: bigint;
+  maxFeePerGas: bigint; maxPriorityFeePerGas: bigint };
+export type SendHooks = { persistPrepared?: (intent: Readonly<PreparedSend>) => Promise<"saved" | "unknown"> };
 
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 const positive = (value: bigint) => value > 0n && value < (1n << 256n);
@@ -103,37 +107,56 @@ async function quote(wallet: SubmissionWallet, account: Address, to: Address, da
   }
 }
 
-async function send(verified: VerifiedDeployment, wallet: SubmissionWallet, account: Address,
-  submission: PublicSubmission, id: Hex, calldata: Hex, value: bigint,
-  selected: { gas: bigint; nonce: number; maxFeePerGas: bigint; maxPriorityFeePerGas: bigint },
+function freezeTree(value: object): void {
+  Object.values(value).forEach(child => { if (child !== null && typeof child === "object") freezeTree(child); });
+  Object.freeze(value);
+}
+
+async function persist(intent: PreparedSend, hooks?: SendHooks): Promise<void> {
+  if (!hooks?.persistPrepared) return;
+  try {
+    if (await hooks.persistPrepared(intent) !== "saved") throw new Error("not durable");
+  } catch { throw new EthereumFailure("STORAGE_UNKNOWN", "submission.persist"); }
+}
+
+async function send(to: Address, wallet: SubmissionWallet, intent: PreparedSend,
   prior: SubmissionAttempt[] = []): Promise<SendResult> {
   let attempt: SubmissionAttempt;
   try {
-    const signingAccount = wallet.account?.type === "local" ? wallet.account : account;
-    const txHash = await wallet.sendTransaction({ account: signingAccount, to: verified.context.pool, data: calldata,
-      value, ...selected });
+    const signingAccount = wallet.account?.type === "local" ? wallet.account : intent.account;
+    const txHash = await wallet.sendTransaction({ account: signingAccount, to, data: intent.calldata,
+      value: intent.value, gas: intent.gas, nonce: intent.nonce, maxFeePerGas: intent.maxFeePerGas,
+      maxPriorityFeePerGas: intent.maxPriorityFeePerGas });
     attempt = { outer: "pending", txHash };
   } catch {
     // The RPC may have accepted the transaction before its response was lost.
     attempt = { outer: "unconfirmed" };
   }
-  return { operationId: id, attempt, attempts: [...prior, attempt], request: structuredClone(submission),
-    calldata, value, account, ...selected,
+  return { operationId: intent.operationId, attempt, attempts: [...prior, attempt], request: structuredClone(intent.request),
+    calldata: intent.calldata, value: intent.value, account: intent.account,
+    gas: intent.gas, nonce: intent.nonce, maxFeePerGas: intent.maxFeePerGas,
+    maxPriorityFeePerGas: intent.maxPriorityFeePerGas,
     ...(attempt.outer === "unconfirmed" ? { diagnostic: "SUBMISSION_UNKNOWN" as const } : {}) };
 }
 
 export async function submitPublicOperation(verified: VerifiedDeployment, history: HistoryPort,
   wallet: SubmissionWallet, account: Address, submission: PublicSubmission,
-  options: SendOptions = {}): Promise<SendResult> {
+  options: SendOptions = {}, hooks?: SendHooks): Promise<SendResult> {
   checkOptions(options);
   checkAbort(options.signal);
   const { data, value } = encodePoolSubmission(submission);
   await checkWallet(verified, wallet, account);
   const id = await ready(verified, history, submission);
   checkAbort(options.signal);
-  const selected = await quote(wallet, account, verified.context.pool, data, value, options);
+  const to = verified.context.pool;
+  const selected = await quote(wallet, account, to, data, value, options);
   checkAbort(options.signal);
-  return send(verified, wallet, account, submission, id, data, value, selected);
+  const intent: PreparedSend = { operationId: id, account, request: structuredClone(submission),
+    calldata: data, value, ...selected };
+  freezeTree(intent);
+  await persist(intent, hooks);
+  checkAbort(options.signal);
+  return send(to, wallet, intent);
 }
 
 /** Performs the same authorization, preflight and quote checks without broadcasting. */
@@ -158,7 +181,7 @@ export async function prepareSignedRaw(verified: VerifiedDeployment, history: Hi
 
 export async function replaceSubmissionFee(verified: VerifiedDeployment, history: HistoryPort,
   wallet: SubmissionWallet, prior: SendResult,
-  fees: { maxFeePerGas: bigint; maxPriorityFeePerGas: bigint; signal?: AbortSignal }): Promise<SendResult> {
+  fees: { maxFeePerGas: bigint; maxPriorityFeePerGas: bigint; signal?: AbortSignal }, hooks?: SendHooks): Promise<SendResult> {
   checkOptions(fees);
   checkAbort(fees.signal);
   if (!Number.isSafeInteger(prior.nonce) || prior.nonce < 0 || !positive(prior.gas) ||
@@ -173,9 +196,14 @@ export async function replaceSubmissionFee(verified: VerifiedDeployment, history
   await checkWallet(verified, wallet, prior.account);
   const id = await ready(verified, history, prior.request);
   checkAbort(fees.signal);
-  const selected = await quote(wallet, prior.account, verified.context.pool, call.data, call.value,
+  const to = verified.context.pool;
+  const selected = await quote(wallet, prior.account, to, call.data, call.value,
     { gas: prior.gas, nonce: prior.nonce, ...fees });
   checkAbort(fees.signal);
-  return send(verified, wallet, prior.account, prior.request, id, call.data, call.value,
-    selected, prior.attempts);
+  const intent: PreparedSend = { operationId: id, account: prior.account, request: structuredClone(prior.request),
+    calldata: call.data, value: call.value, ...selected };
+  freezeTree(intent);
+  await persist(intent, hooks);
+  checkAbort(fees.signal);
+  return send(to, wallet, intent, prior.attempts);
 }

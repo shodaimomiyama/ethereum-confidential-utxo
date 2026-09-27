@@ -144,7 +144,7 @@ it('reseeds authenticated restored bytes and preserves earlier signatures, attem
       const plain = await openPaymentPrivateRecord(f.key, { ...deployment, ...scope, recordId: saved.record.recordId, revision: saved.revision }, saved.record);
       return { prepared: { ...f.prepared, record: saved.record, privateBytes: encodePaymentPrivateRecord(plain) }, signatures: plain.signatures! };
     },
-    restoreOriginal: async () => { throw new Error('unused'); }, releaseAndPrepareChangedTerms: async () => { throw new Error('unused'); },
+    restoreOriginal: async () => { throw new Error('unused'); }, releaseOriginal: async () => { throw new Error('unused'); },
   };
   const restored = createScopedPaymentClient({ ...f.dependencies, recovery });
   await restored.retryAttempt(f.record.recordId);
@@ -191,7 +191,7 @@ it('does not replace newer in-memory history with a valid older restored ciphert
       const plain = await openPaymentPrivateRecord(f.key, { ...deployment, ...scope, recordId: saved.record.recordId, revision: saved.revision }, saved.record);
       return { prepared: { ...f.prepared, record: saved.record as PreparedFullWithdraw['record'], privateBytes: encodePaymentPrivateRecord(plain) }, signatures: plain.signatures! };
     },
-    restoreForRetry: async () => { throw new Error('unused'); }, releaseAndPrepareChangedTerms: async () => { throw new Error('unused'); },
+    restoreForRetry: async () => { throw new Error('unused'); }, releaseOriginal: async () => { throw new Error('unused'); },
   };
   const client = createScopedPaymentClient({ ...f.dependencies, recovery, reservations: { ...original,
     get: (...args) => rollback ? Promise.resolve(old()) : original.get(...args),

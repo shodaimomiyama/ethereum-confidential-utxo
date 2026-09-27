@@ -16,6 +16,7 @@ export type BuildIntent = CommonIntent & (
   | { kind: 2; destination: Address; changeRecipient?: RecipientInfo; explicitIds?: Hex[] }
 );
 export type BuildDependencies = { inputs: OwnedUtxo[]; randomSalt(): Uint8Array };
+export type FixedOperation = Pick<LocalDraft, "context" | "request" | "operationId" | "outputIds" | "openings" | "inputOpenings">;
 export type PublicSubmission = Pick<LocalDraft, "request" | "balanceProof" | "rangeProofs"> & { signature: Hex };
 function invalid(): never { throw new CoreFailure("INVALID_INPUT", "operation"); }
 function freezeTree(value: object): void {
@@ -47,8 +48,8 @@ function proofs(context: Context, request: OperationRequest, openings: Opening[]
   return { operationId: id, outputIds: outputs.map((_, i) => outputId(id, i)), rangeProofs, balanceProof };
 }
 
-/** Builds local secret state. Submission still requires persistence and a current-state preflight. */
-export async function buildOperation(intent: BuildIntent, context: Context, dependencies: BuildDependencies): Promise<LocalDraft> {
+/** Fixes all public request bytes and secret openings before costly proof generation. */
+export async function fixOperation(intent: BuildIntent, context: Context, dependencies: BuildDependencies): Promise<FixedOperation> {
   try {
     const plan = structuredClone(intent);
     const ctx = structuredClone(context);
@@ -85,20 +86,41 @@ export async function buildOperation(intent: BuildIntent, context: Context, depe
     freezeTree(request);
     freezeTree(ctx);
     const inputOpenings = inputs.map(input => ({ amount: input.opening.amount, blinding: input.opening.blinding }));
-    return { context: ctx, request, openings, inputOpenings, ...proofs(ctx, request, openings, inputOpenings) };
+    const id = operationId(ctx, request);
+    return { context: ctx, request, operationId: id,
+      outputIds: request.outputs.map((_, index) => outputId(id, index)), openings, inputOpenings };
   } catch (error) { safeFailure(error); }
+}
+
+/** Validates persisted fixed material again, then creates fresh proofs without changing the request. */
+export function proveFixedOperation(fixed: FixedOperation): LocalDraft {
+  try {
+    const snapshot = structuredClone(fixed);
+    validateOperationShape(snapshot.request);
+    if (operationId(snapshot.context, snapshot.request) !== snapshot.operationId ||
+        snapshot.outputIds.length !== snapshot.request.outputs.length ||
+        snapshot.outputIds.some((id, index) => id !== outputId(snapshot.operationId, index))) invalid();
+    const generated = proofs(snapshot.context, snapshot.request, snapshot.openings, snapshot.inputOpenings);
+    freezeTree(snapshot.request);
+    freezeTree(snapshot.context);
+    return { ...snapshot, ...generated };
+  } catch (error) { safeFailure(error); }
+}
+
+/** Convenience API for callers that do not need an intermediate persistence boundary. */
+export async function buildOperation(intent: BuildIntent, context: Context, dependencies: BuildDependencies): Promise<LocalDraft> {
+  return proveFixedOperation(await fixOperation(intent, context, dependencies));
 }
 
 /** Explicitly replaces proofs while retaining the operation, receipts and any owner signature. */
 export function regenerateProofs(draft: LocalDraft): LocalDraft {
   try {
     const snapshot = structuredClone(draft);
-    validateOperationShape(snapshot.request);
-    if (operationId(snapshot.context, snapshot.request) !== snapshot.operationId || snapshot.outputIds.length !== snapshot.request.outputs.length || snapshot.outputIds.some((id, i) => id !== outputId(snapshot.operationId, i))) invalid();
-    const regenerated = proofs(snapshot.context, snapshot.request, snapshot.openings, snapshot.inputOpenings);
-    freezeTree(snapshot.request);
-    freezeTree(snapshot.context);
-    return { ...snapshot, ...regenerated };
+    const { signature } = snapshot;
+    const fixed: FixedOperation = { context: snapshot.context, request: snapshot.request,
+      operationId: snapshot.operationId, outputIds: snapshot.outputIds,
+      openings: snapshot.openings, inputOpenings: snapshot.inputOpenings };
+    return { ...proveFixedOperation(fixed), ...(signature ? { signature } : {}) };
   } catch (error) { safeFailure(error); }
 }
 

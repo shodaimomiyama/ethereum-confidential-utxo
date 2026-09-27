@@ -21,8 +21,8 @@ import type {
   RewardRequest,
   RewardAvailability,
   RewardStatus,
-  StoredOperation,
   SavedOperation,
+  StoredOperation,
   SignedRecipientInfo,
 } from './storage.js';
 import type { SavedReservation } from './reservation.js';
@@ -93,7 +93,7 @@ export interface ApiRequestBodyMap {
   readonly 'PUT /v1/operations/{id}': {
     readonly scope: Scope;
     readonly expectedRevision: number;
-    readonly sealedRevision?: number;
+    readonly sealedRevision: number;
     readonly record: WireOperationRecord;
   };
   readonly 'GET /v1/operations': undefined;
@@ -142,7 +142,7 @@ export interface ApiSuccessResponseMap {
     readonly nextCursor?: Bytes32;
   };
   readonly 'GET /v1/operations/{id}': OperationResponse;
-  readonly 'POST /v1/operations/{id}/release': SavedReservation & { readonly scope: Scope };
+  readonly 'POST /v1/operations/{id}/release': OperationResponse & { readonly reservationState: SavedReservation['reservationState'] };
   readonly 'POST /v1/rewards': { readonly reward: RewardRecord };
   readonly 'GET /v1/rewards': { readonly rewards: readonly RewardRecord[] };
   readonly 'GET /v1/rewards/{id}': { readonly reward: RewardRecord };
@@ -285,7 +285,12 @@ function checkOperationRequestSize(body: unknown): void {
   }
 }
 
-export function parseApiRequest(method: string, path: string, body: unknown): ParsedApiRequest {
+export function parseApiRequest(
+  method: string,
+  path: string,
+  body: unknown,
+  options: { readonly allowLegacyUnsealedPut?: boolean } = {},
+): ParsedApiRequest {
   const url = new URL(path, 'https://mock.invalid');
   const pathname = url.pathname;
   if (method === 'POST' && pathname === '/v1/auth/challenge') {
@@ -309,7 +314,7 @@ export function parseApiRequest(method: string, path: string, body: unknown): Pa
     const id = parseBytes32(operationMatch[1], 'id');
     const record = parseOperationRecord(object.record, scope);
     const expectedRevision = parseRevision(object.expectedRevision, 'expectedRevision');
-    const sealedRevision = object.sealedRevision === undefined
+    const sealedRevision = object.sealedRevision === undefined && options.allowLegacyUnsealedPut
       ? undefined : parseRevision(object.sealedRevision, 'sealedRevision');
     if (sealedRevision !== undefined && sealedRevision !== expectedRevision + 1) {
       throw new SchemaError('INVALID_REVISION', 'sealedRevision');
@@ -457,10 +462,12 @@ function parseReservationState(value: unknown): 'active' | 'released' {
   return value;
 }
 
-function parseStoredOperation(value: unknown): StoredOperation & { readonly scope: Scope } {
+function parseOperationResponse(value: unknown, requireReservationState = false): OperationResponse {
   const object = parseJsonObject(value, 'operation');
   const scope = parseScope(object.scope);
-  if (!OPERATION_STATUSES.includes(object.status as OperationStatus)) {
+  const status = object.status === undefined ? undefined : object.status as OperationStatus;
+  if (status !== undefined && !OPERATION_STATUSES.includes(status)) throw new SchemaError('INVALID_FIELD', 'operation.status');
+  if (status === undefined && ('status' in object || 'stateVersion' in object || 'checkpoint' in object)) {
     throw new SchemaError('INVALID_FIELD', 'operation.status');
   }
   let checkpoint: StoredOperation['checkpoint'];
@@ -472,34 +479,23 @@ function parseStoredOperation(value: unknown): StoredOperation & { readonly scop
       blockTimestamp: parseUintString(item.blockTimestamp, 'operation.checkpoint.blockTimestamp').toString(),
     };
   }
-  if (['released', 'consumed', 'finalized-success'].includes(object.status as string) && checkpoint === undefined) {
+  if (status !== undefined && ['released', 'consumed', 'finalized-success'].includes(status) && checkpoint === undefined) {
     throw new SchemaError('INVALID_FIELD', 'operation.checkpoint');
   }
-  return {
+  const reservationState = object.reservationState === undefined
+    ? undefined : parseReservationState(object.reservationState);
+  if (requireReservationState && reservationState === undefined) {
+    throw new SchemaError('INVALID_FIELD', 'reservationState');
+  }
+  const base = {
     scope,
     record: parseOperationRecord(object.record, scope),
     revision: parseRevision(object.revision, 'operation.revision'),
-    stateVersion: parseRevision(object.stateVersion, 'operation.stateVersion'),
-    status: object.status as OperationStatus,
-    ...(checkpoint === undefined ? {} : { checkpoint }),
+    ...(reservationState === undefined ? {} : { reservationState }),
   };
-}
-
-function parseOperationResponse(value: unknown): OperationResponse {
-  const object = parseJsonObject(value, 'operation');
-  const reservationState = object.reservationState === undefined ? {} : {
-    reservationState: parseReservationState(object.reservationState),
-  };
-  if ('status' in object || 'stateVersion' in object || 'checkpoint' in object) {
-    return { ...parseStoredOperation(object), ...reservationState };
-  }
-  const scope = parseScope(object.scope);
-  return {
-    scope,
-    record: parseOperationRecord(object.record, scope),
-    revision: parseRevision(object.revision, 'revision'),
-    ...reservationState,
-  };
+  if (status === undefined) return base;
+  return { ...base, status, stateVersion: parseRevision(object.stateVersion, 'operation.stateVersion'),
+    ...(checkpoint === undefined ? {} : { checkpoint }) };
 }
 
 function parseApiResponseValue(route: ApiRoute, status: number, body: unknown): unknown {
@@ -523,17 +519,14 @@ function parseApiResponseValue(route: ApiRoute, status: number, body: unknown): 
   if (route === 'POST /v1/auth/verify') {
     return { sessionExpiresAt: parseTimestamp(object.sessionExpiresAt, 'sessionExpiresAt') };
   }
-  if (route === 'PUT /v1/operations/{id}' || route === 'GET /v1/operations/{id}') {
+  if (route === 'PUT /v1/operations/{id}') {
+    return parseOperationResponse(object);
+  }
+  if (route === 'GET /v1/operations/{id}') {
     return parseOperationResponse(object);
   }
   if (route === 'POST /v1/operations/{id}/release') {
-    const scope = parseScope(object.scope);
-    return {
-      scope,
-      record: parseOperationRecord(object.record, scope),
-      revision: parseRevision(object.revision, 'revision'),
-      reservationState: parseReservationState(object.reservationState),
-    };
+    return parseOperationResponse(object, true);
   }
   if (route === 'GET /v1/operations') {
     if (!Array.isArray(object.records)) throw new SchemaError('INVALID_FIELD', 'records');
@@ -542,7 +535,7 @@ function parseApiResponseValue(route: ApiRoute, status: number, body: unknown): 
     }
     return {
       availability: object.availability,
-      records: object.records.map(parseOperationResponse),
+      records: object.records.map((item: unknown) => parseOperationResponse(item)),
       ...(object.nextCursor === undefined ? {} : { nextCursor: parseBytes32(object.nextCursor, 'nextCursor') }),
     };
   }

@@ -8,7 +8,7 @@ import { operationId } from "@confidential-utxo/core";
 import type { VerifiedDeployment } from "../src/deployment.js";
 import { poolAbi } from "../src/abi.js";
 import { encodePoolSubmission, submitPublicOperation, replaceSubmissionFee, prepareSignedRaw } from "../src/submission.js";
-import type { SubmissionWallet } from "../src/submission.js";
+import type { PreparedSend, SubmissionWallet } from "../src/submission.js";
 
 const vector = JSON.parse(readFileSync("tests/vectors/cases/pool-operations.json", "utf8"))[0];
 const hash = (digit: string) => `0x${digit.repeat(64)}` as Hex;
@@ -110,6 +110,49 @@ it("preflights and submits exactly once, preserving an uncertain send", async ()
   expect(uncertain.attempt).toEqual({ outer: "unconfirmed" });
   expect(uncertain.diagnostic).toBe("SUBMISSION_UNKNOWN");
   expect(dropped.sent).toHaveLength(1);
+});
+
+it("persists the final send intent before broadcasting and stops on unknown durability", async () => {
+  const sender = wallet();
+  const options = { gas: 100000n, nonce: 7, maxFeePerGas: 100n, maxPriorityFeePerGas: 2n };
+  const captured: PreparedSend[] = [];
+  await expect(submitPublicOperation(verified, history(), sender.mock, request.owner, submission, options,
+    { persistPrepared: async intent => { captured.push(structuredClone(intent)); return "unknown"; } }))
+    .rejects.toMatchObject({ code: "STORAGE_UNKNOWN" });
+  expect(sender.sent).toHaveLength(0);
+  const result = await submitPublicOperation(verified, history(), sender.mock, request.owner, submission, options,
+    { persistPrepared: async intent => { captured.push(structuredClone(intent)); return "saved"; } });
+  expect(sender.sent).toHaveLength(1);
+  expect(captured[1]).toMatchObject({ operationId: result.operationId, account: request.owner,
+    calldata: result.calldata, value: result.value, ...options });
+  expect(sender.sent[0]).toMatchObject({ account: captured[1]!.account, to: context.pool,
+    data: captured[1]!.calldata, value: captured[1]!.value, gas: captured[1]!.gas,
+    nonce: captured[1]!.nonce, maxFeePerGas: captured[1]!.maxFeePerGas,
+    maxPriorityFeePerGas: captured[1]!.maxPriorityFeePerGas });
+  const failed = wallet(true);
+  const uncertain = await submitPublicOperation(verified, history(), failed.mock, request.owner, submission, options,
+    { persistPrepared: async () => "saved" });
+  expect(uncertain.diagnostic).toBe("SUBMISSION_UNKNOWN");
+  expect(uncertain.calldata).toBe(result.calldata);
+  expect(failed.sent).toHaveLength(1);
+});
+
+it("persists fee replacements before another broadcast", async () => {
+  const sender = wallet();
+  const prior = await submitPublicOperation(verified, history(), sender.mock, request.owner, submission,
+    { gas: 100000n, nonce: 7, maxFeePerGas: 100n, maxPriorityFeePerGas: 2n });
+  await expect(replaceSubmissionFee(verified, history(), sender.mock, prior,
+    { maxFeePerGas: 120n, maxPriorityFeePerGas: 3n },
+    { persistPrepared: async () => "unknown" })).rejects.toMatchObject({ code: "STORAGE_UNKNOWN" });
+  expect(sender.sent).toHaveLength(1);
+  const intents: PreparedSend[] = [];
+  const result = await replaceSubmissionFee(verified, history(), sender.mock, prior,
+    { maxFeePerGas: 120n, maxPriorityFeePerGas: 3n },
+    { persistPrepared: async intent => { intents.push(structuredClone(intent)); return "saved"; } });
+  expect(sender.sent).toHaveLength(2);
+  expect(intents[0]).toMatchObject({ calldata: prior.calldata, value: prior.value, nonce: prior.nonce,
+    maxFeePerGas: 120n, maxPriorityFeePerGas: 3n });
+  expect(result.attempts).toHaveLength(2);
 });
 
 it("rejects invalid preflight and replaces fees only for the same attempt", async () => {

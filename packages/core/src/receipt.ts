@@ -89,12 +89,21 @@ export async function inspectReceipt(observed: ObservedOperation, outputIndex: n
       if (!consuming.value.executed || !equal(operationId(context, consuming.value.operation), consumedBy) || !equal(consuming.value.operation.owner, expectedOwner) || !consuming.value.operation.inputIds.some(input => equal(input, receivedId))) return fail("inconsistent", "CONSUMPTION");
     } catch { return fail("inconsistent", "CONSUMPTION"); }
   }
-  let key: Uint8Array;
-  try { key = await keyPort.getKey(expectedOwner); }
+  let keys: Uint8Array[];
+  try {
+    const received = keyPort.getKeys ? await keyPort.getKeys(expectedOwner) : [await keyPort.getKey(expectedOwner)];
+    if (!Array.isArray(received) || received.length === 0 || received.some(key => !(key instanceof Uint8Array) || key.length !== 32)) return fail("unknown", "KEY_UNAVAILABLE");
+    keys = received.map(key => new Uint8Array(key));
+  }
   catch { return fail("unknown", "KEY_UNAVAILABLE"); }
   try {
-    const opening = await decryptReceipt({ recipientPrivateKey: key, info: hexToBytes(receiptInfo(context, request, outputIndex)), packet: hexToBytes(output.packet), commitment: output.commitment });
-    const status = consumedBy ? "spent" : "available";
-    return { status, operationId: id, creationCheckpoint: { number: success.blockNumber, hash: success.blockHash, mode: point.mode }, utxo: { id: receivedId, owner: output.owner, opening, commitment: output.commitment, checkpoint: point, status, chainId: context.chainId, pool: context.pool } };
-  } catch { return fail("inconsistent", "DECRYPT"); }
+    for (const key of keys) {
+      try {
+        const opening = await decryptReceipt({ recipientPrivateKey: key, info: hexToBytes(receiptInfo(context, request, outputIndex)), packet: hexToBytes(output.packet), commitment: output.commitment });
+        const status = consumedBy ? "spent" : "available";
+        return { status, operationId: id, creationCheckpoint: { number: success.blockNumber, hash: success.blockHash, mode: point.mode }, utxo: { id: receivedId, owner: output.owner, opening, commitment: output.commitment, checkpoint: point, status, chainId: context.chainId, pool: context.pool } };
+      } catch { /* Try the next retained key. */ }
+    }
+    return fail("inconsistent", "DECRYPT");
+  } finally { keys.forEach(key => key.fill(0)); }
 }

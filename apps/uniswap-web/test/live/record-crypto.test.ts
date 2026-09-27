@@ -82,12 +82,13 @@ it('proves a lost PUT ACK by GET of the exact committed bundle without retrying 
   const http = { async call(route: string, input: { body?: unknown }) {
     calls.push(route);
     if (route === 'PUT /v1/operations/{id}') {
-      expect(input.body).toMatchObject({ expectedRevision: 0, record: { encryptedBundle: original.encryptedBundle } });
+      expect(input.body).toMatchObject({ expectedRevision: 0, sealedRevision: 1,
+        record: { encryptedBundle: original.encryptedBundle } });
       throw new Error('ACK disappeared');
     }
-    return { ...saved, scope };
+    return { ...saved, scope, reservationState: 'active' };
   } } as HttpClient;
-  await expect(saveBeforeAuthorization(http, original, 0)).resolves.toEqual({ ...saved, scope });
+  await expect(saveBeforeAuthorization(http, original, 0)).resolves.toEqual({ ...saved, scope, reservationState: 'active' });
   expect(calls).toEqual(['PUT /v1/operations/{id}', 'GET /v1/operations/{id}']);
 });
 
@@ -109,7 +110,8 @@ it('uses the real HTTP schema after ACK loss without exposing plaintext in the r
     expect(committed).toBeDefined();
     const savedWire = { ...committed, deadline: '123' };
     expect(new URL(request.url).pathname).toBe(`/v1/operations/${original.recordId}`);
-    return Response.json({ scope, record: savedWire, revision: 1, stateVersion: 7, status: 'reserved' });
+    return Response.json({ scope, record: savedWire, revision: 1, stateVersion: 7,
+      status: 'reserved', reservationState: 'active' });
   } });
   const saved = await saveBeforeAuthorization(http, original, 0);
   expect(saved).toMatchObject({ revision: 1, stateVersion: 7, status: 'reserved' });
@@ -153,11 +155,23 @@ it('accepts a byte-identical idempotent ACK at its explicitly sealed existing re
   const calls: string[] = [];
   const http = { async call(route: string) {
     calls.push(route);
-    return { ...saved, scope };
+    return { ...saved, scope, reservationState: 'active' };
   } } as HttpClient;
-  await expect(saveBeforeAuthorization(http, original, 1, { bundleRevision: 1 })).resolves.toEqual({ ...saved, scope });
-  expect(calls).toEqual(['PUT /v1/operations/{id}']);
+  await expect(saveBeforeAuthorization(http, original, 1, { bundleRevision: 1 })).resolves.toEqual({
+    ...saved, scope, reservationState: 'active',
+  });
+  expect(calls).toEqual(['GET /v1/operations/{id}']);
   await expect(saveBeforeAuthorization(http, original, 1)).rejects.toThrow();
+});
+
+it('refuses to authorize an existing bundle whose reservation was released', async () => {
+  const original = record(await sealRecord(await key(), context, plain));
+  const http = { async call(route: string) {
+    expect(route).toBe('GET /v1/operations/{id}');
+    return { scope, record: original, revision: 1, reservationState: 'released' };
+  } } as HttpClient;
+  await expect(saveBeforeAuthorization(http, original, 1, { bundleRevision: 1 }))
+    .rejects.toThrow('OPERATION_SAVE_UNCONFIRMED');
 });
 
 it('accepts a byte-identical existing revision after lost ACK, without retrying or accepting changed metadata', async () => {
@@ -166,12 +180,12 @@ it('accepts a byte-identical existing revision after lost ACK, without retrying 
   const calls: string[] = [];
   const http = { async call(route: string) {
     calls.push(route);
-    if (route === 'PUT /v1/operations/{id}') throw new Error('ACK disappeared');
-    return { scope, record: returned, revision: 1 };
+    if (route === 'PUT /v1/operations/{id}') throw new Error('unexpected PUT');
+    return { scope, record: returned, revision: 1, reservationState: 'active' };
   } } as HttpClient;
   await expect(saveBeforeAuthorization(http, original, 1, { bundleRevision: 1 }))
-    .resolves.toEqual({ scope, record: original, revision: 1 });
-  expect(calls).toEqual(['PUT /v1/operations/{id}', 'GET /v1/operations/{id}']);
+    .resolves.toEqual({ scope, record: original, revision: 1, reservationState: 'active' });
+  expect(calls).toEqual(['GET /v1/operations/{id}']);
   returned = { ...original, contentHash: id('9') };
   await expect(saveBeforeAuthorization(http, original, 1, { bundleRevision: 1 })).rejects.toThrow();
   returned = { ...original, encryptedBundle: { ...original.encryptedBundle, nonce: `0x${'ff'.repeat(12)}` } };

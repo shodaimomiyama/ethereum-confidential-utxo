@@ -207,7 +207,7 @@ export function createScopedPaymentClient(deps: ScopedPaymentDependencies): Paym
       readEvidence: guarded((...args) => deps.recovery!.readEvidence(...args)),
       restoreOriginal: guarded(async (saved, evidence) => restore(saved, await deps.recovery!.restoreOriginal(saved, evidence))),
       restoreForRetry: guarded(async (saved, evidence) => restore(saved, await deps.recovery!.restoreForRetry(saved, evidence))),
-      releaseAndPrepareChangedTerms: guarded(async (...args) => accept(await deps.recovery!.releaseAndPrepareChangedTerms(...args))),
+      releaseOriginal: guarded((...args) => deps.recovery!.releaseOriginal(...args)),
     } } : {}),
     ...(deps.reconciliation ? { reconciliation: { expectedChainId: deployment.chainId,
       readFinalized: guarded((...args) => deps.reconciliation!.readFinalized(...args)) } } : {}),

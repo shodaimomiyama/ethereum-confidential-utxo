@@ -95,7 +95,8 @@ async function runRequest(
   scenarioId: string,
 ): Promise<void> {
   const outbound = request(step.path, step.method, step.body, cookie);
-  const route = parseApiRequest(step.method, step.path, step.body).route;
+  const route = parseApiRequest(step.method, step.path, step.body,
+    { allowLegacyUnsealedPut: true }).route;
   if (step.reject !== undefined) {
     try {
       await transport(outbound);

@@ -39,7 +39,7 @@ function revision(expected: number, sealed: number): void {
   if (!Number.isSafeInteger(expected) || expected < 0 || !Number.isSafeInteger(sealed)
     || sealed !== expected + 1) throw new Error('INVALID_RESERVATION_REVISION');
 }
-function checked(saved: OperationResponse, scope: Scope, id?: Bytes32): LiveSavedReservation {
+function checked(saved: OperationResponse, scope: Scope, id?: Bytes32, fromRead = false): LiveSavedReservation {
   if (!sameScope(saved.scope, scope) || !sameScope(saved.record.scope, scope)
     || (id !== undefined && saved.record.recordId.toLowerCase() !== id.toLowerCase())
     || !Number.isSafeInteger(saved.revision) || saved.revision < 1
@@ -48,6 +48,9 @@ function checked(saved: OperationResponse, scope: Scope, id?: Bytes32): LiveSave
   // #55 cannot faithfully represent unknown/consumed/finalized-success. Recovery
   // exposes those rich states separately; they must not become actionable here.
   const reservationState = saved.status === 'reserved' ? 'active' : 'released';
+  if (fromRead && saved.status === 'reserved' && saved.reservationState !== 'active') {
+    throw new Error('RESERVATION_STATE_UNCONFIRMED');
+  }
   if (saved.reservationState !== undefined && saved.reservationState !== reservationState) throw new Error('RESERVATION_STATE_UNCONFIRMED');
   return { ...saved, reservationState };
 }
@@ -69,7 +72,7 @@ export function createReservationPort(http: HttpClient): LiveReservationPort {
   }
   async function get(scope: Scope, recordId: Bytes32): Promise<LiveSavedReservation | undefined> {
     const expectedScope = { ...scope };
-    try { return checked(await http.call('GET /v1/operations/{id}', { scope: expectedScope, id: recordId }), expectedScope, recordId); }
+    try { return checked(await http.call('GET /v1/operations/{id}', { scope: expectedScope, id: recordId }), expectedScope, recordId, true); }
     catch (error) {
       if (error instanceof HttpFailure && error.kind === 'api' && error.code === 'NOT_FOUND') return undefined;
       throw error;
@@ -90,7 +93,7 @@ export function createReservationPort(http: HttpClient): LiveReservationPort {
         if (page.availability !== 'healthy' || (cursor !== undefined && page.records.length === 0)) throw new Error('RESERVATION_LIST_UNCONFIRMED');
         let lastId = '';
         for (const raw of page.records) {
-          const saved = checked(raw, expectedScope);
+          const saved = checked(raw, expectedScope, undefined, true);
           const id = saved.record.recordId.toLowerCase();
           if (!/^0x[0-9a-f]{64}$/.test(id) || seen.has(id) || (cursor !== undefined && id <= cursor)) throw new Error('RESERVATION_LIST_UNCONFIRMED');
           seen.add(id);

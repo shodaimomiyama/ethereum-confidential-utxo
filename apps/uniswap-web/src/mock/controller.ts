@@ -209,8 +209,8 @@ const maximumDeadline = (1n << 64n) - 1n;
 
 function chainTimestamp(value: number | bigint): bigint | undefined {
   if (typeof value === 'number' && (!Number.isSafeInteger(value) || value < 0)) return undefined;
-  if (typeof value === 'bigint' && value < 0n) return undefined;
   const timestamp = BigInt(value);
+  if (timestamp < 0n) return undefined;
   return timestamp + 600n <= maximumDeadline ? timestamp : undefined;
 }
 
@@ -366,11 +366,6 @@ export function createMockUiController({ scope, store, clock, scenario }: {
     }
     let state = runtime.state;
     if (event.type === 'quote') {
-      if (typeof event.latestBlockTimestamp === 'number'
-        && Number.isInteger(event.latestBlockTimestamp)
-        && !Number.isSafeInteger(event.latestBlockTimestamp)) {
-        throw new RangeError('latestBlockTimestamp must be an exact integer');
-      }
       const timestamp = chainTimestamp(event.latestBlockTimestamp);
       if (timestamp === undefined || event.quoteOut <= 0n) {
         runtime.quoteStartedAt = undefined;

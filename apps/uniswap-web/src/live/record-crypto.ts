@@ -172,16 +172,25 @@ export async function saveBeforeAuthorization(
     : { kind: 'withdraw', recordId: record.recordId, inputId: record.inputId, operationId: record.operationId,
       contentHash: record.contentHash, encryptedBundle: record.encryptedBundle,
       signatureStarted: record.signatureStarted, attemptIds: record.attemptIds };
+  if (bundleRevision === expectedRevision) {
+    const found = await http.call('GET /v1/operations/{id}', { scope, id: record.recordId });
+    if (!sameScope(found.scope, scope) || found.reservationState !== 'active') {
+      throw new Error('OPERATION_SAVE_UNCONFIRMED');
+    }
+    return confirmed(found, record, bundleRevision);
+  }
   try {
     const saved = await http.call('PUT /v1/operations/{id}', { scope, id: record.recordId,
-      body: { scope, expectedRevision, record: wireRecord } });
+      body: { scope, expectedRevision, sealedRevision: bundleRevision, record: wireRecord } });
     if (!sameScope(saved.scope, scope)) throw new Error('OPERATION_SAVE_UNCONFIRMED');
     return confirmed(saved, record, bundleRevision);
   } catch (error) {
     if (error instanceof HttpFailure && (error.kind === 'api' || error.kind === 'scope')) throw error;
     if (error instanceof Error && error.message === 'OPERATION_SAVE_UNCONFIRMED') throw error;
     const found = await http.call('GET /v1/operations/{id}', { scope, id: record.recordId });
-    if (!sameScope(found.scope, scope)) throw new Error('OPERATION_SAVE_UNCONFIRMED');
+    if (!sameScope(found.scope, scope) || found.reservationState !== 'active') {
+      throw new Error('OPERATION_SAVE_UNCONFIRMED');
+    }
     return confirmed(found, record, bundleRevision);
   }
 }

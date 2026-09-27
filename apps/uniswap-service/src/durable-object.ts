@@ -1,7 +1,7 @@
 import { DurableObject } from 'cloudflare:workers';
 import { applyMigrations } from './schema.js';
 import type { ServiceEnv } from './index.js';
-import { parseApiRequest } from '@confidential-utxo/uniswap';
+import { parseApiRequest, type Scope, type StoredOperation } from '@confidential-utxo/uniswap';
 import { createChallenge, readSessionIdentity, verifyChallenge } from './auth.js';
 import { parseDeploymentCatalog, resolveDeployment } from './config.js';
 import { apiError, apiSuccess, BodyTooLarge, readLimitedJson } from './http.js';
@@ -26,6 +26,15 @@ import type { LocalDraft } from '@confidential-utxo/core';
 import { loadSavedDraft } from './rewards/store.js';
 
 registerServiceExtension(rewardExtension);
+
+function activeReservation(storage: DurableObjectStorage, scope: Scope, saved: StoredOperation): boolean {
+  if (saved.status !== 'reserved') return false;
+  const lock = storage.sql.exec<{ record_id: string }>(
+    'SELECT record_id FROM active_reservations WHERE deployment_id = ? AND owner = ? AND input_id = ?',
+    scope.deploymentId, scope.owner.toLowerCase(), saved.record.inputId.toLowerCase(),
+  ).toArray()[0];
+  return lock?.record_id.toLowerCase() === saved.record.recordId.toLowerCase();
+}
 
 export class UniswapServiceObject extends DurableObject<ServiceEnv> {
   constructor(ctx: DurableObjectState, env: ServiceEnv) {
@@ -171,7 +180,8 @@ export class UniswapServiceObject extends DurableObject<ServiceEnv> {
     try {
       const url = new URL(request.url);
       const body = request.method === 'GET' ? undefined : await readLimitedJson(request);
-      const parsed = parseApiRequest(request.method, url.pathname + url.search, body);
+      const parsed = parseApiRequest(request.method, url.pathname + url.search, body,
+        { allowLegacyUnsealedPut: true });
       const config = resolveDeployment(parsed.scope.deploymentId, parseDeploymentCatalog(this.env.DEPLOYMENTS_JSON));
       const recoveryGate = resolveRecoveryGate(this.env.RECOVERY_JSON, parsed.scope.deploymentId);
       const boundDeployment = await this.ctx.storage.get<string>('deploymentId');
@@ -196,6 +206,7 @@ export class UniswapServiceObject extends DurableObject<ServiceEnv> {
         const page = listOperations(this.ctx.storage, parsed.scope, parsed.cursor);
         return apiSuccess({ availability: getAvailability(this.ctx.storage, recoveryGate), records: page.records.map((item) => ({
           ...item, scope: parsed.scope,
+          ...(activeReservation(this.ctx.storage, parsed.scope, item) ? { reservationState: 'active' } : {}),
           record: { ...item.record, deadline: item.record.kind === 'pay' ? item.record.deadline.toString() : undefined },
         })), ...(page.nextCursor === undefined ? {} : { nextCursor: page.nextCursor }) });
       }
@@ -205,6 +216,7 @@ export class UniswapServiceObject extends DurableObject<ServiceEnv> {
         const saved = getOperation(this.ctx.storage, parsed.scope, parsed.id!);
         if (saved === undefined) return apiError(404, 'NOT_FOUND');
         return apiSuccess({ ...saved, scope: parsed.scope,
+          ...(activeReservation(this.ctx.storage, parsed.scope, saved) ? { reservationState: 'active' } : {}),
           record: { ...saved.record, deadline: saved.record.kind === 'pay' ? saved.record.deadline.toString() : undefined },
         });
       }

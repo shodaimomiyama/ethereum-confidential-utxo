@@ -18,12 +18,16 @@ const record = parseOperationRecord({
   deadline: '600', signatureStarted: false, attemptIds: [],
 }, scope);
 
-function setup() {
+function setup(releaseAllowed = false) {
   const calls: string[] = [];
   const sealedHashes: string[] = [];
-  const reservations = createMemoryReservationPort();
+  const reservations = createMemoryReservationPort({ verify: async () => ({
+    finalized: releaseAllowed, blockTime: 601n,
+    paymentSucceeded: false, inputUnspent: releaseAllowed, inputConsumed: false,
+  }) });
   let currentScope = scope;
   let now = 0;
+  let blockTime = 100n;
   let attemptNumber = 0;
   let refreshChanges = false;
   const prepared: PreparedPay = {
@@ -45,7 +49,7 @@ function setup() {
       : { ...old, quote: { ...old.quote, startedAtMs: now } }; },
     currentScope: () => currentScope,
     clock: { now: () => now },
-    latestBlockTime: async () => 100n,
+    latestBlockTime: async () => blockTime,
     encrypt: async (_data, context) => {
       calls.push(`encrypt:${context.revision}`);
       return { ciphertext: 'AQID', nonce: `0x${String(context.revision).padStart(2, '0').repeat(12)}`, tag: `0x${'01'.repeat(16)}` };
@@ -62,6 +66,7 @@ function setup() {
   return {
     calls, sealedHashes, reservations, prepared, ports,
     setNow: (value: number) => { now = value; },
+    setBlockTime: (value: bigint) => { blockTime = value; },
     switchScope: () => { currentScope = { ...scope, owner: `0x${'66'.repeat(20)}` as never }; },
     changeRefresh: () => { refreshChanges = true; },
   };
@@ -158,6 +163,95 @@ it('keeps fixed conditions after signature start even if the quote ages during s
   expect(fixture.calls).toContain('sign-payment');
 });
 
+it('does not submit when Pay expires after the attempt is durably recorded', async () => {
+  const fixture = setup();
+  const update = fixture.ports.reservations.update;
+  fixture.ports.reservations.update = async (...args) => {
+    const saved = await update(...args);
+    if (saved.revision === 4) fixture.setBlockTime(600n);
+    return saved;
+  };
+  await expect(createPaymentClient(fixture.ports).authorizePay(fixture.prepared, fixture.prepared.record.contentHash))
+    .rejects.toMatchObject({ code: 'TERMS_EXPIRED' });
+  expect(fixture.calls).not.toContain('submit');
+});
+
+it('does not retry a Pay when restored work crosses its deadline', async () => {
+  const fixture = setup();
+  await createPaymentClient(fixture.ports).authorizePay(fixture.prepared, fixture.prepared.record.contentHash);
+  fixture.calls.length = 0;
+  fixture.ports.recovery = {
+    readEvidence: async () => ({ evidence: {
+      finalized: true, blockTime: 599n, paymentSucceeded: false, submissionKnownAbsent: false,
+      attempts: [{ id: 'attempt-1', outcome: 'finalized-failure' }], storageAvailability: 'healthy',
+    }, currentInput: { state: 'unspent' } }),
+    restoreOriginal: async () => { throw new Error('unused'); },
+    restoreForRetry: async () => {
+      fixture.setBlockTime(600n);
+      return { prepared: fixture.prepared, signatures: { pool: '0x11', payment: '0x22' } };
+    },
+    releaseOriginal: async () => { throw new Error('unused'); },
+  };
+  await expect(createPaymentClient(fixture.ports).retryAttempt(recordId as never))
+    .rejects.toMatchObject({ code: 'TERMS_EXPIRED' });
+  expect(fixture.calls).not.toContain('submit');
+});
+
+it('rejects changed terms when the old reservation was not released', async () => {
+  const fixture = setup();
+  await createPaymentClient(fixture.ports).authorizePay(fixture.prepared, fixture.prepared.record.contentHash);
+  fixture.ports.recovery = {
+    readEvidence: async () => ({ evidence: {
+      finalized: true, blockTime: 601n, paymentSucceeded: false, submissionKnownAbsent: false,
+      attempts: [{ id: 'attempt-1', outcome: 'finalized-failure' }], storageAvailability: 'healthy',
+    }, currentInput: { state: 'unspent' } }),
+    restoreOriginal: async () => { throw new Error('unused'); },
+    restoreForRetry: async () => { throw new Error('unused'); },
+    releaseOriginal: async (saved) => saved,
+  };
+  await expect(createPaymentClient(fixture.ports).prepareChangedTerms(recordId as never, 'new terms'))
+    .rejects.toMatchObject({ code: 'RECOVERY_BLOCKED' });
+});
+
+it.each([false, true])('requires a verified release before changed terms (lost ACK: %s)', async lostAck => {
+  const fixture = setup(true);
+  await createPaymentClient(fixture.ports).authorizePay(fixture.prepared, fixture.prepared.record.contentHash);
+  fixture.setBlockTime(601n);
+  const nextId = `0x${'55'.repeat(32)}`;
+  const nextPaymentId = `0x${'66'.repeat(32)}`;
+  const nextHash = `0x${'77'.repeat(32)}`;
+  if (fixture.prepared.record.kind !== 'pay') throw new Error('expected Pay fixture');
+  const nextPrepared: PreparedPay = { ...fixture.prepared,
+    record: { ...fixture.prepared.record, recordId: nextId as never,
+      operationId: nextId as never, paymentId: nextPaymentId as never,
+      contentHash: nextHash as never, deadline: 1200n,
+      signatureStarted: false, attemptIds: [] } };
+  fixture.ports.preparePay = async () => nextPrepared;
+  fixture.ports.recovery = {
+    readEvidence: async () => ({ evidence: {
+      finalized: true, blockTime: 601n, paymentSucceeded: false, submissionKnownAbsent: false,
+      attempts: [{ id: 'attempt-1', outcome: 'finalized-failure' }], storageAvailability: 'healthy',
+    }, currentInput: { state: 'unspent' } }),
+    restoreOriginal: async () => { throw new Error('unused'); },
+    restoreForRetry: async () => { throw new Error('unused'); },
+    releaseOriginal: async saved => {
+      const revision = saved.revision + 1;
+      const encryptedBundle = await fixture.ports.encrypt(fixture.prepared.privateBytes,
+        { scope, recordId: saved.record.recordId, revision });
+      const released = await fixture.reservations.release({ ...saved.record, encryptedBundle },
+        { blockHash: blockHash as never }, saved.revision, revision);
+      if (lostAck) throw new Error('release ACK lost');
+      return released;
+    },
+  };
+  const client = createPaymentClient(fixture.ports);
+  const changed = await client.prepareChangedTerms(recordId as never, 'new terms');
+  expect(changed.record.paymentId).toBe(nextPaymentId);
+  expect((await fixture.reservations.get(scope, record.recordId))?.reservationState).toBe('released');
+  expect((await client.authorizePay(changed, changed.record.contentHash)).chainOutcome).toBe('pending');
+  expect((await fixture.reservations.get(scope, nextId as never))?.reservationState).toBe('active');
+});
+
 it('rejects a full Withdraw that races with a Pay for the same input', async () => {
   const fixture = setup();
   const withdraw = parseOperationRecord({
@@ -190,7 +284,7 @@ it('allows only the recovery action supported by a fresh finalized view', async 
     readEvidence: async () => ({ evidence: failedEvidence, currentInput: { state: 'unspent' } }),
     restoreOriginal: async () => { actions.push('resume'); return { prepared: fixture.prepared, signatures: { pool: '0x11', payment: '0x22' } }; },
     restoreForRetry: async () => { actions.push('retry'); return { prepared: fixture.prepared, signatures: { pool: '0x11', payment: '0x22' } }; },
-    releaseAndPrepareChangedTerms: async () => { actions.push('change'); return fixture.prepared; },
+    releaseOriginal: async () => { actions.push('change'); throw new Error('unused'); },
   };
   const client = createPaymentClient(fixture.ports);
   await expect(client.resumeOriginal(recordId as never)).rejects.toMatchObject({ code: 'RECOVERY_BLOCKED' });
@@ -217,7 +311,7 @@ it('does not execute recovery when reservation state rolls back or an attempt is
     }),
     restoreOriginal: async () => { actions.push('resume'); return { prepared: fixture.prepared, signatures: { pool: '0x11', payment: '0x22' } }; },
     restoreForRetry: async () => { actions.push('retry'); return { prepared: fixture.prepared, signatures: { pool: '0x11', payment: '0x22' } }; },
-    releaseAndPrepareChangedTerms: async () => { actions.push('change'); return fixture.prepared; },
+    releaseOriginal: async () => { actions.push('change'); throw new Error('unused'); },
   };
   const client = createPaymentClient(fixture.ports);
   await expect(client.prepareChangedTerms(recordId as never, 'new terms')).rejects.toMatchObject({ code: 'RECOVERY_BLOCKED' });
@@ -243,7 +337,7 @@ it('blocks recovery after a detected storage rollback even when chain evidence p
     }),
     restoreOriginal: async () => { actions.push('resume'); return { prepared: fixture.prepared, signatures: { pool: '0x11', payment: '0x22' } }; },
     restoreForRetry: async () => { actions.push('retry'); return { prepared: fixture.prepared, signatures: { pool: '0x11', payment: '0x22' } }; },
-    releaseAndPrepareChangedTerms: async () => { actions.push('change'); return fixture.prepared; },
+    releaseOriginal: async () => { actions.push('change'); throw new Error('unused'); },
   };
   await expect(createPaymentClient(fixture.ports).retryAttempt(recordId as never))
     .rejects.toMatchObject({ code: 'RECOVERY_BLOCKED' });
@@ -265,7 +359,7 @@ it('persists exactly one retry attempt before submitting when two callers race',
     }),
     restoreOriginal: async () => ({ prepared: fixture.prepared, signatures: { pool: '0x11', payment: '0x22' } }),
     restoreForRetry: async () => ({ prepared: fixture.prepared, signatures: { pool: '0x11', payment: '0x22' } }),
-    releaseAndPrepareChangedTerms: async () => fixture.prepared,
+    releaseOriginal: async () => { throw new Error('unused'); },
   };
   let recoverySubmits = 0;
   fixture.ports.submit = async () => { recoverySubmits += 1; return { kind: 'submitted', txHash: blockHash as never }; };
@@ -320,7 +414,7 @@ it('resumes a reserved unsigned operation only after saving the signature-start 
     }),
     restoreOriginal: async () => ({ prepared: fixture.prepared }),
     restoreForRetry: async () => { throw new Error('unused'); },
-    releaseAndPrepareChangedTerms: async () => fixture.prepared,
+    releaseOriginal: async () => { throw new Error('unused'); },
   };
   const result = await createPaymentClient(fixture.ports).resumeOriginal(recordId as never);
   expect(result.kind).toBe('submitted');
@@ -347,7 +441,7 @@ it('resumes fixed Pay conditions after quote age passes 30 seconds when signatur
     }),
     restoreOriginal: async () => ({ prepared: fixture.prepared }),
     restoreForRetry: async () => { throw new Error('unused'); },
-    releaseAndPrepareChangedTerms: async () => fixture.prepared,
+    releaseOriginal: async () => { throw new Error('unused'); },
   };
   expect((await createPaymentClient(fixture.ports).resumeOriginal(recordId as never)).kind).toBe('submitted');
   expect(fixture.calls).toContain('sign-payment');

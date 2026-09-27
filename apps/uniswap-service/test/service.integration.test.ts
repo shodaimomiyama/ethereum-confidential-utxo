@@ -79,7 +79,24 @@ it('restores a committed operation in a second authenticated browser session', a
     { headers: { cookie: firstCookie } },
   ), serviceEnv);
   expect(lookup.status).toBe(200);
-  expect(await lookup.json()).toMatchObject(savedBody);
+  expect(await lookup.json()).toMatchObject({ ...savedBody, reservationState: 'active' });
+  // A committed PUT with a lost ACK is recoverable only while its exact input lock remains active.
+  const calls: string[] = [];
+  const http = { async call(route: string, input: { body?: unknown; id?: string }) {
+    calls.push(route);
+    const method = route.startsWith('PUT ') ? 'PUT' : 'GET';
+    const response = await worker.fetch(new Request(`https://site.test/v1/operations/${input.id}?deploymentId=local-v1&owner=${account.address}`, {
+      method, headers: { origin: 'https://site.test', cookie: firstCookie },
+      ...(method === 'PUT' ? { body: JSON.stringify(input.body) } : {}),
+    }), serviceEnv);
+    expect(response.status).toBe(200);
+    if (method === 'PUT') throw new Error('ACK_LOST_AFTER_COMMIT');
+    return parseApiResponse('GET /v1/operations/{id}', response.status, await response.json());
+  } } as HttpClient;
+  const recovered = await saveBeforeAuthorization(http, { ...record, deadline: 600n } as unknown as OperationRecord, 0);
+  expect(recovered).toMatchObject({ revision: 1, stateVersion: 1, status: 'reserved',
+    reservationState: 'active', record: { recordId } });
+  expect(calls).toEqual(['PUT /v1/operations/{id}', 'GET /v1/operations/{id}']);
   const release = await worker.fetch(new Request(`https://site.test/v1/operations/${recordId}/release`, {
     method: 'POST', headers: { origin: 'https://site.test', cookie: firstCookie },
     body: JSON.stringify({ scope, expectedRevision: 1, sealedRevision: 2, blockHash,
@@ -149,22 +166,23 @@ it('restores a committed operation in a second authenticated browser session', a
   expect(secondPage.records).toHaveLength(2);
   expect(secondPage.nextCursor).toBeUndefined();
   expect(new Set([...firstPage.records, ...secondPage.records].map(item => item.record.recordId)).size).toBe(102);
-  // The original record sorts after the 100-item first page. Drop the committed PUT
-  // response and prove its exact contents through the authenticated single-record route.
-  const calls: string[] = [];
-  const http = { async call(route: string, input: { body?: unknown; id?: string }) {
-    calls.push(route);
-    const method = route.startsWith('PUT ') ? 'PUT' : 'GET';
-    const response = await worker.fetch(new Request(`https://site.test/v1/operations/${input.id}?deploymentId=local-v1&owner=${account.address}`, {
-      method, headers: { origin: 'https://site.test', cookie: secondCookie },
-      ...(method === 'PUT' ? { body: JSON.stringify(input.body) } : {}),
-    }), serviceEnv);
-    expect(response.status).toBe(200);
-    if (method === 'PUT') throw new Error('ACK_LOST_AFTER_COMMIT');
-    return parseApiResponse('GET /v1/operations/{id}', response.status, await response.json());
-  } } as HttpClient;
-  const recovered = await saveBeforeAuthorization(http, { ...record, deadline: 600n } as unknown as OperationRecord, 0);
-  expect(recovered).toMatchObject({ revision: 1, stateVersion: 9, status: 'finalized-success', record: { recordId } });
+  const unlockedId = `0x${'1'.padStart(64, '0')}`;
+  await runInDurableObject(stub, (_object, state) => {
+    state.storage.sql.exec('DELETE FROM active_reservations WHERE record_id = ?', unlockedId);
+  });
+  const unlocked = await worker.fetch(new Request(
+    `https://site.test/v1/operations/${unlockedId}?deploymentId=local-v1&owner=${account.address}`,
+    { headers: { cookie: secondCookie } },
+  ), serviceEnv);
+  expect(unlocked.status).toBe(200);
+  const unlockedBody = parseApiResponse('GET /v1/operations/{id}', 200, await unlocked.json());
+  expect(unlockedBody).toMatchObject({ status: 'reserved', record: { recordId: unlockedId } });
+  expect(unlockedBody).not.toHaveProperty('reservationState');
+  // The original record sorts after the 100-item first page. A finalized result
+  // must not be interpreted as an active reservation after a lost PUT ACK.
+  calls.length = 0;
+  await expect(saveBeforeAuthorization(http, { ...record, deadline: 600n } as unknown as OperationRecord, 0))
+    .rejects.toThrow('OPERATION_SAVE_UNCONFIRMED');
   expect(calls).toEqual(['PUT /v1/operations/{id}', 'GET /v1/operations/{id}']);
   await runInDurableObject(stub, (_object, state) => {
     state.storage.sql.exec("UPDATE environment_state SET status = 'stopped' WHERE id = 1");

@@ -8,6 +8,7 @@
     "./testing": "./src/testing/index.ts"
   },
   "dependencies": {
-    "@confidential-utxo/core": "workspace:*"
+    "@confidential-utxo/core": "workspace:*",
+    "viem": "2.56.9"
   }
 }

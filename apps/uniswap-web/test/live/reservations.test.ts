@@ -37,6 +37,12 @@ it('preserves released checkpoint metadata without active status', async () => {
   const { port } = setup({ ...saved, status: 'released', stateVersion: 9, checkpoint });
   expect(await port.get(scope, record.recordId)).toMatchObject({ status: 'released', stateVersion: 9, checkpoint, reservationState: 'released' });
 });
+it('rejects reserved GET and list records without an explicit active lock', async () => {
+  await expect(setup(saved).port.get(scope, record.recordId)).rejects.toThrow('RESERVATION_STATE_UNCONFIRMED');
+  const port = createReservationPort(createHttpClient({ origin: 'https://mock.invalid', transport: async () =>
+    Response.json({ availability: 'healthy', records: [saved] }) }));
+  await expect(port.list(scope)).rejects.toThrow('RESERVATION_STATE_UNCONFIRMED');
+});
 it.each([
   { revision: 2 }, { status: 'released' }, { reservationState: 'released' },
   ...['recordId', 'inputId', 'operationId', 'paymentId', 'contentHash'].map(field => ({ record: { ...wire, [field]: `0x${'99'.repeat(32)}` } })),
@@ -61,10 +67,10 @@ it('lists every page and rejects rollback, unknown records and invalid paginatio
     let calls = 0;
     const port = createReservationPort(createHttpClient({ origin: 'https://mock.invalid', transport: async request => {
       calls++;
-      if (calls === 1) return Response.json({ availability: 'healthy', records: [saved], nextCursor: id });
+      if (calls === 1) return Response.json({ availability: 'healthy', records: [{ ...saved, reservationState: 'active' }], nextCursor: id });
       expect(new URL(request.url).searchParams.get('cursor')).toBe(id);
       return Response.json({ availability: fault === 'rollback' ? 'rollback' : 'healthy',
-        records: fault === 'empty' ? [] : [{ ...saved, status: fault === 'unknown' ? 'unknown' : 'reserved',
+        records: fault === 'empty' ? [] : [{ ...saved, reservationState: 'active', status: fault === 'unknown' ? 'unknown' : 'reserved',
           record: { ...wire, recordId: fault === 'duplicate' ? id : secondId } }],
         ...(fault === 'cursor' ? { nextCursor: id } : {}) });
     } }));

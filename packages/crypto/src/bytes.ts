@@ -31,15 +31,21 @@ export function concat(...parts: readonly Uint8Array[]): Uint8Array {
 
 export function hexBytes(value: string): Uint8Array {
   if (!/^0x(?:[0-9a-fA-F]{2})*$/.test(value)) throw new RangeError("invalid hex bytes");
-  const bytes = new Uint8Array((value.length - 2) / 2);
-  for (let i = 0; i < bytes.length; i++) bytes[i] = Number.parseInt(value.slice(2 + i * 2, 4 + i * 2), 16);
-  return bytes;
+  const result = new Uint8Array((value.length - 2) / 2);
+  for (let index = 0; index < result.length; index++) {
+    result[index] = Number.parseInt(value.slice(2 + index * 2, 4 + index * 2), 16);
+  }
+  return result;
+}
+
+export function bytesHex(value: Uint8Array): string {
+  return Array.from(value, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export function sameBytes(a: Uint8Array, b: Uint8Array): boolean {
+  return a.length === b.length && a.every((byte, index) => byte === b[index]);
 }
 
 export function tag(label: string): Uint8Array {
   return keccak_256(new TextEncoder().encode(label));
-}
-
-export function bytesHex(bytes: Uint8Array): string {
-  return Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
 }

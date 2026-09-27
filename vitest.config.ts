@@ -6,6 +6,7 @@ export default defineConfig({
     include: [
       'tests/environment/**/*.test.ts',
       'tests/environment/**/*.test.mjs',
+      'tests/integration/**/*.test.ts',
       'packages/uniswap/test/**/*.test.ts',
       'apps/uniswap-web/test/**/*.test.ts',
       'apps/uniswap-web/test/**/*.test.tsx',

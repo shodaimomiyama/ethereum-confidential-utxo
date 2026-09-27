@@ -81,7 +81,8 @@ export function createMockHttp({ store, clock, reservations }: {
       const bodyText = request.method === 'GET' ? '' : await request.text();
       const body = bodyText === '' ? undefined : JSON.parse(bodyText) as unknown;
       const url = new URL(request.url);
-      parsed = parseApiRequest(request.method, url.pathname + url.search, body);
+      parsed = parseApiRequest(request.method, url.pathname + url.search, body,
+        { allowLegacyUnsealedPut: reservations === undefined });
     } catch (error) {
       if (error instanceof SyntaxError || error instanceof SchemaError) {
         return apiError(400, 'INVALID_REQUEST', [], error instanceof SchemaError ? error.field : undefined);

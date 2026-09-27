@@ -260,7 +260,8 @@ it('rejects an unsafe numeric block timestamp before it can be rounded', () => {
   const { ui } = setup();
   expect(() => ui.control.inject({
     type: 'quote', startedAt: 0, quoteOut: 100n, latestBlockTimestamp: Number.MAX_SAFE_INTEGER + 1,
-  })).toThrow(RangeError);
+  })).not.toThrow();
+  expect(ui.snapshot().cards.pay.quote).toBeUndefined();
 });
 
 it('passes a validation reason to the UI and prevents an invalid Pay start', async () => {
