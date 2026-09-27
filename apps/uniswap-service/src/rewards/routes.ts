@@ -1,11 +1,12 @@
 import type { ParsedApiRequest, RewardRecord } from '@confidential-utxo/uniswap';
 import type { ServiceContext, ServiceExtension } from '../extensions.js';
 import { apiError, apiSuccess } from '../http.js';
-import { getReward, listRewards, markRewardReceived } from './store.js';
+import { getReward, listRewards, markRewardReceived, rewardLedgerVersion } from './store.js';
 import { admitReward } from './store.js';
 import { verifyRecipientInfo } from '@confidential-utxo/core';
 import { M } from '@confidential-utxo/crypto';
-import { rewardAvailability } from './availability.js';
+import { rewardAvailability, setRewardAvailability } from './availability.js';
+import { verifyFinalizedCancellation } from './production.js';
 
 function wire(record: RewardRecord, context: ServiceContext): object {
   const availability = rewardAvailability(context.storage, context.recoveryGate, record.scope.deploymentId);
@@ -46,11 +47,46 @@ export const rewardRoutes: ServiceExtension['routes'] = [
           return apiError(503, 'SERVICE_UNAVAILABLE');
         }
         if (context.readRewardFunds === undefined) return apiError(503, 'SERVICE_UNAVAILABLE');
+        const expectedVersion = rewardLedgerVersion(context.storage, request.scope.deploymentId);
         let total: bigint | undefined;
         try { total = await context.readRewardFunds(request.scope.deploymentId); }
         catch { return apiError(503, 'SERVICE_UNAVAILABLE'); }
         if (total === undefined) return apiError(503, 'SERVICE_UNAVAILABLE');
-        const result = admitReward(context.storage, request.reward, total);
+        const ended = context.storage.sql.exec<{ old_operation_id: string; operation_id: string;
+          input_id: string; checkpoint_hash: string | null }>(`SELECT r.operation_id AS old_operation_id,
+            c.operation_id, c.input_id, c.checkpoint_hash FROM reward_requests r
+            JOIN reward_cancellations c ON c.deployment_id = r.deployment_id
+              AND c.request_id = r.request_id
+            WHERE r.deployment_id = ? AND r.status = 'ended-without-distribution'`,
+        request.scope.deploymentId).toArray();
+        if (ended.length > 0) {
+          if (context.readRewardHistory === undefined) return apiError(503, 'SERVICE_UNAVAILABLE');
+          const history = await context.readRewardHistory(request.scope.deploymentId);
+          const point = await history.getFinalizedCheckpoint();
+          if (point === null) return apiError(503, 'SERVICE_UNAVAILABLE');
+          const observedContext = await history.getContext(point);
+          if (!observedContext.complete || observedContext.blockHash.toLowerCase() !== point.hash.toLowerCase()) {
+            return apiError(503, 'SERVICE_UNAVAILABLE');
+          }
+          for (const row of ended) {
+            const valid = row.checkpoint_hash === null ? undefined
+              : await verifyFinalizedCancellation(history, observedContext.value,
+                row.old_operation_id, row.operation_id, row.input_id, row.checkpoint_hash);
+            if (valid !== true) {
+              if (valid === false) setRewardAvailability(context.storage,
+                request.scope.deploymentId, 'restore-stopped');
+              return apiError(503, 'SERVICE_UNAVAILABLE');
+            }
+          }
+        }
+        const result = admitReward(context.storage, request.reward, total, {
+          expectedVersion,
+          beforeWrite: () => {
+            context.ensureWritable();
+            if (!rewardAvailability(context.storage, context.recoveryGate,
+              request.scope.deploymentId).accept) throw new Error('SERVICE_UNAVAILABLE');
+          },
+        });
         if (result.kind === 'insufficient') return apiError(422, 'INSUFFICIENT_FUNDS');
         if (result.kind === 'pending') return apiError(409, 'PENDING_REQUEST');
         if (result.kind === 'unknown') return apiError(503, 'SERVICE_UNAVAILABLE');
@@ -80,7 +116,11 @@ export const rewardRoutes: ServiceExtension['routes'] = [
       try {
         const history = await context.readRewardHistory(request.scope.deploymentId);
         const updated = await markRewardReceived(context.storage, request.scope, request.id,
-          request.outputId, request.blockHash, history);
+          request.outputId, request.blockHash, history, () => {
+            context.ensureWritable();
+            if (!rewardAvailability(context.storage, context.recoveryGate,
+              request.scope.deploymentId).receive) throw new Error('SERVICE_UNAVAILABLE');
+          });
         return apiSuccess({ reward: wire(updated, context) });
       } catch (error) {
         if (error instanceof Error && error.message === 'NOT_FOUND') return apiError(404, 'NOT_FOUND');

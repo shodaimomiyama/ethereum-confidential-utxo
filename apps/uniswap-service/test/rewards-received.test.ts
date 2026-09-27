@@ -37,6 +37,10 @@ it('records only the owner output in a finalized canonical operation', async () 
     await expect(markRewardReceived(state.storage, scope, id, output, block,
       { ...history, getFinalizedCheckpoint: async () => null } as HistoryPort))
       .rejects.toThrow('SERVICE_UNAVAILABLE');
+    await expect(markRewardReceived(state.storage, scope, id, output, block, history,
+      () => { throw new Error('SERVICE_UNAVAILABLE'); })).rejects.toThrow('SERVICE_UNAVAILABLE');
+    expect(state.storage.sql.exec<{ status: string }>(
+      'SELECT status FROM reward_requests WHERE request_id = ?', id).toArray()[0]?.status).toBe('finalized');
     expect((await markRewardReceived(state.storage, scope, id, output, block, history)).status).toBe('received');
     expect((await markRewardReceived(state.storage, scope, id, output, block, history)).status).toBe('received');
   });

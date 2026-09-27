@@ -76,6 +76,7 @@ function rewardContentHash(request: RewardRequest): string {
 /** `confirmedTotalWei` is the observed finalized pool balance before subtracting active reservations. */
 export function admitReward(
   storage: DurableObjectStorage, request: RewardRequest, confirmedTotalWei?: bigint,
+  options: { expectedVersion?: number; beforeWrite?: () => void } = {},
 ): Admission {
   return storage.transactionSync(() => {
     const existing = storage.sql.exec<{ content_hash: string }>(
@@ -100,6 +101,11 @@ export function admitReward(
       return { kind: 'pending', record };
     }
     if (confirmedTotalWei === undefined) return { kind: 'unknown' };
+    if (options.expectedVersion !== undefined
+      && rewardLedgerVersion(storage, request.scope.deploymentId) !== options.expectedVersion) {
+      return { kind: 'unknown' };
+    }
+    options.beforeWrite?.();
     const active = storage.sql.exec<{ amount_wei: string }>(
       'SELECT amount_wei FROM reward_reservations WHERE deployment_id = ? AND released = 0',
       request.scope.deploymentId,
@@ -119,6 +125,13 @@ export function admitReward(
     if (record === undefined) throw new Error('SERVICE_UNAVAILABLE');
     return { kind: 'accepted', record };
   });
+}
+
+export function rewardLedgerVersion(storage: DurableObjectStorage, deploymentId: string): number {
+  return storage.sql.exec<{ version: number }>(
+    'SELECT COALESCE(SUM(state_version), 0) AS version FROM reward_requests WHERE deployment_id = ?',
+    deploymentId,
+  ).toArray()[0]?.version ?? 0;
 }
 
 export type RewardWork = { revision: number; phase: 'claimed' | 'draft-saved' | 'signature-started' };
@@ -159,8 +172,14 @@ export async function saveDraftIfCurrent<T extends { operationId: string; reques
       throw new Error('REWARD_INPUT_CONFLICT');
     }
     for (const inputId of draft.request.inputIds) {
-      storage.sql.exec(`INSERT INTO reward_inputs (deployment_id, input_id, request_id, status)
-        VALUES (?, ?, ?, 'reserved')`, deploymentId, inputId.toLowerCase(), requestId);
+      const reused = storage.sql.exec(`UPDATE reward_inputs SET request_id = ?, status = 'reserved'
+        WHERE deployment_id = ? AND input_id = ? AND status = 'released'`,
+      requestId, deploymentId, inputId.toLowerCase());
+      if (reused.rowsWritten === 0) storage.sql.exec(`INSERT INTO reward_inputs
+        (deployment_id, input_id, request_id, status) VALUES (?, ?, ?, 'reserved')`,
+      deploymentId, inputId.toLowerCase(), requestId);
+      storage.sql.exec(`INSERT INTO reward_input_history (deployment_id, request_id, input_id)
+        VALUES (?, ?, ?)`, deploymentId, requestId, inputId.toLowerCase());
     }
     storage.sql.exec(`UPDATE reward_drafts SET phase = 'draft-saved', encrypted_json = ?
       WHERE deployment_id = ? AND request_id = ? AND phase = 'claimed' AND version = ?`,
@@ -230,18 +249,23 @@ export async function saveAuthorizedDraftIfCurrent(storage: DurableObjectStorage
 export async function buildAndAuthorizeReward(
   storage: DurableObjectStorage, deploymentId: string, requestId: string, key: Uint8Array,
   intent: BuildIntent, context: Context, inputs: OwnedUtxo[], signer: SignerPort,
+  beforeWrite: () => void = () => {},
 ): Promise<LocalDraft | undefined> {
+  beforeWrite();
   const claim = claimRewardWork(storage, deploymentId, requestId);
   if (claim === undefined) return undefined;
   const draft = await buildOperation(intent, context, { inputs, randomSalt: () => crypto.getRandomValues(new Uint8Array(32)) });
+  beforeWrite();
   if (!await saveDraftIfCurrent(storage, deploymentId, requestId, claim.revision, key, draft)) {
     throw new Error('REWARD_DRAFT_CONFLICT');
   }
   if (!markSignatureStarted(storage, deploymentId, requestId, claim.revision)) {
     throw new Error('REWARD_DRAFT_CONFLICT');
   }
+  beforeWrite();
   const signature = await authorizeOperation(context, draft.request, signer);
   const signed: LocalDraft = { ...draft, signature };
+  beforeWrite();
   if (!await saveAuthorizedDraftIfCurrent(storage, deploymentId, requestId, claim.revision, key, signed)) {
     throw new Error('REWARD_DRAFT_CONFLICT');
   }
@@ -250,7 +274,7 @@ export async function buildAndAuthorizeReward(
 
 /** Confirms the published output against one finalized canonical history point before accepting a receipt acknowledgement. */
 export async function markRewardReceived(storage: DurableObjectStorage, scope: Scope, requestId: string,
-  outputId: string, blockHash: string, history: HistoryPort): Promise<RewardRecord> {
+  outputId: string, blockHash: string, history: HistoryPort, beforeWrite: () => void = () => {}): Promise<RewardRecord> {
   const existing = getReward(storage, scope, requestId);
   if (existing === undefined) throw new Error('NOT_FOUND');
   if (!['finalized', 'received'].includes(existing.status)
@@ -294,6 +318,7 @@ export async function markRewardReceived(storage: DurableObjectStorage, scope: S
   }
   if (existing.status === 'received') return existing;
   storage.transactionSync(() => {
+    beforeWrite();
     const current = getReward(storage, scope, requestId);
     if (current?.status !== 'finalized' || current.outputId?.toLowerCase() !== outputId.toLowerCase()
       || current.blockHash?.toLowerCase() !== blockHash.toLowerCase()) throw new Error('NOT_FINALIZED');

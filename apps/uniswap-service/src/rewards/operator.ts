@@ -25,9 +25,15 @@ export async function endUndistributedReward(storage: DurableObjectStorage, depl
       'SELECT attempt_no FROM reward_attempts WHERE deployment_id = ? AND request_id = ? LIMIT 1',
       deploymentId, requestId,
     ).toArray()[0];
+    const maintenance = storage.sql.exec<{ phase: string }>(
+      `SELECT phase FROM reward_consolidations WHERE deployment_id = ? AND request_id = ?
+       ORDER BY round DESC LIMIT 1`, deploymentId, requestId).toArray()[0];
     if (draft?.phase === 'signature-started' || attempt !== undefined
-      || ['pending', 'unknown'].includes(row.status)) throw new Error('CANCELLATION_REQUIRED');
-    if (!['accepted', 'queued', 'processing'].includes(row.status)
+      || row.status === 'pending' || (maintenance !== undefined
+        && ['signature-started', 'raw-saved'].includes(maintenance.phase))) {
+      throw new Error('CANCELLATION_REQUIRED');
+    }
+    if (!['accepted', 'queued', 'processing', 'unknown'].includes(row.status)
       || (row.status === 'processing' && draft === undefined)
       || (draft !== undefined && !['claimed', 'draft-saved'].includes(draft.phase))) {
       throw new Error('REWARD_END_CONFLICT');
@@ -50,7 +56,7 @@ export type CancellationPorts = {
   broadcast(raw: Hex): Promise<void>;
   /** 'cancel-finalized' certifies the cancellation input was consumed by that operation and the old operation did not succeed. */
   observe(oldOperationId: string, cancellationOperationId: string, inputId: string): Promise<
-    'unknown' | 'none' | 'old-finalized' | 'cancel-finalized'>;
+    'unknown' | 'none' | 'old-finalized' | { kind: 'cancel-finalized'; checkpointHash: string }>;
 };
 
 type CancellationRow = { phase: string; operation_id: string; input_id: string;
@@ -111,6 +117,9 @@ export async function advanceSignedCancellation(storage: DurableObjectStorage, d
     row = read()!;
   }
   if (row.phase === 'signed') {
+    const prior = await ports.observe(original.operation_id, row.operation_id, row.input_id);
+    if (prior === 'old-finalized') throw new Error('ORIGINAL_FINALIZED');
+    if (prior === 'unknown') throw new Error('REWARD_FUNDS_UNKNOWN');
     const signed = decodeRewardSecret<CancellationDraft>(await decryptRewardState(key, deploymentId,
       requestId, 1, row.encrypted_draft));
     if (signed.operationId !== row.operation_id || signed.signature === undefined) {
@@ -131,8 +140,9 @@ export async function advanceSignedCancellation(storage: DurableObjectStorage, d
     throw new Error('REWARD_CANCELLATION_CONFLICT');
   }
   const observed = await ports.observe(original.operation_id, row.operation_id, row.input_id);
+  if (observed === 'unknown') throw new Error('REWARD_FUNDS_UNKNOWN');
   if (observed === 'old-finalized') throw new Error('ORIGINAL_FINALIZED');
-  if (observed === 'cancel-finalized') {
+  if (typeof observed === 'object' && observed.kind === 'cancel-finalized') {
     storage.transactionSync(() => {
       const latest = storage.sql.exec<{ status: string; operation_id: string | null }>(
         'SELECT status, operation_id FROM reward_requests WHERE deployment_id = ? AND request_id = ?',
@@ -148,6 +158,11 @@ export async function advanceSignedCancellation(storage: DurableObjectStorage, d
         WHERE deployment_id = ? AND request_id = ?`, deploymentId, requestId);
       storage.sql.exec(`UPDATE reward_inputs SET status = 'consumed'
         WHERE deployment_id = ? AND input_id = ?`, deploymentId, row.input_id);
+      storage.sql.exec(`UPDATE reward_inputs SET status = 'released'
+        WHERE deployment_id = ? AND request_id = ? AND input_id <> ?`,
+      deploymentId, requestId, row.input_id);
+      storage.sql.exec(`UPDATE reward_cancellations SET checkpoint_hash = ?
+        WHERE deployment_id = ? AND request_id = ?`, observed.checkpointHash, deploymentId, requestId);
     });
     return getReward(storage, scope, requestId)!;
   }

@@ -4,7 +4,7 @@ import { expect, it } from 'vitest';
 import { makeServiceContext } from '../src/extensions.js';
 import { runRewardAlarm } from '../src/rewards/queue.js';
 import { initializeEnvironment } from '../src/recovery.js';
-import { setRewardAvailability } from '../src/rewards/availability.js';
+import { resumeRewardAvailability, setRewardAvailability } from '../src/rewards/availability.js';
 
 it('dispatches by sequence after finalized without waiting for received', async () => {
   const ns = (env as unknown as { UNISWAP_STATE: DurableObjectNamespace }).UNISWAP_STATE;
@@ -37,7 +37,8 @@ it('dispatches by sequence after finalized without waiting for received', async 
     expect(state.storage.sql.exec<{ reason: string }>(
       "SELECT reason FROM reward_availability WHERE deployment_id = 'local-v1'").toArray()[0]?.reason)
       .toBe('operator-stopped');
-    setRewardAvailability(state.storage, 'local-v1', 'healthy');
+    resumeRewardAvailability(state.storage, { generation: 'test-g1', stopped: false },
+      'local-v1', true, {});
     await runRewardAlarm(context, runner);
     expect(sent).toEqual(ids);
   });
@@ -67,7 +68,7 @@ it('stops later distribution when a finalized ancestor is reorged', async () => 
     expect(state.storage.sql.exec<{ status: string }>(
       'SELECT status FROM reward_requests WHERE request_id = ?', a).toArray()[0]?.status).toBe('unknown');
     expect(state.storage.sql.exec<{ status: string }>(
-      'SELECT status FROM reward_requests WHERE request_id = ?', b).toArray()[0]?.status).toBe('unknown');
+      'SELECT status FROM reward_requests WHERE request_id = ?', b).toArray()[0]?.status).toBe('accepted');
     expect(state.storage.sql.exec<{ reason: string }>(
       "SELECT reason FROM reward_availability WHERE deployment_id = 'local-v1'").toArray()[0]?.reason)
       .toBe('restore-stopped');
@@ -78,5 +79,101 @@ it('stops later distribution when a finalized ancestor is reorged', async () => 
     expect(state.storage.sql.exec<{ reason: string }>(
       "SELECT reason FROM reward_availability WHERE deployment_id = 'local-v1'").toArray()[0]?.reason)
       .toBe('restore-stopped');
+  });
+});
+
+it('clears only a transient RPC stop before reconciling a saved attempt', async () => {
+  const ns = (env as unknown as { UNISWAP_STATE: DurableObjectNamespace }).UNISWAP_STATE;
+  const stub = ns.get(ns.idFromName('reward-queue-rpc-resume'));
+  await stub.fetch('https://site.test/v1/operations');
+  await runInDurableObject(stub, async (_object, state) => {
+    initializeEnvironment(state.storage, { generation: 'test-g1', stopped: false, initialize: true });
+    const id = `0x${'dd'.repeat(32)}`;
+    state.storage.sql.exec(`INSERT INTO reward_requests (deployment_id, owner, request_id,
+      amount_wei, recipient_info_json, content_hash, status, operation_id)
+      VALUES ('local-v1', ?, ?, '1', '{}', ?, 'pending', ?)`, `0x${'11'.repeat(20)}`, id, id, id);
+    setRewardAvailability(state.storage, 'local-v1', 'rpc-unavailable');
+    let reconciled = false;
+    await runRewardAlarm({ ...makeServiceContext(state.storage, { generation: 'test-g1', stopped: false }),
+      deploymentId: 'local-v1' }, {
+      probe: async () => true,
+      dispatch: async () => {},
+      reconcile: async () => {
+        expect(state.storage.sql.exec<{ reason: string }>(
+          "SELECT reason FROM reward_availability WHERE deployment_id = 'local-v1'").toArray()[0]?.reason)
+          .toBe('healthy');
+        reconciled = true;
+      },
+      verifyFinalized: async () => true,
+    });
+    expect(reconciled).toBe(true);
+  });
+});
+
+it('stops and restores obligations when a finalized cancellation is reorged', async () => {
+  const ns = (env as unknown as { UNISWAP_STATE: DurableObjectNamespace }).UNISWAP_STATE;
+  const stub = ns.get(ns.idFromName('reward-queue-cancel-reorg'));
+  await stub.fetch('https://site.test/v1/operations');
+  await runInDurableObject(stub, async (_object, state) => {
+    initializeEnvironment(state.storage, { generation: 'test-g1', stopped: false, initialize: true });
+    const id = `0x${'dc'.repeat(32)}`;
+    const next = `0x${'ef'.repeat(32)}`;
+    const old = `0x${'ab'.repeat(32)}`;
+    const cancel = `0x${'cd'.repeat(32)}`;
+    const checkpoint = `0x${'aa'.repeat(32)}`;
+    for (const [subject, requestId, status, operationId] of [
+      [`0x${'11'.repeat(20)}`, id, 'ended-without-distribution', old],
+      [`0x${'22'.repeat(20)}`, next, 'accepted', null],
+    ] as const) state.storage.sql.exec(`INSERT INTO reward_requests (deployment_id, owner, request_id,
+      amount_wei, recipient_info_json, content_hash, status, operation_id)
+      VALUES ('local-v1', ?, ?, '1', '{}', ?, ?, ?)`, subject, requestId, requestId, status, operationId);
+    state.storage.sql.exec(`INSERT INTO reward_reservations
+      (deployment_id, request_id, amount_wei, released) VALUES ('local-v1', ?, '1', 1)`, id);
+    state.storage.sql.exec(`INSERT INTO reward_cancellations
+      (deployment_id, request_id, phase, operation_id, input_id, encrypted_draft, checkpoint_hash)
+      VALUES ('local-v1', ?, 'raw-saved', ?, ?, 'encrypted', ?)`, id, cancel,
+      `0x${'aa'.repeat(32)}`, checkpoint);
+    let dispatched = false;
+    await runRewardAlarm({ ...makeServiceContext(state.storage, { generation: 'test-g1', stopped: false }),
+      deploymentId: 'local-v1' }, {
+      dispatch: async () => { dispatched = true; }, reconcile: async () => {},
+      verifyFinalized: async () => true,
+      verifyCancellationFinalized: async () => false,
+    });
+    expect(dispatched).toBe(false);
+    expect(state.storage.sql.exec<{ status: string }>(
+      'SELECT status FROM reward_requests WHERE request_id = ?', id).toArray()[0]?.status).toBe('unknown');
+    expect(state.storage.sql.exec<{ released: number }>(
+      'SELECT released FROM reward_reservations WHERE request_id = ?', id).toArray()[0]?.released).toBe(0);
+    expect(state.storage.sql.exec<{ reason: string }>(
+      "SELECT reason FROM reward_availability WHERE deployment_id = 'local-v1'").toArray()[0]?.reason)
+      .toBe('restore-stopped');
+  });
+});
+
+it('withdraws a queued reward when its finalized consolidation is reorged', async () => {
+  const ns = (env as unknown as { UNISWAP_STATE: DurableObjectNamespace }).UNISWAP_STATE;
+  const stub = ns.get(ns.idFromName('reward-queue-consolidation-reorg'));
+  await stub.fetch('https://site.test/v1/operations');
+  await runInDurableObject(stub, async (_object, state) => {
+    initializeEnvironment(state.storage, { generation: 'test-g1', stopped: false, initialize: true });
+    const id = `0x${'a1'.repeat(32)}`;
+    state.storage.sql.exec(`INSERT INTO reward_requests (deployment_id, owner, request_id,
+      amount_wei, recipient_info_json, content_hash, status)
+      VALUES ('local-v1', ?, ?, '10', '{}', 'hash', 'accepted')`, `0x${'11'.repeat(20)}`, id);
+    state.storage.sql.exec(`INSERT INTO reward_consolidations (deployment_id, request_id,
+      round, phase, operation_id, input_ids_json, checkpoint_hash)
+      VALUES ('local-v1', ?, 1, 'finalized', ?, ?, ?)`, id,
+    `0x${'bb'.repeat(32)}`, JSON.stringify([`0x${'cc'.repeat(32)}`, `0x${'dd'.repeat(32)}`]),
+    `0x${'ee'.repeat(32)}`);
+    let dispatched = false;
+    await runRewardAlarm({ ...makeServiceContext(state.storage, { generation: 'test-g1', stopped: false }),
+      deploymentId: 'local-v1' }, {
+      dispatch: async () => { dispatched = true; }, reconcile: async () => {},
+      verifyFinalized: async () => true, verifyConsolidationFinalized: async () => false,
+    });
+    expect(dispatched).toBe(false);
+    expect(state.storage.sql.exec<{ status: string }>(
+      'SELECT status FROM reward_requests WHERE request_id = ?', id).toArray()[0]?.status).toBe('unknown');
   });
 });

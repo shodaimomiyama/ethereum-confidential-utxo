@@ -31,6 +31,6 @@ it('keeps SQLite rows across schema reapplication', async () => {
     state.storage.sql.exec<{ version: number }>('SELECT version FROM migration_registry ORDER BY version').toArray());
   const sessions = await runInDurableObject(stub, (_object, state) =>
     state.storage.sql.exec<{ session_hash: string }>('SELECT session_hash FROM sessions').toArray());
-  expect(versions.map(({ version }) => version)).toEqual([1, 2, 3]);
+  expect(versions.map(({ version }) => version)).toEqual([1, 2, 3, 4, 5]);
   expect(sessions.map(({ session_hash }) => session_hash)).toEqual(['x']);
 });

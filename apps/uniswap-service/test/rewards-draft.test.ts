@@ -55,3 +55,26 @@ it('does not regenerate an interrupted random draft', async () => {
       .toEqual([{ phase: 'claimed' }]);
   });
 });
+
+it('reacquires an input released by a safely ended unsigned request', async () => {
+  const ns = (env as unknown as { UNISWAP_STATE: DurableObjectNamespace }).UNISWAP_STATE;
+  const stub = ns.get(ns.idFromName('reward-draft-reacquire'));
+  await stub.fetch('https://site.test/v1/operations');
+  await runInDurableObject(stub, async (_object, state) => {
+    const first = `0x${'aa'.repeat(32)}`;
+    const second = `0x${'bb'.repeat(32)}`;
+    const input = `0x${'cc'.repeat(32)}`;
+    for (const id of [first, second]) state.storage.sql.exec(`INSERT INTO reward_requests
+      (deployment_id, owner, request_id, amount_wei, recipient_info_json, content_hash, status)
+      VALUES ('local-v1', ?, ?, '2', '{}', ?, 'accepted')`, `0x${id.slice(2, 42)}`, id, id);
+    const draft = (operationId: string) => ({ operationId, request: { inputIds: [input] } });
+    expect(claimRewardWork(state.storage, 'local-v1', first)).toBeDefined();
+    expect(await saveDraftIfCurrent(state.storage, 'local-v1', first, 1,
+      new Uint8Array(32).fill(1), draft(first))).toBe(true);
+    state.storage.sql.exec("UPDATE reward_requests SET status = 'ended-without-distribution' WHERE request_id = ?", first);
+    state.storage.sql.exec("UPDATE reward_inputs SET status = 'released' WHERE request_id = ?", first);
+    expect(claimRewardWork(state.storage, 'local-v1', second)).toBeDefined();
+    expect(await saveDraftIfCurrent(state.storage, 'local-v1', second, 1,
+      new Uint8Array(32).fill(1), draft(second))).toBe(true);
+  });
+});

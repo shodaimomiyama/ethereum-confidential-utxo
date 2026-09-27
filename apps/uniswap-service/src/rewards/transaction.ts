@@ -11,9 +11,10 @@ export type RawRpc = { sendRawTransaction(args: { serializedTransaction: Hex }):
 
 export async function prepareAndStoreRewardAttempt(storage: DurableObjectStorage, deploymentId: string,
   requestId: string, key: Uint8Array, verified: VerifiedDeployment, history: HistoryPort,
-  signer: RawSigner, submission: PublicSubmission, options: SendOptions = {}): Promise<number> {
+  signer: RawSigner, submission: PublicSubmission, options: SendOptions = {},
+  beforeWrite: () => void = () => {}): Promise<number> {
   const prepared = await prepareSignedRaw(verified, history, signer, submission, options);
-  return saveRewardAttempt(storage, deploymentId, requestId, key, prepared);
+  return saveRewardAttempt(storage, deploymentId, requestId, key, prepared, beforeWrite);
 }
 
 type AttemptRow = { attempt_no: number; operation_id: string; nonce: number;

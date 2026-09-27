@@ -48,4 +48,39 @@ export const rewardMigrations: readonly Migration[] = [{
       PRIMARY KEY (deployment_id, request_id)
     )`,
   ],
+}, {
+  version: 4,
+  statements: [
+    `CREATE TABLE reward_input_history (
+      deployment_id TEXT NOT NULL, request_id TEXT NOT NULL, input_id TEXT NOT NULL,
+      PRIMARY KEY (deployment_id, request_id, input_id)
+    )`,
+    `INSERT INTO reward_input_history (deployment_id, request_id, input_id)
+      SELECT deployment_id, request_id, input_id FROM reward_inputs`,
+    `CREATE TABLE reward_stop_flags (
+      deployment_id TEXT NOT NULL, reason TEXT NOT NULL,
+      PRIMARY KEY (deployment_id, reason)
+    )`,
+    `INSERT INTO reward_stop_flags (deployment_id, reason)
+      SELECT deployment_id, reason FROM reward_availability
+      WHERE reason IN ('operator-stopped', 'quota-stopped', 'restore-stopped')`,
+    `CREATE TABLE reward_transient_stop (
+      deployment_id TEXT NOT NULL, reason TEXT NOT NULL,
+      PRIMARY KEY (deployment_id, reason)
+    )`,
+    `INSERT INTO reward_transient_stop (deployment_id, reason)
+      SELECT deployment_id, reason FROM reward_availability
+      WHERE reason IN ('rpc-unavailable', 'funds-short', 'gas-short')`,
+  ],
+}, {
+  version: 5,
+  statements: [
+    `CREATE TABLE reward_consolidations (
+      deployment_id TEXT NOT NULL, request_id TEXT NOT NULL, round INTEGER NOT NULL,
+      phase TEXT NOT NULL, operation_id TEXT, input_ids_json TEXT,
+      encrypted_draft TEXT, encrypted_raw TEXT, tx_hash TEXT, nonce INTEGER,
+      checkpoint_hash TEXT,
+      PRIMARY KEY (deployment_id, request_id, round)
+    )`,
+  ],
 }];

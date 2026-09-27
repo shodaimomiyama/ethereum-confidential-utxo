@@ -223,9 +223,9 @@ rg 'from .*packages/(ethereum|cli)|node:fs|tests/vectors/tools|experiments/' pac
 
 ## Issue #58: デモ報酬APIの局所検証
 
-Node.js 24.21.0、pnpm 10.34.5、Vitest 4.1.11、TypeScript 6.0.3と固定lockfileを使う。ルートで `pnpm install --frozen-lockfile` の後、`pnpm check:service`、`pnpm test:service`、`pnpm test:contracts`、`pnpm exec vitest run --config packages/ethereum/vitest.config.ts packages/ethereum/test/submission.test.ts` を実行する。2026-09-27のmacOSローカル検証では順に成功、サービス22ファイル53件、Uniswap/サイト23ファイル130件、Ethereum提出7件が成功した。秘密鍵・RPC認証値・Worker Secretを試験結果へ保存しない。
+Node.js 24.21.0、pnpm 10.34.5、Vitest 4.1.11、TypeScript 6.0.3と固定lockfileを使う。実装開始時の依存取得commitは `dfa88f767fceaf2ba4cc3e788da2c1dc862d89b1`。ルートで `pnpm install --frozen-lockfile` の後、`pnpm check:service`、`pnpm test:service`、`pnpm test:contracts`、`pnpm exec vitest run --config packages/ethereum/vitest.config.ts packages/ethereum/test/submission.test.ts` を実行する。2026-09-27のmacOSローカル検証では順に成功し、サービス23ファイル65件、Uniswap/サイト23ファイル130件、Ethereum提出7件が成功した。秘密鍵・RPC認証値・Worker Secretを試験結果へ保存しない。
 
-サービス試験は環境単位SQLite Durable Objectを使い、本人の受付と再送、資金予約、同時要求、暗号化draft、署名済みrawの保存後送信、alarmの逐次処理、finalized履歴と再編成、本人の受領通知、未署名終了と署名済み取消、停止・再開の条件を検査する。`rewards-integration.test.ts` は実 `buildOperation`、受取情報の署名検証、操作認可、Pool提出データ符号化、raw取引署名を通し、同じDOの保存済みrawだけをRPC spyへ渡す。履歴・RPCはfixture注入であり、実Poolの実行成功、Cloudflare Free runtimeでの資源適合、公開テストネットでの確定を示さない。
+サービス試験は環境単位SQLite Durable Objectを使い、本人の受付と再送、資金予約、同時要求、暗号化draft、署名済みrawの保存後送信、alarmの逐次処理、finalized履歴と再編成、本人の受領通知、未署名終了と署名済み取消、停止・再開の条件を検査する。`rewards-integration.test.ts` は実 `buildOperation`、受取情報の署名検証、操作認可、Pool提出データ符号化、raw取引署名を通し、同じDOの保存済みrawだけをRPC spyへ渡す。`rewards-consolidation.test.ts` は三入力の断片化例から本体の実暗号で自己送金を作り、整理用rawの保存順序と確定待ちを検査する。履歴・RPCはfixture注入であり、実Poolの実行成功、Cloudflare Free runtimeでの資源適合、公開テストネットでの確定を示さない。
 
 公開配置前に環境単位の `REWARD_SECRETS_JSON`（状態暗号化鍵・配布元署名鍵・受領鍵）、内部操作用 `REWARD_OPERATOR_TOKEN`、RPC、Pool配置情報、DB外の復旧ゲートと同世代バックアップを設定する。鍵の平文をSQLite、通常ログ、成果物へ保存しない。初回DB初期化は明示的に実行し、通常運用では初期化許可を外す。配布元の機密UTXO資金と公開gas残高は別に確認する。受領通知は資金・gas不足による配布停止中でもfinalized履歴を照合し、共通復旧ゲート停止中は保留する。
 

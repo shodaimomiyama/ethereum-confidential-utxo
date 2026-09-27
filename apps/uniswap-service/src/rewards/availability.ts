@@ -13,14 +13,41 @@ export type RewardAvailabilityState = {
 
 export function setRewardAvailability(storage: DurableObjectStorage, deploymentId: string,
   reason: RewardAvailability): void {
+  storage.transactionSync(() => {
+    if (['operator-stopped', 'quota-stopped', 'restore-stopped'].includes(reason)) {
+      storage.sql.exec(`INSERT OR IGNORE INTO reward_stop_flags (deployment_id, reason) VALUES (?, ?)`,
+        deploymentId, reason);
+    } else if (reason === 'healthy') {
+      storage.sql.exec(`DELETE FROM reward_transient_stop
+        WHERE deployment_id = ? AND reason = 'rpc-unavailable'`, deploymentId);
+    } else {
+      storage.sql.exec('INSERT OR IGNORE INTO reward_transient_stop (deployment_id, reason) VALUES (?, ?)',
+        deploymentId, reason);
+    }
+    refreshReason(storage, deploymentId);
+  });
+}
+
+function refreshReason(storage: DurableObjectStorage, deploymentId: string): RewardAvailability {
+  const flags = storage.sql.exec<{ reason: RewardAvailability }>(
+    'SELECT reason FROM reward_stop_flags WHERE deployment_id = ?', deploymentId,
+  ).toArray().map((row) => row.reason);
+  const transient = storage.sql.exec<{ reason: RewardAvailability }>(
+    'SELECT reason FROM reward_transient_stop WHERE deployment_id = ?', deploymentId,
+  ).toArray().map((row) => row.reason);
+  const reason = (['restore-stopped', 'quota-stopped', 'operator-stopped'] as const)
+    .find((item) => flags.includes(item))
+    ?? (['rpc-unavailable', 'funds-short', 'gas-short'] as const).find((item) => transient.includes(item))
+    ?? 'healthy';
   storage.sql.exec(`INSERT INTO reward_availability (deployment_id, reason, checked_at_ms)
     VALUES (?, ?, ?) ON CONFLICT(deployment_id) DO UPDATE SET
     reason = excluded.reason, checked_at_ms = excluded.checked_at_ms`, deploymentId, reason, Date.now());
+  return reason;
 }
 
 export function classifyRewardFailure(error: unknown): RewardAvailability {
   if (error instanceof CoreFailure) {
-    if (error.code === 'INSUFFICIENT' || error.code === 'UNCONSTRUCTABLE') return 'funds-short';
+    if (error.code === 'INSUFFICIENT') return 'funds-short';
     if (error.code === 'RPC' || error.code === 'HISTORY_UNAVAILABLE' || error.code === 'UNCONFIRMED') {
       return 'rpc-unavailable';
     }
@@ -78,5 +105,15 @@ export function resumeRewardAvailability(storage: DurableObjectStorage, gate: Re
       || evidence.attemptsChecked !== true))) {
     throw new Error('REWARD_RESUME_EVIDENCE');
   }
-  setRewardAvailability(storage, deploymentId, 'healthy');
+  if (['restore-stopped', 'quota-stopped', 'operator-stopped'].includes(reason)) {
+    storage.sql.exec('DELETE FROM reward_stop_flags WHERE deployment_id = ? AND reason = ?',
+      deploymentId, reason);
+    refreshReason(storage, deploymentId);
+  } else if (reason === 'funds-short' || reason === 'gas-short') {
+    storage.sql.exec('DELETE FROM reward_transient_stop WHERE deployment_id = ? AND reason = ?',
+      deploymentId, reason);
+    refreshReason(storage, deploymentId);
+  } else {
+    setRewardAvailability(storage, deploymentId, 'healthy');
+  }
 }

@@ -95,7 +95,7 @@ export async function createProductionCancellationPorts(service: ServiceContext,
         const header = await history.getCanonicalHeader(observed.success.blockNumber, point);
         if (!header.complete || header.blockHash.toLowerCase() !== point.hash.toLowerCase()
           || header.value.hash.toLowerCase() !== observed.success.blockHash.toLowerCase()) return 'unknown';
-        return 'cancel-finalized';
+        return { kind: 'cancel-finalized' as const, checkpointHash: observed.success.blockHash };
       } catch { return 'unknown'; }
     },
   } };

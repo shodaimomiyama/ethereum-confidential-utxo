@@ -62,3 +62,38 @@ it('requires operator evidence and the healthy external generation before resumi
       .toThrow('REWARD_RESUME_EVIDENCE');
   });
 });
+
+it('keeps restore and operator stops when a later transient RPC failure is recorded', async () => {
+  const ns = (env as unknown as { UNISWAP_STATE: DurableObjectNamespace }).UNISWAP_STATE;
+  const stub = ns.get(ns.idFromName('reward-availability-overlap'));
+  await stub.fetch('https://site.test/v1/operations');
+  await runInDurableObject(stub, (_object, state) => {
+    const gate = { generation: 'test-g1', stopped: false };
+    initializeEnvironment(state.storage, { ...gate, initialize: true });
+    setRewardAvailability(state.storage, 'local-v1', 'restore-stopped');
+    setRewardAvailability(state.storage, 'local-v1', 'operator-stopped');
+    setRewardAvailability(state.storage, 'local-v1', 'rpc-unavailable');
+    expect(rewardAvailability(state.storage, gate, 'local-v1').reason).toBe('restore-stopped');
+    expect(() => resumeRewardAvailability(state.storage, gate, 'local-v1', true, {}))
+      .toThrow('REWARD_RESUME_EVIDENCE');
+    resumeRewardAvailability(state.storage, gate, 'local-v1', true,
+      { recordsComplete: true, chainReconciled: true, keysReadable: true, attemptsChecked: true });
+    expect(rewardAvailability(state.storage, gate, 'local-v1').reason).toBe('operator-stopped');
+  });
+});
+
+it('does not let RPC recovery clear a separate funds shortage', async () => {
+  const ns = (env as unknown as { UNISWAP_STATE: DurableObjectNamespace }).UNISWAP_STATE;
+  const stub = ns.get(ns.idFromName('reward-availability-transient-overlap'));
+  await stub.fetch('https://site.test/v1/operations');
+  await runInDurableObject(stub, (_object, state) => {
+    const gate = { generation: 'test-g1', stopped: false };
+    initializeEnvironment(state.storage, { ...gate, initialize: true });
+    setRewardAvailability(state.storage, 'local-v1', 'funds-short');
+    setRewardAvailability(state.storage, 'local-v1', 'rpc-unavailable');
+    setRewardAvailability(state.storage, 'local-v1', 'healthy');
+    expect(rewardAvailability(state.storage, gate, 'local-v1').reason).toBe('funds-short');
+    expect(() => resumeRewardAvailability(state.storage, gate, 'local-v1', true, {}))
+      .toThrow('REWARD_RESUME_EVIDENCE');
+  });
+});
