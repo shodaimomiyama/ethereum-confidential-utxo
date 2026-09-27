@@ -1,6 +1,6 @@
 import { authorizationTypedData, operationId, prepareSubmission, verifyOperationAuthorization,
   type LocalDraft, type ReceiptKeyPort, type StoragePort } from '@confidential-utxo/core';
-import type { RpcConnection, VerifiedDeployment } from '@confidential-utxo/ethereum';
+import { EthereumFailure, type RpcConnection, type VerifiedDeployment } from '@confidential-utxo/ethereum';
 import type { OperationId, Scope } from '@confidential-utxo/uniswap';
 import type { Hex } from 'viem';
 import type { RecipientInfo } from '@confidential-utxo/core';
@@ -32,12 +32,14 @@ export type DepositResult =
   | { readonly status: 'unknown'; readonly operationId: OperationId; readonly outputIds: readonly Hex[]; readonly txHash?: Hex }
   | { readonly status: 'not-submitted'; readonly operationId: OperationId; readonly outputIds: readonly Hex[];
       readonly reason: 'authorization-required' | 'signature-rejected' | 'invalid' | 'storage-unknown' |
-        'unconfirmed' | 'executed' | 'conflict' | 'submission-rejected' };
+        'unconfirmed' | 'executed' | 'conflict' | 'submission-rejected' | 'insufficient-public-eth' |
+        'attempt-in-progress' | 'attempt-active' };
 
 const same = (a: string, b: string): boolean => a.toLowerCase() === b.toLowerCase();
 const validHash = (value: unknown): value is Hex => typeof value === 'string' && /^0x[0-9a-fA-F]{64}$/.test(value);
 const fingerprint = (value: VerifiedDeployment): string => JSON.stringify(value, (_key, item: unknown) =>
   typeof item === 'bigint' ? item.toString() : item);
+const attemptState = new WeakMap<PreparedDeposit, 'in-flight' | 'active'>();
 
 /** One captured Deposit action. A transaction hash is only a pending outer attempt. */
 export function createDepositCoordinator(deps: DepositDependencies) {
@@ -90,6 +92,10 @@ export function createDepositCoordinator(deps: DepositDependencies) {
       validate(prepared);
       const id = identity(prepared);
       if (userAuthorized !== true) return { status: 'not-submitted', ...id, reason: 'authorization-required' };
+      if (attemptState.get(prepared) === 'active') return { status: 'not-submitted', ...id, reason: 'attempt-active' };
+      if (attemptState.get(prepared) === 'in-flight') return { status: 'not-submitted', ...id, reason: 'attempt-in-progress' };
+      attemptState.set(prepared, 'in-flight');
+      try {
       const draft = structuredClone(prepared.draft);
       let signature: Hex;
       try {
@@ -117,20 +123,33 @@ export function createDepositCoordinator(deps: DepositDependencies) {
         check();
         const result = await tracked.submitDeposit(gate.submission);
         if (!sameScope(result.scope, scope) || result.epoch !== epoch || !same(result.operationId, prepared.operationId)) {
+          attemptState.set(prepared, 'active');
           return { status: 'unknown', ...id };
         }
         if (result.diagnostic === 'SUBMISSION_UNKNOWN' || result.attempt.outer === 'unconfirmed') {
+          attemptState.set(prepared, 'active');
           return { status: 'unknown', ...id, ...(validHash(result.attempt.txHash) ? { txHash: result.attempt.txHash } : {}) };
         }
         check();
         if (result.attempt.outer === 'pending' && validHash(result.attempt.txHash)) {
+          attemptState.set(prepared, 'active');
           return { status: 'pending', ...id, txHash: result.attempt.txHash };
         }
+        attemptState.set(prepared, 'active');
         return { status: 'unknown', ...id, ...(validHash(result.attempt.txHash) ? { txHash: result.attempt.txHash } : {}) };
-      } catch {
-        try { check(); } catch { return { status: 'unknown', ...id }; }
+      } catch (error) {
+        try { check(); } catch {
+          attemptState.set(prepared, 'active');
+          return { status: 'unknown', ...id };
+        }
+        if (!possibleSend && error instanceof EthereumFailure && error.code === 'SIMULATION_FAILED' &&
+          error.stage === 'submission.balance') {
+          return { status: 'not-submitted', ...id, reason: 'insufficient-public-eth' };
+        }
+        if (possibleSend) attemptState.set(prepared, 'active');
         return possibleSend ? { status: 'unknown', ...id } : { status: 'not-submitted', ...id, reason: 'submission-rejected' };
       }
+      } finally { if (attemptState.get(prepared) === 'in-flight') attemptState.delete(prepared); }
     },
   };
 }

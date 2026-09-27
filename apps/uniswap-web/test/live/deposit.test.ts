@@ -5,7 +5,7 @@ import { createDepositCoordinator } from '../../src/live/deposit.js';
 import type { LocalDraft } from '@confidential-utxo/core';
 import type { OperationContext } from '../../src/live/operations.js';
 import type { ScopedEthereumBridge } from '../../src/live/ethereum.js';
-import type { VerifiedDeployment, RpcConnection } from '@confidential-utxo/ethereum';
+import { EthereumFailure, type VerifiedDeployment, type RpcConnection } from '@confidential-utxo/ethereum';
 import type { Scope } from '@confidential-utxo/uniswap';
 
 const owner = `0x${'11'.repeat(20)}`;
@@ -49,9 +49,10 @@ function fixture() {
   }) as unknown as ScopedEthereumBridge);
   const storage = { saveDraft: vi.fn(async () => 'saved' as const) };
   const keys = { getKey: vi.fn() };
-  const coordinator = createDepositCoordinator({ context, rpc: {} as RpcConnection,
-    resolveVerified: () => current, storage, keys });
+  const dependencies = { context, rpc: {} as RpcConnection, resolveVerified: () => current, storage, keys };
+  const coordinator = createDepositCoordinator(dependencies);
   return { coordinator, typedSign, submitDeposit, sendTransaction, runCrypto, storage, keys,
+    anotherCoordinator: () => createDepositCoordinator(dependencies),
     advance: () => { epoch++; }, changeDeployment: () => { current = { ...verified, manifest: { ...verified.manifest, chainId: 1 } } as VerifiedDeployment; } };
 }
 
@@ -106,6 +107,56 @@ it('retains IDs when broadcast outcome is unknown', async () => {
     diagnostic: 'SUBMISSION_UNKNOWN', attempt: { outer: 'unconfirmed' }, attempts: [{ outer: 'unconfirmed' }] } as never);
   expect(await f.coordinator.authorizeAndSubmit(prepared, true)).toEqual({ status: 'unknown', operationId: id, outputIds: [outputId] });
   expect(f.sendTransaction).toHaveBeenCalledOnce();
+});
+
+it('blocks a repeated pending attempt without signing, persisting or sending again', async () => {
+  const f = fixture();
+  const prepared = await f.coordinator.prepare(10n, recipient);
+  expect((await f.coordinator.authorizeAndSubmit(prepared, true)).status).toBe('pending');
+  vi.mocked(prepareSubmission).mockClear();
+  f.typedSign.mockClear();
+  expect(await f.anotherCoordinator().authorizeAndSubmit(prepared, true)).toEqual({ status: 'not-submitted',
+    reason: 'attempt-active', operationId: id, outputIds: [outputId] });
+  expect(f.typedSign).not.toHaveBeenCalled();
+  expect(prepareSubmission).not.toHaveBeenCalled();
+  expect(f.submitDeposit).toHaveBeenCalledOnce();
+});
+
+it('blocks a concurrent attempt while the first authorization is still pending', async () => {
+  const f = fixture();
+  const prepared = await f.coordinator.prepare(10n, recipient);
+  let finish!: (value: { value: string; scope: Scope; epoch: number }) => void;
+  f.typedSign.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+  const first = f.coordinator.authorizeAndSubmit(prepared, true);
+  expect(await f.coordinator.authorizeAndSubmit(prepared, true)).toEqual({ status: 'not-submitted',
+    reason: 'attempt-in-progress', operationId: id, outputIds: [outputId] });
+  expect(f.typedSign).toHaveBeenCalledOnce();
+  finish({ value: signature, scope, epoch: 7 });
+  expect((await first).status).toBe('pending');
+  expect(f.submitDeposit).toHaveBeenCalledOnce();
+});
+
+it('keeps an unknown attempted send active against later calls', async () => {
+  const f = fixture();
+  const prepared = await f.coordinator.prepare(10n, recipient);
+  f.sendTransaction.mockRejectedValueOnce(new Error('response lost'));
+  expect((await f.coordinator.authorizeAndSubmit(prepared, true)).status).toBe('unknown');
+  expect(await f.coordinator.authorizeAndSubmit(prepared, true)).toMatchObject({ status: 'not-submitted', reason: 'attempt-active',
+    operationId: id, outputIds: [outputId] });
+  expect(f.sendTransaction).toHaveBeenCalledOnce();
+});
+
+it('reports only the exact #30 public balance failure as insufficient public ETH', async () => {
+  const f = fixture();
+  const prepared = await f.coordinator.prepare(10n, recipient);
+  f.submitDeposit.mockRejectedValueOnce(new EthereumFailure('SIMULATION_FAILED', 'submission.balance'));
+  expect(await f.coordinator.authorizeAndSubmit(prepared, true)).toMatchObject({ status: 'not-submitted',
+    reason: 'insufficient-public-eth', operationId: id });
+  expect(f.sendTransaction).not.toHaveBeenCalled();
+  f.submitDeposit.mockRejectedValueOnce(new EthereumFailure('SIMULATION_FAILED', 'submission.quote'));
+  expect(await f.coordinator.authorizeAndSubmit(prepared, true)).toMatchObject({ status: 'not-submitted',
+    reason: 'submission-rejected', operationId: id });
+  expect(f.submitDeposit).toHaveBeenCalledTimes(2);
 });
 
 it('blocks scope drift after signing and before the persistence gate', async () => {
