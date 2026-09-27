@@ -16,6 +16,7 @@ export { createPaymentDecisions, type PaymentDecisionDependencies } from './paym
 export { createPaymentPreparationPorts, type PaymentPreparationDependencies } from './payment-preparation.js';
 export { createDepositCoordinator, type DepositDependencies } from './deposit.js';
 export { createDepositOperation, type DepositOperation, type DepositOperationDependencies } from './deposit-operation.js';
+export { createRecoveryChainReader } from './recovery-chain.js';
 export { createRewardOperation, type RewardOperationDependencies } from './reward-operation.js';
 export { createIndexedDbRewardRequestMarker, createIndexedDbDepositAttemptGate } from './durable-markers.js';
 export { createBrowserQuoteReader, type BrowserQuoteDependencies } from './quote-reader.js';
