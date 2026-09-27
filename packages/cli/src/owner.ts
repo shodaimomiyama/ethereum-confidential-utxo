@@ -69,7 +69,7 @@ export class OwnerService {
       const id = bytesToHex(key.publicKey); // Public key bytes give a stable local identifier.
       await updateOwnerState(this.config.dir, passphrase, current => ({ ...current,
         receiptKeys: [...current.receiptKeys, { id, secretKey: bytesToHex(key.secretKey), publicKey }],
-        activeReceiptKeyId: id }));
+        activeReceiptKeyId: id }), this.config.owner);
       return { kind: "key", keyId: id, action: "added" };
     } finally { key.secretKey.fill(0); }
   }
@@ -78,7 +78,7 @@ export class OwnerService {
       const found = current.receiptKeys.find(key => same(key.id, keyId));
       if (!found) invalid();
       return { ...current, activeReceiptKeyId: found.id };
-    });
+    }, this.config.owner);
     return { kind: "key", keyId, action: "selected" };
   }
   async recipientInfo(passphrase: Uint8Array, signerFile: string): Promise<Uint8Array> {
@@ -107,15 +107,17 @@ export class OwnerService {
           stable(current.receiptKeys) !== stable(state.receiptKeys)) invalid();
       const restoration = result.status === "complete" ? "ready" : current.restoration;
       return { ...current, sync: result, restoration };
-    });
+    }, this.config.owner);
     return { kind: "sync", status: updated.sync?.status === "complete" ? "complete" : "unconfirmed",
-      ...(updated.sync?.checkpoint ? { checkpoint: updated.sync.checkpoint } : {}) };
+      ...(updated.sync?.checkpoint ? { checkpoint: updated.sync.checkpoint } : {}),
+      ...(updated.sync?.status === "complete" ? { receiptFailures: updated.sync.receiptFailures } : {}) };
   }
   async balance(passphrase: Uint8Array): Promise<CliResult> {
     const state = await this.state(passphrase);
     if (state.restoration === "needs-resync") return { kind: "balance", status: "stale" };
     if (state.sync?.status === "complete") return { kind: "balance", status: "available",
-      amount: privateBalance(state.sync.availableWei), checkpoint: state.sync.checkpoint };
+      amount: privateBalance(state.sync.availableWei), checkpoint: state.sync.checkpoint,
+      receiptFailures: state.sync.receiptFailures };
     return { kind: "balance", status: state.sync?.previous ? "stale" : "unknown",
       ...(state.sync?.checkpoint ? { checkpoint: state.sync.checkpoint } : {}) };
   }
@@ -124,7 +126,9 @@ export class OwnerService {
     await this.sync(passphrase);
     const state = await this.state(passphrase);
     if (state.restoration !== "ready" || state.sync?.status !== "complete" || !same(intent.owner, state.owner)) invalid();
-    const inputs = state.sync.utxos;
+    const reserved = new Set(Object.values(state.operations).flatMap(record =>
+      record.fixed.request.inputIds.map(id => id.toLowerCase())));
+    const inputs = state.sync.utxos.filter(input => !reserved.has(input.id.toLowerCase()));
     const fixed = await fixOperation(intent, state.context, { inputs, randomSalt: () => randomBytes(32) });
     await updateOwnerState(this.config.dir, passphrase, current => {
       if (current.restoration !== "ready" || current.sync?.status !== "complete" ||
@@ -135,7 +139,8 @@ export class OwnerService {
       if (alreadyReserved) invalid();
       if (fixed.request.inputIds.length > 0) {
         if (intent.kind === 0) invalid();
-        const selected = selectInputs(current.context, current.sync.utxos, {
+        const selected = selectInputs(current.context, current.sync.utxos.filter(input =>
+          !Object.values(current.operations).some(record => record.fixed.request.inputIds.some(id => same(id, input.id)))), {
           kind: intent.kind, owner: intent.owner, amount: intent.amount,
           ...("explicitIds" in intent && intent.explicitIds ? { explicitIds: intent.explicitIds } : {}),
         });
@@ -143,21 +148,35 @@ export class OwnerService {
       }
       return { ...current, operations: { ...current.operations,
         [fixed.operationId]: { phase: "fixed", fixed } } };
-    });
+    }, this.config.owner);
     return { kind: "created", operationId: fixed.operationId, phase: "fixed" };
   }
   async prove(id: Hex, passphrase: Uint8Array): Promise<CliResult> {
     const state = await this.state(passphrase);
     const record = state.operations[id];
-    if (!record || record.phase !== "fixed") invalid();
+    if (!record) invalid();
     const draft = proveFixedOperation(record.fixed);
     await updateOwnerState(this.config.dir, passphrase, current => {
       const latest = current.operations[id];
-      if (!latest || latest.phase !== "fixed" || stable(latest.fixed) !== stable(record.fixed)) invalid();
+      if (!latest || stable(latest) !== stable(record)) invalid();
+      const next = latest.phase === "authorized" ? { ...latest,
+        balanceProof: draft.balanceProof, rangeProofs: draft.rangeProofs } :
+        { phase: "proved" as const, fixed: latest.fixed,
+          balanceProof: draft.balanceProof, rangeProofs: draft.rangeProofs };
       return { ...current, operations: { ...current.operations,
-        [id]: { phase: "proved", fixed: latest.fixed, balanceProof: draft.balanceProof, rangeProofs: draft.rangeProofs } } };
-    });
-    return { kind: "created", operationId: id, phase: "proved" };
+        [id]: next } };
+    }, this.config.owner);
+    return { kind: "created", operationId: id, phase: record.phase === "authorized" ? "authorized" : "proved" };
+  }
+  async abandon(id: Hex, passphrase: Uint8Array): Promise<CliResult> {
+    await updateOwnerState(this.config.dir, passphrase, current => {
+      const record = current.operations[id];
+      if (!record || record.phase === "authorized") invalid();
+      const operations = { ...current.operations };
+      delete operations[id];
+      return { ...current, operations };
+    }, this.config.owner);
+    return { kind: "abandoned", operationId: id };
   }
   async authorize(id: Hex, passphrase: Uint8Array, signerFile: string): Promise<CliResult> {
     const state = await this.state(passphrase);
@@ -170,7 +189,7 @@ export class OwnerService {
       if (!latest || latest.phase !== "proved" || stable(latest) !== stable(record)) invalid();
       return { ...current, operations: { ...current.operations,
         [id]: { ...latest, phase: "authorized", signature } } };
-    });
+    }, this.config.owner);
     return { kind: "created", operationId: id, phase: "authorized" };
   }
   async exportPublic(id: Hex, passphrase: Uint8Array, path: string): Promise<Uint8Array> {
@@ -204,7 +223,7 @@ export class OwnerService {
     return { kind: "restored", status: "needs-resync", owner: state.owner };
   }
   async changePassphrase(oldPassphrase: Uint8Array, newPassphrase: Uint8Array): Promise<CliResult> {
-    await replaceOwnerPassphrase(this.config.dir, oldPassphrase, newPassphrase);
+    await replaceOwnerPassphrase(this.config.dir, oldPassphrase, newPassphrase, this.config.owner);
     return { kind: "passphrase", status: "changed" };
   }
   async inspect(id: Hex, passphrase: Uint8Array): Promise<CliResult> {

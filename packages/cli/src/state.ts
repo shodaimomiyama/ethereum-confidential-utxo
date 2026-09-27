@@ -269,9 +269,9 @@ export async function readOwnerState(directory: string, passphrase: Uint8Array, 
   } finally { plaintext.fill(0); }
 }
 export async function updateOwnerState(directory: string, passphrase: Uint8Array,
-  transform: (current: WalletStateV1) => WalletStateV1 | Promise<WalletStateV1>): Promise<WalletStateV1> {
+  transform: (current: WalletStateV1) => WalletStateV1 | Promise<WalletStateV1>, expectedOwner?: Address): Promise<WalletStateV1> {
   return withWriterLock(directory, async () => {
-    const current = await readOwnerState(directory, passphrase);
+    const current = await readOwnerState(directory, passphrase, undefined, expectedOwner);
     const next = normalized(await transform(structuredClone(current)));
     if (!sameContext(next.context, current.context) || !same(next.owner, current.owner)) invalid();
     await persist(directory, passphrase, next);
@@ -289,9 +289,9 @@ export function decodeOwnerSnapshot(bytes: Uint8Array): WalletStateV1 {
 }
 
 export async function replaceOwnerPassphrase(directory: string, oldPassphrase: Uint8Array,
-  newPassphrase: Uint8Array): Promise<void> {
+  newPassphrase: Uint8Array, expectedOwner?: Address): Promise<void> {
   await withWriterLock(directory, async () => {
-    const state = await readOwnerState(directory, oldPassphrase);
+    const state = await readOwnerState(directory, oldPassphrase, undefined, expectedOwner);
     await persist(directory, newPassphrase, state);
   });
 }

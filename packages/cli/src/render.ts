@@ -13,15 +13,19 @@ export function privateBalance(wei: bigint): PrivateBalance {
 
 export type OperationStatus = "fixed" | "proved" | "authorized" | "pending" | "unknown" |
   "executed" | "failed" | "competing" | "inconsistent" | "stale";
+export type PublicAttempt = { attemptId: Hex; state: "unknown" | "pending" | "observed";
+  txHash?: Hex; nonce: number; gas: string; maxFeePerGas: string; maxPriorityFeePerGas: string };
+export type PublicReceiptFailure = { outputId: Hex; status: "unknown" | "inconsistent"; reason: string };
 export type CliResult =
   | { kind: "init"; owner: Address; chainId: bigint; pool: Address }
   | { kind: "key"; keyId: Hex; action: "added" | "selected" }
   | { kind: "created"; operationId: Hex; phase: "fixed" | "proved" | "authorized" }
-  | { kind: "submission"; operationId: Hex; status: "pending" | "unknown" | "executed" | "failed" | "competing"; txHash?: Hex }
-  | { kind: "operation"; operationId: Hex; status: OperationStatus; checkpoint?: Checkpoint; txHash?: Hex }
-  | { kind: "sync"; status: "complete" | "unconfirmed" | "stale" | "inconsistent"; checkpoint?: Checkpoint; receiptStatus?: "available" | "spent" | "unknown" }
-  | { kind: "balance"; status: "available" | "unknown" | "stale"; amount?: PrivateBalance; checkpoint?: Checkpoint }
-  | { kind: "utxos"; status: "complete" | "stale"; entries: { id: Hex; status: string; amount?: PrivateBalance }[]; checkpoint?: Checkpoint }
+  | { kind: "abandoned"; operationId: Hex }
+  | { kind: "submission"; operationId: Hex; status: "pending" | "unknown" | "executed" | "failed" | "competing"; txHash?: Hex; attemptId?: Hex }
+  | { kind: "operation"; operationId: Hex; status: OperationStatus; checkpoint?: Checkpoint; txHash?: Hex; attempts?: PublicAttempt[] }
+  | { kind: "sync"; status: "complete" | "unconfirmed" | "stale" | "inconsistent"; checkpoint?: Checkpoint; receiptStatus?: "available" | "spent" | "unknown"; receiptFailures?: PublicReceiptFailure[] }
+  | { kind: "balance"; status: "available" | "unknown" | "stale"; amount?: PrivateBalance; checkpoint?: Checkpoint; receiptFailures?: PublicReceiptFailure[] }
+  | { kind: "utxos"; status: "complete" | "stale"; entries: { id: Hex; status: string; amount?: PrivateBalance }[]; checkpoint?: Checkpoint; receiptFailures?: PublicReceiptFailure[] }
   | { kind: "recipient"; owner: Address; path: string }
   | { kind: "export"; operationId: Hex; path: string }
   | { kind: "backup"; status: "created"; path: string }
@@ -55,19 +59,25 @@ function publicDto(result: CliResult): Record<string, unknown> {
     case "init": return { schemaVersion: 1, kind: "init", owner: result.owner, chainId: result.chainId.toString(), pool: result.pool };
     case "key": return { schemaVersion: 1, kind: "key", keyId: result.keyId, action: result.action };
     case "created": return { schemaVersion: 1, kind: "created", operationId: result.operationId, phase: result.phase };
+    case "abandoned": return { schemaVersion: 1, kind: "abandoned", operationId: result.operationId };
     case "submission": return { schemaVersion: 1, kind: "submission", operationId: result.operationId, status: result.status,
-      ...(result.txHash ? { txHash: result.txHash } : {}) };
+      ...(result.txHash ? { txHash: result.txHash } : {}),
+      ...(result.attemptId ? { attemptId: result.attemptId } : {}) };
     case "operation": return { schemaVersion: 1, kind: "operation", operationId: result.operationId, status: result.status,
       ...(result.checkpoint ? { checkpoint: checkpoint(result.checkpoint) } : {}),
-      ...(result.txHash ? { txHash: result.txHash } : {}) };
+      ...(result.txHash ? { txHash: result.txHash } : {}),
+      ...(result.attempts ? { attempts: result.attempts } : {}) };
     case "sync": return { schemaVersion: 1, kind: "sync", status: result.status,
       ...(result.checkpoint ? { checkpoint: checkpoint(result.checkpoint) } : {}),
-      ...(result.receiptStatus ? { receiptStatus: result.receiptStatus } : {}) };
+      ...(result.receiptStatus ? { receiptStatus: result.receiptStatus } : {}),
+      ...(result.receiptFailures ? { receiptFailures: result.receiptFailures } : {}) };
     case "balance": return { schemaVersion: 1, kind: "balance", status: result.status,
-      ...(result.checkpoint ? { checkpoint: checkpoint(result.checkpoint) } : {}) };
+      ...(result.checkpoint ? { checkpoint: checkpoint(result.checkpoint) } : {}),
+      ...(result.receiptFailures ? { receiptFailures: result.receiptFailures } : {}) };
     case "utxos": return { schemaVersion: 1, kind: "utxos", status: result.status,
       entries: result.entries.map(item => ({ id: item.id, status: item.status })),
-      ...(result.checkpoint ? { checkpoint: checkpoint(result.checkpoint) } : {}) };
+      ...(result.checkpoint ? { checkpoint: checkpoint(result.checkpoint) } : {}),
+      ...(result.receiptFailures ? { receiptFailures: result.receiptFailures } : {}) };
     case "recipient": return { schemaVersion: 1, kind: "recipient", owner: result.owner, path: result.path };
     case "export": return { schemaVersion: 1, kind: "export", operationId: result.operationId, path: result.path };
     case "backup": return { schemaVersion: 1, kind: "backup", status: result.status, path: result.path };

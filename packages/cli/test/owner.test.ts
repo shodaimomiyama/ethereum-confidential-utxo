@@ -54,6 +54,10 @@ it("retains old receipt keys, fixes before proof, and restores as needs-resync",
   const service = new OwnerService({ dir: ownerDir, manifestPath: "unused", rpcUrl: "unused", owner: account.address },
     async () => { if (!online) throw new Error("RPC unavailable"); return { context, history }; });
   await service.init(oldPass);
+  const wrongOwner = new OwnerService({ dir: ownerDir, manifestPath: "unused", rpcUrl: "unused",
+    owner: "0x4444444444444444444444444444444444444444" }, async () => ({ context, history }));
+  await expect(wrongOwner.addReceiptKey(oldPass)).rejects.toThrow();
+  await expect(wrongOwner.changePassphrase(oldPass, changedPass)).rejects.toThrow();
   await service.addReceiptKey(oldPass);
   const k1Info = await decodeRecipientInfo(await service.recipientInfo(oldPass, signerFile), context, account.address);
   const deposit = await buildOperation({ kind: 0, owner: account.address, amount: 7n, recipient: k1Info }, context,
@@ -66,12 +70,20 @@ it("retains old receipt keys, fixes before proof, and restores as needs-resync",
   await service.addReceiptKey(oldPass);
   const keys = (await readOwnerState(ownerDir, oldPass)).receiptKeys;
   expect(keys).toHaveLength(2);
+  await expect(wrongOwner.selectReceiptKey(keys[1]!.id, oldPass)).rejects.toThrow();
   await service.selectReceiptKey(keys[1]!.id, oldPass);
   const k2Info = await decodeRecipientInfo(await service.recipientInfo(oldPass, signerFile), context, account.address);
+  const secondDeposit = await buildOperation({ kind: 0, owner: account.address, amount: 5n, recipient: k2Info }, context,
+    { inputs: [], randomSalt: () => new Uint8Array(32).fill(8) });
+  const secondId = operationId(context, secondDeposit.request);
+  const secondLocation = { blockNumber: 11n, blockHash: hash("0b"), transactionHash: hash("0c"), transactionIndex: 0 };
+  operations.push({ request: secondDeposit.request, success: { ...secondLocation, operationId: secondId, logIndex: 1 },
+    inputLogs: [], outputLogs: [{ ...secondLocation, operationId: secondId, outputId: outputId(secondId, 0),
+      outputIndex: 0, output: secondDeposit.request.outputs[0]!, logIndex: 0 }] });
   await service.sync(oldPass);
   const before = await readOwnerState(ownerDir, oldPass);
   expect(before.sync?.status).toBe("complete");
-  if (before.sync?.status === "complete") expect(before.sync.availableWei).toBe(7n);
+  if (before.sync?.status === "complete") expect(before.sync.availableWei).toBe(12n);
   const created = await service.create({ kind: 1, owner: account.address, amount: 3n,
     recipient: k2Info, changeRecipient: k2Info }, oldPass);
   expect(created.kind).toBe("created");
@@ -79,8 +91,30 @@ it("retains old receipt keys, fixes before proof, and restores as needs-resync",
   const fixed = (await readOwnerState(ownerDir, oldPass)).operations[created.operationId];
   expect(fixed?.phase).toBe("fixed");
   expect(fixed).not.toHaveProperty("balanceProof");
+  const other = await service.create({ kind: 1, owner: account.address, amount: 3n,
+    recipient: k2Info, changeRecipient: k2Info }, oldPass);
+  expect(other.kind).toBe("created");
+  if (other.kind !== "created") throw new Error("second operation not created");
+  const otherFixed = (await readOwnerState(ownerDir, oldPass)).operations[other.operationId];
+  expect(otherFixed?.fixed.request.inputIds).not.toEqual(fixed?.fixed.request.inputIds);
+  expect(await service.abandon(other.operationId, oldPass)).toMatchObject({ kind: "abandoned", operationId: other.operationId });
+  expect((await readOwnerState(ownerDir, oldPass)).operations[other.operationId]).toBeUndefined();
+  const reused = await service.create({ kind: 1, owner: account.address, amount: 3n,
+    recipient: k2Info, changeRecipient: k2Info }, oldPass);
+  expect(reused.kind).toBe("created");
+  if (reused.kind === "created")
+    expect((await readOwnerState(ownerDir, oldPass)).operations[reused.operationId]?.fixed.request.inputIds).toEqual(otherFixed?.fixed.request.inputIds);
   await service.prove(created.operationId, oldPass);
   await service.authorize(created.operationId, oldPass, signerFile);
+  await expect(service.abandon(created.operationId, oldPass)).rejects.toThrow();
+  const firstAuthorized = (await readOwnerState(ownerDir, oldPass)).operations[created.operationId];
+  await service.prove(created.operationId, oldPass);
+  const regenerated = (await readOwnerState(ownerDir, oldPass)).operations[created.operationId];
+  expect(regenerated?.phase).toBe("authorized");
+  expect(regenerated && "signature" in regenerated ? regenerated.signature : undefined).toBe(
+    firstAuthorized && "signature" in firstAuthorized ? firstAuthorized.signature : undefined);
+  expect(regenerated && "balanceProof" in regenerated ? regenerated.balanceProof : undefined).not.toEqual(
+    firstAuthorized && "balanceProof" in firstAuthorized ? firstAuthorized.balanceProof : undefined);
   const exportPath = join(ownerDir, "submission.json");
   const publicBytes = await service.exportPublic(created.operationId, oldPass, exportPath);
   expect((await decodePublicSubmission(publicBytes, context)).request.outputs).toHaveLength(2);
@@ -104,11 +138,11 @@ it("retains old receipt keys, fixes before proof, and restores as needs-resync",
   online = true;
   expect(await recoveredService.sync(newPass)).toMatchObject({ kind: "sync", status: "complete" });
   const once = await readOwnerState(restoredDir, newPass);
-  expect(once.sync?.status === "complete" && once.sync.availableWei).toBe(7n);
+  expect(once.sync?.status === "complete" && once.sync.availableWei).toBe(12n);
   expect(once.receiptKeys).toHaveLength(2);
   expect(once.operations[created.operationId]?.phase).toBe("authorized");
   expect(await recoveredService.sync(newPass)).toMatchObject({ kind: "sync", status: "complete" });
   const twice = await readOwnerState(restoredDir, newPass);
-  expect(twice.sync?.status === "complete" && twice.sync.availableWei).toBe(7n);
-  expect(twice.sync?.status === "complete" && twice.sync.utxos).toHaveLength(1);
+  expect(twice.sync?.status === "complete" && twice.sync.availableWei).toBe(12n);
+  expect(twice.sync?.status === "complete" && twice.sync.utxos).toHaveLength(2);
 });

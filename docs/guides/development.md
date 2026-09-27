@@ -247,7 +247,9 @@ node packages/cli/dist/bin.js utxos --store "$ALICE_STORE" --owner "$ALICE"
 
 Bobは独立の保存先で `init`、`key add`、`recipient` を行う。Aliceの`transfer`は `--recipient "$BOB_RECIPIENT"` と、部分送金なら `--change-recipient "$ALICE_RECIPIENT"` を指定する。`withdraw`は `--destination "$PUBLIC_DESTINATION"` を指定する。2入力を使う場合は `--input-id` を2回まで指定できる。受領・残高・使用済み入力はBob自身の `sync` で復元でき、Aliceの保存先や署名鍵を共有しない。公開ETH残高と機密UTXO残高は別に確認する。受領鍵を追加・選択しても旧鍵を消去しない。`key select --key-id "$KEY_ID"` は新しく発行する受取情報のactive鍵だけを変更する。
 
-バックアップは `backup --store "$ALICE_STORE" --owner "$ALICE" --out "$BACKUP"` で別のパスフレーズを二度入力して作る。`restore --store "$NEW_STORE" --owner "$ALICE" --backup "$BACKUP"` は**存在しない**保存先を要求し、バックアップ作成時のパスフレーズを使う。`passphrase change --store "$ALICE_STORE" --owner "$ALICE"` 後も古いバックアップには旧パスフレーズが必要である。復元直後は `needs-resync` で、オンラインの `sync` を完了するまで残高や提出可否を確定しない。結果不明の提出は `operation` で操作ID、成功イベント、入力状態、nonceと取引hashを照合する。`retry` と `replace-fee` は明示操作とし、準備済み記録だけから自動再送しない。
+`create` は未完了のローカル操作で選択済みの入力を再選択しない。送信前の `fixed` または `proved` 操作を取り消す場合は `abandon --store "$ALICE_STORE" --owner "$ALICE" --id "$OPERATION_ID"` を実行すると、その入力を再び選択できる。署名済みの `authorized` 操作は提出可能な公開要求が残り得るため取り消せない。`prove` は同じ操作ID、出力、署名を保持して証明だけを再生成できる。`sync`、`balance`、`utxos` の公開出力に `receiptFailures` がある場合は、記載された出力IDの受領復号に失敗している。残高に含まれないため、鍵と履歴を確認する。
+
+バックアップは `backup --store "$ALICE_STORE" --owner "$ALICE" --out "$BACKUP"` で別のパスフレーズを二度入力して作る。`restore --store "$NEW_STORE" --owner "$ALICE" --backup "$BACKUP"` は**存在しない**保存先を要求し、バックアップ作成時のパスフレーズを使う。`passphrase change --store "$ALICE_STORE" --owner "$ALICE"` 後も古いバックアップには旧パスフレーズが必要である。復元直後は `needs-resync` で、オンラインの `sync` を完了するまで残高や提出可否を確定しない。結果不明の提出は `operation` で操作ID、成功イベント、入力状態、nonceと取引hashを照合する。`operation --json` の `attempts` は各試行の `attemptId`、取引hash、nonce、手数料を返す。手数料の差替えには対象の `attemptId` を `replace-fee --attempt-id "$ATTEMPT_ID" --max-fee-per-gas "$MAX_FEE" --max-priority-fee-per-gas "$PRIORITY_FEE"` に渡す。`retry` と `replace-fee` は明示操作とし、準備済み記録だけから自動再送しない。
 
 更新がロックで止まった場合は、同じ保存先に書き込む全プロセスを停止し、保存先・端末・利用者を照合して実行中のwriterがないことを確認する。暗号化状態とジャーナルのバックアップを取ってから残留 `.writer-lock` を手動で扱う。記録されたPIDだけを根拠に削除しない。一時ファイルを最新版として自動採用せず、再起動後に操作IDとチェーン状態を照合する。ネットワークファイルシステム、複数ホストによる同一保存先の共有は検証対象外である。
 
@@ -266,7 +268,7 @@ forge --version
 
 2026-09-27のmacOS 26.5 / arm64 / APFS（作業領域は `/System/Volumes/Data`、`apfs, local, journaled`）でNode 24.21.0、pnpm 10.34.5、Foundry 1.8.3を使用した。Anvil実取引と次の故障注入を実施した。故障注入では書込処理へ例外を渡した後、**別のNodeプロセス**でファイルを読み直した。旧/新はいずれも認証・schema検査に通る完全な世代である。
 
-同環境の `pnpm install --frozen-lockfile`、`pnpm build`、`pnpm check`、`pnpm test` は成功した。最終の `pnpm test` はFoundry 102/102、暗号32/32、共通処理249/249、Ethereum 51/51、CLI 40/40であった。CLI単独のテストはファイルを直列実行し、Anvilの別プロセス試験を含めて12ファイル40件が通過した。再実行時の対象commitは上の `git rev-parse HEAD` で採取する。
+同環境の `pnpm install --frozen-lockfile`、`pnpm build`、`pnpm check`、`pnpm test` は成功した。最終の `pnpm test` はFoundry 102/102、暗号32/32、共通処理249/249、Ethereum 51/51、CLI 42/42であった。CLI単独のテストはファイルを直列実行し、Anvilの別プロセス試験を含めて12ファイル42件が通過した。再実行時の対象commitは上の `git rev-parse HEAD` で採取する。
 
 | 注入位置 | 暗号化所有者状態 | 公開ジャーナル | 書込結果 |
 | --- | --- | --- | --- |
@@ -276,4 +278,4 @@ forge --version
 | `rename`後 | 新 | 新 | 失敗/不明 |
 | 親ディレクトリ`fsync`後 | 新 | 新 | 失敗/不明 |
 
-Ubuntu 24.04 x86_64の結果と、隔離VMの電源を強制遮断またはブロックデバイスを切断して再起動するAC-08の試験は未取得である。SIGKILLや故障注入だけで電源断後の永続性を合格扱いしない。実施時は専用の破棄可能なボリュームで各段階を反復し、OS・FS・mount、Node/pnpm/Foundryとcommit、遮断位置、再起動後の旧/新世代と不明状態、未試験のハードウェア条件を記録する。AC-08が済むまでIssue #31の全受入を完了と記録しない。
+Ubuntu 24.04 x86_64の結果と、隔離VMの電源を強制遮断またはブロックデバイスを切断して再起動するAC-08の試験は未取得である。2026-09-27時点で破棄可能なUbuntu VMまたは専用ホストを利用できないことを確認した。SIGKILLや故障注入だけで電源断後の永続性を合格扱いしない。実施時は専用の破棄可能なボリュームで各段階を反復し、OS・FS・mount、Node/pnpm/Foundryとcommit、遮断位置、再起動後の旧/新世代と不明状態、未試験のハードウェア条件を記録する。AC-08が済むまでIssue #31の全受入を完了と記録しない。

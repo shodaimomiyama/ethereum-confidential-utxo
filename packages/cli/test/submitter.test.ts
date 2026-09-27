@@ -95,6 +95,27 @@ it("reports unknown after accepted send when result persistence fails and never 
   expect(sender.sent).toHaveLength(1);
 });
 
+it("recovers a hashless prepared attempt from canonical logical success", async () => {
+  const f = await fixture();
+  const id = operationId(context, request);
+  const call = encodePoolSubmission(submission);
+  expect(await appendPrepared(f.journalDir, binding, { operationId: id, account: submitter.address,
+    request: submission, calldata: call.data, value: call.value, nonce: 7, gas: 100000n,
+    maxFeePerGas: 100n, maxPriorityFeePerGas: 2n }, hash("e1"))).toBe("saved");
+  const h = history();
+  const success = { operationId: id, blockNumber: 1n, blockHash: point.hash,
+    transactionHash: hash("bb"), transactionIndex: 0, logIndex: 0 };
+  h.getLatestOperationSuccess = async () => ({ complete: true, blockHash: point.hash,
+    value: { executed: true, operation: request } });
+  h.getOperationSuccess = async () => ({ complete: true, blockHash: point.hash,
+    value: { executed: true, operation: request } });
+  h.getOperations = async () => ({ complete: true, blockHash: point.hash,
+    value: [{ request, success, inputLogs: [], outputLogs: [] }] });
+  const restarted = new SubmitterService(wallet().mock, h, client);
+  expect(await restarted.inspect(id, f.journalDir, verified)).toMatchObject({ kind: "operation", status: "executed" });
+  expect(await restarted.retry(id, f.signerFile, f.journalDir, verified)).toMatchObject({ status: "executed" });
+});
+
 it("does not mistake a successful outer receipt without a logical success event for execution", async () => {
   const f = await fixture(); const sender = wallet();
   const outerOnly = { getTransactionReceipt: async () => ({ status: "success", blockNumber: 1n,
@@ -118,9 +139,13 @@ it("inspects a known pending hash and replaces its fee while retaining the earli
   const submitted = await service.submit(publicFile, f.signerFile, f.journalDir, verified);
   expect(submitted).toMatchObject({ kind: "submission", status: "pending" });
   const attempt = (await listAttempts(f.journalDir, binding))[0]!;
-  expect(await service.inspect(attempt.operationId, f.journalDir, verified)).toMatchObject({ status: "pending" });
+  expect(submitted).toMatchObject({ attemptId: attempt.attemptId });
+  expect(await service.inspect(attempt.operationId, f.journalDir, verified)).toMatchObject({ status: "pending",
+    attempts: [{ attemptId: attempt.attemptId, txHash: hash("bb"), nonce: 7,
+      maxFeePerGas: "100", maxPriorityFeePerGas: "2" }] });
   const replacement = await service.replaceFee(attempt.attemptId, 120n, 3n, f.signerFile, f.journalDir, verified);
   expect(replacement).toMatchObject({ kind: "submission", status: "pending" });
+  expect(replacement).toHaveProperty("attemptId");
   expect(sender.sent).toHaveLength(2);
   const attempts = await listAttempts(f.journalDir, binding);
   expect(attempts).toHaveLength(2);

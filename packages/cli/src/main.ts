@@ -65,6 +65,7 @@ const schemas: Record<string, {required: string[]; optional?: string[]}> = {
   sync: { required: ownerOnline }, balance: { required: ownerBase }, utxos: { required: ownerBase },
   create: { required: [...ownerOnline, "kind", "amount-file"], optional: ["recipient", "change-recipient", "destination", "input-id"] },
   prove: { required: [...ownerBase, "id"] },
+  abandon: { required: [...ownerBase, "id"] },
   authorize: { required: [...ownerBase, "id", "signer"] },
   export: { required: [...ownerBase, "id", "out"] },
   submit: { required: [...senderBase, "public"] },
@@ -199,13 +200,14 @@ async function perform(command: string, options: Options, io: CliIO): Promise<Cl
           return { kind: "utxos", status: "stale", entries: [] };
         return { kind: "utxos", status: "complete", checkpoint: synced.checkpoint,
           entries: synced.utxos.map(item => ({ id: item.id, status: item.status,
-            amount: privateBalance(item.opening.amount) })) };
+            amount: privateBalance(item.opening.amount) })), receiptFailures: synced.receiptFailures };
       }
       case "create": {
         const state = await readOwnerState(value(options, "store"), pass, undefined, owner);
         return await service.create(await intent(options, state.context, owner!), pass);
       }
       case "prove": return await service.prove(hash(value(options, "id")), pass);
+      case "abandon": return await service.abandon(hash(value(options, "id")), pass);
       case "authorize": return await service.authorize(hash(value(options, "id")), pass, value(options, "signer"));
       case "export": {
         const id = hash(value(options, "id"));
