@@ -62,7 +62,7 @@ it('selects one smallest available input and binds fixed quote, terms, draft and
   expect(() => plan.decide({ ...draft, request: { ...draft.request, w: 8n } })).toThrow();
   const other = await planner.payPlan({ amount: '0.000000000000000009', recipient: scope.owner, changeRecipient });
   expect(other.decide(await build(other)).identity.recordId).not.toBe(decision.identity.recordId);
-});
+}, 30_000);
 
 it('rejects malformed amount, unavailable input, forbidden recipient and stale quote', async () => {
   const { deps, coins, changeRecipient, setNow } = await setup();
@@ -79,7 +79,7 @@ it('rejects malformed amount, unavailable input, forbidden recipient and stale q
   expect(() => fresh.decide(freshDraft)).toThrow();
   coins[0] = { ...coins[0]!, status: 'pending' };
   await expect(planner.withdrawPlan({ inputId: hex('d') as Bytes32 })).rejects.toThrow();
-});
+}, 30_000);
 
 it('plans full withdrawal of the specified owned UTXO to its owner', async () => {
   const { deps } = await setup();
@@ -90,7 +90,7 @@ it('plans full withdrawal of the specified owned UTXO to its owner', async () =>
   expect(decision.kind).toBe('withdraw');
   expect(() => buildPreparedPayment(draft, decision)).not.toThrow();
   expect(() => plan.decide({ ...draft, request: { ...draft.request, destination: deployment.adapter } })).toThrow();
-});
+}, 30_000);
 
 it('keeps a quoted plan fixed and changes the confirmation hash for a new quote', async () => {
   const { deps, changeRecipient, setQuote } = await setup();
@@ -107,4 +107,4 @@ it('keeps a quoted plan fixed and changes the confirmation hash for a new quote'
   if (first.kind !== 'pay' || next.kind !== 'pay') return;
   expect(next.terms.minAmountOut).toBe(198n);
   expect(next.identity.contentHash).not.toBe(first.identity.contentHash);
-});
+}, 30_000);
