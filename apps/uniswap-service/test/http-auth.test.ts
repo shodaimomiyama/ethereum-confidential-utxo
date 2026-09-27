@@ -6,6 +6,9 @@ import { expect, it } from 'vitest';
 import worker from '../src/index.js';
 import type { ServiceEnv } from '../src/index.js';
 import type { UniswapServiceObject } from '../src/durable-object.js';
+import { putOperation, releaseOperation } from '../src/store.js';
+import { parseApiResponse } from '@confidential-utxo/uniswap';
+import type { OperationRecord, Scope } from '@confidential-utxo/uniswap';
 
 const serviceEnv = env as unknown as ServiceEnv;
 
@@ -50,6 +53,36 @@ it('authenticates through the Worker and returns only the owner records', async 
   const own = await worker.fetch(new Request(`https://site.test${query}`, { headers: { cookie } }), serviceEnv);
   expect(own.status).toBe(200);
   expect((await own.json() as { records: unknown[] }).records).toEqual([]);
+  const savedId = `0x${'73'.repeat(32)}`;
+  const savedRecord = {
+    scope, recordId: savedId, kind: 'pay', inputId: `0x${'74'.repeat(32)}`,
+    operationId: savedId, paymentId: savedId, deadline: 600n, contentHash: savedId,
+    encryptedBundle: { ciphertext: 'AQID', nonce: `0x${'00'.repeat(12)}`, tag: `0x${'00'.repeat(16)}` },
+    signatureStarted: false, attemptIds: [],
+  } as unknown as OperationRecord;
+  await runInDurableObject(stub, (_obj, state) => putOperation(state.storage, scope as Scope,
+    savedRecord, 0, { readInput: async () => 'owned-unspent' as const }));
+  const ownWithRecord = await worker.fetch(new Request(`https://site.test${query}`, { headers: { cookie } }), serviceEnv);
+  const listed = parseApiResponse('GET /v1/operations', ownWithRecord.status, await ownWithRecord.json());
+  expect('records' in listed && listed.records[0]?.reservationState).toBe('active');
+  const getResponse = await worker.fetch(new Request(`https://site.test/v1/operations/${savedId}?deploymentId=local-v1&owner=${account.address}`, {
+    headers: { cookie },
+  }), serviceEnv);
+  const fetched = parseApiResponse('GET /v1/operations/{id}', getResponse.status, await getResponse.json());
+  expect('record' in fetched && fetched.record.recordId).toBe(savedId);
+  expect('reservationState' in fetched && fetched.reservationState).toBe('active');
+  const releasedRecord = { ...savedRecord,
+    encryptedBundle: { ...savedRecord.encryptedBundle, nonce: `0x${'01'.repeat(12)}` } };
+  await runInDurableObject(stub, (_obj, state) => releaseOperation(state.storage, scope as Scope,
+    releasedRecord, 1, { blockNumber: '10', blockHash: savedId as OperationRecord['recordId'], blockTimestamp: '601' }));
+  const wireRecord = { ...releasedRecord, scope: undefined, deadline: '600' };
+  const releaseResponse = await worker.fetch(post(`/v1/operations/${savedId}/release`, {
+    scope, expectedRevision: 1, sealedRevision: 2, blockHash: savedId, record: wireRecord,
+  }, 'https://site.test', cookie), serviceEnv);
+  const retried = parseApiResponse('POST /v1/operations/{id}/release', releaseResponse.status,
+    await releaseResponse.json());
+  expect('reservationState' in retried && retried.reservationState).toBe('released');
+  expect('revision' in retried && retried.revision).toBe(2);
   const other = await worker.fetch(new Request(`https://site.test/v1/operations?deploymentId=local-v1&owner=0x0000000000000000000000000000000000000002`, {
     headers: { cookie },
   }), serviceEnv);

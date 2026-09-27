@@ -1,4 +1,4 @@
-import type { Bytes32, OperationRecord, Scope, StoredOperation } from '@confidential-utxo/uniswap';
+import type { Bytes32, FinalizedCheckpoint, OperationRecord, SavedReservation, Scope, StoredOperation } from '@confidential-utxo/uniswap';
 
 export type InputState = 'owned-unspent' | 'spent' | 'other-owner' | 'unknown';
 export interface InputReader {
@@ -43,6 +43,11 @@ function fromRow(storage: DurableObjectStorage, scope: Scope, row: Row): StoredO
       blockTimestamp: row.checkpoint_block_timestamp!,
     } }),
   };
+}
+
+export function asReservation(saved: StoredOperation): SavedReservation & StoredOperation {
+  return { ...saved, reservationState: ['released', 'consumed', 'finalized-success'].includes(saved.status)
+    ? 'released' : 'active' };
 }
 
 export function getOperation(storage: DurableObjectStorage, scope: Scope, recordId: string): StoredOperation | undefined {
@@ -148,5 +153,62 @@ export async function putOperation(
       scope.deploymentId, normalize(scope), record.inputId, record.recordId,
     );
     return getOperation(storage, scope, record.recordId)!;
+  });
+}
+
+/** The caller must supply a server-verified finalized checkpoint and unspent input. */
+export function releaseOperation(
+  storage: DurableObjectStorage, scope: Scope, record: OperationRecord,
+  expectedRevision: number, checkpoint: FinalizedCheckpoint, assertWritable?: () => void,
+): SavedReservation & StoredOperation {
+  record = {
+    ...record,
+    recordId: record.recordId.toLowerCase(), inputId: record.inputId.toLowerCase(),
+    operationId: record.operationId.toLowerCase(), contentHash: record.contentHash.toLowerCase(),
+    ...(record.kind === 'pay' ? { paymentId: record.paymentId.toLowerCase() } : {}),
+  } as OperationRecord;
+  if (record.scope.deploymentId !== scope.deploymentId || normalize(record.scope) !== normalize(scope)) {
+    throw new Error('SCOPE_MISMATCH');
+  }
+  return storage.transactionSync(() => {
+    assertWritable?.();
+    const current = getOperation(storage, scope, record.recordId);
+    if (current === undefined) throw new Error('NOT_FOUND');
+    if (current.status === 'released' && sameImmutable(current.record, record)
+      && sameMutable(current.record, record)) {
+      if (current.revision !== expectedRevision + 1
+        || current.checkpoint?.blockHash.toLowerCase() !== checkpoint.blockHash.toLowerCase()) {
+        throw new Error('REVISION_CONFLICT');
+      }
+      return asReservation(current);
+    }
+    if (current.status !== 'reserved' && current.status !== 'unknown') throw new Error('RESERVATION_CONFLICT');
+    if (record.kind !== 'pay' || !sameImmutable(current.record, record)
+      || current.record.signatureStarted !== record.signatureStarted
+      || JSON.stringify(current.record.attemptIds) !== JSON.stringify(record.attemptIds)) {
+      throw new Error('RESERVATION_CONFLICT');
+    }
+    if (current.revision !== expectedRevision || sameMutable(current.record, record)
+      || current.record.encryptedBundle.nonce === record.encryptedBundle.nonce) {
+      throw new Error('REVISION_CONFLICT');
+    }
+    const active = storage.sql.exec<{ record_id: string }>(
+      'SELECT record_id FROM active_reservations WHERE deployment_id = ? AND owner = ? AND input_id = ?',
+      scope.deploymentId, normalize(scope), record.inputId,
+    ).toArray()[0];
+    if (active?.record_id !== record.recordId) throw new Error('RESERVATION_CONFLICT');
+    storage.sql.exec(
+      `UPDATE operations SET encrypted_bundle_json = ?, revision = revision + 1,
+       state_version = state_version + 1, status = 'released',
+       checkpoint_block_number = ?, checkpoint_block_hash = ?, checkpoint_block_timestamp = ?
+       WHERE deployment_id = ? AND owner = ? AND record_id = ?`,
+      JSON.stringify(record.encryptedBundle), checkpoint.blockNumber, checkpoint.blockHash,
+      checkpoint.blockTimestamp, scope.deploymentId, normalize(scope), record.recordId,
+    );
+    storage.sql.exec(
+      'DELETE FROM active_reservations WHERE deployment_id = ? AND owner = ? AND input_id = ? AND record_id = ?',
+      scope.deploymentId, normalize(scope), record.inputId, record.recordId,
+    );
+    return asReservation(getOperation(storage, scope, record.recordId)!);
   });
 }

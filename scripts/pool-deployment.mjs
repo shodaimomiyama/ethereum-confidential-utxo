@@ -38,8 +38,9 @@ function enforceCodeLimits(initcode, runtime, blockGasLimit) {
   if (blockGasLimit <= 0n) throw new Error('invalid block gas limit');
 }
 
-async function verifierState(client, address, verifier) {
-  const read = (functionName, args = []) => client.readContract({ address, abi: verifier.abi, functionName, args });
+async function verifierState(client, address, verifier, finalizedPoint) {
+  const read = (functionName, args = []) => client.readContract({ address, abi: verifier.abi, functionName, args,
+    ...(finalizedPoint === undefined ? {} : { blockNumber: finalizedPoint.number }) });
   const hash = await read('parametersHash');
   if (lower(hash) !== lower(verifier.parametersHash)) throw new Error('verifier parameter hash mismatch');
   const [base, gs, hs] = parameters();
@@ -57,8 +58,9 @@ async function verifierState(client, address, verifier) {
   }
 }
 
-async function transactionEvidence(client, address, expectedInput, expectedRuntime) {
-  const code = await client.getCode({ address });
+async function transactionEvidence(client, address, expectedInput, expectedRuntime, finalizedPoint) {
+  const code = await client.getCode({ address,
+    ...(finalizedPoint === undefined ? {} : { blockNumber: finalizedPoint.number }) });
   if (lower(code ?? '0x') !== lower(expectedRuntime)) throw new Error('deployed runtime mismatch');
   const receipt = await client.getTransactionReceipt({ hash: await findCreationHash(client, address) });
   if (receipt.status !== 'success' || lower(receipt.contractAddress ?? '') !== lower(address)) {
@@ -82,7 +84,7 @@ async function findCreationHash(_client, address) {
   return hash;
 }
 
-export async function verifyDeployment(manifest, rpcUrl, artifacts = loadArtifacts()) {
+export async function verifyDeployment(manifest, rpcUrl, artifacts = loadArtifacts(), finalizedPoint) {
   if (manifest?.schemaVersion !== 1 || !Number.isInteger(manifest.chainId) || !manifest.verifier || !manifest.pool ||
       typeof manifest.hardfork !== 'string' || !manifest.hardfork ||
       typeof manifest.tool?.node !== 'string' || typeof manifest.tool?.forge !== 'string') {
@@ -99,13 +101,14 @@ export async function verifyDeployment(manifest, rpcUrl, artifacts = loadArtifac
   creationHashes.set(lower(manifest.pool.address), manifest.pool.transactionHash);
   const verifierInput = `${verifier.creationBytecode}${constructorArgs().slice(2)}`;
   const verifierEvidence = await transactionEvidence(client, manifest.verifier.address,
-    verifierInput, verifier.runtimeBytecode);
-  await verifierState(client, manifest.verifier.address, verifier);
+    verifierInput, verifier.runtimeBytecode, finalizedPoint);
+  await verifierState(client, manifest.verifier.address, verifier, finalizedPoint);
   const poolArgs = encodeAbiParameters([{ type: 'address' }], [manifest.verifier.address]);
   const poolInput = `${pool.creationBytecode}${poolArgs.slice(2)}`;
   const expectedPoolRuntime = poolRuntimeFor(pool, manifest.verifier.address);
-  const poolEvidence = await transactionEvidence(client, manifest.pool.address, poolInput, expectedPoolRuntime);
-  const reference = await client.readContract({ address: manifest.pool.address, abi: pool.abi, functionName: 'verifier' });
+  const poolEvidence = await transactionEvidence(client, manifest.pool.address, poolInput, expectedPoolRuntime, finalizedPoint);
+  const reference = await client.readContract({ address: manifest.pool.address, abi: pool.abi, functionName: 'verifier',
+    ...(finalizedPoint === undefined ? {} : { blockNumber: finalizedPoint.number }) });
   if (lower(reference) !== lower(manifest.verifier.address)) throw new Error('Pool verifier reference mismatch');
   for (const [label, recorded, actual] of [['verifier', manifest.verifier, verifierEvidence], ['pool', manifest.pool, poolEvidence]]) {
     for (const key of Object.keys(actual)) {

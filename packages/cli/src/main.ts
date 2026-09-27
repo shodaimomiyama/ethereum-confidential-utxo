@@ -16,6 +16,7 @@ import type { SecretInput, SecretOutput } from "./secret-input.js";
 import { readOwnerState } from "./state.js";
 import { decimalWei, hexBytes, parseExactObject } from "./strict-json.js";
 import { SubmitterService } from "./submitter.js";
+import { runConnection } from "./connection-main.js";
 
 export type CliIO = { stdin: SecretInput; stdout: Writable & {isTTY?: boolean}; stderr: SecretOutput;
   stdinTTY: boolean; stdoutTTY: boolean; stderrTTY: boolean };
@@ -33,7 +34,8 @@ function optional(options: Options, name: string): string | undefined {
 function address(source: string): Address { return hexBytes(source, 20) as Address; }
 function hash(source: string): Hex { return hexBytes(source, 32); }
 function parse(argv: readonly string[]) {
-  const command = argv[0] === "key" || argv[0] === "passphrase" ? `${argv[0]} ${argv[1] ?? ""}` : argv[0] ?? "";
+  const command = ["key", "passphrase", "reward", "pay"].includes(argv[0] ?? "")
+    ? `${argv[0]} ${argv[1] ?? ""}` : argv[0] ?? "";
   const start = command.includes(" ") ? 2 : 1;
   const options: Options = {};
   let json = false;
@@ -58,6 +60,10 @@ function parse(argv: readonly string[]) {
 const ownerBase = ["store", "owner"];
 const ownerOnline = [...ownerBase, "manifest", "rpc"];
 const senderBase = ["journal", "manifest", "rpc", "signer", "submitter"];
+const connectionEnv = ["manifest", "connection-manifest", "rpc", "deployment-id"];
+const connectionOwner = [...connectionEnv, "store", "owner"];
+const connectionApi = ["api-origin", "signer"];
+const connectionOptional = ["api-url", "siwe-uri"];
 const schemas: Record<string, {required: string[]; optional?: string[]}> = {
   init: { required: ownerOnline }, "key add": { required: ownerBase },
   "key select": { required: [...ownerBase, "key-id"] },
@@ -75,6 +81,23 @@ const schemas: Record<string, {required: string[]; optional?: string[]}> = {
   backup: { required: [...ownerBase, "out"] },
   restore: { required: [...ownerBase, "backup"] },
   "passphrase change": { required: ownerBase },
+  "reward request": { required: [...connectionOwner, ...connectionApi, "amount-file"],
+    optional: [...connectionOptional, "request-id"] },
+  "reward list": { required: [...connectionOwner, ...connectionApi], optional: connectionOptional },
+  "reward status": { required: [...connectionOwner, ...connectionApi, "request-id"], optional: connectionOptional },
+  "reward received": { required: [...connectionOwner, ...connectionApi, "request-id"], optional: connectionOptional },
+  "pay quote": { required: [...connectionOwner, "amount-file"] },
+  "pay prepare": { required: [...connectionOwner, ...connectionApi, "amount-file", "recipient"],
+    optional: [...connectionOptional, "terms-file", "replace-id"] },
+  "pay authorize": { required: [...connectionOwner, ...connectionApi, "id", "confirmed-content-hash"],
+    optional: connectionOptional },
+  "pay export": { required: [...connectionOwner, "id", "out"] },
+  "pay submit": { required: [...connectionEnv, "journal", "signer", "submitter", "public"] },
+  "pay status": { required: [...connectionEnv, "id"],
+    optional: ["store", "owner", "journal", "submitter", ...connectionApi, ...connectionOptional] },
+  "pay resume": { required: [...connectionOwner, ...connectionApi, "id"], optional: connectionOptional },
+  "pay retry": { required: [...connectionOwner, ...connectionApi, "id"], optional: connectionOptional },
+  "pay change-terms": { required: [...connectionOwner, ...connectionApi, "id", "terms-file"], optional: connectionOptional },
 };
 function validate(command: string, options: Options) {
   const schema = schemas[command];
@@ -90,6 +113,13 @@ function validate(command: string, options: Options) {
     if (required.some(name => options[name] === undefined)) invalid();
     const specific = new Set(["id", ...required]);
     if (Object.keys(options).some(name => !specific.has(name))) invalid();
+  }
+  if (command === "pay status") {
+    const ownerMode = options.store !== undefined || options.owner !== undefined;
+    const journalMode = options.journal !== undefined || options.submitter !== undefined;
+    if (ownerMode === journalMode) invalid();
+    if (ownerMode && ["store", "owner", ...connectionApi].some(name => options[name] === undefined)) invalid();
+    if (journalMode && ["journal", "submitter"].some(name => options[name] === undefined)) invalid();
   }
 }
 async function readBounded(path: string, max = 2 * 1024 * 1024): Promise<Uint8Array> {
@@ -146,6 +176,8 @@ async function submitter(options: Options, verified: VerifiedDeployment, history
   return new SubmitterService(wallet, history, client);
 }
 async function perform(command: string, options: Options, io: CliIO): Promise<CliResult> {
+  if (command.startsWith("reward ") || command.startsWith("pay "))
+    return runConnection(command, options, io);
   const secret = (mode: "unlock" | "new" | "change") => promptPassphrase(mode, io.stdin, io.stderr);
   const owner = options.owner ? address(value(options, "owner")) : undefined;
   const service = owner ? new OwnerService({ dir: value(options, "store"), owner,
