@@ -1,4 +1,4 @@
-import { recipientInfoTypedData, verifyRecipientInfo } from '@confidential-utxo/core';
+import { recipientInfoTypedData, verifyRecipientInfo, type ReceivedUtxo } from '@confidential-utxo/core';
 import type { BrowserDeployment, createDeploymentResolver } from './deployment.js';
 import { parseBytes32, type Bytes32, type RequestId, type RewardRecord, type Scope } from '@confidential-utxo/uniswap';
 import { HttpFailure, sameScope, type HttpClient } from './http.js';
@@ -24,6 +24,8 @@ export interface ScopedRewardClient {
   request(amountWei: string, requestId: RequestId): Promise<RewardRecord>;
   recheck(requestId: RequestId): Promise<RewardRecord>;
   list(): Promise<readonly RewardRecord[]>;
+  /** A caller supplies the successful result of core inspectReceipt. */
+  markReceived(requestId: RequestId, receipt: ReceivedUtxo): Promise<RewardRecord>;
 }
 
 const idPattern = /^0x[0-9a-fA-F]{64}$/;
@@ -57,6 +59,15 @@ export function createScopedRewardClient(deps: ScopedRewardDependencies): Scoped
     if (!idPattern.test(value)) throw new Error('INVALID_REQUEST_ID');
   }
 
+  async function recheck(requestId: RequestId): Promise<RewardRecord> {
+    check(); validId(requestId);
+    const response = await deps.http.call('GET /v1/rewards/{id}', { scope, id: requestId as unknown as Bytes32 });
+    check();
+    if (response.reward.requestId.toLowerCase() !== requestId.toLowerCase()
+      || !sameScope(response.reward.scope, scope)) throw new Error('SCOPE_CHANGED');
+    return response.reward;
+  }
+
   check();
   return {
     async request(amountWei, requestId) {
@@ -80,7 +91,8 @@ export function createScopedRewardClient(deps: ScopedRewardDependencies): Scoped
       try {
         reply = await deps.http.call('POST /v1/rewards', { scope, body: { scope, requestId, amountWei, recipientInfo } });
       } catch (error) {
-        if (error instanceof HttpFailure && error.kind === 'api') throw error;
+        if (error instanceof HttpFailure && error.kind === 'api'
+          && error.code !== 'SERVICE_UNAVAILABLE' && error.code !== 'PENDING_REQUEST') throw error;
         throw new RewardRequestUncertain(requestId, error);
       }
       try {
@@ -95,20 +107,52 @@ export function createScopedRewardClient(deps: ScopedRewardDependencies): Scoped
         throw new RewardRequestUncertain(requestId, error);
       }
     },
-    async recheck(requestId) {
-      check(); validId(requestId);
-      const response = await deps.http.call('GET /v1/rewards/{id}', { scope, id: requestId as unknown as Bytes32 });
-      check();
-      if (response.reward.requestId.toLowerCase() !== requestId.toLowerCase()
-        || !sameScope(response.reward.scope, scope)) throw new Error('SCOPE_CHANGED');
-      return response.reward;
-    },
+    recheck,
     async list() {
       check();
       const response = await deps.http.call('GET /v1/rewards', { scope });
       check();
       if (response.rewards.some(reward => !sameScope(reward.scope, scope))) throw new Error('SCOPE_CHANGED');
       return response.rewards;
+    },
+    async markReceived(requestId, receipt) {
+      check(); validId(requestId);
+      if ((receipt.status !== 'available' && receipt.status !== 'spent')
+        || receipt.utxo.status !== receipt.status
+        || receipt.utxo.owner.toLowerCase() !== scope.owner.toLowerCase()
+        || receipt.utxo.chainId !== deployment.chainId
+        || receipt.utxo.pool.toLowerCase() !== deployment.pool.toLowerCase()) throw new Error('INVALID_RECEIPT');
+      const outputId = parseBytes32(receipt.utxo.id, 'receipt.outputId');
+      const blockHash = parseBytes32(receipt.creationCheckpoint.hash, 'receipt.blockHash');
+      const operationId = parseBytes32(receipt.operationId, 'receipt.operationId');
+      const saved = await recheck(requestId);
+      check();
+      if ((saved.status !== 'finalized' && saved.status !== 'received')
+        || saved.outputId?.toLowerCase() !== outputId.toLowerCase()
+        || saved.blockHash?.toLowerCase() !== blockHash.toLowerCase()
+        || saved.operationId?.toLowerCase() !== operationId.toLowerCase()) throw new Error('RECEIPT_MISMATCH');
+      let response: Awaited<ReturnType<HttpClient['call']>>;
+      try {
+        response = await deps.http.call('POST /v1/rewards/{id}/received', {
+          scope, id: requestId as unknown as Bytes32, body: { scope, outputId, blockHash },
+        });
+      } catch (error) {
+        if (error instanceof HttpFailure && error.kind === 'api'
+          && error.code !== 'SERVICE_UNAVAILABLE') throw error;
+        throw new RewardRequestUncertain(requestId, error);
+      }
+      try {
+        check();
+        if (!('reward' in response) || response.reward.status !== 'received'
+          || response.reward.requestId.toLowerCase() !== requestId.toLowerCase()
+          || !sameScope(response.reward.scope, scope)
+          || response.reward.outputId?.toLowerCase() !== outputId.toLowerCase()
+          || response.reward.blockHash?.toLowerCase() !== blockHash.toLowerCase()
+          || response.reward.operationId?.toLowerCase() !== operationId.toLowerCase()) throw new Error('RECEIPT_MISMATCH');
+        return response.reward;
+      } catch (error) {
+        throw new RewardRequestUncertain(requestId, error);
+      }
     },
   };
 }
