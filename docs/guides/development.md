@@ -317,6 +317,8 @@ pnpm dlx wrangler@4.116.0 deploy --config apps/uniswap-web/wrangler.jsonc
 
 ## Issue #61: 報酬受領からUniswap支払い、残額送金までのCLI追試
 
+B・C・別提出者が順に操作する手順は[Uniswap接続CLIの操作ガイド](uniswap-cli.md)を参照する。この節はローカル実証の環境、検証コマンド、受入証拠を記録する。
+
 Node 24.21.0、pnpm 10.34.5、Foundry 1.8.3、`expect` を使う。ローカルの自動追試はAnvilへ別の本体PoolとデモPool、dUSD、WETH、Uniswap v2、Adapterを配置し、SQLite Durable Objectを起動する。B、C、配布元、提出者のCLI保存先と試験鍵を分ける。`expect` はテスト専用の疑似TTYでパスフレーズを入力し、通常CLIに非TTY解除経路を追加しない。実行前に次を使う。
 
 ```sh
@@ -363,7 +365,7 @@ Sepoliaでは本体と接続の両manifestを公開RPCで照合してから同�
 
 ### Issue #61 の受入条件と実証入口
 
-基準HEADは `2e11fab178c5e64ae8b4e80460fb679850dd895d`。以下はそのHEADに対する未コミットの作業ツリーで再実行する。`CLI_REPLAY_EVIDENCE` と `payment-client-evidence` は公開ID、取引hash、確定点、検査成否を出し、秘密fixtureは一時ディレクトリに分離して終了時に削除する。
+実装前の基準HEADは `2e11fab178c5e64ae8b4e80460fb679850dd895d`。追試では現在のcheckoutとlockfileを固定し、そのcommitを記録する。`CLI_REPLAY_EVIDENCE` と `payment-client-evidence` は公開ID、取引hash、確定点、検査成否を出し、秘密fixtureは一時ディレクトリに分離して終了時に削除する。
 
 | 条件 | 実行入口と確認内容 |
 | --- | --- |
