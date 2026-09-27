@@ -1,5 +1,5 @@
-import type { LocalDraft, StoragePort } from '@confidential-utxo/core';
-import type { Address, Scope } from '@confidential-utxo/uniswap';
+import { operationId as computeOperationId, outputId, type Context, type LocalDraft, type StoragePort } from '@confidential-utxo/core';
+import type { Scope } from '@confidential-utxo/uniswap';
 
 const DATABASE = 'confidential-utxo-uniswap-deposit-drafts';
 const STORE = 'drafts';
@@ -11,37 +11,54 @@ const encoder = new TextEncoder();
 const decoder = new TextDecoder('utf-8', { fatal: true });
 
 type SealedDraft = { readonly version: 1; readonly nonce: number[]; readonly ciphertext: number[] };
-export type DraftRead = { readonly status: 'saved'; readonly draft: LocalDraft } |
+/** Decryption and identity checks do not establish current chain state or valid proofs.
+ * Run the core prepareSubmission gate before using a recovered draft for authorization or send. */
+export type DraftRead = { readonly status: 'decrypted-unverified'; readonly draft: LocalDraft } |
   { readonly status: 'absent' | 'unknown' };
 
 export interface DepositStorageOptions {
   readonly scope: Scope;
-  readonly chainId: bigint;
-  readonly pool: Address;
+  readonly context: Context;
   /** Nonextractable AES-GCM key from the scoped key session. Never persisted. */
   readonly key: CryptoKey;
   readonly factory?: IDBFactory | null;
 }
 
 function identity(options: DepositStorageOptions, operationId: string): { id: string; aad: Uint8Array<ArrayBuffer> } {
-  const { scope, chainId, pool } = options;
+  const { scope, context } = options;
   if (typeof scope.deploymentId !== 'string' || !scope.deploymentId || !address.test(scope.owner) ||
-    !address.test(pool) || chainId <= 0n || !hex32.test(operationId)) throw new Error('INVALID_DRAFT_SCOPE');
+    !address.test(context.pool) || !address.test(context.verifier) ||
+    !hex32.test(context.parametersHash) || context.chainId <= 0n || context.deploymentBlock < 0n ||
+    !['finalized', 'local-simulated'].includes(context.finalityMode) || !hex32.test(operationId)) {
+    throw new Error('INVALID_DRAFT_SCOPE');
+  }
   const owner = scope.owner.toLowerCase();
   const id = operationId.toLowerCase();
   return { id: JSON.stringify([scope.deploymentId, owner, id]),
-    aad: encoder.encode(JSON.stringify([DOMAIN, scope.deploymentId, owner, chainId.toString(), pool.toLowerCase(), id])) };
+    aad: encoder.encode(JSON.stringify([DOMAIN, scope.deploymentId, owner, context.chainId.toString(),
+      context.pool.toLowerCase(), context.verifier.toLowerCase(), context.parametersHash.toLowerCase(),
+      context.deploymentBlock.toString(), context.finalityMode, id])) };
 }
 
 function validate(draft: LocalDraft, options: DepositStorageOptions): void {
   if (!draft || typeof draft !== 'object' || !draft.context || !draft.request ||
-    draft.context.chainId !== options.chainId || draft.context.pool.toLowerCase() !== options.pool.toLowerCase() ||
+    draft.context.chainId !== options.context.chainId ||
+    draft.context.pool.toLowerCase() !== options.context.pool.toLowerCase() ||
+    draft.context.verifier.toLowerCase() !== options.context.verifier.toLowerCase() ||
+    draft.context.parametersHash.toLowerCase() !== options.context.parametersHash.toLowerCase() ||
+    draft.context.deploymentBlock !== options.context.deploymentBlock ||
+    draft.context.finalityMode !== options.context.finalityMode ||
     draft.request.owner.toLowerCase() !== options.scope.owner.toLowerCase() || draft.request.kind !== 0 ||
     !Array.isArray(draft.outputIds) || !Array.isArray(draft.openings) ||
     !Array.isArray(draft.inputOpenings) || !Array.isArray(draft.rangeProofs) || !draft.balanceProof) {
     throw new Error('INVALID_DEPOSIT_DRAFT');
   }
   identity(options, draft.operationId);
+  if (computeOperationId(draft.context, draft.request).toLowerCase() !== draft.operationId.toLowerCase() ||
+    draft.outputIds.length !== draft.request.outputs.length ||
+    draft.outputIds.some((id, index) => id.toLowerCase() !== outputId(draft.operationId, index).toLowerCase())) {
+    throw new Error('INVALID_DEPOSIT_DRAFT');
+  }
 }
 
 function serialize(draft: LocalDraft): Uint8Array<ArrayBuffer> {
@@ -130,7 +147,9 @@ function transact<T>(db: IDBDatabase, id: string, mode: 'readonly' | 'readwrite'
   });
 }
 
-/** Profile-local encrypted draft storage. Loss of browser data loses the draft; this is not a server backup. */
+/** Profile-local encrypted draft storage. A storage ACK proves persistence only: core
+ * prepareSubmission must validate semantics and current history before send. Loss of
+ * browser data loses the draft; this is not a server backup. */
 export function createIndexedDbDepositStorage(options: DepositStorageOptions): StoragePort &
   { readDraft(operationId: string): Promise<DraftRead> } {
   const factory = options.factory === undefined ? globalThis.indexedDB : options.factory ?? undefined;
@@ -169,7 +188,7 @@ export function createIndexedDbDepositStorage(options: DepositStorageOptions): S
         const value = await transact<unknown>(db, id, 'readonly', found => found);
         if (value === undefined) return { status: 'absent' };
         const plain = await openDraft(options.key, aad, value);
-        return { status: 'saved', draft: deserialize(plain, options, operationId) };
+        return { status: 'decrypted-unverified', draft: deserialize(plain, options, operationId) };
       } catch { return { status: 'unknown' }; }
       finally { db?.close(); }
     },
