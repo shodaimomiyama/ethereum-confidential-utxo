@@ -4,6 +4,7 @@ import { keccak256, stringToHex } from 'viem';
 import { decodeRewardSecret, decryptRewardState, encodeRewardSecret, encryptRewardState } from './crypto.js';
 import { authorizeOperation, buildOperation } from '@confidential-utxo/core';
 import type { BuildIntent, Context, LocalDraft, OwnedUtxo, SignerPort } from '@confidential-utxo/core';
+import type { HistoryPort } from '@confidential-utxo/core';
 
 type RewardRow = {
   deployment_id: string;
@@ -245,4 +246,60 @@ export async function buildAndAuthorizeReward(
     throw new Error('REWARD_DRAFT_CONFLICT');
   }
   return signed;
+}
+
+/** Confirms the published output against one finalized canonical history point before accepting a receipt acknowledgement. */
+export async function markRewardReceived(storage: DurableObjectStorage, scope: Scope, requestId: string,
+  outputId: string, blockHash: string, history: HistoryPort): Promise<RewardRecord> {
+  const existing = getReward(storage, scope, requestId);
+  if (existing === undefined) throw new Error('NOT_FOUND');
+  if (!['finalized', 'received'].includes(existing.status)
+    || existing.outputId?.toLowerCase() !== outputId.toLowerCase()
+    || existing.blockHash?.toLowerCase() !== blockHash.toLowerCase()
+    || existing.operationId === undefined) throw new Error('NOT_FINALIZED');
+  try {
+    const point = await history.getFinalizedCheckpoint();
+    if (point === null) throw new Error('SERVICE_UNAVAILABLE');
+    const context = await history.getContext(point);
+    if (!context.complete || context.blockHash.toLowerCase() !== point.hash.toLowerCase()) {
+      throw new Error('SERVICE_UNAVAILABLE');
+    }
+    const operations = await history.getOperations(context.value.deploymentBlock, point);
+    if (!operations.complete || operations.blockHash.toLowerCase() !== point.hash.toLowerCase()) {
+      throw new Error('SERVICE_UNAVAILABLE');
+    }
+    const observed = operations.value.find((item) => item.success?.operationId.toLowerCase()
+      === existing.operationId!.toLowerCase());
+    const success = observed?.success;
+    if (success === undefined || success.blockHash.toLowerCase() !== blockHash.toLowerCase()) {
+      throw new Error('NOT_FINALIZED');
+    }
+    const output = observed?.outputLogs.find((item) => item.outputId.toLowerCase() === outputId.toLowerCase());
+    if (output === undefined || output.output.owner.toLowerCase() !== scope.owner.toLowerCase()
+      || output.operationId.toLowerCase() !== existing.operationId.toLowerCase()) {
+      throw new Error('NOT_FINALIZED');
+    }
+    const header = await history.getCanonicalHeader(success.blockNumber, point);
+    const executed = await history.getOperationSuccess(existing.operationId as `0x${string}`, point);
+    if (!header.complete || header.blockHash.toLowerCase() !== point.hash.toLowerCase()
+      || !executed.complete || executed.blockHash.toLowerCase() !== point.hash.toLowerCase()) {
+      throw new Error('SERVICE_UNAVAILABLE');
+    }
+    if (header.value.hash.toLowerCase() !== blockHash.toLowerCase() || !executed.value.executed) {
+      throw new Error('NOT_FINALIZED');
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message === 'NOT_FINALIZED') throw error;
+    throw new Error('SERVICE_UNAVAILABLE');
+  }
+  if (existing.status === 'received') return existing;
+  storage.transactionSync(() => {
+    const current = getReward(storage, scope, requestId);
+    if (current?.status !== 'finalized' || current.outputId?.toLowerCase() !== outputId.toLowerCase()
+      || current.blockHash?.toLowerCase() !== blockHash.toLowerCase()) throw new Error('NOT_FINALIZED');
+    storage.sql.exec(`UPDATE reward_requests SET status = 'received', state_version = state_version + 1
+      WHERE deployment_id = ? AND owner = ? AND request_id = ?`, scope.deploymentId,
+    scope.owner.toLowerCase(), requestId.toLowerCase());
+  });
+  return getReward(storage, scope, requestId)!;
 }

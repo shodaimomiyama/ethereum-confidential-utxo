@@ -37,4 +37,15 @@ export const rewardMigrations: readonly Migration[] = [{
       deployment_id TEXT PRIMARY KEY, reason TEXT NOT NULL, checked_at_ms INTEGER NOT NULL
     )`,
   ],
+}, {
+  version: 3,
+  statements: [
+    `CREATE TABLE reward_cancellations (
+      deployment_id TEXT NOT NULL, request_id TEXT NOT NULL,
+      phase TEXT NOT NULL, operation_id TEXT NOT NULL, input_id TEXT NOT NULL,
+      encrypted_draft TEXT NOT NULL, encrypted_raw TEXT,
+      tx_hash TEXT, nonce INTEGER, checkpoint_hash TEXT,
+      PRIMARY KEY (deployment_id, request_id)
+    )`,
+  ],
 }];

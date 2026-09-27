@@ -12,6 +12,8 @@ import { createCoreInputReader, getCoreHistoryProvider } from './core-reader.js'
 import { loadEthereumHistory } from './ethereum-provider.js';
 import { rewardExtension } from './rewards/extension.js';
 import { parseRewardSecrets, readRewardFunds } from './rewards/crypto.js';
+import { advanceSignedCancellation, endUndistributedReward } from './rewards/operator.js';
+import { createProductionCancellationPorts } from './rewards/operator-production.js';
 
 registerServiceExtension(rewardExtension);
 
@@ -29,6 +31,42 @@ export class UniswapServiceObject extends DurableObject<ServiceEnv> {
     if (bound !== undefined && bound !== deploymentId) throw new Error('SCOPE_MISMATCH');
     if (bound === undefined) await this.ctx.storage.put('deploymentId', deploymentId);
     initializeEnvironment(this.ctx.storage, gate);
+  }
+
+  // Internal DO RPC for an operator-controlled Worker. Never exposed by fetch().
+  private async authorizeRewardOperator(deploymentId: string, operatorToken: string): Promise<void> {
+    const expected = this.env.REWARD_OPERATOR_TOKEN;
+    if (expected === undefined || expected.length < 32 || operatorToken.length !== expected.length) {
+      throw new Error('OPERATOR_UNAUTHORIZED');
+    }
+    const digest = async (value: string) => new Uint8Array(await crypto.subtle.digest('SHA-256',
+      new TextEncoder().encode(value)));
+    const [left, right] = await Promise.all([digest(expected), digest(operatorToken)]);
+    let difference = 0;
+    for (let i = 0; i < left.length; i++) difference |= left[i]! ^ right[i]!;
+    if (difference !== 0) throw new Error('OPERATOR_UNAUTHORIZED');
+    resolveDeployment(deploymentId, parseDeploymentCatalog(this.env.DEPLOYMENTS_JSON));
+    const bound = await this.ctx.storage.get<string>('deploymentId');
+    if (bound !== deploymentId) throw new Error('SCOPE_MISMATCH');
+    ensureWritable(this.ctx.storage, resolveRecoveryGate(this.env.RECOVERY_JSON, deploymentId));
+  }
+
+  async endUnsignedRewardForDeployment(deploymentId: string, requestId: string,
+    operatorToken: string): Promise<void> {
+    await this.authorizeRewardOperator(deploymentId, operatorToken);
+    await endUndistributedReward(this.ctx.storage, deploymentId, requestId, { authorized: true });
+    await this.ctx.storage.setAlarm(Date.now());
+  }
+
+  async cancelSignedRewardForDeployment(deploymentId: string, requestId: string,
+    operatorToken: string): Promise<void> {
+    await this.authorizeRewardOperator(deploymentId, operatorToken);
+    const config = resolveDeployment(deploymentId, parseDeploymentCatalog(this.env.DEPLOYMENTS_JSON));
+    const context = makeServiceContext(this.ctx.storage, resolveRecoveryGate(this.env.RECOVERY_JSON, deploymentId),
+      undefined, { deploymentId, deployment: config, env: this.env });
+    const { key, ports } = await createProductionCancellationPorts(context, requestId);
+    await advanceSignedCancellation(this.ctx.storage, deploymentId, requestId, { authorized: true }, key, ports);
+    await this.ctx.storage.setAlarm(Date.now() + 30_000);
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -103,6 +141,13 @@ export class UniswapServiceObject extends DurableObject<ServiceEnv> {
                 || contextPoint.value.pool.toLowerCase() !== config.pool.toLowerCase()
                 || contextPoint.value.finalityMode !== config.finalityMode) return undefined;
               return result.available.reduce((total, coin) => total + coin.opening.amount, 0n);
+            },
+            readRewardHistory: async (deploymentId: string) => {
+              if (deploymentId !== parsed.scope.deploymentId) throw new Error('SCOPE_MISMATCH');
+              const provider = getCoreHistoryProvider();
+              return provider === undefined
+                ? loadEthereumHistory(deploymentId, config, this.env.RPC_DEPLOYMENTS_JSON)
+                : provider(deploymentId, config);
             },
           };
           if (!parsed.route.startsWith('GET ')) context.ensureWritable();

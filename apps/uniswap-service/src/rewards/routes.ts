@@ -1,7 +1,7 @@
 import type { ParsedApiRequest, RewardRecord } from '@confidential-utxo/uniswap';
 import type { ServiceContext, ServiceExtension } from '../extensions.js';
 import { apiError, apiSuccess } from '../http.js';
-import { getReward, listRewards } from './store.js';
+import { getReward, listRewards, markRewardReceived } from './store.js';
 import { admitReward } from './store.js';
 import { verifyRecipientInfo } from '@confidential-utxo/core';
 import { M } from '@confidential-utxo/crypto';
@@ -55,6 +55,28 @@ export const rewardRoutes: ServiceExtension['routes'] = [
         if (error instanceof Error && error.message === 'REQUEST_CONFLICT') {
           return apiError(409, 'REQUEST_CONFLICT');
         }
+        return apiError(503, 'SERVICE_UNAVAILABLE');
+      }
+    },
+  },
+  {
+    route: 'POST /v1/rewards/{id}/received',
+    async handle(request: ParsedApiRequest, context: ServiceContext): Promise<Response> {
+      if (context.scope === undefined) return apiError(401, 'UNAUTHENTICATED');
+      if (!sameScope(request, context)) return apiError(403, 'SCOPE_MISMATCH');
+      if (request.id === undefined || request.outputId === undefined || request.blockHash === undefined) {
+        return apiError(400, 'INVALID_REQUEST');
+      }
+      if (getReward(context.storage, request.scope, request.id) === undefined) return apiError(404, 'NOT_FOUND');
+      if (context.readRewardHistory === undefined) return apiError(503, 'SERVICE_UNAVAILABLE');
+      try {
+        const history = await context.readRewardHistory(request.scope.deploymentId);
+        const updated = await markRewardReceived(context.storage, request.scope, request.id,
+          request.outputId, request.blockHash, history);
+        return apiSuccess({ reward: wire(updated) });
+      } catch (error) {
+        if (error instanceof Error && error.message === 'NOT_FOUND') return apiError(404, 'NOT_FOUND');
+        if (error instanceof Error && error.message === 'NOT_FINALIZED') return apiError(409, 'REQUEST_CONFLICT');
         return apiError(503, 'SERVICE_UNAVAILABLE');
       }
     },

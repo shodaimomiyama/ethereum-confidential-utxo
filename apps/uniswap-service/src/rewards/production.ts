@@ -10,6 +10,8 @@ import { buildAndAuthorizeReward, getReward, loadSavedDraft } from './store.js';
 import { parseRewardSecrets, readRewardFunds } from './crypto.js';
 import { broadcastRewardAttempt, listRewardAttempts, prepareAndStoreRewardAttempt } from './transaction.js';
 import type { RewardQueueRunner } from './queue.js';
+import { advanceSignedCancellation } from './operator.js';
+import { createProductionCancellationPorts } from './operator-production.js';
 
 type Evidence = { kind: 'complete'; observed: ObservedOperation | undefined; pointHash: string }
   | { kind: 'unknown' };
@@ -110,6 +112,20 @@ export async function createProductionRewardRunner(service: ServiceContext): Pro
       await submitSaved(requestId);
     },
     async reconcile(requestId) {
+      const cancellation = service.storage.sql.exec<{ phase: string }>(
+        `SELECT phase FROM reward_cancellations WHERE deployment_id = ? AND request_id = ?`,
+        deploymentId, requestId,
+      ).toArray()[0];
+      if (cancellation !== undefined) {
+        const { key, ports } = await createProductionCancellationPorts(service, requestId);
+        try {
+          await advanceSignedCancellation(service.storage, deploymentId, requestId,
+            { authorized: true }, key, ports);
+          return;
+        } catch (error) {
+          if (!(error instanceof Error) || error.message !== 'ORIGINAL_FINALIZED') throw error;
+        }
+      }
       const row = service.storage.sql.exec<{ status: string; operation_id: string | null; state_version: number }>(
         `SELECT status, operation_id, state_version FROM reward_requests
          WHERE deployment_id = ? AND request_id = ?`, deploymentId, requestId,

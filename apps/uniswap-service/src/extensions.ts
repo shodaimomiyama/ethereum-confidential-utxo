@@ -4,6 +4,7 @@ import type { RecoveryGate } from './recovery.js';
 import { ensureWritable } from './recovery.js';
 import type { DeploymentConfig } from './config.js';
 import type { ServiceEnv } from './index.js';
+import type { HistoryPort } from '@confidential-utxo/core';
 
 export interface ServiceContext {
   readonly scope?: Scope;
@@ -11,6 +12,7 @@ export interface ServiceContext {
   readonly deployment?: DeploymentConfig;
   readonly env?: ServiceEnv;
   readonly readRewardFunds?: (deploymentId: string) => Promise<bigint | undefined>;
+  readonly readRewardHistory?: (deploymentId: string) => Promise<HistoryPort>;
   readonly storage: DurableObjectStorage;
   transactionSync<T>(callback: () => T): T;
   ensureWritable(): void;
