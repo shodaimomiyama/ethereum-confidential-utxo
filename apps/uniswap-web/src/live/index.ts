@@ -8,3 +8,6 @@ export { createScopedPaymentClient, type ScopedPaymentDependencies, type Payment
 export { createDeploymentResolver, type BrowserDeployment, type ServiceDeploymentConfig,
   type VerifiedConnectionEvidence } from './deployment.js';
 export { createScopedEthereumBridge, type ScopedEthereumBridge, type ScopedEthereumDependencies } from './ethereum.js';
+export { createAdapterSubmit, type AdapterSubmitDependencies } from './adapter-submit.js';
+export { createScopedRewardClient, RewardRequestUncertain,
+  type ScopedRewardClient, type ScopedRewardDependencies } from './reward-client.js';
