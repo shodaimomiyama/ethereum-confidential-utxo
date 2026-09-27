@@ -21,7 +21,7 @@ export interface RewardRequestMarker {
   read(scope: Scope): Promise<{ readonly kind: 'absent' } | { readonly kind: 'saved'; readonly requestId: RequestId } | { readonly kind: 'unknown' }>;
   /** Atomic insert-if-absent; `saved` requires a durable ACK. */
   reserve(scope: Scope, requestId: RequestId): Promise<'saved' | 'occupied' | 'unknown'>;
-  /** Atomic compare-and-swap. `next` undefined clears only a conclusively ended request. */
+  /** Atomic compare-and-swap. Clear only after terminal GET or a proven pre-admission failure. */
   replace(scope: Scope, expected: RequestId, next: RequestId | undefined): Promise<'saved' | 'mismatch' | 'unknown'>;
 }
 
@@ -35,6 +35,15 @@ export interface RewardOperation {
 
 const active = (status: RewardStatus): boolean => status !== 'received' && status !== 'ended-without-distribution';
 const requestIdPattern = /^0x[0-9a-fA-F]{64}$/;
+const rejectedBeforeAdmission = new Set(['INVALID_REQUEST', 'UNAUTHENTICATED', 'SCOPE_MISMATCH', 'PAYLOAD_TOO_LARGE']);
+
+function mayClearAfterRequestFailure(error: unknown): boolean {
+  if (error instanceof RewardRequestUncertain) return false;
+  if (error instanceof HttpFailure) return error.kind === 'api' && error.code !== undefined && rejectedBeforeAdmission.has(error.code);
+  // ScopedRewardClient wraps every uncertain POST/response failure. Its remaining
+  // unwrapped exceptions arise before the POST, including a refused signature.
+  return true;
+}
 
 function freshRequestId(): RequestId {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
@@ -180,11 +189,9 @@ export function createRewardOperation(deps: RewardOperationDependencies): Reward
       const reserved = await deps.marker.reserve(scope, requestId);
       check(scope, context, deps.snapshot());
       if (reserved !== 'saved') throw new Error('RESULT_UNKNOWN');
+      let record: RewardRecord;
       try {
-        const record = await client.request(amount, requestId);
-        check(scope, context, deps.snapshot());
-        if (record.requestId.toLowerCase() !== requestId.toLowerCase()) throw new Error('SCOPE_CHANGED');
-        return project(base, scope, [record]);
+        record = await client.request(amount, requestId);
       } catch (error) {
         if (error instanceof HttpFailure && error.kind === 'api' && error.code === 'PENDING_REQUEST') {
           const pending = await client.list();
@@ -198,6 +205,13 @@ export function createRewardOperation(deps: RewardOperationDependencies): Reward
           if (adopted !== 'saved') throw new Error('RESULT_UNKNOWN');
           return found;
         }
+        if (mayClearAfterRequestFailure(error)) {
+          check(scope, context, deps.snapshot());
+          const cleared = await deps.marker.replace(scope, requestId, undefined);
+          check(scope, context, deps.snapshot());
+          if (cleared !== 'saved') throw new Error('RESULT_UNKNOWN');
+          throw error;
+        }
         if (!(error instanceof RewardRequestUncertain)) throw error;
         check(scope, context, deps.snapshot());
         if (error.requestId.toLowerCase() !== requestId.toLowerCase()) throw new Error('SCOPE_CHANGED');
@@ -207,6 +221,9 @@ export function createRewardOperation(deps: RewardOperationDependencies): Reward
           reasons: { ...base.reasons, 'start:reward': 'RESULT_UNKNOWN' as const } };
         return { scope, view };
       }
+      check(scope, context, deps.snapshot());
+      if (record.requestId.toLowerCase() !== requestId.toLowerCase()) throw new Error('SCOPE_CHANGED');
+      return project(base, scope, [record]);
     },
     recheck,
     async list(scope, context) {

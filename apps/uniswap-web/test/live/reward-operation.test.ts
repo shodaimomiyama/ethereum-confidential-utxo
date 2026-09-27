@@ -71,7 +71,65 @@ it('keeps the request ID after an uncertain POST and rechecks without another PO
   expect(f.client.recheck).toHaveBeenCalledWith(requestId);
   expect(f.client.request).toHaveBeenCalledTimes(1);
   expect(f.newRequestId).toHaveBeenCalledTimes(1);
+  expect(f.marker.replace).not.toHaveBeenCalled();
   expect(checked.view.rewardRequests[0]?.status).toBe('pending');
+});
+
+it('clears a refused pre-POST signature after durable ACK so a corrected start can proceed', async () => {
+  const f = fixture();
+  f.client.request.mockRejectedValueOnce(new Error('user rejected signature')).mockResolvedValueOnce(record('accepted', otherId));
+  f.newRequestId.mockReturnValueOnce(requestId).mockReturnValueOnce(otherId);
+  await expect(f.adapter.start(scope, { amount: '1' }, f.context)).rejects.toThrow('user rejected signature');
+  expect(f.marker.replace).toHaveBeenCalledWith(scope, requestId, undefined);
+  f.publish(state());
+  const corrected = await f.makeAdapter().start(scope, { amount: '2' }, f.context);
+  expect(f.client.request).toHaveBeenNthCalledWith(2, '2000000000000000000', otherId);
+  expect(corrected.view.rewardRequests[0]?.requestId).toBe(otherId);
+});
+
+it('clears an explicit pre-admission API rejection but retains ambiguous API failures', async () => {
+  const rejected = fixture();
+  rejected.client.request.mockRejectedValueOnce(new HttpFailure('api', 'INVALID_REQUEST'));
+  await expect(rejected.adapter.start(scope, { amount: '1' }, rejected.context)).rejects.toMatchObject({ code: 'INVALID_REQUEST' });
+  expect(rejected.marker.replace).toHaveBeenCalledWith(scope, requestId, undefined);
+
+  const ambiguous = fixture();
+  ambiguous.client.request.mockRejectedValueOnce(new HttpFailure('api', 'REQUEST_CONFLICT'));
+  await expect(ambiguous.adapter.start(scope, { amount: '1' }, ambiguous.context)).rejects.toMatchObject({ code: 'REQUEST_CONFLICT' });
+  expect(ambiguous.marker.replace).not.toHaveBeenCalled();
+  ambiguous.publish(state());
+  await ambiguous.makeAdapter().start(scope, { amount: '2' }, ambiguous.context);
+  expect(ambiguous.client.recheck).toHaveBeenCalledWith(requestId);
+  expect(ambiguous.client.request).toHaveBeenCalledTimes(1);
+});
+
+it('fails closed when clearing a pre-POST failure lacks a durable ACK', async () => {
+  const f = fixture();
+  f.client.request.mockRejectedValueOnce(new Error('user rejected signature'));
+  f.marker.replace.mockResolvedValueOnce('unknown');
+  await expect(f.adapter.start(scope, { amount: '1' }, f.context)).rejects.toThrow('RESULT_UNKNOWN');
+  f.publish(state());
+  await f.makeAdapter().start(scope, { amount: '2' }, f.context);
+  expect(f.client.recheck).toHaveBeenCalledWith(requestId);
+  expect(f.client.request).toHaveBeenCalledTimes(1);
+});
+
+it.each([
+  new HttpFailure('api', 'SERVICE_UNAVAILABLE'), new HttpFailure('network'), new HttpFailure('abort'),
+  new RewardRequestUncertain(requestId, new Error('malformed POST response')),
+])('retains the marker for an uncertain request failure', async error => {
+  const f = fixture();
+  f.client.request.mockRejectedValueOnce(error);
+  if (error instanceof RewardRequestUncertain) {
+    expect((await f.adapter.start(scope, { amount: '1' }, f.context)).view.rewardRequests[0]?.status).toBe('unknown');
+  } else {
+    await expect(f.adapter.start(scope, { amount: '1' }, f.context)).rejects.toBe(error);
+  }
+  expect(f.marker.replace).not.toHaveBeenCalled();
+  f.publish(state());
+  await f.makeAdapter().start(scope, { amount: '2' }, f.context);
+  expect(f.client.recheck).toHaveBeenCalledWith(requestId);
+  expect(f.client.request).toHaveBeenCalledTimes(1);
 });
 
 it('recovers an active service request after reload before allocating an ID', async () => {
