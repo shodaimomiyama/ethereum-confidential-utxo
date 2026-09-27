@@ -6,5 +6,9 @@
   "exports": {
     ".": "./src/index.ts",
     "./testing": "./src/testing/index.ts"
+  },
+  "dependencies": {
+    "@confidential-utxo/core": "workspace:*",
+    "viem": "2.56.9"
   }
 }

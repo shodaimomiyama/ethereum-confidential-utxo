@@ -5,6 +5,7 @@ import { SchemaError } from '../schema.js';
 import { StoreError } from '../storage.js';
 import type { ManualClock } from './clock.js';
 import type { MemoryStore } from './store.js';
+import type { ReservationPort } from '../reservation.js';
 
 interface Challenge {
   readonly scope: Scope;
@@ -64,9 +65,10 @@ function mapFailure(error: unknown, route?: ApiRoute): Response {
   throw error;
 }
 
-export function createMockHttp({ store, clock }: {
+export function createMockHttp({ store, clock, reservations }: {
   readonly store: MemoryStore;
   readonly clock: ManualClock;
+  readonly reservations?: ReservationPort;
 }): MockHttp {
   const challenges = new Map<string, Challenge>();
   const sessions = new Map<string, Session>();
@@ -79,7 +81,8 @@ export function createMockHttp({ store, clock }: {
       const bodyText = request.method === 'GET' ? '' : await request.text();
       const body = bodyText === '' ? undefined : JSON.parse(bodyText) as unknown;
       const url = new URL(request.url);
-      parsed = parseApiRequest(request.method, url.pathname + url.search, body);
+      parsed = parseApiRequest(request.method, url.pathname + url.search, body,
+        { allowLegacyUnsealedPut: reservations === undefined });
     } catch (error) {
       if (error instanceof SyntaxError || error instanceof SchemaError) {
         return apiError(400, 'INVALID_REQUEST', [], error instanceof SchemaError ? error.field : undefined);
@@ -130,15 +133,41 @@ export function createMockHttp({ store, clock }: {
           if (parsed.record === undefined || parsed.expectedRevision === undefined) {
             throw new SchemaError('INVALID_FIELD', 'record');
           }
-          const saved = store.operations.put(parsed.record, parsed.expectedRevision);
+          let saved;
+          if (reservations === undefined) {
+            saved = store.operations.put(parsed.record, parsed.expectedRevision);
+          } else {
+            if (parsed.sealedRevision === undefined) throw new SchemaError('INVALID_REVISION', 'sealedRevision');
+            saved = parsed.expectedRevision === 0
+              ? await reservations.reserve(parsed.record, parsed.expectedRevision, parsed.sealedRevision)
+              : await reservations.update(parsed.record, parsed.expectedRevision, parsed.sealedRevision);
+          }
           result = { scope, ...saved };
         } else if (route === 'GET /v1/operations') {
-          const page = store.operations.listPage(scope, parsed.cursor);
-          result = {
-            availability: store.availability(),
-            records: page.records.map((saved) => ({ scope, ...saved })),
-            ...(page.nextCursor === undefined ? {} : { nextCursor: page.nextCursor }),
-          };
+          if (reservations === undefined) {
+            const page = store.operations.listPage(scope, parsed.cursor);
+            result = {
+              availability: store.availability(),
+              records: page.records.map((saved) => ({ scope, ...saved })),
+              ...(page.nextCursor === undefined ? {} : { nextCursor: page.nextCursor }),
+            };
+          } else {
+            const listing = await reservations.list(scope);
+            result = { availability: listing.availability, records: listing.records.map((saved) => ({ scope, ...saved })) };
+          }
+        } else if (route === 'GET /v1/operations/{id}') {
+          if (parsed.id === undefined) throw new SchemaError('INVALID_FIELD', 'id');
+          if (reservations === undefined) return apiError(503, 'SERVICE_UNAVAILABLE', ['recheck']);
+          const saved = await reservations.get(scope, parsed.id);
+          if (saved === undefined) return apiError(404, 'NOT_FOUND');
+          result = { scope, ...saved };
+        } else if (route === 'POST /v1/operations/{id}/release') {
+          if (reservations === undefined) return apiError(503, 'SERVICE_UNAVAILABLE', ['recheck']);
+          if (parsed.record === undefined || parsed.blockHash === undefined
+            || parsed.expectedRevision === undefined || parsed.sealedRevision === undefined) {
+            throw new SchemaError('INVALID_FIELD', 'release');
+          }
+          result = { scope, ...await reservations.release(parsed.record, { blockHash: parsed.blockHash }, parsed.expectedRevision, parsed.sealedRevision) };
         } else if (route === 'POST /v1/rewards') {
           if (parsed.reward === undefined) throw new SchemaError('INVALID_FIELD', 'reward');
           result = { reward: store.rewards.create(parsed.reward) };

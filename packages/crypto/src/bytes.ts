@@ -31,7 +31,19 @@ export function concat(...parts: readonly Uint8Array[]): Uint8Array {
 
 export function hexBytes(value: string): Uint8Array {
   if (!/^0x(?:[0-9a-fA-F]{2})*$/.test(value)) throw new RangeError("invalid hex bytes");
-  return Uint8Array.from(Buffer.from(value.slice(2), "hex"));
+  const result = new Uint8Array((value.length - 2) / 2);
+  for (let index = 0; index < result.length; index++) {
+    result[index] = Number.parseInt(value.slice(2 + index * 2, 4 + index * 2), 16);
+  }
+  return result;
+}
+
+export function bytesHex(value: Uint8Array): string {
+  return Array.from(value, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export function sameBytes(a: Uint8Array, b: Uint8Array): boolean {
+  return a.length === b.length && a.every((byte, index) => byte === b[index]);
 }
 
 export function tag(label: string): Uint8Array {

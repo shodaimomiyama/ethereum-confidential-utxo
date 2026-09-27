@@ -23,8 +23,8 @@ export { receiptInfo, operationPreimage, operationId, outputId, validateOperatio
 export { recipientInfoTypedData, authorizationTypedData, authorizeOperation, verifyOperationAuthorization, verifyRecipientInfo } from "./authorization.js";
 export type { RecipientInfo, RecipientInfoTypedData, RecipientInfoSignerPort } from "./authorization.js";
 export { selectInputs } from "./selection.js";
-export { buildOperation, regenerateProofs, toPublicSubmission } from "./operation.js";
-export type { BuildIntent, BuildDependencies, PublicSubmission } from "./operation.js";
+export { buildOperation, fixOperation, proveFixedOperation, regenerateProofs, toPublicSubmission } from "./operation.js";
+export type { BuildIntent, BuildDependencies, FixedOperation, PublicSubmission } from "./operation.js";
 export { inspectReceipt } from "./receipt.js";
 export type { ReceivedUtxo, ReceiptFailure, ReceiptState } from "./receipt.js";
 export { synchronize } from "./sync.js";

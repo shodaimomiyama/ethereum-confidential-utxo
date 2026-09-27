@@ -29,6 +29,19 @@ it.each(vectors.filter(v => v.input.outputs.length > 0))("AC-05: independently r
   expect(result.utxo).toMatchObject({ id: vector.expected.outputIds[0]!.hash, owner: f.owner, commitment: f.observed.request.outputs[0]!.commitment, opening: { amount: BigInt(vector.expected.receipts[0]!.value), blinding: BigInt(vector.expected.receipts[0]!.blinding) } });
   expect(result.creationCheckpoint).toEqual({ number: 10n, hash: hash("10"), mode: "finalized" });
 });
+it("tries retained receipt keys and accepts one authenticated opening", async () => {
+  const f = fixture();
+  const oldPrivateKey = await f.keyPort.getKey();
+  const keys = { getKey: async () => new Uint8Array(32).fill(1),
+    getKeys: async () => [new Uint8Array(32).fill(1), oldPrivateKey] };
+  expect((await inspectReceipt(f.observed, 0, f.owner, keys, f.state, checkpoint)).status).toBe("available");
+  keys.getKeys = async () => [new Uint8Array(32).fill(1)];
+  expect(await inspectReceipt(f.observed, 0, f.owner, keys, f.state, checkpoint)).toEqual({ status: "inconsistent", reason: "DECRYPT" });
+  keys.getKeys = async () => [];
+  expect(await inspectReceipt(f.observed, 0, f.owner, keys, f.state, checkpoint)).toEqual({ status: "unknown", reason: "KEY_UNAVAILABLE" });
+  keys.getKeys = async () => { throw new Error("private key detail"); };
+  expect(await inspectReceipt(f.observed, 0, f.owner, keys, f.state, checkpoint)).toEqual({ status: "unknown", reason: "KEY_UNAVAILABLE" });
+});
 
 it("matches reordered RPC output arrays by outputIndex", async () => {
   const f = fixture();

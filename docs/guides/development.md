@@ -230,3 +230,87 @@ Node.js 24.21.0、pnpm 10.34.5、Vitest 4.1.11、TypeScript 6.0.3と固定lockfi
 公開配置前に環境単位の `REWARD_SECRETS_JSON`（状態暗号化鍵・配布元署名鍵・受領鍵）、内部操作用 `REWARD_OPERATOR_TOKEN`、RPC、Pool配置情報、DB外の復旧ゲートと同世代バックアップを設定する。鍵の平文をSQLite、通常ログ、成果物へ保存しない。初回DB初期化は明示的に実行し、通常運用では初期化許可を外す。配布元の機密UTXO資金と公開gas残高は別に確認する。受領通知は資金・gas不足による配布停止中でもfinalized履歴を照合し、共通復旧ゲート停止中は保留する。
 
 引継ぎ: [#47](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/47) は実Cloudflare Freeでの暗号・SQL・alarm・CPU/メモリ・Secrets欠落と枠超過を測定する。[#48](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/48) は実Pool取引でACK喪失、raw再送、finalized前後の再編成、取消、バックアップ復元後の旧試行照合を確認する。[#49](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/49) は本人向け回答、公開履歴、運営者に見える要求額と能動照会を分けて漏えいを評価する。[#50](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/50) は実サイトの自由入力、本人再訪・受領・追加要求、待機・停止理由表示と一連の操作を検証する。
+## Issue #31: CLIの操作・復旧
+
+Node 24.21.0、pnpm 10.34.5、Foundry 1.8.3を使い、リポジトリのルートで `pnpm install --frozen-lockfile && pnpm build` を実行する。操作入口は `node packages/cli/dist/bin.js help`。`--json` は公開状態を1個のJSON objectとして標準出力へ返し、非公開残高・UTXO額を含めない。非公開額は本人が解除した対話端末の通常表示だけに出る。解除は標準入力と標準エラーの双方がTTYである場合だけ許可し、リダイレクト入力や引数のパスフレーズは受け付けない。戻り値は0が完了・既知の成功、2が入力/設定、3が保存/ロック、4がRPC/結果不明、5が既知の失敗/競合である。
+
+所有者の署名ファイルと提出者の署名ファイルは別々に準備する。各ファイルの内容は対応する秘密鍵の `0x` + 64桁の16進数だけとし、末尾の改行は1個まで許す。親ディレクトリを0700、ファイルを0600に設定し、所有者アドレスと鍵から導くアドレスを照合する。鍵の値をコマンドライン、環境変数、shell履歴、Issue本文へ置かない。額は同じ権限の別ファイルに `{"amountWei":"10"}` のような正規JSONで保存し、`--amount-file` にその**パス**を渡す。ファイル名にも額を含めない。`--amount` は受け付けない。
+
+以下の変数は公開のパス、アドレス、RPC URLを指す。`POOL_MANIFEST` は上記#27の配置で生成・検証したmanifest、`ALICE_STORE` と `BOB_STORE` は互いに異なる新規ディレクトリ、`JOURNAL` は提出者専用の新規ディレクトリとする。RPC URLに認証情報を埋め込む運用では、そのURLを引数に載せることも避け、認証情報を含まないローカルRPC経由で接続する。
+
+```sh
+node packages/cli/dist/bin.js init --store "$ALICE_STORE" --owner "$ALICE" --manifest "$POOL_MANIFEST" --rpc "$POOL_RPC"
+node packages/cli/dist/bin.js key add --store "$ALICE_STORE" --owner "$ALICE"
+node packages/cli/dist/bin.js recipient --store "$ALICE_STORE" --owner "$ALICE" --signer "$ALICE_SIGNER" --out "$ALICE_RECIPIENT"
+node packages/cli/dist/bin.js sync --store "$ALICE_STORE" --owner "$ALICE" --manifest "$POOL_MANIFEST" --rpc "$POOL_RPC"
+node packages/cli/dist/bin.js create --store "$ALICE_STORE" --owner "$ALICE" --manifest "$POOL_MANIFEST" --rpc "$POOL_RPC" --kind deposit --amount-file "$PRIVATE_AMOUNT_FILE" --recipient "$ALICE_RECIPIENT" --json
+node packages/cli/dist/bin.js prove --store "$ALICE_STORE" --owner "$ALICE" --id "$OPERATION_ID"
+node packages/cli/dist/bin.js authorize --store "$ALICE_STORE" --owner "$ALICE" --id "$OPERATION_ID" --signer "$ALICE_SIGNER"
+node packages/cli/dist/bin.js export --store "$ALICE_STORE" --owner "$ALICE" --id "$OPERATION_ID" --out "$PUBLIC_REQUEST"
+node packages/cli/dist/bin.js submit --journal "$JOURNAL" --manifest "$POOL_MANIFEST" --rpc "$POOL_RPC" --signer "$SUBMITTER_SIGNER" --submitter "$SUBMITTER" --public "$PUBLIC_REQUEST" --json
+node packages/cli/dist/bin.js operation --journal "$JOURNAL" --manifest "$POOL_MANIFEST" --rpc "$POOL_RPC" --signer "$SUBMITTER_SIGNER" --submitter "$SUBMITTER" --id "$OPERATION_ID"
+node packages/cli/dist/bin.js sync --store "$ALICE_STORE" --owner "$ALICE" --manifest "$POOL_MANIFEST" --rpc "$POOL_RPC"
+node packages/cli/dist/bin.js balance --store "$ALICE_STORE" --owner "$ALICE"
+node packages/cli/dist/bin.js utxos --store "$ALICE_STORE" --owner "$ALICE"
+```
+
+Bobは独立の保存先で `init`、`key add`、`recipient` を行う。Aliceの`transfer`は `--recipient "$BOB_RECIPIENT"` と、部分送金なら `--change-recipient "$ALICE_RECIPIENT"` を指定する。`withdraw`は `--destination "$PUBLIC_DESTINATION"` を指定する。2入力を使う場合は `--input-id` を2回まで指定できる。受領・残高・使用済み入力はBob自身の `sync` で復元でき、Aliceの保存先や署名鍵を共有しない。公開ETH残高と機密UTXO残高は別に確認する。受領鍵を追加・選択しても旧鍵を消去しない。`key select --key-id "$KEY_ID"` は新しく発行する受取情報のactive鍵だけを変更する。
+
+`create` は未完了のローカル操作で選択済みの入力を再選択しない。送信前の `fixed` または `proved` 操作を取り消す場合は `abandon --store "$ALICE_STORE" --owner "$ALICE" --id "$OPERATION_ID"` を実行すると、その入力を再び選択できる。署名済みの `authorized` 操作は提出可能な公開要求が残り得るため取り消せない。`prove` は同じ操作ID、出力、署名を保持して証明だけを再生成できる。`sync`、`balance`、`utxos` の公開出力に `receiptFailures` がある場合は、記載された出力IDの受領復号に失敗している。残高に含まれないため、鍵と履歴を確認する。
+
+バックアップは `backup --store "$ALICE_STORE" --owner "$ALICE" --out "$BACKUP"` で別のパスフレーズを二度入力して作る。`restore --store "$NEW_STORE" --owner "$ALICE" --backup "$BACKUP"` は**存在しない**保存先を要求し、バックアップ作成時のパスフレーズを使う。`passphrase change --store "$ALICE_STORE" --owner "$ALICE"` 後も古いバックアップには旧パスフレーズが必要である。復元直後は `needs-resync` で、オンラインの `sync` を完了するまで残高や提出可否を確定しない。結果不明の提出は `operation` で操作ID、成功イベント、入力状態、nonceと取引hashを照合する。`operation --json` の `attempts` は各試行の `attemptId`、取引hash、nonce、手数料を返す。手数料の差替えには対象の `attemptId` を `replace-fee --attempt-id "$ATTEMPT_ID" --max-fee-per-gas "$MAX_FEE" --max-priority-fee-per-gas "$PRIORITY_FEE"` に渡す。`retry` と `replace-fee` は明示操作とし、準備済み記録だけから自動再送しない。
+
+更新がロックで止まった場合は、同じ保存先に書き込む全プロセスを停止し、保存先・端末・利用者を照合して実行中のwriterがないことを確認する。暗号化状態とジャーナルのバックアップを取ってから残留 `.writer-lock` を手動で扱う。記録されたPIDだけを根拠に削除しない。一時ファイルを最新版として自動採用せず、再起動後に操作IDとチェーン状態を照合する。ネットワークファイルシステム、複数ホストによる同一保存先の共有は検証対象外である。
+
+Sepoliaではchain ID 11155111のmanifest、実配置コード、RPCの`finalized`照会を使う。RPCが必要な履歴・状態を同一確定ブロックで返せない場合は結果不明として停止する。公開Sepoliaでの実資金・実送信・受領の記録はIssue #36へ渡す。#31のローカル再現は次のコマンドを使う。
+
+```sh
+pnpm build
+pnpm check
+pnpm test
+pnpm exec vitest run --config packages/cli/vitest.config.ts packages/cli/test/process.test.ts packages/cli/test/anvil-process.test.ts
+git rev-parse HEAD
+node --version
+pnpm --version
+forge --version
+```
+
+2026-09-27のmacOS 26.5 / arm64 / APFS（作業領域は `/System/Volumes/Data`、`apfs, local, journaled`）でNode 24.21.0、pnpm 10.34.5、Foundry 1.8.3を使用した。Anvil実取引と次の故障注入を実施した。故障注入では書込処理へ例外を渡した後、**別のNodeプロセス**でファイルを読み直した。旧/新はいずれも認証・schema検査に通る完全な世代である。
+
+同環境の `pnpm install --frozen-lockfile`、`pnpm build`、`pnpm check`、`pnpm test` は成功した。最終の `pnpm test` はFoundry 102/102、暗号32/32、共通処理249/249、Ethereum 51/51、CLI 42/42であった。CLI単独のテストはファイルを直列実行し、Anvilの別プロセス試験を含めて12ファイル42件が通過した。再実行時の対象commitは上の `git rev-parse HEAD` で採取する。
+
+| 注入位置 | 暗号化所有者状態 | 公開ジャーナル | 書込結果 |
+| --- | --- | --- | --- |
+| 一時ファイル作成後 | 旧 | 旧 | 失敗/不明 |
+| 書込後 | 旧 | 旧 | 失敗/不明 |
+| ファイル`fsync`後 | 旧 | 旧 | 失敗/不明 |
+| `rename`後 | 新 | 新 | 失敗/不明 |
+| 親ディレクトリ`fsync`後 | 新 | 新 | 失敗/不明 |
+
+Ubuntu 24.04 x86_64の結果と、隔離VMの電源を強制遮断またはブロックデバイスを切断して再起動するAC-08の試験は未取得である。2026-09-27時点で破棄可能なUbuntu VMまたは専用ホストを利用できないことを確認した。SIGKILLや故障注入だけで電源断後の永続性を合格扱いしない。実施時は専用の破棄可能なボリュームで各段階を反復し、OS・FS・mount、Node/pnpm/Foundryとcommit、遮断位置、再起動後の旧/新世代と不明状態、未試験のハードウェア条件を記録する。AC-08が済むまでIssue #31の全受入を完了と記録しない。
+
+## Webモックの静的公開
+
+紹介ページとモックデモは `apps/uniswap-web/wrangler.jsonc` を使い、Cloudflare Workers Static Assetsへ配置する。API、DO、Sepolia資産配置には依存しない。`VITE_DIM_MODE=mock` を明示し、実取引の完了とは扱わない。Node.js 24.21.0、pnpm 10.34.5、Wrangler 4.116.0を使う。互換性日付は固定Wranglerのローカルruntimeで確認した2026-07-30。
+
+リポジトリルートから実行する。
+
+```bash
+pnpm install --frozen-lockfile
+pnpm check:site
+pnpm test:site
+VITE_DIM_MODE=mock VITE_DIM_DEPLOYMENT_ID=public-mock-v1 VITE_DIM_CODE_URL=https://github.com/shodaimomiyama/ethereum-confidential-utxo pnpm build:site
+pnpm dlx wrangler@4.116.0 dev --config apps/uniswap-web/wrangler.jsonc
+```
+
+ローカルの `/` と `/app`、画像、コードリンク、モック操作、`/app` の再読み込みを確認して開発サーバーを停止する。公開時は対象アカウントを確認して次を実行する。他のアカウントで追試する場合は既存Workerとの名前衝突を確認する。
+
+```bash
+pnpm dlx wrangler@4.116.0 login
+pnpm dlx wrangler@4.116.0 whoami
+pnpm dlx wrangler@4.116.0 deploy --config apps/uniswap-web/wrangler.jsonc
+```
+
+更新時もモック用環境変数で再ビルドしてからdeployする。`dist` の配置だけでは再ビルドされない。同じアカウント、Worker名、workers.devサブドメインを維持する。API統合時には同じoriginへのroutingとDO設定を別途確認する。
+
+2026-09-27の先行公開先は https://dim.mmymshd52.workers.dev 。配置versionは `8dffe4f3-54d3-4f75-98c6-b7dcc4dd8a81`。ソースは `dfa88f767fceaf2ba4cc3e788da2c1dc862d89b1` に、モック説明の追加と静的配信設定を適用した作業ツリー。型検査・Webテスト86件・Viteビルドが成功した。公開はモックUIに限り、実資産移動、API/DO、実テストネットの受入を示さない。

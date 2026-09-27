@@ -20,7 +20,8 @@ export default {
       const url = new URL(request.url);
       const body = request.method === 'GET' ? undefined : await readLimitedJson(request);
       assertBundleSize(body);
-      const parsed = parseApiRequest(request.method, url.pathname + url.search, body);
+      const parsed = parseApiRequest(request.method, url.pathname + url.search, body,
+        { allowLegacyUnsealedPut: true });
       const deployment = resolveDeployment(parsed.scope.deploymentId, parseDeploymentCatalog(env.DEPLOYMENTS_JSON));
       if (url.origin !== deployment.origin) return apiError(403, 'SCOPE_MISMATCH');
       if (request.method !== 'GET' && request.headers.get('origin') !== deployment.origin) {
