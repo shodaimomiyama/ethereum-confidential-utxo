@@ -3,6 +3,7 @@ import type { VerifiedDeployment } from '@confidential-utxo/ethereum';
 import type { PaymentClient, PreparedPay, Scope } from '@confidential-utxo/uniswap';
 import type { ViewState } from '../../src/contracts/index.js';
 import { createOperationPort, type OperationPortDependencies } from '../../src/live/operation-port.js';
+import type { RecoveryResult } from '../../src/live/recovery.js';
 import type { OperationContext } from '../../src/live/operations.js';
 
 const scope = { deploymentId: 'local', owner: `0x${'11'.repeat(20)}` } as Scope;
@@ -12,6 +13,8 @@ const changedHash = `0x${'cc'.repeat(32)}`;
 const coreContext = { chainId: 31337n, pool: `0x${'22'.repeat(20)}`, verifier: `0x${'33'.repeat(20)}`,
   parametersHash: `0x${'44'.repeat(32)}`, deploymentBlock: 0n, finalityMode: 'finalized' };
 const verified = { context: coreContext, manifest: { chainId: 31337, pool: { address: coreContext.pool } } } as unknown as VerifiedDeployment;
+const healthyRecovery: RecoveryResult = { records: [], finalized: { outputs: [] },
+  availability: 'healthy', allowedActions: ['new-authorization-eligible'] };
 function state(): ViewState {
   return { scope, currentScope: scope, connection: 'connected', preparation: { wallet: true, network: true, key: true, faucet: true, gas: true },
     utxos: [{ id: 'coin', amountWei: 10n, available: true }], selectedInput: {}, operationCards: {}, operationActions: {},
@@ -74,21 +77,45 @@ it('restores scoped key readiness after complete core sync and uses only an inje
     getOperations: async () => ({ complete: true, blockHash, value: [] }),
     getCanonicalHeader: async () => ({ complete: true, blockHash, value: { number: 4n, hash: blockHash } }),
   };
-  const recomputeReady = vi.fn(async ({ view }: { view: ViewState }) => ({
+  const recomputeReady = vi.fn(async ({ view }: { view: ViewState; recovered: RecoveryResult }) => ({
     cards: view.cards, selectedInput: view.selectedInput, reasons: view.reasons,
     allowedActions: ['resync', 'start:reward'],
   }));
   const deps = { ...fixture.deps, coreSync: () => ({ deploymentId: scope.deploymentId, coreContext, history, keys: {} }),
     recomputeReady } as unknown as OperationPortDependencies;
   const context = { ...fixture.context, recordKey: () => ({}) } as OperationContext;
-  const synced = await createOperationPort(deps).syncFinalized(scope, context);
+  const synced = await createOperationPort(deps).syncFinalized(scope, context, healthyRecovery);
   expect(synced.view.preparation.key).toBe(true);
   expect(recomputeReady).toHaveBeenCalledOnce();
   expect(recomputeReady.mock.calls[0]![0].view.isStale).toBe(false);
+  expect(recomputeReady.mock.calls[0]![0].recovered).toEqual(healthyRecovery);
   expect(synced.view.allowedActions).toContain('start:reward');
-  const withoutDecision = await createOperationPort({ ...deps, recomputeReady: undefined }).syncFinalized(scope, context);
+  const withoutDecision = await createOperationPort({ ...deps, recomputeReady: undefined }).syncFinalized(scope, context, healthyRecovery);
   expect(withoutDecision.view.allowedActions).not.toContain('start:reward');
   expect(withoutDecision.view.preparation.key).toBe(true);
+});
+
+it('blocks spending decisions when server recovery is absent, unavailable or rolled back', async () => {
+  const blockHash = `0x${'66'.repeat(32)}` as `0x${string}`;
+  const checkpoint = { number: 4n, hash: blockHash, mode: 'finalized' as const };
+  const history = { getFinalizedCheckpoint: async () => checkpoint,
+    getContext: async () => ({ complete: true, blockHash, value: coreContext }),
+    getOperations: async () => ({ complete: true, blockHash, value: [] }) };
+  const fixture = setup();
+  const recomputeReady = vi.fn(async ({ view }: { view: ViewState }) => ({ cards: view.cards,
+    selectedInput: view.selectedInput, reasons: view.reasons, allowedActions: ['start:pay'] }));
+  const deps = { ...fixture.deps, coreSync: () => ({ deploymentId: scope.deploymentId,
+    coreContext, history, keys: {} }), recomputeReady } as unknown as OperationPortDependencies;
+  const context = { ...fixture.context, recordKey: () => ({}) } as OperationContext;
+  for (const recovery of [undefined,
+    { ...healthyRecovery, availability: 'unavailable' as const },
+    { ...healthyRecovery, availability: 'rollback' as const }]) {
+    const result = await createOperationPort(deps).syncFinalized(scope, context, recovery);
+    expect(result.view.isStale).toBe(true);
+    expect(result.view.allowedActions).not.toContain('start:pay');
+    expect(result.view.storageAvailability).toBe(recovery?.availability === 'rollback' ? 'rollback' : 'unavailable');
+  }
+  expect(recomputeReady).not.toHaveBeenCalled();
 });
 
 it('holds refreshed terms until an explicit same-epoch confirmation and keeps the secret out of ViewState', async () => {

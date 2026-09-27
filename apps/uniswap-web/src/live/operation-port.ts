@@ -47,6 +47,7 @@ export interface OperationPortDependencies {
   recomputeReady?(evidence: {
     readonly scope: Scope; readonly context: OperationContext;
     readonly core: Extract<CoreSyncResult, { readonly status: 'complete' }>;
+    readonly recovered: RecoveryResult;
     readonly view: ViewState;
   }): Promise<Pick<ViewState, 'cards' | 'allowedActions' | 'reasons' | 'selectedInput'>>;
   recheck(scope: Scope, operationId: OperationId, context: OperationContext, previous: ViewState): Promise<OperationResult>;
@@ -243,26 +244,28 @@ export function createOperationPort(deps: OperationPortDependencies): OperationP
     },
     async syncFinalized(scope, context, recovered) {
       const previous = check(scope, context);
+      if (recovered?.records.some(item => !sameScope(item.saved.scope, scope)
+        || !sameScope(item.saved.record.scope, scope))) throw new Error('SCOPE_CHANGED');
       const verified = resolved(scope);
       const expected = fingerprint(verified);
       const source = deps.coreSync(scope, context, verified);
       if (source.deploymentId !== scope.deploymentId || fingerprint(source.coreContext) !== fingerprint(verified.context)) {
         throw new Error('SCOPE_CHANGED');
       }
+      const availability = recovered?.availability === 'healthy' ? 'healthy'
+        : recovered?.availability === 'rollback' ? 'rollback' : 'unavailable';
       const projected = await syncFinalizedForView({ previous, action: context, coreContext: source.coreContext,
         history: source.history, keys: source.keys, previousCore: source.previousCore,
-        storageAvailability: previous.storageAvailability });
+        storageAvailability: availability });
       check(scope, context);
       if (fingerprint(resolved(scope)) !== expected) throw new Error('SCOPE_CHANGED');
-      // Recovery may inform the caller's ports, but it cannot replace #30's chain evidence.
-      void recovered;
       let view = projected.view;
       let keyReady = false;
       try { context.recordKey(); context.check(); keyReady = true; } catch { context.check(); }
       view = { ...view, preparation: { ...view.preparation, key: keyReady } };
-      if (projected.core.status === 'complete' && !view.isStale && view.storageAvailability === 'healthy'
-        && keyReady && deps.recomputeReady) {
-        const ready = await deps.recomputeReady({ scope, context, core: projected.core, view });
+      if (recovered?.availability === 'healthy' && projected.core.status === 'complete'
+        && !view.isStale && view.storageAvailability === 'healthy' && keyReady && deps.recomputeReady) {
+        const ready = await deps.recomputeReady({ scope, context, core: projected.core, recovered, view });
         check(scope, context);
         if (fingerprint(resolved(scope)) !== expected) throw new Error('SCOPE_CHANGED');
         view = { ...view, ...ready };
