@@ -3,6 +3,7 @@ import { runInDurableObject } from 'cloudflare:test';
 import { expect, it } from 'vitest';
 import { resolveDeployment } from '../src/config.js';
 import { applyMigrations } from '../src/schema.js';
+import { rewardMigrations } from '../src/rewards/schema.js';
 
 it('rejects an unregistered deployment instead of sharing a default object', () => {
   const deployments = {
@@ -25,11 +26,11 @@ it('keeps SQLite rows across schema reapplication', async () => {
   await runInDurableObject(stub, (_object, state) => {
     state.storage.sql.exec("INSERT INTO sessions (session_hash, deployment_id, owner, expires_at_ms) VALUES ('x', 'local-v1', 'owner', 1000)");
   });
-  await runInDurableObject(stub, (_object, state) => applyMigrations(state.storage));
+  await runInDurableObject(stub, (_object, state) => applyMigrations(state.storage, rewardMigrations));
   const versions = await runInDurableObject(stub, (_object, state) =>
     state.storage.sql.exec<{ version: number }>('SELECT version FROM migration_registry ORDER BY version').toArray());
   const sessions = await runInDurableObject(stub, (_object, state) =>
     state.storage.sql.exec<{ session_hash: string }>('SELECT session_hash FROM sessions').toArray());
-  expect(versions.map(({ version }) => version)).toEqual([1]);
+  expect(versions.map(({ version }) => version)).toEqual([1, 2, 3, 4, 5]);
   expect(sessions.map(({ session_hash }) => session_hash)).toEqual(['x']);
 });

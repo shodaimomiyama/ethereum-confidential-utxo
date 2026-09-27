@@ -53,6 +53,7 @@ export type {
   OperationRecord,
   OperationStatus,
   OperationStore,
+  RewardAvailability,
   RewardRecord,
   RewardRequest,
   RewardStatus,

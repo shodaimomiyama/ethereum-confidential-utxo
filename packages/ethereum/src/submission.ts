@@ -1,4 +1,4 @@
-import { encodeFunctionData } from "viem";
+import { encodeFunctionData, keccak256 } from "viem";
 import type { Address, Hex } from "viem";
 import type { LocalAccount } from "viem/accounts";
 import { operationId, preflightSubmission, validateOperationShape, verifyOperationAuthorization } from "@confidential-utxo/core";
@@ -24,6 +24,9 @@ export type SendResult = { operationId: Hex; attempt: SubmissionAttempt; attempt
   nonce: number; gas: bigint; maxFeePerGas: bigint; maxPriorityFeePerGas: bigint;
   request: PublicSubmission; calldata: Hex; value: bigint; account: Address;
   diagnostic?: "SUBMISSION_UNKNOWN" };
+export type RawSigner = { wallet: SubmissionWallet; account: LocalAccount };
+export type PreparedSignedRaw = { raw: Hex; hash: Hex; nonce: number; operationId: Hex;
+  gas: bigint; maxFeePerGas: bigint; maxPriorityFeePerGas: bigint };
 
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 const positive = (value: bigint) => value > 0n && value < (1n << 256n);
@@ -131,6 +134,26 @@ export async function submitPublicOperation(verified: VerifiedDeployment, histor
   const selected = await quote(wallet, account, verified.context.pool, data, value, options);
   checkAbort(options.signal);
   return send(verified, wallet, account, submission, id, data, value, selected);
+}
+
+/** Performs the same authorization, preflight and quote checks without broadcasting. */
+export async function prepareSignedRaw(verified: VerifiedDeployment, history: HistoryPort,
+  signer: RawSigner, submission: PublicSubmission, options: SendOptions = {}): Promise<PreparedSignedRaw> {
+  checkOptions(options);
+  checkAbort(options.signal);
+  const { data, value } = encodePoolSubmission(submission);
+  await checkWallet(verified, signer.wallet, signer.account.address);
+  const id = await ready(verified, history, submission);
+  checkAbort(options.signal);
+  const selected = await quote(signer.wallet, signer.account.address, verified.context.pool, data, value, options);
+  checkAbort(options.signal);
+  let raw: Hex;
+  try {
+    raw = await signer.account.signTransaction({ type: "eip1559", chainId: Number(verified.context.chainId),
+      to: verified.context.pool, data, value, ...selected });
+  } catch { throw new EthereumFailure("SIGNATURE_INVALID", "submission.raw-signature"); }
+  return { raw, hash: keccak256(raw), nonce: selected.nonce, operationId: id,
+    gas: selected.gas, maxFeePerGas: selected.maxFeePerGas, maxPriorityFeePerGas: selected.maxPriorityFeePerGas };
 }
 
 export async function replaceSubmissionFee(verified: VerifiedDeployment, history: HistoryPort,

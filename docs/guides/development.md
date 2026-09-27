@@ -221,7 +221,6 @@ rg 'from .*packages/(ethereum|cli)|node:fs|tests/vectors/tools|experiments/' pac
 
 これらはNode上の共通処理の検証である。実PoolのABI・RPC接続は#30/#36、CLIの暗号化保存と永続化は#31、ブラウザ実行は#46/#59で検証する。ここでの保存成功は偽adapterの応答に基づき、ディスク耐久性や実送信の成功を示さない。
 
-
 ## Webモックの静的公開
 
 紹介ページとモックデモは `apps/uniswap-web/wrangler.jsonc` を使い、Cloudflare Workers Static Assetsへ配置する。API、DO、Sepolia資産配置には依存しない。`VITE_DIM_MODE=mock` を明示し、実取引の完了とは扱わない。Node.js 24.21.0、pnpm 10.34.5、Wrangler 4.116.0を使う。互換性日付は固定Wranglerのローカルruntimeで確認した2026-07-30。
@@ -247,3 +246,13 @@ pnpm dlx wrangler@4.116.0 deploy --config apps/uniswap-web/wrangler.jsonc
 更新時もモック用環境変数で再ビルドしてからdeployする。`dist` の配置だけでは再ビルドされない。同じアカウント、Worker名、workers.devサブドメインを維持する。API統合時には同じoriginへのroutingとDO設定を別途確認する。
 
 2026-09-27の先行公開先は https://dim.mmymshd52.workers.dev 。配置versionは `8dffe4f3-54d3-4f75-98c6-b7dcc4dd8a81`。ソースは `dfa88f767fceaf2ba4cc3e788da2c1dc862d89b1` に、モック説明の追加と静的配信設定を適用した作業ツリー。型検査・Webテスト86件・Viteビルドが成功した。公開はモックUIに限り、実資産移動、API/DO、実テストネットの受入を示さない。
+
+## Issue #58: デモ報酬APIの局所検証
+
+Node.js 24.21.0、pnpm 10.34.5、Vitest 4.1.11、TypeScript 6.0.3と固定lockfileを使う。実装開始時の依存取得commitは `dfa88f767fceaf2ba4cc3e788da2c1dc862d89b1`。ルートで `pnpm install --frozen-lockfile` の後、`pnpm check:service`、`pnpm test:service`、`pnpm test:contracts`、`pnpm exec vitest run --config packages/ethereum/vitest.config.ts packages/ethereum/test/submission.test.ts` を実行する。2026-09-27のmacOSローカル検証では順に成功し、サービス23ファイル65件、Uniswap/サイト23ファイル130件、Ethereum提出7件が成功した。秘密鍵・RPC認証値・Worker Secretを試験結果へ保存しない。
+
+サービス試験は環境単位SQLite Durable Objectを使い、本人の受付と再送、資金予約、同時要求、暗号化draft、署名済みrawの保存後送信、alarmの逐次処理、finalized履歴と再編成、本人の受領通知、未署名終了と署名済み取消、停止・再開の条件を検査する。`rewards-integration.test.ts` は実 `buildOperation`、受取情報の署名検証、操作認可、Pool提出データ符号化、raw取引署名を通し、同じDOの保存済みrawだけをRPC spyへ渡す。`rewards-consolidation.test.ts` は三入力の断片化例から本体の実暗号で自己送金を作り、整理用rawの保存順序と確定待ちを検査する。履歴・RPCはfixture注入であり、実Poolの実行成功、Cloudflare Free runtimeでの資源適合、公開テストネットでの確定を示さない。
+
+公開配置前に環境単位の `REWARD_SECRETS_JSON`（状態暗号化鍵・配布元署名鍵・受領鍵）、内部操作用 `REWARD_OPERATOR_TOKEN`、RPC、Pool配置情報、DB外の復旧ゲートと同世代バックアップを設定する。鍵の平文をSQLite、通常ログ、成果物へ保存しない。初回DB初期化は明示的に実行し、通常運用では初期化許可を外す。配布元の機密UTXO資金と公開gas残高は別に確認する。受領通知は資金・gas不足による配布停止中でもfinalized履歴を照合し、共通復旧ゲート停止中は保留する。
+
+引継ぎ: [#47](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/47) は実Cloudflare Freeでの暗号・SQL・alarm・CPU/メモリ・Secrets欠落と枠超過を測定する。[#48](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/48) は実Pool取引でACK喪失、raw再送、finalized前後の再編成、取消、バックアップ復元後の旧試行照合を確認する。[#49](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/49) は本人向け回答、公開履歴、運営者に見える要求額と能動照会を分けて漏えいを評価する。[#50](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/50) は実サイトの自由入力、本人再訪・受領・追加要求、待機・停止理由表示と一連の操作を検証する。

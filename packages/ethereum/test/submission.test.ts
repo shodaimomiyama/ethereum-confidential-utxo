@@ -1,12 +1,13 @@
 import { readFileSync } from "node:fs";
 import { expect, it } from "vitest";
-import { decodeFunctionData } from "viem";
+import { decodeFunctionData, keccak256 } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 import type { Hex } from "viem";
 import type { PublicSubmission, HistoryPort } from "@confidential-utxo/core";
 import { operationId } from "@confidential-utxo/core";
 import type { VerifiedDeployment } from "../src/deployment.js";
 import { poolAbi } from "../src/abi.js";
-import { encodePoolSubmission, submitPublicOperation, replaceSubmissionFee } from "../src/submission.js";
+import { encodePoolSubmission, submitPublicOperation, replaceSubmissionFee, prepareSignedRaw } from "../src/submission.js";
 import type { SubmissionWallet } from "../src/submission.js";
 
 const vector = JSON.parse(readFileSync("tests/vectors/cases/pool-operations.json", "utf8"))[0];
@@ -52,6 +53,16 @@ function wallet(fail = false) {
   } as unknown as SubmissionWallet;
   return { mock, sent };
 }
+
+it("prepares a locally signed raw without calling sendTransaction", async () => {
+  const { mock, sent } = wallet();
+  const account = privateKeyToAccount(`0x${"04".repeat(32)}`);
+  const prepared = await prepareSignedRaw(verified, history(), { wallet: mock, account }, submission);
+  expect(prepared.raw).toMatch(/^0x[0-9a-f]+$/);
+  expect(prepared.hash).toBe(keccak256(prepared.raw));
+  expect(prepared.nonce).toBe(7);
+  expect(sent).toEqual([]);
+});
 
 it("encodes the published Pool request without changing values or receipt bytes", () => {
   const call = encodePoolSubmission(submission);

@@ -2,9 +2,18 @@ import type { ParsedApiRequest, Scope } from '@confidential-utxo/uniswap';
 import type { Migration } from './schema.js';
 import type { RecoveryGate } from './recovery.js';
 import { ensureWritable } from './recovery.js';
+import type { DeploymentConfig } from './config.js';
+import type { ServiceEnv } from './index.js';
+import type { HistoryPort } from '@confidential-utxo/core';
 
 export interface ServiceContext {
   readonly scope?: Scope;
+  readonly recoveryGate: RecoveryGate;
+  readonly deploymentId?: string;
+  readonly deployment?: DeploymentConfig;
+  readonly env?: ServiceEnv;
+  readonly readRewardFunds?: (deploymentId: string) => Promise<bigint | undefined>;
+  readonly readRewardHistory?: (deploymentId: string) => Promise<HistoryPort>;
   readonly storage: DurableObjectStorage;
   transactionSync<T>(callback: () => T): T;
   ensureWritable(): void;
@@ -33,11 +42,18 @@ export function registerServiceExtension(extension: ServiceExtension): void {
 
 export function getServiceExtensions(): readonly ServiceExtension[] { return extensions; }
 
-export function makeServiceContext(storage: DurableObjectStorage, gate: RecoveryGate, scope?: Scope): ServiceContext {
+export function makeServiceContext(
+  storage: DurableObjectStorage, gate: RecoveryGate, scope?: Scope,
+  trusted?: { deploymentId: string; deployment: DeploymentConfig; env: ServiceEnv },
+): ServiceContext {
   return {
-    ...(scope === undefined ? {} : { scope }), storage,
+    ...(scope === undefined ? {} : { scope }), storage, recoveryGate: gate,
+    ...(trusted === undefined ? {} : trusted),
     transactionSync: (callback) => storage.transactionSync(callback),
     ensureWritable: () => ensureWritable(storage, gate),
-    scheduleAlarm: (atMs) => storage.setAlarm(atMs),
+    scheduleAlarm: async (atMs) => {
+      const current = await storage.getAlarm();
+      if (current === null || atMs < current) await storage.setAlarm(atMs);
+    },
   };
 }

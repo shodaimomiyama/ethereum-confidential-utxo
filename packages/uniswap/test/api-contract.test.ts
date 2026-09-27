@@ -105,6 +105,26 @@ it('validates success response shape for every route', () => {
   }
 });
 
+it('preserves reward availability and checked block while rejecting unknown reasons', () => {
+  const record = {
+    ...reward,
+    status: 'queued',
+    availability: 'funds-short',
+    checkedAtBlockHash: hash,
+    attemptIds: [],
+    txHashes: [],
+  };
+  expect(parseApiResponse('POST /v1/rewards', 200, { reward: record })).toMatchObject({
+    reward: { status: 'queued', availability: 'funds-short', checkedAtBlockHash: hash },
+  });
+  expect(() => parseApiResponse('POST /v1/rewards', 200, {
+    reward: { ...record, availability: 'unrecognized' },
+  })).toThrowError();
+  expect(() => parseApiResponse('POST /v1/rewards', 200, {
+    reward: { ...record, checkedAtBlockHash: '0x12' },
+  })).toThrowError();
+});
+
 it('rejects response codes that disagree with conflict or unavailable status', () => {
   const error = { error: { code: 'REQUEST_CONFLICT', message: 'Request conflicts', allowedActions: ['recheck'] } };
   expect(() => parseApiResponse('POST /v1/rewards', 503, error)).toThrowError();
