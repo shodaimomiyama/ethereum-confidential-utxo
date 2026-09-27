@@ -12,11 +12,12 @@ const scope = { deploymentId: 'local-v1' as DeploymentId, owner: account.address
 const pool = `0x${'44'.repeat(20)}` as const;
 const key = `0x${'55'.repeat(32)}` as const;
 const requestId = `0x${'66'.repeat(32)}` as RequestId;
+const pendingRequestId = `0x${'67'.repeat(32)}` as RequestId;
 const outputId = `0x${'88'.repeat(32)}`;
 const blockHash = `0x${'99'.repeat(32)}`;
 const operationId = `0x${'aa'.repeat(32)}`;
 const receipt = { status: 'available', operationId, utxo: { id: outputId, owner: scope.owner, chainId: 31337n, pool,
-  status: 'available' }, creationCheckpoint: { number: 10n, hash: blockHash, mode: 'finalized' } } as ReceivedUtxo;
+  status: 'available', opening: { amount: 7n, blinding: 1n } }, creationCheckpoint: { number: 10n, hash: blockHash, mode: 'finalized' } } as ReceivedUtxo;
 const info = { chainId: 31337n, pool, owner: account.address, receivePublicKey: key, receiptFormat: 1, recipientInfoVersion: 1 } as const;
 const record = (signature: `0x${string}`) => ({ scope, requestId, amountWei: 7n, recipientInfo: { owner: scope.owner, publicKey: key, signature }, status: 'accepted' as const, attemptIds: [], txHashes: [] });
 
@@ -45,7 +46,8 @@ function fixture(options: { signer?: typeof account | typeof other; response?: '
       return { reward: { ...record(signature), status: 'received', outputId,
         blockHash: options.response === 'received-wrong-wire' ? `0x${'aa'.repeat(32)}` : blockHash, operationId } };
     }
-    return { rewards: [record(signature)] };
+    return { rewards: [options.response === 'pending-request'
+      ? { ...record(signature), requestId: pendingRequestId, status: 'pending' } : record(signature)] };
   });
   const context = { scope, epoch: 1, check: () => { if (epoch !== 1) throw new Error('SCOPE_CHANGED'); },
     recipientInfo: () => info,
@@ -110,10 +112,11 @@ it('preserves committed request ID after 503 and recovers by same-ID GET', async
   expect(call.mock.calls.map(([route]) => route)).toEqual(['POST /v1/rewards', 'GET /v1/rewards/{id}']);
 });
 
-it('preserves pending request ID for recovery and keeps definitive conflict', async () => {
+it('exposes the distinct pending request ID through list and keeps definitive conflicts', async () => {
   const pending = fixture({ response: 'pending-request' });
-  await expect(pending.client.request('7', requestId)).rejects.toMatchObject({ requestId });
-  expect((await pending.client.list())[0]?.requestId).toBe(requestId);
+  await expect(pending.client.request('7', requestId)).rejects.toMatchObject({ kind: 'api', code: 'PENDING_REQUEST' });
+  expect((await pending.client.list())[0]?.requestId).toBe(pendingRequestId);
+  expect(pending.call.mock.calls.map(([route]) => route)).toEqual(['POST /v1/rewards', 'GET /v1/rewards']);
   const conflict = fixture({ response: 'conflict' });
   await expect(conflict.client.request('7', requestId)).rejects.toMatchObject({ kind: 'api', code: 'REQUEST_CONFLICT' });
   expect(conflict.call).toHaveBeenCalledTimes(1);
@@ -134,6 +137,13 @@ it('refuses mismatched or unverified receipt before received POST', async () => 
   const unfinalized = fixture();
   await expect(unfinalized.client.markReceived(requestId, receipt)).rejects.toThrow();
   expect(unfinalized.call.mock.calls.map(([route]) => route)).toEqual(['GET /v1/rewards/{id}']);
+});
+
+it('refuses a decrypted reward receipt with the wrong amount before POST', async () => {
+  const { client, call } = fixture({ response: 'finalized' });
+  const wrongAmount = { ...receipt, utxo: { ...receipt.utxo, opening: { ...receipt.utxo.opening, amount: 8n } } };
+  await expect(client.markReceived(requestId, wrongAmount)).rejects.toThrow('RECEIPT_MISMATCH');
+  expect(call.mock.calls.map(([route]) => route)).toEqual(['GET /v1/rewards/{id}']);
 });
 
 it.each(['received-drift', 'received-wrong-wire'] as const)('does not accept an unusable received reply: %s', async response => {

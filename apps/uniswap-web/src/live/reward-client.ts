@@ -92,7 +92,7 @@ export function createScopedRewardClient(deps: ScopedRewardDependencies): Scoped
         reply = await deps.http.call('POST /v1/rewards', { scope, body: { scope, requestId, amountWei, recipientInfo } });
       } catch (error) {
         if (error instanceof HttpFailure && error.kind === 'api'
-          && error.code !== 'SERVICE_UNAVAILABLE' && error.code !== 'PENDING_REQUEST') throw error;
+          && error.code !== 'SERVICE_UNAVAILABLE') throw error;
         throw new RewardRequestUncertain(requestId, error);
       }
       try {
@@ -128,6 +128,7 @@ export function createScopedRewardClient(deps: ScopedRewardDependencies): Scoped
       const saved = await recheck(requestId);
       check();
       if ((saved.status !== 'finalized' && saved.status !== 'received')
+        || receipt.utxo.opening.amount !== saved.amountWei
         || saved.outputId?.toLowerCase() !== outputId.toLowerCase()
         || saved.blockHash?.toLowerCase() !== blockHash.toLowerCase()
         || saved.operationId?.toLowerCase() !== operationId.toLowerCase()) throw new Error('RECEIPT_MISMATCH');
