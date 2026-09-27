@@ -35,12 +35,18 @@ importers:
       '@confidential-utxo/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@confidential-utxo/crypto':
+        specifier: workspace:*
+        version: link:../../packages/crypto
       '@confidential-utxo/ethereum':
         specifier: workspace:*
         version: link:../../packages/ethereum
       '@confidential-utxo/uniswap':
         specifier: workspace:*
         version: link:../../packages/uniswap
+      '@noble/curves':
+        specifier: 2.4.0
+        version: 2.4.0
       viem:
         specifier: 2.56.9
         version: 2.56.9(typescript@6.0.3)(zod@4.4.3)

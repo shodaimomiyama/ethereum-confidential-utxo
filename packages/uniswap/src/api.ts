@@ -19,6 +19,7 @@ import type {
   ReservationBase,
   RewardRecord,
   RewardRequest,
+  RewardAvailability,
   RewardStatus,
   SavedOperation,
   StoredOperation,
@@ -164,6 +165,10 @@ const UINT256_MAX = (1n << 256n) - 1n;
 const REWARD_STATUSES: readonly RewardStatus[] = [
   'accepted', 'queued', 'processing', 'pending', 'unknown',
   'finalized', 'received', 'ended-without-distribution',
+];
+const REWARD_AVAILABILITIES: readonly RewardAvailability[] = [
+  'healthy', 'rpc-unavailable', 'funds-short', 'gas-short',
+  'operator-stopped', 'quota-stopped', 'restore-stopped',
 ];
 const OPERATION_STATUSES: readonly OperationStatus[] = [
   'reserved', 'unknown', 'released', 'consumed', 'finalized-success',
@@ -415,6 +420,10 @@ function parseRewardRecord(value: unknown): RewardRecord {
   if (!REWARD_STATUSES.includes(object.status as RewardStatus)) {
     throw new SchemaError('INVALID_FIELD', 'reward.status');
   }
+  if (object.availability !== undefined &&
+    !REWARD_AVAILABILITIES.includes(object.availability as RewardAvailability)) {
+    throw new SchemaError('INVALID_FIELD', 'reward.availability');
+  }
   if (!Array.isArray(object.attemptIds) || !object.attemptIds.every((x) => typeof x === 'string')) {
     throw new SchemaError('INVALID_FIELD', 'reward.attemptIds');
   }
@@ -422,6 +431,9 @@ function parseRewardRecord(value: unknown): RewardRecord {
   return {
     ...request,
     status: object.status as RewardStatus,
+    availability: object.availability as RewardAvailability | undefined,
+    checkedAtBlockHash: object.checkedAtBlockHash === undefined
+      ? undefined : parseBytes32(object.checkedAtBlockHash, 'reward.checkedAtBlockHash'),
     operationId: object.operationId === undefined ? undefined : parseId<OperationId>(object.operationId, 'reward.operationId'),
     attemptIds: (object.attemptIds as string[]).map((x) => x as AttemptId),
     txHashes: object.txHashes.map((x: unknown) => parseId<TxHash>(x, 'reward.txHashes')),

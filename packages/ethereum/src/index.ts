@@ -8,6 +8,6 @@ export type { DeploymentManifestV1, VerifiedDeployment } from "./deployment.js";
 export { canonicalHeader, createEthereumRpc, defaultRpcPolicy, readPinnedCall, readWithPolicy, validateRpcPolicy } from "./rpc.js";
 export type { RpcConnection, RpcPolicy } from "./rpc.js";
 export { chunkInclusive, createHistoryPort, getPoolOperations } from "./history.js";
-export { encodePoolSubmission, submitPublicOperation, replaceSubmissionFee } from "./submission.js";
-export type { PreparedSend, SendHooks, SendOptions, SendResult, SubmissionWallet } from "./submission.js";
+export { encodePoolSubmission, submitPublicOperation, replaceSubmissionFee, prepareSignedRaw } from "./submission.js";
+export type { PreparedSend, SendHooks, SendOptions, SendResult, SubmissionWallet, RawSigner, PreparedSignedRaw } from "./submission.js";
 export { decodePoolFailure, observeAttempt } from "./observation.js";

@@ -36,3 +36,17 @@ it('uses the same SQLite transaction and rejects duplicate migration versions', 
     state.storage.sql.exec<{ id: number }>('SELECT id FROM extension_test ORDER BY id').toArray());
   expect(rows).toEqual([{ id: 1 }, { id: 2 }]);
 });
+
+it('keeps the earliest alarm requested by independent extensions', async () => {
+  const ns = (env as unknown as { UNISWAP_STATE: DurableObjectNamespace }).UNISWAP_STATE;
+  const stub = ns.get(ns.idFromName('alarm-earliest-test'));
+  await stub.fetch('https://site.test/v1/operations');
+  await runInDurableObject(stub, async (_object, state) => {
+    const context = makeServiceContext(state.storage, { generation: 'test-g1', stopped: false });
+    const first = Date.now() + 60_000;
+    await context.scheduleAlarm(first);
+    await context.scheduleAlarm(first - 10_000);
+    await context.scheduleAlarm(first + 10_000);
+    expect(await state.storage.getAlarm()).toBe(first - 10_000);
+  });
+});
