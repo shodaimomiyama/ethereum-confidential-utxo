@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { createWalletClient, encodeDeployData, http } from 'viem';
 import { verifyDeployment } from './pool-deployment.mjs';
 import { artifactPath, outputPath, verifyUniswapPaymentRecord } from './uniswap-payment-artifact.mjs';
-import { createUniswapManifest } from './uniswap-manifest.mjs';
+import { createUniswapManifest, verifyUniswapManifest } from './uniswap-manifest.mjs';
 import { verifyLocalAssets } from './uniswap-local.mjs';
 
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -76,7 +76,7 @@ function poolReference(manifest) {
   return JSON.parse(bytes);
 }
 
-async function verifyAdapter(manifest, client, artifact) {
+async function verifyAdapter(manifest, client, artifact, finalizedPoint) {
   const record = manifest.contracts.adapter;
   if (!record || !/^0x[0-9a-fA-F]{40}$/.test(record.address ?? '') ||
       !/^0x[0-9a-fA-F]{64}$/.test(record.txHash ?? '')) throw new Error('Adapter deployment record invalid');
@@ -89,7 +89,8 @@ async function verifyAdapter(manifest, client, artifact) {
   const [transaction, receipt, code] = await Promise.all([
     client.getTransaction({ hash: record.txHash }),
     client.getTransactionReceipt({ hash: record.txHash }),
-    client.getCode({ address: record.address }),
+    client.getCode({ address: record.address,
+      ...(finalizedPoint === undefined ? {} : { blockNumber: finalizedPoint.number }) }),
   ]);
   if (transaction.to !== null || transaction.input?.toLowerCase() !== input.toLowerCase() ||
       receipt.status !== 'success' || !same(receipt.contractAddress, record.address) ||
@@ -99,14 +100,43 @@ async function verifyAdapter(manifest, client, artifact) {
   if (code?.toLowerCase() !== expectedRuntime.toLowerCase() ||
       codeHash(code) !== record.runtimeSha256.toLowerCase()) throw new Error('Adapter runtime mismatch');
   for (const name of referenceNames) {
-    const actual = await client.readContract({ address: record.address, abi: artifact.abi, functionName: name });
+    const actual = await client.readContract({ address: record.address, abi: artifact.abi,
+      functionName: name,
+      ...(finalizedPoint === undefined ? {} : { blockNumber: finalizedPoint.number }) });
     if (!same(actual, refs[name])) throw new Error(`Adapter ${name} immutable mismatch`);
+  }
+}
+
+export async function verifyPublicDusd(manifest, client, finalizedPoint) {
+  const record = manifest.contracts.dUSD;
+  const artifact = JSON.parse(readFileSync('contracts/out/DemoUSD.sol/DemoUSD.json', 'utf8'));
+  const expected = encodeDeployData({ abi: artifact.abi, bytecode: artifact.bytecode.object,
+    args: [manifest.assets.dUSD.initialHolder] });
+  const [transaction, receipt] = await Promise.all([
+    client.getTransaction({ hash: record.txHash }),
+    client.getTransactionReceipt({ hash: record.txHash }),
+  ]);
+  if (transaction.to !== null || transaction.input?.toLowerCase() !== expected.toLowerCase() ||
+    receipt.status !== 'success' || !same(receipt.contractAddress, record.address) ||
+    receipt.blockNumber !== BigInt(record.blockNumber) ||
+    !same(receipt.blockHash, record.blockHash) ||
+    receipt.blockNumber > finalizedPoint.number) {
+    throw new Error('dUSD deployment transaction mismatch');
   }
 }
 
 export async function verifyConnection(manifest, publicClient) {
   if (await publicClient.getChainId() !== manifest?.chainId) throw new Error('chain ID mismatch');
-  if (manifest.chainId !== 31337) throw new Error('public chain connection not supported without pinned asset verification');
+  if (manifest.chainId !== 31337 && manifest.chainId !== 11155111) throw new Error('unsupported chain ID');
+  let finalizedPoint;
+  if (manifest.chainId === 11155111) {
+    const finalized = await publicClient.getBlock({ blockTag: 'finalized' });
+    if (typeof finalized?.number !== 'bigint' ||
+      !/^0x[0-9a-fA-F]{64}$/.test(finalized.hash ?? '')) {
+      throw new Error('finalized checkpoint unavailable');
+    }
+    finalizedPoint = { number: finalized.number, hash: finalized.hash };
+  }
   const rpcUrl = publicClient.transport?.url;
   if (typeof rpcUrl !== 'string') throw new Error('HTTP RPC URL required for Pool verification');
   const poolManifest = poolReference(manifest);
@@ -119,7 +149,7 @@ export async function verifyConnection(manifest, publicClient) {
       same(manifest.references.corePoolAddress, poolManifest.pool.address)) {
     throw new Error('demo Pool must differ from core Pool');
   }
-  await verifyDeployment(poolManifest, rpcUrl);
+  await verifyDeployment(poolManifest, rpcUrl, undefined, finalizedPoint);
   for (const name of ['pool', 'verifier']) {
     const expected = await poolRecord(publicClient, poolManifest[name]);
     if (JSON.stringify(manifest.contracts[name]) !== JSON.stringify(expected)) {
@@ -127,8 +157,13 @@ export async function verifyConnection(manifest, publicClient) {
     }
   }
   const artifact = loadAdapter();
-  await verifyAdapter(manifest, publicClient, artifact);
-  await verifyLocalAssets(manifest, publicClient);
+  await verifyAdapter(manifest, publicClient, artifact, finalizedPoint);
+  if (manifest.chainId === 31337) {
+    await verifyLocalAssets(manifest, publicClient);
+  } else {
+    await verifyUniswapManifest(manifest, publicClient, finalizedPoint);
+    await verifyPublicDusd(manifest, publicClient, finalizedPoint);
+  }
 }
 
 export async function deployConnection({ poolManifest, poolManifestPath, adapterArtifact, assetManifest,

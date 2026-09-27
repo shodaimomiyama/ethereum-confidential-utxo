@@ -55,6 +55,42 @@ test('wrong Router or Factory references and changed reserves stop verification'
     args.functionName === 'getReserves' ? [1n, 2n, 0] : base.readContract(args) }), /reserve/i);
 });
 
+test('Sepolia manifest reads current code and references at one finalized checkpoint', async () => {
+  const official = {
+    router02: '0xeE567Fe1712Faf6149d80dA1E6934E354124CfE3',
+    factory: '0xF62c03E08ada871A0bEb309762E260a7a6a880E6',
+    weth9: '0xfff9976782d46cc05630d1f6ebab18b2324d6b14',
+  };
+  const manifest = createUniswapManifest({ ...input(), chainId: 11155111,
+    contracts: Object.fromEntries(Object.entries(contracts).map(([name, item]) =>
+      [name, { ...item, address: official[name] ?? item.address }])) });
+  const observed = [];
+  const base = client();
+  const rpc = {
+    ...base,
+    getChainId: async () => 11155111,
+    getCode: async args => { observed.push(['code', args.blockNumber]); return base.getCode(args); },
+    readContract: async args => {
+      observed.push([args.functionName, args.blockNumber]);
+      if (args.functionName === 'factory') return official.factory;
+      if (args.functionName === 'WETH') return official.weth9;
+      if (args.functionName === 'getPair') return contracts.pair.address;
+      if (args.functionName === 'token1') return official.weth9;
+      return base.readContract(args);
+    },
+  };
+  await verifyUniswapManifest(manifest, rpc, { number: 9n, hash: hash(9) });
+  assert.ok(observed.some(([name]) => name === 'code'));
+  assert.ok(observed.every(([name, block]) => block === (name === 'getReserves' ? 8n : 9n)));
+});
+
+test('Sepolia rejects a self-consistent manifest pointing to unofficial Uniswap contracts', async () => {
+  const manifest = createUniswapManifest({ ...input(), chainId: 11155111 });
+  await assert.rejects(verifyUniswapManifest(manifest, {
+    ...client(), getChainId: async () => 11155111,
+  }, { number: 9n, hash: hash(9) }), /official.*(Router|Factory|WETH)/i);
+});
+
 test('manifest creation rejects secret-bearing properties and authenticated URLs', () => {
   const secret = input();
   secret.secretKey = 'hidden';

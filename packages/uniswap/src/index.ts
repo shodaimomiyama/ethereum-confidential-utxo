@@ -10,6 +10,7 @@ export type { AttemptEvidence, CurrentInput, RecoveryDecision, RecoveryEvidence 
 export { coreReceiptResult, reconcilePayment } from './reconcile.js';
 export type { CoreReceiptResult, FinalizedHistory, ReconciledPayment } from './reconcile.js';
 export { assertWithdrawalBinding, decodeAdapterError, encodePayCall, paymentAuthorizationTypedData, paymentDigest } from './payment.js';
+export { adapterAbi } from './generated/adapter-abi.js';
 export type { AdapterError, PaymentDeployment, PaymentTerms, WithdrawalBindingInput } from './payment.js';
 export { createPaymentClient, PaymentProcessError } from './process.js';
 export type { AuthorizationSignatures, PaymentClient, PaymentPorts, PreparedFullWithdraw, PreparedPay, ReconciliationPorts, RecoveryPorts, SubmissionOutcome } from './process.js';

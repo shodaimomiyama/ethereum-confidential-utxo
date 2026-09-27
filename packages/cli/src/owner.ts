@@ -14,7 +14,9 @@ import type { CliResult } from "./render.js";
 import { hexBytes, parseExactObject } from "./strict-json.js";
 import { decodeOwnerSnapshot, encodeOwnerSnapshot, initializeOwnerState, readOwnerState,
   replaceOwnerPassphrase, updateOwnerState } from "./state.js";
-import type { WalletStateV1 } from "./state.js";
+import type { WalletStateV1, FixedOperationV1, PaymentProgressV1 } from "./state.js";
+
+export type CreateConnectionProgress = (fixed: FixedOperationV1, current: PaymentProgressV1 | undefined) => PaymentProgressV1;
 
 export type OwnerConfig = { dir: string; manifestPath: string; rpcUrl: string; owner: Address };
 export type OwnerOnline = { context: Context; history: HistoryPort };
@@ -51,6 +53,10 @@ export class OwnerService {
     const [state, online] = await Promise.all([this.state(passphrase), this.online()]);
     if (!sameContext(state.context, online.context)) invalid();
     return { state, online };
+  }
+
+  async verifiedOnline(passphrase: Uint8Array): Promise<OwnerOnline> {
+    return (await this.verified(passphrase)).online;
   }
 
   async init(passphrase: Uint8Array): Promise<CliResult> {
@@ -122,7 +128,7 @@ export class OwnerService {
       ...(state.sync?.checkpoint ? { checkpoint: state.sync.checkpoint } : {}) };
   }
 
-  async create(intent: BuildIntent, passphrase: Uint8Array): Promise<CliResult> {
+  async create(intent: BuildIntent, passphrase: Uint8Array, connectionProgress?: CreateConnectionProgress): Promise<CliResult> {
     await this.sync(passphrase);
     const state = await this.state(passphrase);
     if (state.restoration !== "ready" || state.sync?.status !== "complete" || !same(intent.owner, state.owner)) invalid();
@@ -146,7 +152,11 @@ export class OwnerService {
         });
         if (stable(selected.map(input => input.id)) !== stable(fixed.request.inputIds)) invalid();
       }
-      return { ...current, operations: { ...current.operations,
+      const connection = connectionProgress?.(fixed, current.connection);
+      if (connection && (connection.revision !== (current.connection?.revision ?? 0) + 1 ||
+        (current.connection && (current.connection.deploymentId !== connection.deploymentId ||
+          current.connection.recordKey !== connection.recordKey)))) invalid();
+      return { ...current, ...(connection ? { connection } : {}), operations: { ...current.operations,
         [fixed.operationId]: { phase: "fixed", fixed } } };
     }, this.config.owner);
     return { kind: "created", operationId: fixed.operationId, phase: "fixed" };

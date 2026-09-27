@@ -6,6 +6,7 @@ import { createChallenge, readSessionIdentity, verifyChallenge } from './auth.js
 import { parseDeploymentCatalog, resolveDeployment } from './config.js';
 import { apiError, apiSuccess, BodyTooLarge, readLimitedJson } from './http.js';
 import { getOperation, listOperations, putOperation } from './store.js';
+import { releaseOperation } from './store.js';
 import { ensureWritable, getAvailability, initializeEnvironment, resolveRecoveryGate } from './recovery.js';
 import { getServiceExtensions, makeServiceContext, registerServiceExtension } from './extensions.js';
 import { createCoreInputReader, getCoreHistoryProvider } from './core-reader.js';
@@ -34,6 +35,15 @@ function activeReservation(storage: DurableObjectStorage, scope: Scope, saved: S
     scope.deploymentId, scope.owner.toLowerCase(), saved.record.inputId.toLowerCase(),
   ).toArray()[0];
   return lock?.record_id.toLowerCase() === saved.record.recordId.toLowerCase();
+}
+
+function reservationState(storage: DurableObjectStorage, scope: Scope, saved: StoredOperation): {
+  readonly reservationState?: 'active' | 'released';
+} {
+  if (saved.status === 'reserved') return activeReservation(storage, scope, saved)
+    ? { reservationState: 'active' } : {};
+  return ['released', 'consumed', 'finalized-success'].includes(saved.status)
+    ? { reservationState: 'released' } : {};
 }
 
 export class UniswapServiceObject extends DurableObject<ServiceEnv> {
@@ -206,7 +216,7 @@ export class UniswapServiceObject extends DurableObject<ServiceEnv> {
         const page = listOperations(this.ctx.storage, parsed.scope, parsed.cursor);
         return apiSuccess({ availability: getAvailability(this.ctx.storage, recoveryGate), records: page.records.map((item) => ({
           ...item, scope: parsed.scope,
-          ...(activeReservation(this.ctx.storage, parsed.scope, item) ? { reservationState: 'active' } : {}),
+          ...reservationState(this.ctx.storage, parsed.scope, item),
           record: { ...item.record, deadline: item.record.kind === 'pay' ? item.record.deadline.toString() : undefined },
         })), ...(page.nextCursor === undefined ? {} : { nextCursor: page.nextCursor }) });
       }
@@ -216,8 +226,50 @@ export class UniswapServiceObject extends DurableObject<ServiceEnv> {
         const saved = getOperation(this.ctx.storage, parsed.scope, parsed.id!);
         if (saved === undefined) return apiError(404, 'NOT_FOUND');
         return apiSuccess({ ...saved, scope: parsed.scope,
-          ...(activeReservation(this.ctx.storage, parsed.scope, saved) ? { reservationState: 'active' } : {}),
+          ...reservationState(this.ctx.storage, parsed.scope, saved),
           record: { ...saved.record, deadline: saved.record.kind === 'pay' ? saved.record.deadline.toString() : undefined },
+        });
+      }
+      if (parsed.route === 'POST /v1/operations/{id}/release') {
+        ensureWritable(this.ctx.storage, recoveryGate);
+        const current = getOperation(this.ctx.storage, parsed.scope, parsed.id!);
+        if (current === undefined) return apiError(404, 'NOT_FOUND');
+        if (current.record.kind !== 'pay') return apiError(409, 'RESERVATION_CONFLICT');
+        if (current.status === 'released' && current.checkpoint !== undefined) {
+          const retry = releaseOperation(this.ctx.storage, parsed.scope, parsed.record!, parsed.expectedRevision!,
+            current.checkpoint, () => ensureWritable(this.ctx.storage, recoveryGate));
+          return apiSuccess({ ...retry, scope: parsed.scope,
+            record: { ...retry.record, deadline: retry.record.kind === 'pay' ? retry.record.deadline.toString() : undefined },
+          });
+        }
+        let runtime;
+        try { runtime = await loadEthereumRuntime(parsed.scope.deploymentId, config, this.env.RPC_DEPLOYMENTS_JSON); }
+        catch { return apiError(503, 'SERVICE_UNAVAILABLE'); }
+        let point;
+        try { point = await runtime.history.getFinalizedCheckpoint(); }
+        catch { return apiError(503, 'SERVICE_UNAVAILABLE'); }
+        if (point === null || point.mode !== config.finalityMode
+          || point.hash.toLowerCase() !== parsed.blockHash!.toLowerCase()) {
+          return apiError(503, 'SERVICE_UNAVAILABLE');
+        }
+        let block;
+        try { block = await runtime.client.getBlock({ blockTag: config.finalityMode === 'local-simulated' ? 'latest' : 'finalized' }); }
+        catch { return apiError(503, 'SERVICE_UNAVAILABLE'); }
+        if (block.hash?.toLowerCase() !== point.hash.toLowerCase() || block.number !== point.number
+          || block.timestamp <= current.record.deadline) return apiError(503, 'SERVICE_UNAVAILABLE');
+        let success;
+        try { success = await runtime.history.getOperationSuccess(current.record.operationId, point); }
+        catch { return apiError(503, 'SERVICE_UNAVAILABLE'); }
+        if (!success.complete || success.blockHash.toLowerCase() !== point.hash.toLowerCase()
+          || success.value.executed) return apiError(503, 'SERVICE_UNAVAILABLE');
+        const input = await createCoreInputReader(runtime.history, config).readInput(parsed.scope, current.record.inputId);
+        if (input !== 'owned-unspent') return apiError(503, 'SERVICE_UNAVAILABLE');
+        const released = releaseOperation(this.ctx.storage, parsed.scope, parsed.record!, parsed.expectedRevision!, {
+          blockNumber: point.number.toString(), blockHash: point.hash as NonNullable<typeof parsed.blockHash>,
+          blockTimestamp: block.timestamp.toString(),
+        }, () => ensureWritable(this.ctx.storage, recoveryGate));
+        return apiSuccess({ ...released, scope: parsed.scope,
+          record: { ...released.record, deadline: released.record.kind === 'pay' ? released.record.deadline.toString() : undefined },
         });
       }
       if (parsed.route === 'PUT /v1/operations/{id}') {
@@ -230,7 +282,10 @@ export class UniswapServiceObject extends DurableObject<ServiceEnv> {
         catch { return apiError(503, 'SERVICE_UNAVAILABLE'); }
         const saved = await putOperation(this.ctx.storage, parsed.scope, parsed.record!, parsed.expectedRevision!,
           createCoreInputReader(history, config), () => ensureWritable(this.ctx.storage, recoveryGate));
-        return apiSuccess({ ...saved, scope: parsed.scope,
+        if (saved.status === 'reserved' && !activeReservation(this.ctx.storage, parsed.scope, saved)) {
+          return apiError(503, 'SERVICE_UNAVAILABLE');
+        }
+        return apiSuccess({ ...saved, ...reservationState(this.ctx.storage, parsed.scope, saved), scope: parsed.scope,
           record: { ...saved.record, deadline: saved.record.kind === 'pay' ? saved.record.deadline.toString() : undefined },
         });
       }
@@ -285,6 +340,7 @@ export class UniswapServiceObject extends DurableObject<ServiceEnv> {
         if (error.message === 'SCOPE_MISMATCH') return apiError(403, 'SCOPE_MISMATCH');
         if (error.message === 'RESERVATION_CONFLICT') return apiError(409, 'RESERVATION_CONFLICT');
         if (error.message === 'REVISION_CONFLICT') return apiError(409, 'REVISION_CONFLICT');
+        if (error.message === 'NOT_FOUND') return apiError(404, 'NOT_FOUND');
         if (error.message === 'SERVICE_UNAVAILABLE') return apiError(503, 'SERVICE_UNAVAILABLE');
         if (error.message === 'INVALID_RECOVERY_GATE') return apiError(503, 'SERVICE_UNAVAILABLE');
       }

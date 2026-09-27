@@ -2,7 +2,7 @@ import { env } from 'cloudflare:workers';
 import { runInDurableObject } from 'cloudflare:test';
 import { expect, it } from 'vitest';
 import type { OperationRecord, Scope } from '@confidential-utxo/uniswap';
-import { putOperation, listOperations } from '../src/store.js';
+import { putOperation, listOperations, getOperation, releaseOperation, asReservation } from '../src/store.js';
 
 const scope = { deploymentId: 'local-v1', owner: `0x${'ab'.repeat(20)}` } as Scope;
 const id = (n: number) => `0x${n.toString(16).padStart(64, '0')}` as OperationRecord['recordId'];
@@ -91,4 +91,30 @@ it('accepts exact retries, rejects stale changes and keeps signatureStarted mono
   await expect(runInDurableObject(stub, (_obj, state) => putOperation(state.storage, scope,
     { ...initial, encryptedBundle: { ...initial.encryptedBundle, ciphertext: 'Ag==' } }, 2, reader)))
     .rejects.toThrow('REVISION_CONFLICT');
+});
+
+it('returns reservation state and releases only one sealed revision while preserving the old record', async () => {
+  const ns = (env as unknown as { UNISWAP_STATE: DurableObjectNamespace }).UNISWAP_STATE;
+  const stub = ns.get(ns.idFromName('store-release-test'));
+  await stub.fetch('https://site.test/v1/operations');
+  const original = record(20);
+  const point = { blockNumber: '10', blockHash: id(21), blockTimestamp: '601' };
+  const releasedRecord = { ...original, encryptedBundle: { ...original.encryptedBundle, nonce: `0x${'01'.repeat(12)}` } };
+  const first = await runInDurableObject(stub, (_obj, state) => putOperation(state.storage, scope, original, 0, reader));
+  expect(asReservation(first).reservationState).toBe('active');
+  await expect(runInDurableObject(stub, (_obj, state) => releaseOperation(state.storage, scope,
+    releasedRecord, 0, point))).rejects.toThrow('REVISION_CONFLICT');
+  const released = await runInDurableObject(stub, (_obj, state) => releaseOperation(state.storage, scope,
+    releasedRecord, 1, point));
+  expect(released).toMatchObject({ revision: 2, reservationState: 'released', status: 'released', checkpoint: point });
+  expect(await runInDurableObject(stub, (_obj, state) => asReservation(getOperation(state.storage, scope, original.recordId)!)))
+    .toEqual(released);
+  expect(await runInDurableObject(stub, (_obj, state) => releaseOperation(state.storage, scope,
+    releasedRecord, 1, point))).toEqual(released);
+  await expect(runInDurableObject(stub, (_obj, state) => releaseOperation(state.storage, scope,
+    { ...original, encryptedBundle: { ...original.encryptedBundle, nonce: `0x${'02'.repeat(12)}` } },
+    1, point))).rejects.toThrow('RESERVATION_CONFLICT');
+  const successor = await runInDurableObject(stub, (_obj, state) => putOperation(state.storage, scope, record(22), 0, reader));
+  expect(asReservation(successor).reservationState).toBe('active');
+  expect((await runInDurableObject(stub, (_obj, state) => listOperations(state.storage, scope))).records).toHaveLength(2);
 });

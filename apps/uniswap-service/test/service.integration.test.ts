@@ -118,7 +118,7 @@ it('restores a committed operation in a second authenticated browser session', a
   const first = await worker.fetch(new Request(query, { headers: { cookie: firstCookie } }), serviceEnv);
   expect(first.status).toBe(200);
   expect((await first.json() as { records: unknown[] }).records[0]).toMatchObject({
-    revision: 1, stateVersion: 1, status: 'reserved', record: { recordId },
+    revision: 1, stateVersion: 1, status: 'reserved', reservationState: 'active', record: { recordId },
   });
   const secondCookie = await login(account);
   const second = await worker.fetch(new Request(query, { headers: { cookie: secondCookie } }), serviceEnv);
@@ -143,8 +143,7 @@ it('restores a committed operation in a second authenticated browser session', a
   expect(completed.status).toBe(200);
   const parsed = parseApiResponse('GET /v1/operations/{id}', completed.status, await completed.json());
   expect(parsed).toMatchObject({ revision: 1, stateVersion: 9, status: 'finalized-success',
-    checkpoint: { blockNumber: '10', blockHash, blockTimestamp: '600' } });
-  expect(parsed).not.toHaveProperty('reservationState');
+    checkpoint: { blockNumber: '10', blockHash, blockTimestamp: '600' }, reservationState: 'released' });
   await runInDurableObject(stub, async (_object, state) => {
     for (let n = 1; n <= 101; n++) {
       const id = `0x${n.toString(16).padStart(64, '0')}`;
@@ -175,9 +174,23 @@ it('restores a committed operation in a second authenticated browser session', a
     { headers: { cookie: secondCookie } },
   ), serviceEnv);
   expect(unlocked.status).toBe(200);
-  const unlockedBody = parseApiResponse('GET /v1/operations/{id}', 200, await unlocked.json());
+  const unlockedBody = await unlocked.json();
   expect(unlockedBody).toMatchObject({ status: 'reserved', record: { recordId: unlockedId } });
   expect(unlockedBody).not.toHaveProperty('reservationState');
+  const unlockedPage = await worker.fetch(new Request(pagesQuery, { headers: { cookie: secondCookie } }), serviceEnv);
+  expect(unlockedPage.status).toBe(200);
+  const pageBody = await unlockedPage.json() as { records: { record: { recordId: string }; reservationState?: string }[] };
+  expect(pageBody.records.find(item => item.record.recordId === unlockedId)).not.toHaveProperty('reservationState');
+  const unlockedAck = await worker.fetch(new Request(`https://site.test/v1/operations/${unlockedId}`, {
+    method: 'PUT', headers: { origin: 'https://site.test', cookie: secondCookie },
+    body: JSON.stringify({ scope, expectedRevision: 0, sealedRevision: 1, record: {
+      scope, recordId: unlockedId, inputId: unlockedId, operationId: unlockedId,
+      kind: 'withdraw', contentHash: unlockedId,
+      encryptedBundle: { ciphertext: 'AQID', nonce: `0x${'00'.repeat(12)}`, tag: `0x${'00'.repeat(16)}` },
+      signatureStarted: false, attemptIds: [],
+    } }),
+  }), serviceEnv);
+  expect(unlockedAck.status).toBe(503);
   // The original record sorts after the 100-item first page. A finalized result
   // must not be interpreted as an active reservation after a lost PUT ACK.
   calls.length = 0;

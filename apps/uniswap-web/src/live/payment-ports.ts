@@ -218,6 +218,7 @@ export function createScopedPaymentClient(deps: ScopedPaymentDependencies): Paym
   // a recovered submission exception from returning across an invalidated epoch.
   return { preparePay: guarded(client.preparePay), prepareFullWithdraw: guarded(client.prepareFullWithdraw),
     authorizePay: guarded((prepared, confirmation) => client.authorizePay(accept(prepared), confirmation)),
+    authorizePayForExport: guarded((prepared, confirmation) => client.authorizePayForExport(accept(prepared), confirmation)),
     authorizeFullWithdraw: guarded((prepared, confirmation) => client.authorizeFullWithdraw(accept(prepared), confirmation)),
     resumeOriginal: guarded(client.resumeOriginal), retryAttempt: guarded(client.retryAttempt),
     prepareChangedTerms: guarded(client.prepareChangedTerms), reconcile: guarded(client.reconcile) };
