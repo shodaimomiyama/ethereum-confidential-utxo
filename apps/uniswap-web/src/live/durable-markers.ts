@@ -50,11 +50,17 @@ function open(factory: IDBFactory): Promise<IDBDatabase> {
   });
 }
 
-/** The result is acknowledged only by transaction.oncomplete, after every write commits. */
-function transaction<T>(db: IDBDatabase, storeName: string, key: string,
+/** A write is acknowledged only after a strict transaction completes. */
+function transaction<T>(db: IDBDatabase, storeName: string, key: string, mode: 'readonly' | 'readwrite',
   decide: (value: unknown, store: IDBObjectStore) => T): Promise<T> {
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(storeName, 'readwrite');
+    const tx = mode === 'readonly' ? db.transaction(storeName, mode)
+      : db.transaction(storeName, mode, { durability: 'strict' });
+    if (mode === 'readwrite' && tx.durability !== 'strict') {
+      tx.abort();
+      reject(new Error('MARKER_STRICT_DURABILITY_UNAVAILABLE'));
+      return;
+    }
     const store = tx.objectStore(storeName);
     let result: T;
     tx.oncomplete = () => resolve(result);
@@ -74,27 +80,28 @@ function browserFactory(factory: IDBFactory | null | undefined): IDBFactory | un
 
 /** A profile-local recovery marker. Clearing browser data also clears these reservations. */
 export function createIndexedDbRewardRequestMarker(factory?: IDBFactory | null): RewardRequestMarker {
-  async function run<T>(scope: Scope, decide: (value: unknown, store: IDBObjectStore, key: string) => T): Promise<T | 'unknown'> {
+  async function run<T>(scope: Scope, mode: 'readonly' | 'readwrite',
+    decide: (value: unknown, store: IDBObjectStore, key: string) => T): Promise<T | 'unknown'> {
     let db: IDBDatabase | undefined;
     try {
       const selected = browserFactory(factory);
       if (!selected) return 'unknown';
       const key = scopeKey(scope);
       db = await open(selected);
-      return await transaction(db, REWARDS, key, (value, store) => decide(value, store, key));
+      return await transaction(db, REWARDS, key, mode, (value, store) => decide(value, store, key));
     } catch { return 'unknown'; }
     finally { db?.close(); }
   }
   return {
     async read(scope) {
-      const result = await run(scope, value => value === undefined ? { kind: 'absent' as const }
+      const result = await run(scope, 'readonly', value => value === undefined ? { kind: 'absent' as const }
         : validStoredId(value) ? { kind: 'saved' as const, requestId: value.requestId }
         : { kind: 'unknown' as const });
       return result === 'unknown' ? { kind: 'unknown' } : result;
     },
     async reserve(scope, requestId) {
       if (!hex32.test(requestId)) throw new Error('INVALID_REQUEST_ID');
-      return run(scope, (value, store, key) => {
+      return run(scope, 'readwrite', (value, store, key) => {
         if (value !== undefined) return validStoredId(value) ? 'occupied' as const : 'unknown' as const;
         store.add({ requestId }, key);
         return 'saved' as const;
@@ -102,7 +109,7 @@ export function createIndexedDbRewardRequestMarker(factory?: IDBFactory | null):
     },
     async replace(scope, expected, next) {
       if (!hex32.test(expected) || (next !== undefined && !hex32.test(next))) throw new Error('INVALID_REQUEST_ID');
-      return run(scope, (value, store, key) => {
+      return run(scope, 'readwrite', (value, store, key) => {
         if (value !== undefined && !validStoredId(value)) return 'unknown' as const;
         if (value === undefined || value.requestId.toLowerCase() !== expected.toLowerCase()) return 'mismatch' as const;
         if (next === undefined) store.delete(key);
@@ -128,7 +135,7 @@ export function createIndexedDbDepositAttemptGate(factory?: IDBFactory | null): 
       if (!selected) return 'unknown';
       const key = depositKey(scope, operationId);
       db = await open(selected);
-      return await transaction(db, DEPOSITS, key, (value, store) => decide(value, store, key));
+      return await transaction(db, DEPOSITS, key, 'readwrite', (value, store) => decide(value, store, key));
     } catch { return 'unknown'; }
     finally { db?.close(); }
   }

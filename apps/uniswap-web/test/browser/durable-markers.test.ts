@@ -93,3 +93,41 @@ it('does not acknowledge a reservation whose IndexedDB transaction aborts', asyn
   }
   expect(await createIndexedDbRewardRequestMarker().read(current)).toEqual({ kind: 'absent' });
 });
+
+it('requests strict durability for every write and fails closed if it is unavailable', async () => {
+  const current = scope();
+  const originalTransaction = IDBDatabase.prototype.transaction;
+  const requested: Array<{ mode: IDBTransactionMode; durability: IDBTransactionDurability | undefined }> = [];
+  IDBDatabase.prototype.transaction = function(this: IDBDatabase, names: string | string[],
+    mode?: IDBTransactionMode, options?: IDBTransactionOptions) {
+    requested.push({ mode: mode ?? 'readonly', durability: options?.durability });
+    return originalTransaction.call(this, names, mode, options);
+  } as typeof IDBDatabase.prototype.transaction;
+  try {
+    const marker = createIndexedDbRewardRequestMarker();
+    const gate = createIndexedDbDepositAttemptGate();
+    expect(await marker.read(current)).toEqual({ kind: 'absent' });
+    expect(await marker.reserve(current, id('5'))).toBe('saved');
+    expect(await marker.replace(current, id('5'), undefined)).toBe('saved');
+    const claim = await gate.claim(current, operation);
+    expect(claim.status).toBe('claimed');
+    if (claim.status === 'claimed') expect(await gate.release(current, operation, claim.token)).toBe('released');
+  } finally {
+    IDBDatabase.prototype.transaction = originalTransaction;
+  }
+  expect(requested).toEqual([
+    { mode: 'readonly', durability: undefined },
+    ...Array.from({ length: 4 }, () => ({ mode: 'readwrite', durability: 'strict' })),
+  ]);
+
+  IDBDatabase.prototype.transaction = function(this: IDBDatabase, names: string | string[],
+    mode?: IDBTransactionMode) {
+    return originalTransaction.call(this, names, mode, mode === 'readwrite' ? { durability: 'relaxed' } : undefined);
+  } as typeof IDBDatabase.prototype.transaction;
+  try {
+    expect(await createIndexedDbRewardRequestMarker().reserve(scope(), id('6'))).toBe('unknown');
+    expect(await createIndexedDbDepositAttemptGate().claim(scope(), operation)).toEqual({ status: 'unknown' });
+  } finally {
+    IDBDatabase.prototype.transaction = originalTransaction;
+  }
+});
