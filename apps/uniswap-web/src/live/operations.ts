@@ -83,16 +83,25 @@ export function projectUnconfirmedSync(previous: ViewState, availability: ViewSt
     preparation: { ...previous.preparation, key: false },
     selectedInput: {},
     utxos: previous.utxos.map(utxo => ({ ...utxo, available: false })),
-    allowedActions: previous.allowedActions.filter(safeWhileStale),
-    operationActions: Object.fromEntries(Object.entries(previous.operationActions)
-      .map(([id, actions]) => [id, actions.filter(action => action === 'recheck')])),
+    operations: previous.operations.map(operation => ({ ...operation,
+      chainOutcome: operation.chainOutcome === 'finalized-success' || operation.chainOutcome === 'finalized-failure'
+        ? 'unknown' as const : operation.chainOutcome })),
+    rewardRequests: previous.rewardRequests.map(request => ({ ...request,
+      status: ['finalized', 'received', 'ended-without-distribution'].includes(request.status)
+        ? 'unknown' as const : request.status })),
+    cards: Object.fromEntries(cards.map(card => {
+      const current = previous.cards[card];
+      const settled = ['complete', 'failed', 'confirmed-receipt-pending', 'receipt-invalid'].includes(current.phase);
+      return [card, settled ? { ...current, phase: 'unknown', reason: 'RESULT_UNKNOWN', approvalPurpose: undefined } : current];
+    })) as ViewState['cards'],
+    allowedActions: [...new Set([...previous.allowedActions.filter(safeWhileStale),
+      ...(previous.rewardRequests.length > 0 ? ['recheck-reward'] : [])])],
+    operationActions: Object.fromEntries(previous.operations.map(operation => [operation.operationId, ['recheck']])),
     reasons: { ...previous.reasons, ...Object.fromEntries(cards.map(card => [`start:${card}`, reason])) },
   };
 }
 
-/** A new scope cannot inherit balances, drafts, operation IDs or reward requests. */
-export function projectScopeChange(previous: ViewState, scope: Scope): ViewState {
-  if (sameScope(previous.scope, scope)) return projectUnconfirmedSync(previous);
+function clearScopedData(previous: ViewState, scope: Scope): ViewState {
   return { ...previous, scope, connection: 'disconnected', currentScope: undefined,
     preparation: { wallet: false, network: false, key: false, faucet: false, gas: false },
     utxos: [], selectedInput: {}, operationCards: {}, operationActions: {},
@@ -102,13 +111,22 @@ export function projectScopeChange(previous: ViewState, scope: Scope): ViewState
   };
 }
 
+/** A new scope cannot inherit balances, drafts, operation IDs or reward requests. */
+export function projectScopeChange(previous: ViewState, scope: Scope): ViewState {
+  return sameScope(previous.scope, scope) ? projectUnconfirmedSync(previous) : clearScopedData(previous, scope);
+}
+
 /** Wallet events invalidate key material and all previously calculated spending choices. */
 export function projectConnectionChange(previous: ViewState, connection: WalletEvent): ViewState {
   const same = connection.scope !== undefined && sameScope(previous.scope, connection.scope);
+  if (!same) {
+    const cleared = clearScopedData(previous, connection.scope ?? previous.scope);
+    return connection.scope === undefined ? cleared : { ...cleared, connection: 'connected',
+      currentScope: connection.scope, preparation: { ...cleared.preparation, wallet: true, network: true } };
+  }
   const stale = projectUnconfirmedSync(previous);
-  return { ...stale, connection: same ? 'connected' : 'disconnected',
-    currentScope: same ? previous.scope : undefined,
-    preparation: { ...stale.preparation, wallet: same, network: same, key: false },
+  return { ...stale, connection: 'connected', currentScope: previous.scope,
+    preparation: { ...stale.preparation, wallet: true, network: true, key: false },
   };
 }
 
@@ -142,7 +160,15 @@ export function mapDecisionToView(previous: ViewState, result: OperationResult):
     || view.operations.some(item => !sameScope(item.scope, result.scope))
     || (operation && !sameScope(operation.scope, result.scope))) throw new Error('SCOPE_CHANGED');
   if (view.isStale === true || (view.storageAvailability !== undefined && view.storageAvailability !== 'healthy')) {
-    return projectUnconfirmedSync(previous, view.storageAvailability);
+    const operations = new Map(previous.operations.map(item => [item.operationId, item]));
+    for (const item of view.operations) operations.set(item.operationId, item);
+    if (operation) operations.set(operation.operationId, operation);
+    const rewards = new Map(previous.rewardRequests.map(item => [item.requestId, item]));
+    for (const item of view.rewardRequests) rewards.set(item.requestId, item);
+    const scoped = { ...previous, operations: [...operations.values()], rewardRequests: [...rewards.values()],
+      operationCards: { ...previous.operationCards, ...view.operationCards,
+        ...(operation && card ? { [operation.operationId]: card } : {}) } };
+    return projectUnconfirmedSync(scoped, view.storageAvailability);
   }
   if (!operation) return view;
   if (!card) throw new Error('OPERATION_CARD_REQUIRED');

@@ -41,10 +41,10 @@ it('keeps scoped display stale on rollback while removing spendable decisions', 
   expect(next.storageAvailability).toBe('rollback');
   expect(next.isStale).toBe(true);
   expect(next.availablePrivateWei).toBe(5n);
-  expect(next.operations).toEqual(old.operations);
+  expect(next.operations[0]).toMatchObject({ operationId, chainOutcome: 'pending' });
   expect(next.utxos).toEqual([{ id: 'secret-output', amountWei: 5n, available: false }]);
   expect(next.selectedInput).toEqual({});
-  expect(next.allowedActions).toEqual(['switch-scope', 'resync', 'edit:pay']);
+  expect(next.allowedActions).toEqual(['switch-scope', 'resync', 'edit:pay', 'recheck-reward']);
   expect(next.operationActions[operationId]).toEqual(['recheck']);
 });
 
@@ -54,9 +54,43 @@ it('uses the prior scoped display when a sync cannot confirm new data', () => {
     publicEthWei: 100n, operations: [], allowedActions: ['start:pay'] };
   const next = mapDecisionToView(old, { scope, view: unconfirmed });
   expect(next.publicEthWei).toBe(9n);
-  expect(next.operations).toEqual(old.operations);
+  expect(next.operations[0]).toMatchObject({ operationId, chainOutcome: 'pending' });
   expect(next.isStale).toBe(true);
   expect(next.allowedActions).not.toContain('start:pay');
+});
+
+it('retains newly verified same-scope identities for recheck when sync is stale', () => {
+  const old = populated();
+  const newId = `0x${'55'.repeat(32)}` as OperationId;
+  const operation: OperationRef = { scope, operationId: newId, attemptIds: [], txHashes: [], chainOutcome: 'pending', receiptState: 'none' };
+  const requestId = `0x${'66'.repeat(32)}` as never;
+  const unconfirmed: ViewState = { ...old, operations: [operation], operationCards: { [newId]: 'withdraw' },
+    rewardRequests: [{ requestId, status: 'pending' }], isStale: true, storageAvailability: 'rollback' };
+  const next = mapDecisionToView(old, { scope, view: unconfirmed, operation, card: 'withdraw' });
+  expect(next.operations.map(item => item.operationId)).toEqual([operationId, newId]);
+  expect(next.operations.find(item => item.operationId === newId)?.chainOutcome).toBe('pending');
+  expect(next.operationCards[newId]).toBe('withdraw');
+  expect(next.operationActions[newId]).toContain('recheck');
+  expect(next.rewardRequests.map(item => item.requestId)).toContain(requestId);
+  expect(next.allowedActions).toContain('recheck-reward');
+  expect(next.allowedActions).not.toContain('start:pay');
+});
+
+it('does not show stale completed operations or received rewards as fresh success', () => {
+  const old = populated();
+  const completed: ViewState = { ...old,
+    operations: [{ ...old.operations[0]!, chainOutcome: 'finalized-success', receiptState: 'confirmed' }],
+    rewardRequests: [{ requestId: 'request' as never, status: 'received' }],
+    cards: { ...old.cards, pay: { ...old.cards.pay, phase: 'complete' }, reward: { ...old.cards.reward, phase: 'complete' } } };
+  const stale = projectUnconfirmedSync(completed, 'rollback');
+  expect(stale.operations[0]?.chainOutcome).toBe('unknown');
+  expect(stale.rewardRequests[0]?.status).toBe('unknown');
+  expect(stale.cards.pay.phase).toBe('unknown');
+  expect(stale.cards.reward.phase).toBe('unknown');
+  expect(stale.operationActions[operationId]).toEqual(['recheck']);
+  const throughDecision = mapDecisionToView(completed, { scope, view: { ...completed, isStale: true, storageAvailability: 'rollback' } });
+  expect(throughDecision.operations[0]?.chainOutcome).toBe('unknown');
+  expect(throughDecision.rewardRequests[0]?.status).toBe('unknown');
 });
 
 it('clears all scoped data when changing scope', () => {
@@ -79,6 +113,25 @@ it('invalidates spending choices and key readiness on a wallet event', () => {
   expect(next.preparation.key).toBe(false);
   expect(next.allowedActions).not.toContain('start:pay');
   expect(projectConnectionChange(populated(), { epoch: 3 }).currentScope).toBeUndefined();
+});
+
+it.each(['disconnect', 'different owner'] as const)('redacts prior owner data on %s', mode => {
+  const old = populated();
+  const event = mode === 'disconnect' ? { epoch: 3 }
+    : { epoch: 3, scope: { ...scope, owner: `0x${'22'.repeat(20)}` } as Scope };
+  const next = projectConnectionChange(old, event);
+  expect(next.connection).toBe(mode === 'disconnect' ? 'disconnected' : 'connected');
+  expect(next.currentScope).toEqual(mode === 'disconnect' ? undefined : event.scope);
+  if (mode === 'different owner') expect(next.scope).toEqual(event.scope);
+  expect(next.publicEthWei).toBe(0n);
+  expect(next.availablePrivateWei).toBe(0n);
+  expect(next.pendingPrivateWei).toBe(0n);
+  expect(next.utxos).toEqual([]);
+  expect(next.cards.pay.input).toEqual({});
+  expect(next.rewardRequests).toEqual([]);
+  expect(next.operations).toEqual([]);
+  expect(next.operationCards).toEqual({});
+  expect(next.allowedActions).toEqual(['switch-scope', 'connect']);
 });
 
 it('edits drafts without validating amounts or carrying a previous quote or selection', () => {
