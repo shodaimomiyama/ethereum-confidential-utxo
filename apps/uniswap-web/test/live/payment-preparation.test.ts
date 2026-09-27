@@ -3,9 +3,9 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { buildOperation, recipientInfoTypedData, type Context, type LocalDraft } from '@confidential-utxo/core';
 import { commit } from '@confidential-utxo/crypto';
 import type { Address, Scope } from '@confidential-utxo/uniswap';
-import { decodePaymentPrivateRecord } from '../../src/live/payment-record.js';
+import { appendPaymentAuthorization, decodePaymentPrivateRecord } from '../../src/live/payment-record.js';
 import { buildPreparedPayment, preparePaymentWithWorker, validatePreparedPayment,
-  type PreparationDecision, type PreparationDeployment } from '../../src/live/payment-preparation.js';
+  paymentContentHash, type PreparationDecision, type PreparationDeployment } from '../../src/live/payment-preparation.js';
 import type { OperationContext } from '../../src/live/operations.js';
 
 const hash = (n: string) => `0x${n.repeat(64)}` as `0x${string}`;
@@ -34,6 +34,8 @@ async function fixture(kind: 'pay' | 'withdraw') {
       ethAmount: 9n, token: deployment.token, minAmountOut: 99n, recipient: scope.owner, deadline: 600n },
       quote: { startedAtMs: 10, blockHash: hash('e') as never, blockNumber: 1n, inputWei: 9n, quoteOut: 100n } }
     : { kind, identity, deployment };
+  if (decision.kind === 'pay') return { draft, decision: { ...decision, identity: { ...identity,
+    contentHash: paymentContentHash(draft, decision.terms, decision.quote, deployment) } } as PreparationDecision };
   return { draft, decision };
 }
 it.each(['pay', 'withdraw'] as const)('builds and validates exact %s binding from a real core draft', async kind => {
@@ -93,4 +95,24 @@ it('exposes #55 preparation methods with injected decisions', async () => {
   const refreshed = await ports.refreshPay(prepared);
   expect(refreshed.record.operationId).toBe(prepared.record.operationId);
   expect(refreshed.record.paymentId).toBe(prepared.record.paymentId);
+});
+
+it('validates a restored signed revision and rejects mismatched attempt history', async () => {
+  const { draft, decision } = await fixture('pay');
+  const fresh = buildPreparedPayment(draft, decision);
+  const signatures = { pool: `0x${'11'.repeat(65)}` as `0x${string}`,
+    payment: `0x${'22'.repeat(65)}` as `0x${string}` };
+  const bytes = appendPaymentAuthorization(fresh.privateBytes, signatures, 'attempt-1' as never, hash('f') as never);
+  const restored = { ...fresh, privateBytes: bytes, record: { ...fresh.record, signatureStarted: true,
+    attemptIds: ['attempt-1' as never] } } as typeof fresh;
+  expect(() => validatePreparedPayment(restored, decision)).not.toThrow();
+  expect(() => validatePreparedPayment({ ...restored, record: { ...restored.record,
+    attemptIds: ['attempt-2' as never] } } as typeof fresh, decision)).toThrow();
+  expect(() => validatePreparedPayment({ ...restored, record: { ...restored.record,
+    signatureStarted: false } } as typeof fresh, decision)).toThrow();
+});
+it('rejects a caller supplied payment content hash unrelated to displayed terms', async () => {
+  const { draft, decision } = await fixture('pay');
+  expect(() => buildPreparedPayment(draft, { ...decision,
+    identity: { ...decision.identity, contentHash: hash('f') as never } })).toThrow();
 });

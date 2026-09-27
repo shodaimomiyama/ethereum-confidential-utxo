@@ -2,6 +2,7 @@ import { authorizationTypedData, operationId, type LocalDraft } from '@confident
 import { assertWithdrawalBinding, paymentAuthorizationTypedData, paymentDigest,
   type Address, type Bytes32, type OperationRecord, type PaymentDeployment, type PaymentTerms,
   type PreparedFullWithdraw, type PreparedPay, type Scope } from '@confidential-utxo/uniswap';
+import { keccak256, stringToHex } from 'viem';
 import { decodePaymentPrivateRecord, encodePaymentPrivateRecord, type PaymentPrivateRecord } from './payment-record.js';
 import type { OperationContext } from './operations.js';
 import type { CryptoPayloads } from './worker-protocol.js';
@@ -32,6 +33,17 @@ const equal = (a: unknown, b: unknown): boolean => {
   return JSON.stringify(normalize(a)) === JSON.stringify(normalize(b));
 };
 
+/** Hash the fixed payment decision shown to the user, independent of quote transport metadata. */
+export function paymentContentHash(draft: LocalDraft, terms: PaymentTerms, quote: PreparedPay['quote'],
+  deployment: { readonly chainId: bigint; readonly adapter: Address | `0x${string}` }): Bytes32 {
+  const content = ['confidential-utxo-payment-content', 1, deployment.chainId.toString(), deployment.adapter.toLowerCase(),
+    draft.operationId.toLowerCase(), draft.request.inputIds[0]?.toLowerCase(),
+    terms.owner.toLowerCase(), terms.ethAmount.toString(), terms.token.toLowerCase(),
+    terms.minAmountOut.toString(), terms.recipient.toLowerCase(), terms.deadline.toString(),
+    quote.quoteOut.toString()];
+  return keccak256(stringToHex(JSON.stringify(content))) as Bytes32;
+}
+
 /** The caller supplies the selected input, terms, and display hash; this binds their decision to a Worker draft. */
 export function buildPreparedPayment(draft: LocalDraft, decision: PreparationDecision): PreparedPay | PreparedFullWithdraw {
   const { identity, deployment } = decision;
@@ -52,6 +64,7 @@ export function buildPreparedPayment(draft: LocalDraft, decision: PreparationDec
     requireValid(decision.quote.inputWei === decision.terms.ethAmount && decision.quote.quoteOut > 0n
       && Number.isFinite(decision.quote.startedAtMs) && decision.quote.blockNumber >= 0n
       && /^0x[0-9a-fA-F]{64}$/.test(decision.quote.blockHash));
+    requireValid(same(identity.contentHash, paymentContentHash(draft, decision.terms, decision.quote, deployment)));
     const payment = paymentAuthorizationTypedData(decision.terms, deployment.chainId, deployment.adapter);
     record = { ...common, kind: 'pay', paymentId: paymentDigest(decision.terms, deployment.chainId, deployment.adapter),
       deadline: decision.terms.deadline, encryptedBundle: { ciphertext: '', nonce: '', tag: '' },
@@ -98,10 +111,18 @@ export function validatePreparedPayment(prepared: PreparedPay | PreparedFullWith
   decision: PreparationDecision): void {
   const record = decodePaymentPrivateRecord(prepared.privateBytes);
   const expected = buildPreparedPayment(record.creationInputs, decision);
-  const { encryptedBundle: _a, ...actualPublic } = prepared.record;
-  const { encryptedBundle: _b, ...expectedPublic } = expected.record;
-  requireValid(equal(actualPublic, expectedPublic) && equal(prepared.poolAuthorization, expected.poolAuthorization)
-    && equal(record, decodePaymentPrivateRecord(expected.privateBytes))
+  const { encryptedBundle: _a, signatureStarted, attemptIds, ...actualBinding } = prepared.record;
+  const { encryptedBundle: _b, signatureStarted: _c, attemptIds: _d, ...expectedBinding } = expected.record;
+  const baseline = decodePaymentPrivateRecord(expected.privateBytes);
+  requireValid(equal(actualBinding, expectedBinding)
+    && equal(prepared.poolAuthorization, expected.poolAuthorization)
+    && equal(record.creationInputs, baseline.creationInputs)
+    && equal(record.binding, baseline.binding)
+    && equal(record.intendedAuthorization, baseline.intendedAuthorization)
+    && record.operationId === baseline.operationId && record.paymentId === baseline.paymentId
+    && equal(attemptIds, record.attempts.map(attempt => attempt.attemptId))
+    && (record.signatures === undefined || signatureStarted)
+    && (record.attempts.length === 0 || record.signatures !== undefined)
     && (decision.kind !== 'pay' || ('quote' in prepared && 'quote' in expected && equal(prepared.quote, expected.quote))));
 }
 
@@ -152,6 +173,9 @@ export function createPaymentPreparationPorts(deps: PaymentPreparationDependenci
     prepareFullWithdraw: async input => await prepare(input, deps.withdrawPlan, 'withdraw') as PreparedFullWithdraw,
     refreshPay: async prepared => {
       check();
+      const previous = decodePaymentPrivateRecord(prepared.privateBytes);
+      requireValid(!prepared.record.signatureStarted && prepared.record.attemptIds.length === 0
+        && previous.signatures === undefined && previous.attempts.length === 0);
       const draft = decodePaymentPrivateRecord(prepared.privateBytes).creationInputs;
       const decision = await deps.refreshDecision(prepared, draft);
       check();

@@ -1,12 +1,13 @@
 import { authorizationTypedData, verifyOperationAuthorization } from '@confidential-utxo/core';
 import { createPaymentClient, paymentAuthorizationTypedData, paymentDigest,
-  type Address, type PaymentClient, type PaymentPorts, type PaymentTerms,
+  type Address, type PaymentClient, type PaymentPorts, type PaymentTerms, type PreparedPay,
   type ReservationPort, type SavedReservation } from '@confidential-utxo/uniswap';
 import { hashTypedData, recoverTypedDataAddress, type TypedDataDefinition } from 'viem';
 import { sameScope } from './http.js';
 import type { OperationContext } from './operations.js';
 import { appendPaymentAuthorization, createPaymentRecordEncryptor, decodePaymentPrivateRecord,
   encodePaymentPrivateRecord, openPaymentPrivateRecord } from './payment-record.js';
+import { paymentContentHash } from './payment-preparation.js';
 
 type Prepared = Parameters<PaymentPorts['validatePrepared']>[0];
 export interface PaymentManifestLocation {
@@ -81,6 +82,9 @@ export function createScopedPaymentClient(deps: ScopedPaymentDependencies): Paym
     if (prepared.record.kind === 'pay') {
       const terms = deps.paymentTerms(prepared);
       check();
+      const pay = prepared as PreparedPay;
+      requireBinding(pay.quote !== undefined
+        && paymentContentHash(draft, terms, pay.quote, deployment) === prepared.record.contentHash);
       payment = paymentAuthorizationTypedData(terms, deployment.chainId, deployment.adapter);
       requireBinding(terms.operationId === prepared.record.operationId && terms.owner.toLowerCase() === scope.owner.toLowerCase()
         && terms.deadline === prepared.record.deadline && terms.ethAmount === draft.request.w
@@ -91,14 +95,24 @@ export function createScopedPaymentClient(deps: ScopedPaymentDependencies): Paym
     pools.set(canonical(pool), structuredClone(pool));
     return payment;
   }
-  function accept<T extends Prepared>(prepared: T): T {
+  function accept<T extends Prepared>(prepared: T, changedTerms = false): T {
     const snapshot = structuredClone(prepared);
     validate(snapshot);
     const existing = latest.get(snapshot.record.operationId);
     if (existing) {
       const old = decodePaymentPrivateRecord(existing.bytes);
       const next = decodePaymentPrivateRecord(snapshot.privateBytes);
-      requireBinding(canonical(old.binding) === canonical(next.binding) && canonical(old.intendedAuthorization) === canonical(next.intendedAuthorization));
+      if (canonical(old.binding) !== canonical(next.binding) || canonical(old.intendedAuthorization) !== canonical(next.intendedAuthorization)) {
+        requireBinding(changedTerms && snapshot.record.kind === 'pay' && old.binding.kind === 'pay'
+          && existing.revision === 0 && old.signatures === undefined && old.attempts.length === 0
+          && next.signatures === undefined && next.attempts.length === 0
+          && canonical(old.creationInputs) === canonical(next.creationInputs)
+          && old.binding.scope.deploymentId === next.binding.scope.deploymentId
+          && old.binding.scope.owner.toLowerCase() === next.binding.scope.owner.toLowerCase()
+          && old.binding.recordId === next.binding.recordId && old.binding.inputId === next.binding.inputId
+          && old.binding.operationId === next.binding.operationId);
+        latest.set(snapshot.record.operationId, { bytes: snapshot.privateBytes.slice(), revision: 0 });
+      }
     } else latest.set(snapshot.record.operationId, { bytes: snapshot.privateBytes.slice(), revision: 0 });
     return snapshot;
   }
@@ -160,7 +174,7 @@ export function createScopedPaymentClient(deps: ScopedPaymentDependencies): Paym
     latestBlockTime: guarded(() => deps.latestBlockTime()),
     preparePay: guarded(async input => accept(await deps.preparePay(input))),
     prepareFullWithdraw: guarded(async input => accept(await deps.prepareFullWithdraw(input))),
-    refreshPay: guarded(async prepared => accept(await deps.refreshPay(prepared))),
+    refreshPay: guarded(async prepared => accept(await deps.refreshPay(prepared), true)),
     validatePrepared: guarded(async prepared => { validate(prepared); await deps.validatePrepared(prepared); validate(prepared); }),
     encrypt: guarded(async (bytes, aad) => {
       const result = await encrypt(bytes, aad); check();

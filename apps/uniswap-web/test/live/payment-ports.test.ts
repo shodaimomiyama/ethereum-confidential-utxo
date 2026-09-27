@@ -6,14 +6,15 @@ import { paymentAuthorizationTypedData, paymentDigest, type Address, type Paymen
 import { createMemoryReservationPort, createMockHttp, createMemoryStore, createManualClock } from '@confidential-utxo/uniswap/testing';
 import { createHttpClient } from '../../src/live/http.js';
 import { createReservationPort } from '../../src/live/reservations.js';
-import { encodePaymentPrivateRecord, openPaymentPrivateRecord } from '../../src/live/payment-record.js';
+import { decodePaymentPrivateRecord, encodePaymentPrivateRecord, openPaymentPrivateRecord } from '../../src/live/payment-record.js';
 import { createScopedPaymentClient, type ScopedPaymentDependencies } from '../../src/live/payment-ports.js';
+import { paymentContentHash } from '../../src/live/payment-preparation.js';
 import type { OperationContext } from '../../src/live/operations.js';
 const hash = (n: string) => `0x${n.repeat(64)}` as `0x${string}`;
 const account = privateKeyToAccount(hash('1'));
 const scope = { deploymentId: 'local', owner: account.address } as Scope;
 const deployment = { chainId: 31337n, pool: `0x${'22'.repeat(20)}` as Address, adapter: `0x${'33'.repeat(20)}` } as const;
-async function setup(options: { lostAck?: boolean; refuse?: boolean; driftAt?: string; pay?: boolean } = {}) {
+async function setup(options: { lostAck?: boolean; refuse?: boolean; driftAt?: string; pay?: boolean; refreshChange?: boolean; refreshTamperHash?: boolean } = {}) {
   const calls: string[] = [];
   let epoch = 0;
   let currentDeployment = deployment;
@@ -34,7 +35,9 @@ async function setup(options: { lostAck?: boolean; refuse?: boolean; driftAt?: s
     { randomSalt: () => new Uint8Array(32).fill(4), inputs: [{ id: hash('2'), owner: account.address, opening, commitment: commit(opening),
       checkpoint: { number: 1n, hash: hash('3'), mode: 'finalized' }, status: 'available', chainId: deployment.chainId, pool: deployment.pool }] });
   const terms: PaymentTerms = { operationId: draft.operationId as never, owner: scope.owner, ethAmount: 9n, token: `0x${'44'.repeat(20)}` as Address, minAmountOut: 1n, recipient: `0x${'55'.repeat(20)}` as Address, deadline: 600n };
-  const record = { kind: options.pay ? 'pay' : 'withdraw', ...(options.pay ? { paymentId: paymentDigest(terms, deployment.chainId, deployment.adapter as Address), deadline: terms.deadline } : {}), scope, recordId: hash('4'), inputId: hash('2'), operationId: draft.operationId, contentHash: hash('5'),
+  const quote = { startedAtMs: 0, blockHash: hash('1') as never, blockNumber: 1n, inputWei: 9n, quoteOut: 99n };
+  const contentHash = options.pay ? paymentContentHash(draft, terms, quote, deployment) : hash('5');
+  const record = { kind: options.pay ? 'pay' : 'withdraw', ...(options.pay ? { paymentId: paymentDigest(terms, deployment.chainId, deployment.adapter as Address), deadline: terms.deadline } : {}), scope, recordId: hash('4'), inputId: hash('2'), operationId: draft.operationId, contentHash,
     encryptedBundle: { nonce: '', ciphertext: '', tag: '' }, signatureStarted: false, attemptIds: [] } as unknown as PreparedFullWithdraw['record'];
   const { encryptedBundle: _, signatureStarted: __, attemptIds: ___, ...binding } = record;
   const poolAuthorization = authorizationTypedData(coreContext, draft.request);
@@ -63,9 +66,22 @@ async function setup(options: { lostAck?: boolean; refuse?: boolean; driftAt?: s
   } }));
   let attempt = 0;
   const dependencies: ScopedPaymentDependencies = { context, resolveDeployment: () => currentDeployment, reservations,
-    preparePay: async () => ({ ...prepared, quote: { startedAtMs: 0, blockHash: hash('1') as never, blockNumber: 1n, inputWei: 9n, quoteOut: 99n } }), prepareFullWithdraw: async () => prepared,
-    refreshPay: async value => value, validatePrepared: async () => {}, paymentTerms: () => terms,
-    clock: { now: () => 0 }, latestBlockTime: async () => 100n,
+    preparePay: async () => ({ ...prepared, quote }), prepareFullWithdraw: async () => prepared,
+    refreshPay: async value => {
+      if (!options.refreshChange && !options.refreshTamperHash) return value;
+      const nextTerms = { ...terms, minAmountOut: 2n };
+      const nextQuote = { ...quote, startedAtMs: 40_000, quoteOut: 101n };
+      const nextRecord = { ...record, paymentId: paymentDigest(nextTerms, deployment.chainId, deployment.adapter as Address),
+        contentHash: options.refreshTamperHash ? hash('f') as never : paymentContentHash(draft, nextTerms, nextQuote, deployment) };
+      const { encryptedBundle: _, signatureStarted: __, attemptIds: ___, ...binding } = nextRecord;
+      const plain = decodePaymentPrivateRecord(prepared.privateBytes);
+      return { record: nextRecord, quote: nextQuote, poolAuthorization,
+        privateBytes: encodePaymentPrivateRecord({ ...plain, binding: binding as never, paymentId: nextRecord.paymentId,
+          intendedAuthorization: { pool: poolAuthorization,
+            payment: paymentAuthorizationTypedData(nextTerms, deployment.chainId, deployment.adapter as Address) } }) } as unknown as typeof value;
+    }, validatePrepared: async () => {}, paymentTerms: value => value.record.kind === 'pay' && value.record.paymentId !== record.paymentId
+      ? { ...terms, minAmountOut: 2n } : terms,
+    clock: { now: () => options.refreshChange || options.refreshTamperHash ? 40_000 : 0 }, latestBlockTime: async () => 100n,
     createAttempt: () => `attempt-${++attempt}` as never,
     submit: async () => { tick('submit'); return { kind: 'submitted', txHash: hash('6') as never }; },
   };
@@ -185,4 +201,19 @@ it('does not replace newer in-memory history with a valid older restored ciphert
   rollback = true;
   await expect(client.resumeOriginal(f.record.recordId)).rejects.toThrow('INVALID_PAYMENT_BINDING');
   expect(f.calls.filter(call => call === 'submit')).toHaveLength(1);
+});
+
+it('lets #55 report changed fixed terms before reservation or signatures', async () => {
+  const f = await setup({ pay: true, refreshChange: true });
+  const initial = await f.client.preparePay({});
+  await expect(f.client.authorizePay(initial, initial.record.contentHash)).rejects.toThrow('TERMS_CHANGED');
+  expect(f.calls).toEqual([]);
+  expect(await f.store.get(scope, initial.record.recordId)).toBeUndefined();
+});
+it('rejects refreshed terms whose display hash was supplied arbitrarily', async () => {
+  const f = await setup({ pay: true, refreshTamperHash: true });
+  const initial = await f.client.preparePay({});
+  await expect(f.client.authorizePay(initial, initial.record.contentHash)).rejects.toThrow('INVALID_PAYMENT_BINDING');
+  expect(f.calls).toEqual([]);
+  expect(await f.store.get(scope, initial.record.recordId)).toBeUndefined();
 });
