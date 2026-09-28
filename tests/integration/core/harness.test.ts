@@ -5,7 +5,7 @@ import type { DeploymentManifestV1 } from "@confidential-utxo/ethereum";
 import { withCoreAnvil } from "./anvil.js";
 import { createCli } from "./cli.js";
 
-it("S-01-fixture deploys official Pool and runs real CLI", async () => {
+it("official fixture deploys Pool and runs real CLI", async () => {
   await withCoreAnvil(async fixture => {
     const { rpcUrl, manifestFile, client, alice, bob } = fixture;
     const manifest = JSON.parse(await readFile(manifestFile, "utf8")) as DeploymentManifestV1;
