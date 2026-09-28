@@ -6,7 +6,7 @@ import type { Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { foundry } from "viem/chains";
 import { encryptReceipt } from "@confidential-utxo/crypto";
-import { authorizeOperation, fixOperation, operationId, outputId, proveFixedOperation,
+import { authorizeOperation, buildOperation, fixOperation, operationId, outputId, proveFixedOperation,
   receiptInfo, recipientInfoTypedData, toPublicSubmission } from "@confidential-utxo/core";
 import type { RecipientInfo } from "@confidential-utxo/core";
 import { createOperationSigner, encodePoolSubmission, verifyEthereumDeployment } from "@confidential-utxo/ethereum";
@@ -90,6 +90,43 @@ export async function submitMalformedTransfer(fixture: CoreAnvilFixture, recipie
   const receipt = await fixture.client.waitForTransactionReceipt({ hash: txHash });
   if (receipt.status !== "success") throw new Error("malformed receipt operation reverted");
   return { operationId: draft.operationId, outputId: draft.outputIds[0]!, txHash };
+}
+
+export async function prepareRejectionFixture(fixture: CoreAnvilFixture) {
+  const recipients = await prepareRecipients(fixture);
+  await executeCliOperation(fixture, { ownerArgs: fixture.alice.args, signer: fixture.alice.signer,
+    kind: "deposit", amountWei: "10", extra: ["--recipient", recipients.alice] });
+  await createCli(fixture).runOwnerCli(["sync", ...fixture.alice.args, ...fixture.onlineArgs]);
+  const state = await readOwnerState(fixture.alice.store, Buffer.from("secret"));
+  if (state.sync?.status !== "complete") throw new Error("Alice failed to sync before rejection fixture");
+  const available = state.sync.utxos.filter(item => item.status === "available");
+  if (available.length !== 1) throw new Error("rejection fixture expected one Alice UTXO");
+  const verified = await verifyEthereumDeployment(fixture.client, fixture.manifest, "local-simulated");
+  const signerKey = async (path: string) => privateKeyToAccount((await readFile(path, "utf8")).trim() as Hex);
+  const aliceAccount = await signerKey(fixture.alice.signer);
+  const bobAccount = await signerKey(fixture.bob.signer);
+  const wallet = createWalletClient({ account: await signerKey(fixture.submitter.signer),
+    chain: foundry, transport: http(fixture.rpcUrl) });
+  async function readRecipient(path: string): Promise<RecipientInfo> {
+    const value = JSON.parse(await readFile(path, "utf8")) as Record<string, string | number>;
+    return { chainId: BigInt(value.chainId!), pool: value.pool as RecipientInfo["pool"],
+      owner: value.owner as RecipientInfo["owner"], receivePublicKey: value.receivePublicKey as Hex,
+      receiptFormat: 1, recipientInfoVersion: 1, signature: value.signature as Hex };
+  }
+  const bobRecipient = await readRecipient(recipients.bob);
+  const aliceRecipient = await readRecipient(recipients.alice);
+  async function transfer(amount: bigint) {
+    const draft = await buildOperation({ kind: 1, owner: fixture.alice.address, amount,
+      recipient: bobRecipient, changeRecipient: aliceRecipient }, verified.context,
+    { inputs: available, randomSalt: () => randomBytes(32) });
+    const signature = await authorizeOperation(verified.context, draft.request,
+      createOperationSigner(aliceAccount, fixture.alice.address));
+    const submission = toPublicSubmission({ ...draft, signature });
+    return { operationId: draft.operationId, outputIds: draft.outputIds,
+      submission, calldata: encodePoolSubmission(submission) };
+  }
+  return { context: verified.context, verified, recipients, available, wallet,
+    aliceAccount, bobAccount, bobRecipient, aliceRecipient, transfer };
 }
 
 export async function executeCliOperation(fixture: CoreAnvilFixture, input: CliOperationInput): Promise<{
