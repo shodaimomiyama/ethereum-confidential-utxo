@@ -1,0 +1,2162 @@
+[
+  {
+    "schemaVersion": 1,
+    "caseId": "S-01-deposit",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "transaction",
+      "source": "tests/integration/core/flow.test.ts",
+      "testName": "S-01-deposit S-03-partial-transfer S-03-independent-spend S-07-offline-recipient S-14-separate-submitter S-16-calldata S-16-events S-16-cli-json",
+      "transactions": [
+        {
+          "operationId": "0xc9ddf88c8daf8a4b961188c68724f1b48d2f91813a50135efc77e7500e1eee04",
+          "txHash": "0xc5aee694a229fde7d35a94bad776377d9273e2a95b25e1b00ca2116eae5588f6",
+          "blockNumber": "4",
+          "blockHash": "0xf460162091447bb626aaa8a81bb78ffaeb150815a14cc68c566656735553b277",
+          "gasUsed": "238311",
+          "status": "success"
+        }
+      ]
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-01-unauthorized",
+    "operationOutcome": "rejected",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "foundry",
+      "source": "contracts/test/PoolAuthorization.t.sol",
+      "testName": "test_invalidSignatureFormsAndWrongOwner",
+      "foundryGas": "2580174"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-01-value-mismatch",
+    "operationOutcome": "rejected",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "foundry",
+      "source": "contracts/test/PoolAuthorization.t.sol",
+      "testName": "test_publicAmountBoundsAndMsgValue",
+      "foundryGas": "1470433"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-01-zero",
+    "operationOutcome": "rejected",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/rejection.test.ts",
+      "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-01-over-limit",
+    "operationOutcome": "rejected",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "foundry",
+      "source": "contracts/test/PoolAuthorization.t.sol",
+      "testName": "test_publicAmountBoundsAndMsgValue",
+      "foundryGas": "1470433"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-02-full-transfer",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "transaction",
+      "source": "tests/integration/core/flow.test.ts",
+      "testName": "S-02-full-transfer S-04-two-input-merge S-05-self-merge S-05-self-split S-05-recreate S-17-fresh-salt-deposit",
+      "transactions": [
+        {
+          "operationId": "0x8ae6593b1fd0c7efa7476de70f5e5247a06364c031447ab623cd26354239931b",
+          "txHash": "0x09cce8dd06ea7e2d6d8bcd0bf590b09583d99e28047ebf1e61d3ac2f47f174ba",
+          "blockNumber": "5",
+          "blockHash": "0x1545ce6758b0d23b8c29c24e0e3955f9de61142d1b701f62ef116fc84da6a4a3",
+          "gasUsed": "4681569",
+          "status": "success"
+        }
+      ]
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-03-partial-transfer",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "transaction",
+      "source": "tests/integration/core/flow.test.ts",
+      "testName": "S-01-deposit S-03-partial-transfer S-03-independent-spend S-07-offline-recipient S-14-separate-submitter S-16-calldata S-16-events S-16-cli-json",
+      "transactions": [
+        {
+          "operationId": "0x29f4a8b24a80ffbcbddab67b0a022b4159bbfa50c6ddc337cabce4ca25045d58",
+          "txHash": "0xe872c79f3b5c4561b6e1e022bb96e5d907c0e7a361ec3151b614a5d382797d5f",
+          "blockNumber": "5",
+          "blockHash": "0x73aa334982a4354d5af554ae60abda926396db476417abfe8037a18572f824ac",
+          "gasUsed": "8765823",
+          "status": "success"
+        }
+      ]
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-03-independent-spend",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "transaction",
+      "source": "tests/integration/core/flow.test.ts",
+      "testName": "S-01-deposit S-03-partial-transfer S-03-independent-spend S-07-offline-recipient S-14-separate-submitter S-16-calldata S-16-events S-16-cli-json",
+      "transactions": [
+        {
+          "operationId": "0x50e0b13f190825a1d5f6ad2b9732727c5676df282e218b6cffa73059b1bfbf2d",
+          "txHash": "0xd19f37bdb942df9b564a5cfffd9a74dbbee79d4d30a379695c7e3b884f78f788",
+          "blockNumber": "6",
+          "blockHash": "0x87cbe9d4eb0375573e78839add02bb6da9fdfb91eb850a285d453989b274dfdb",
+          "gasUsed": "8827001",
+          "status": "success"
+        }
+      ]
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-04-two-input-merge",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "transaction",
+      "source": "tests/integration/core/flow.test.ts",
+      "testName": "S-02-full-transfer S-04-two-input-merge S-05-self-merge S-05-self-split S-05-recreate S-17-fresh-salt-deposit",
+      "transactions": [
+        {
+          "operationId": "0xa36a45d613a5dea30e3cbff3b3c3dbd9f73b26b651981918d35d7e0297e4de1a",
+          "txHash": "0xff999f369110a7786f3821e60a44ee464e0a7f3a0d22130b4ce00d30ffeae0ef",
+          "blockNumber": "8",
+          "blockHash": "0xf64375650c8b4e67042d0319d0dcad9ec5ea395096c035e9c242ba6fef7238d0",
+          "gasUsed": "4739678",
+          "status": "success"
+        }
+      ]
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-04-duplicate-input",
+    "operationOutcome": "rejected",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "foundry",
+      "source": "contracts/test/PoolAuthorization.t.sol",
+      "testName": "test_zeroWithdrawalDestinationAndInputOrdering",
+      "foundryGas": "2449457"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-04-spent-input",
+    "operationOutcome": "rejected",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/rejection.test.ts",
+      "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-04-absent-input",
+    "operationOutcome": "rejected",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "foundry",
+      "source": "contracts/test/PoolAuthorization.t.sol",
+      "testName": "test_absentAndWrongOwnerInput",
+      "foundryGas": "2596088"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-04-foreign-input",
+    "operationOutcome": "rejected",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "foundry",
+      "source": "contracts/test/PoolAuthorization.t.sol",
+      "testName": "test_absentAndWrongOwnerInput",
+      "foundryGas": "2596088"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-05-self-merge",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "transaction",
+      "source": "tests/integration/core/flow.test.ts",
+      "testName": "S-02-full-transfer S-04-two-input-merge S-05-self-merge S-05-self-split S-05-recreate S-17-fresh-salt-deposit",
+      "transactions": [
+        {
+          "operationId": "0xa36a45d613a5dea30e3cbff3b3c3dbd9f73b26b651981918d35d7e0297e4de1a",
+          "txHash": "0xff999f369110a7786f3821e60a44ee464e0a7f3a0d22130b4ce00d30ffeae0ef",
+          "blockNumber": "8",
+          "blockHash": "0xf64375650c8b4e67042d0319d0dcad9ec5ea395096c035e9c242ba6fef7238d0",
+          "gasUsed": "4739678",
+          "status": "success"
+        }
+      ]
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-05-self-split",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "transaction",
+      "source": "tests/integration/core/flow.test.ts",
+      "testName": "S-02-full-transfer S-04-two-input-merge S-05-self-merge S-05-self-split S-05-recreate S-17-fresh-salt-deposit",
+      "transactions": [
+        {
+          "operationId": "0x581f4caef72f20879df310e07b51f61f8311b4273f7427ce99b98b883abcd1c8",
+          "txHash": "0x1e2e4a0c7a5b21da952eb65057a67c37e0f3e54cceeea4ad1e2521af6a646ac8",
+          "blockNumber": "9",
+          "blockHash": "0x1d5a20450100467b15206d71756a460caab5c5e6e55b8bf4df0dabaaed493d21",
+          "gasUsed": "8792028",
+          "status": "success"
+        }
+      ]
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-05-recreate",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "transaction",
+      "source": "tests/integration/core/flow.test.ts",
+      "testName": "S-02-full-transfer S-04-two-input-merge S-05-self-merge S-05-self-split S-05-recreate S-17-fresh-salt-deposit",
+      "transactions": [
+        {
+          "operationId": "0x9bb6a1f0f55e190fc58b4757d42291076a27390f8616b4271e4e5f16d70b855d",
+          "txHash": "0x1a638692a0dd99b0ac82697a8d88db1739a8211d73fbe1eb05ab7f3eb5415022",
+          "blockNumber": "10",
+          "blockHash": "0x8f6b29b0bac6fe60a889b63611e63e62f11ef41675ed34cdd57bda55dfb72c87",
+          "gasUsed": "4756941",
+          "status": "success"
+        }
+      ]
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-06-self-full-withdraw",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "transaction",
+      "source": "tests/integration/core/flow.test.ts",
+      "testName": "S-06-self-full-withdraw S-06-self-partial-withdraw S-06-third-party-full-withdraw S-06-third-party-partial-withdraw S-06-contract-full-withdraw S-06-contract-partial-withdraw",
+      "transactions": [
+        {
+          "operationId": "0x78073ae0ca223fa0b7d93ab930b50ad25c408be303365ea8016db1b5cc14f5cb",
+          "txHash": "0x016708042610f36e15685e1ede3a0a6c72817910cddd3b6ff8277b9ca5da153f",
+          "blockNumber": "6",
+          "blockHash": "0x17962873f9dd19c569ecb329caf4b1cb8c1b20f4bf06a271216b2a8e9ff1b659",
+          "gasUsed": "158764",
+          "status": "success"
+        }
+      ]
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-06-self-partial-withdraw",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "transaction",
+      "source": "tests/integration/core/flow.test.ts",
+      "testName": "S-06-self-full-withdraw S-06-self-partial-withdraw S-06-third-party-full-withdraw S-06-third-party-partial-withdraw S-06-contract-full-withdraw S-06-contract-partial-withdraw",
+      "transactions": [
+        {
+          "operationId": "0xe71b4642b9596d7029b924573dcfb63c0092bd8cc1e6e2c68e10c526b9acc101",
+          "txHash": "0x58345587c45a9e4cacc49aeda5dde44fa7f0f10be4875bb2efced17cb318230b",
+          "blockNumber": "8",
+          "blockHash": "0x1025c77c30cebfb8e50a3c52fb5b4ca2f45a07a4c7dc6dbdd9cbdc5f3c707ea6",
+          "gasUsed": "4742495",
+          "status": "success"
+        }
+      ]
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-06-third-party-full-withdraw",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "transaction",
+      "source": "tests/integration/core/flow.test.ts",
+      "testName": "S-06-self-full-withdraw S-06-self-partial-withdraw S-06-third-party-full-withdraw S-06-third-party-partial-withdraw S-06-contract-full-withdraw S-06-contract-partial-withdraw",
+      "transactions": [
+        {
+          "operationId": "0x7a7f65e5228f1ab49b93ddb6600ec8d024f96e039abf8c2ccff68bbc6ebc26a1",
+          "txHash": "0x99c6d20b130634a2774499ac35969ff5ac9ce12f508259a747b164acc1057b86",
+          "blockNumber": "10",
+          "blockHash": "0xcf6814e27fc744a4f159d60d7b927c0798155b79b6b988372ab1a2dfddf45cbe",
+          "gasUsed": "164200",
+          "status": "success"
+        }
+      ]
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-06-third-party-partial-withdraw",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "transaction",
+      "source": "tests/integration/core/flow.test.ts",
+      "testName": "S-06-self-full-withdraw S-06-self-partial-withdraw S-06-third-party-full-withdraw S-06-third-party-partial-withdraw S-06-contract-full-withdraw S-06-contract-partial-withdraw",
+      "transactions": [
+        {
+          "operationId": "0xc1ca4cb7a0d5c7e19f6740f30fb8bddb6dc2c8437bf611ff9977f0432879050d",
+          "txHash": "0x9f11293d8ab671d35994713aaf69adb0ae53c1adefb6b93d06e2658a79d9406e",
+          "blockNumber": "12",
+          "blockHash": "0x822b223fcea0aa7799a78ecc72a52d9407abd8d0051bb8ae9625271da6799669",
+          "gasUsed": "4801296",
+          "status": "success"
+        }
+      ]
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-06-contract-full-withdraw",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "transaction",
+      "source": "tests/integration/core/flow.test.ts",
+      "testName": "S-06-self-full-withdraw S-06-self-partial-withdraw S-06-third-party-full-withdraw S-06-third-party-partial-withdraw S-06-contract-full-withdraw S-06-contract-partial-withdraw",
+      "transactions": [
+        {
+          "operationId": "0x8a912c1ee759806f421313f7f34b9f69cef2c8c08c613d7507d39466ab5a8e13",
+          "txHash": "0xdd095ef6457b1fe1e89c9a0e8c5f0136efb0d03ee270bdaae3ffeb976c78d834",
+          "blockNumber": "14",
+          "blockHash": "0xce1aaee210b9d9bdcaa5322d1210fc17f4dde43baf0ab51b03d8c65dda4a2596",
+          "gasUsed": "138540",
+          "status": "success"
+        }
+      ]
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-06-contract-partial-withdraw",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "transaction",
+      "source": "tests/integration/core/flow.test.ts",
+      "testName": "S-06-self-full-withdraw S-06-self-partial-withdraw S-06-third-party-full-withdraw S-06-third-party-partial-withdraw S-06-contract-full-withdraw S-06-contract-partial-withdraw",
+      "transactions": [
+        {
+          "operationId": "0x0d529335e37c562973ddf18a4ef44e9bcaa40d60db58e6db931514fee91519e9",
+          "txHash": "0xd06354448537e0091b1878c6395c4b6637cb42b7c6140a1aad364f7b650c51cb",
+          "blockNumber": "16",
+          "blockHash": "0xf13d25b1b48741b1d142550e5e4f4df8cb096b64a584d55f242ada90c71f360c",
+          "gasUsed": "4751641",
+          "status": "success"
+        }
+      ]
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-07-offline-recipient",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "transaction",
+      "source": "tests/integration/core/flow.test.ts",
+      "testName": "S-01-deposit S-03-partial-transfer S-03-independent-spend S-07-offline-recipient S-14-separate-submitter S-16-calldata S-16-events S-16-cli-json",
+      "transactions": [
+        {
+          "operationId": "0x29f4a8b24a80ffbcbddab67b0a022b4159bbfa50c6ddc337cabce4ca25045d58",
+          "txHash": "0xe872c79f3b5c4561b6e1e022bb96e5d907c0e7a361ec3151b614a5d382797d5f",
+          "blockNumber": "5",
+          "blockHash": "0x73aa334982a4354d5af554ae60abda926396db476417abfe8037a18572f824ac",
+          "gasUsed": "8765823",
+          "status": "success"
+        }
+      ]
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-08-decrypt-failure",
+    "operationOutcome": "unavailable",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/receipt.test.ts",
+      "testName": "S-08-decrypt-failure S-08-commitment-mismatch S-08-history-replay S-08-missing-output-log S-08-unconfirmed"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-08-commitment-mismatch",
+    "operationOutcome": "unavailable",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/receipt.test.ts",
+      "testName": "S-08-decrypt-failure S-08-commitment-mismatch S-08-history-replay S-08-missing-output-log S-08-unconfirmed"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-08-unconfirmed",
+    "operationOutcome": "unconfirmed",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/receipt.test.ts",
+      "testName": "S-08-decrypt-failure S-08-commitment-mismatch S-08-history-replay S-08-missing-output-log S-08-unconfirmed"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-08-history-replay",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/receipt.test.ts",
+      "testName": "S-08-decrypt-failure S-08-commitment-mismatch S-08-history-replay S-08-missing-output-log S-08-unconfirmed"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-08-missing-output-log",
+    "operationOutcome": "unconfirmed",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/receipt.test.ts",
+      "testName": "S-08-decrypt-failure S-08-commitment-mismatch S-08-history-replay S-08-missing-output-log S-08-unconfirmed"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-09-other-owner",
+    "operationOutcome": "rejected",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "foundry",
+      "source": "contracts/test/PoolAuthorization.t.sol",
+      "testName": "test_invalidSignatureFormsAndWrongOwner",
+      "foundryGas": "2580174"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-09-prior-sender",
+    "operationOutcome": "rejected",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/rejection.test.ts",
+      "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-09-false-authorization",
+    "operationOutcome": "rejected",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "foundry",
+      "source": "contracts/test/PoolAuthorization.t.sol",
+      "testName": "test_invalidSignatureFormsAndWrongOwner",
+      "foundryGas": "2580174"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-09-intent-mutation",
+    "operationOutcome": "rejected",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "foundry",
+      "source": "contracts/test/PoolAuthorization.t.sol",
+      "testName": "test_validShapeFieldMutationsFailOwnerAuthorization",
+      "foundryGas": "15410026"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-09-other-chain",
+    "operationOutcome": "rejected",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/rejection.test.ts",
+      "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-09-other-pool",
+    "operationOutcome": "rejected",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/rejection.test.ts",
+      "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-09-unknown-version",
+    "operationOutcome": "rejected",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/rejection.test.ts",
+      "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-10-competing-operations",
+    "operationOutcome": "rejected",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/rejection.test.ts",
+      "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-10-successful-id-reuse",
+    "operationOutcome": "rejected",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/rejection.test.ts",
+      "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-10-copy-vs-competition",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/rejection.test.ts",
+      "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-11-receiver-refusal",
+    "operationOutcome": "rolled-back",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "foundry",
+      "source": "contracts/test/PoolWithdrawal.t.sol",
+      "testName": "test_propagatedReentryAndRejectedReceiveRollback",
+      "foundryGas": "7898848"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-11-caught-reentry",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "foundry",
+      "source": "contracts/test/PoolWithdrawal.t.sol",
+      "testName": "test_caughtReentryPreservesOuterWithdrawal",
+      "foundryGas": "3090254"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-11-propagated-reentry",
+    "operationOutcome": "rolled-back",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "foundry",
+      "source": "contracts/test/PoolWithdrawal.t.sol",
+      "testName": "test_propagatedReentryAndRejectedReceiveRollback",
+      "foundryGas": "7898848"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-11-outer-revert",
+    "operationOutcome": "rolled-back",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/atomicity.test.ts",
+      "testName": "S-11-outer-revert rolls back inner acceptance"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-12-donation",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "foundry",
+      "source": "contracts/test/PoolWithdrawal.t.sol",
+      "testName": "test_ordinaryReceiveDoesNotMint",
+      "foundryGas": "1100248"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-12-forced-eth",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "foundry",
+      "source": "contracts/test/PoolWithdrawal.t.sol",
+      "testName": "test_forcedEthAndLargeReturnData",
+      "foundryGas": "3172849"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-12-returned-eth",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "foundry",
+      "source": "contracts/test/PoolWithdrawal.t.sol",
+      "testName": "test_ethReturnDuringCallback",
+      "foundryGas": "2996845"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-13-one",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/rejection.test.ts",
+      "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-13-at-m",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "foundry",
+      "source": "contracts/test/PoolFlow.t.sol",
+      "testName": "test_maxBoundaryTransfer",
+      "foundryGas": "13896025"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-13-above-m",
+    "operationOutcome": "rejected",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/rejection.test.ts",
+      "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-13-negative-encoding",
+    "operationOutcome": "rejected",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/rejection.test.ts",
+      "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-13-noncanonical-scalar",
+    "operationOutcome": "rejected",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "foundry",
+      "source": "contracts/test/PoolFlow.t.sol",
+      "testName": "test_realVerifierRejectsNoncanonicalScalarsAndZeroValueOutput",
+      "foundryGas": "5683823"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-13-two-inputs",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "foundry",
+      "source": "contracts/test/PoolFlow.t.sol",
+      "testName": "test_realConsolidationAndSelfOperations",
+      "foundryGas": "34841026"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-13-three-inputs",
+    "operationOutcome": "rejected",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "foundry",
+      "source": "contracts/test/PoolAuthorization.t.sol",
+      "testName": "test_rejectsThreeInputsExcessOutputsAndWrongProofCount",
+      "foundryGas": "5307796"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-13-two-max-inputs",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "foundry",
+      "source": "contracts/test/PoolFlow.t.sol",
+      "testName": "test_maxBoundaryTransfer",
+      "foundryGas": "13896025"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-14-separate-submitter",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "transaction",
+      "source": "tests/integration/core/flow.test.ts",
+      "testName": "S-01-deposit S-03-partial-transfer S-03-independent-spend S-07-offline-recipient S-14-separate-submitter S-16-calldata S-16-events S-16-cli-json",
+      "transactions": [
+        {
+          "operationId": "0x50e0b13f190825a1d5f6ad2b9732727c5676df282e218b6cffa73059b1bfbf2d",
+          "txHash": "0xd19f37bdb942df9b564a5cfffd9a74dbbee79d4d30a379695c7e3b884f78f788",
+          "blockNumber": "6",
+          "blockHash": "0x87cbe9d4eb0375573e78839add02bb6da9fdfb91eb850a285d453989b274dfdb",
+          "gasUsed": "8827001",
+          "status": "success"
+        }
+      ]
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-15-rpc-failure",
+    "operationOutcome": "unconfirmed",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/recovery.test.ts",
+      "testName": "S-15-rpc-failure S-15-duplicate-history S-15-missing-history"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-15-pending",
+    "operationOutcome": "unconfirmed",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/recovery.test.ts",
+      "testName": "S-15-pending S-15-lost-ack S-15-backup-restore"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-15-reorg",
+    "operationOutcome": "unconfirmed",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/recovery.test.ts",
+      "testName": "S-15-reorg discards an adopted receipt when a block hash changes"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-15-lost-ack",
+    "operationOutcome": "unconfirmed",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/recovery.test.ts",
+      "testName": "S-15-pending S-15-lost-ack S-15-backup-restore"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-15-duplicate-history",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/recovery.test.ts",
+      "testName": "S-15-rpc-failure S-15-duplicate-history S-15-missing-history"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-15-missing-history",
+    "operationOutcome": "unconfirmed",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/recovery.test.ts",
+      "testName": "S-15-rpc-failure S-15-duplicate-history S-15-missing-history"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-15-backup-restore",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/recovery.test.ts",
+      "testName": "S-15-pending S-15-lost-ack S-15-backup-restore"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-16-calldata",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "transaction",
+      "source": "tests/integration/core/flow.test.ts",
+      "testName": "S-01-deposit S-03-partial-transfer S-03-independent-spend S-07-offline-recipient S-14-separate-submitter S-16-calldata S-16-events S-16-cli-json",
+      "transactions": [
+        {
+          "operationId": "0x29f4a8b24a80ffbcbddab67b0a022b4159bbfa50c6ddc337cabce4ca25045d58",
+          "txHash": "0xe872c79f3b5c4561b6e1e022bb96e5d907c0e7a361ec3151b614a5d382797d5f",
+          "blockNumber": "5",
+          "blockHash": "0x73aa334982a4354d5af554ae60abda926396db476417abfe8037a18572f824ac",
+          "gasUsed": "8765823",
+          "status": "success"
+        }
+      ]
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-16-events",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "transaction",
+      "source": "tests/integration/core/flow.test.ts",
+      "testName": "S-01-deposit S-03-partial-transfer S-03-independent-spend S-07-offline-recipient S-14-separate-submitter S-16-calldata S-16-events S-16-cli-json",
+      "transactions": [
+        {
+          "operationId": "0x29f4a8b24a80ffbcbddab67b0a022b4159bbfa50c6ddc337cabce4ca25045d58",
+          "txHash": "0xe872c79f3b5c4561b6e1e022bb96e5d907c0e7a361ec3151b614a5d382797d5f",
+          "blockNumber": "5",
+          "blockHash": "0x73aa334982a4354d5af554ae60abda926396db476417abfe8037a18572f824ac",
+          "gasUsed": "8765823",
+          "status": "success"
+        }
+      ]
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-16-cli-json",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "transaction",
+      "source": "tests/integration/core/flow.test.ts",
+      "testName": "S-01-deposit S-03-partial-transfer S-03-independent-spend S-07-offline-recipient S-14-separate-submitter S-16-calldata S-16-events S-16-cli-json",
+      "transactions": [
+        {
+          "operationId": "0x29f4a8b24a80ffbcbddab67b0a022b4159bbfa50c6ddc337cabce4ca25045d58",
+          "txHash": "0xe872c79f3b5c4561b6e1e022bb96e5d907c0e7a361ec3151b614a5d382797d5f",
+          "blockNumber": "5",
+          "blockHash": "0x73aa334982a4354d5af554ae60abda926396db476417abfe8037a18572f824ac",
+          "gasUsed": "8765823",
+          "status": "success"
+        }
+      ]
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-16-public-results",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/evidence.test.mjs",
+      "testName": "S-16-public-results writes a new private-mode sanitized file and refuses overwrite"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-17-deposit-reuse",
+    "operationOutcome": "rejected",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/rejection.test.ts",
+      "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-17-fresh-salt-deposit",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "transaction",
+      "source": "tests/integration/core/flow.test.ts",
+      "testName": "S-02-full-transfer S-04-two-input-merge S-05-self-merge S-05-self-split S-05-recreate S-17-fresh-salt-deposit",
+      "transactions": [
+        {
+          "operationId": "0xcda8a0f7ad4fcf6a0feb50913feea545b5d89c21ab53215d649c6ebf02ab481c",
+          "txHash": "0x4f15f0718e0913f08e9f52eec699a66e602597ba5095dbc86316262a41d32fda",
+          "blockNumber": "11",
+          "blockHash": "0x19a8d40ea25604b6444184808d948f83dbd110d21eb93fc068a8b3e746506ee2",
+          "gasUsed": "216728",
+          "status": "success"
+        },
+        {
+          "operationId": "0x8370c3a9c93587ba147492cf0134dd131c2ab3e07eff21685f11efa0ff340803",
+          "txHash": "0x4b72c49bc3e61fe91da576389cad5682e05a1cc83788c513949d8a923bbc3e56",
+          "blockNumber": "12",
+          "blockHash": "0xf6e1d8b8f3a1584dc7c29397da690d451b79df3a250a476ffac407b715e3d6bc",
+          "gasUsed": "220546",
+          "status": "success"
+        }
+      ]
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-18-late-input-spend",
+    "operationOutcome": "rejected",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/rejection.test.ts",
+      "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-18-successful-competitor-kept",
+    "operationOutcome": "success",
+    "testOutcome": "pass",
+    "commit": "2440b5274ae9c0d4780ce53eeffbd4899f4a007d",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "tests/integration/core/rejection.test.ts",
+      "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
+    },
+    "execution": {
+      "durationMs": "265476",
+      "timeoutMs": "2700000"
+    }
+  }
+]
