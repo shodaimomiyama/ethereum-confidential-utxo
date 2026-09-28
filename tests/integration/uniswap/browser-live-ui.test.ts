@@ -4,7 +4,8 @@ import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { chromium, type BrowserContext, type Page } from 'playwright';
 import { generateMnemonic, mnemonicToAccount, english } from 'viem/accounts';
-import { it } from 'vitest';
+import { expect, it } from 'vitest';
+import { createKeySession, recipientMessage } from '../../../apps/uniswap-web/src/live/key-session.js';
 import { startBrowserLiveEnvironment } from './browser-live-environment.js';
 
 const extensionPath = process.env.ECU_METAMASK_EXTENSION_PATH
@@ -70,6 +71,45 @@ async function mineBlock(rpcUrl: string): Promise<void> {
   if (!response.ok || body.error) throw new Error('LOCAL_BLOCK_MINING_FAILED');
 }
 
+async function appStorage(page: Page): Promise<string> {
+  return page.evaluate(async () => {
+    const hex = (bytes: Uint8Array): string => Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+    const serialize = (value: unknown): string => JSON.stringify(value, (_key, item: unknown) =>
+      item instanceof ArrayBuffer ? hex(new Uint8Array(item))
+        : ArrayBuffer.isView(item) ? hex(new Uint8Array(item.buffer, item.byteOffset, item.byteLength)) : item) ?? '';
+    const stored: unknown[] = [Object.fromEntries(Object.entries(localStorage)),
+      Object.fromEntries(Object.entries(sessionStorage))];
+    for (const entry of await indexedDB.databases()) {
+      if (!entry.name) continue;
+      const databaseName = entry.name;
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open(databaseName);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      try {
+        for (const name of db.objectStoreNames) {
+          const values = await new Promise<unknown[]>((resolve, reject) => {
+            const transaction = db.transaction(name, 'readonly');
+            const request = transaction.objectStore(name).getAll();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          stored.push({ database: databaseName, store: name, values });
+        }
+      } finally { db.close(); }
+    }
+    return serialize(stored);
+  });
+}
+
+function assertNoSecret(text: string, secrets: readonly string[], surface: string): void {
+  const lowered = text.toLowerCase();
+  for (const secret of secrets) {
+    if (lowered.includes(secret.toLowerCase())) throw new Error(`SECRET_EXPOSED_IN_${surface}`);
+  }
+}
+
 it('receives a real demo reward through the public UI and MetaMask', async () => {
   const manifestPath = join(extensionPath, 'manifest.json');
   if (!existsSync(manifestPath)) throw new Error('METAMASK_EXTENSION_UNAVAILABLE');
@@ -83,7 +123,23 @@ it('receives a real demo reward through the public UI and MetaMask', async () =>
   try {
     profile = mkdtempSync(join(tmpdir(), 'ecu-live-metamask-'));
     const mnemonic = generateMnemonic(english);
-    const owner = mnemonicToAccount(mnemonic).address;
+    const account = mnemonicToAccount(mnemonic);
+    const owner = account.address;
+    const pool = (environment.coreManifest as { pool: { address: `0x${string}` } }).pool.address;
+    const derivedSignature = await account.signMessage({
+      message: { raw: recipientMessage(31337n, pool as Parameters<typeof recipientMessage>[1],
+        owner as Parameters<typeof recipientMessage>[2]) },
+    });
+    const fixtureKeySession = createKeySession({ subscribe: () => () => {} },
+      { scope: { deploymentId: environment.deploymentId, owner } as Parameters<typeof createKeySession>[1]['scope'], epoch: 1 },
+      { chainId: 31337n, pool });
+    let receiptPrivateKey: string;
+    try {
+      await fixtureKeySession.prepare(derivedSignature);
+      receiptPrivateKey = Buffer.from(fixtureKeySession.recipientPrivateKeyForWorker()).toString('hex');
+    } finally { fixtureKeySession.dispose(); }
+    const secrets = [mnemonic, Buffer.from(account.getHdKey().privateKey!).toString('hex'), derivedSignature,
+      receiptPrivateKey].flatMap(value => value.startsWith('0x') ? [value, value.slice(2)] : [value]);
     await setPublicBalance(environment.rpcUrl, owner);
     context = await chromium.launchPersistentContext(profile, { headless: false,
       executablePath: chromeForTesting(), ignoreHTTPSErrors: true,
@@ -91,6 +147,21 @@ it('receives a real demo reward through the public UI and MetaMask', async () =>
         '--ignore-certificate-errors', '--no-first-run'] });
     const wallet = await importThrowawayWallet(context, mnemonic);
     const app = await context.newPage();
+    const outboundBodies: string[] = [];
+    const browserMessages: string[] = [];
+    const rewardSubmissions: string[] = [];
+    app.on('request', request => {
+      const url = new URL(request.url());
+      if (url.origin !== environment.origin) return;
+      if (url.pathname === '/rpc' || url.pathname.startsWith('/v1/')) {
+        outboundBodies.push(request.postData() ?? '');
+      }
+      if (url.pathname === '/v1/rewards' && request.method() === 'POST') {
+        rewardSubmissions.push(request.url());
+      }
+    });
+    app.on('console', message => browserMessages.push(message.text()));
+    app.on('pageerror', error => browserMessages.push(error.message));
     await app.goto(environment.appUrl);
     if (await app.getByText('Dim app is not configured').count()) throw new Error('LIVE_STARTUP_FAILED');
     await app.getByRole('heading', { name: 'Try Dim' }).waitFor({ timeout: 30_000 });
@@ -193,6 +264,29 @@ it('receives a real demo reward through the public UI and MetaMask', async () =>
       const value = document.querySelector('.balances .surface:nth-child(2) strong')?.textContent;
       return value !== undefined && value !== null && !value.startsWith('0 ETH');
     }, undefined, { timeout: 30_000 });
+    const privateBalance = await app.locator('.balances .surface:nth-child(2) strong').innerText();
+    expect(privateBalance).toBe('0.002 ETH');
+    expect(rewardSubmissions).toHaveLength(1);
+    assertNoSecret(await app.content(), secrets, 'UI');
+    assertNoSecret(app.url(), secrets, 'URL');
+    assertNoSecret(await appStorage(app), secrets, 'STORAGE');
+    assertNoSecret(outboundBodies.join('\n'), secrets, 'API_OR_RPC_REQUEST');
+    assertNoSecret(browserMessages.join('\n'), secrets, 'CONSOLE_OR_ERROR');
+
+    // A fresh page needs an explicit wallet and key preparation before private balance recovery.
+    // It must neither prompt for signatures nor replay the completed reward on its own.
+    await app.reload();
+    await app.getByRole('heading', { name: 'Try Dim' }).waitFor({ timeout: 30_000 });
+    await app.waitForTimeout(2_000);
+    await app.getByRole('button', { name: 'Connect wallet' }).waitFor();
+    expect(await app.locator('.balances .surface:nth-child(2) strong').innerText()).toBe('0 ETH');
+    expect(rewardSubmissions).toHaveLength(1);
+    expect(context.pages().filter(page => page.url().includes('/notification.html'))).toHaveLength(0);
+    assertNoSecret(await app.content(), secrets, 'RELOADED_UI');
+    assertNoSecret(app.url(), secrets, 'RELOADED_URL');
+    assertNoSecret(await appStorage(app), secrets, 'RELOADED_STORAGE');
+    assertNoSecret(outboundBodies.join('\n'), secrets, 'API_OR_RPC_REQUEST');
+    assertNoSecret(browserMessages.join('\n'), secrets, 'CONSOLE_OR_ERROR');
   } finally {
     try { await context?.close(); }
     finally {
