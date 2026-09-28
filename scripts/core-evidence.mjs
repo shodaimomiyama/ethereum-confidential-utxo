@@ -109,13 +109,22 @@ function publicResult(value, requirePass = false) {
   let network;
   if (value.network !== undefined) {
     exactKeys(value.network, new Set(["chainId", "pool", "deploymentTxHash", "manifestSha256",
-      "finalizedBlockNumber", "finalizedBlockHash", "declaredFork", "forkBasis"]),
+      "finalizedBlockNumber", "finalizedBlockHash", "declaredFork", "forkBasis",
+      "rpcHost", "rpcClient", "submitter", "submitterBalanceWei"]),
     ["chainId", "pool", "deploymentTxHash", "manifestSha256", "finalizedBlockNumber",
       "finalizedBlockHash", "declaredFork", "forkBasis"], "result.network");
     requireShape(decimal.test(value.network.chainId) && decimal.test(value.network.finalizedBlockNumber) &&
       /^0x[0-9a-f]{40}$/i.test(value.network.pool) && hex32.test(value.network.deploymentTxHash) &&
       /^[0-9a-f]{64}$/i.test(value.network.manifestSha256) &&
       hex32.test(value.network.finalizedBlockHash), "result.network.values");
+    if (value.network.rpcHost !== undefined)
+      requireShape(/^[a-z0-9.-]+$/i.test(value.network.rpcHost) && !value.network.rpcHost.includes('..'),
+        "result.network.rpcHost");
+    if (value.network.rpcClient !== undefined) cleanText(value.network.rpcClient, "result.network.rpcClient");
+    if (value.network.submitter !== undefined)
+      requireShape(/^0x[0-9a-f]{40}$/i.test(value.network.submitter), "result.network.submitter");
+    if (value.network.submitterBalanceWei !== undefined)
+      requireShape(decimal.test(value.network.submitterBalanceWei), "result.network.submitterBalanceWei");
     network = { ...value.network, declaredFork: cleanText(value.network.declaredFork, "result.network.declaredFork"),
       forkBasis: cleanText(value.network.forkBasis, "result.network.forkBasis") };
   }

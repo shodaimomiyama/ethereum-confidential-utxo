@@ -157,12 +157,15 @@ async function finalizedReceipt(client, txHash) {
   }
 }
 
-function requireOperationEvent(receipt, pool, id) {
+function requireOperationEvent(receipt, pool, id, kind, amountWei) {
   const found = receipt.logs.some(log => {
     if (!same(log.address, pool)) return false;
     try {
       const event = decodeEventLog({ abi: poolAbi, data: log.data, topics: log.topics });
-      return event.eventName === 'OperationSucceeded' && same(event.args.operationId, id);
+      return event.eventName === 'OperationSucceeded' && same(event.args.operationId, id) &&
+        event.args.kind === ({ deposit: 0, transfer: 1, withdraw: 2 })[kind] &&
+        event.args.d === (kind === 'deposit' ? BigInt(amountWei) : 0n) &&
+        event.args.w === (kind === 'withdraw' ? BigInt(amountWei) : 0n);
     } catch { return false; }
   });
   if (!found) safeError('SEPOLIA_OPERATION_EVENT_MISSING');
@@ -198,8 +201,6 @@ export async function runSepolia(args) {
   const manifest = JSON.parse(manifestBytes.toString('utf8'));
   const client = createPublicClient({ chain: sepolia, transport: http(args.rpc, { timeout: 30_000, retryCount: 0 }) });
   const { verified, point } = await preflightSepolia({ rpc: args.rpc, manifest, client });
-  const accountingBefore = await client.readContract({ address: verified.context.pool, abi: poolAbi,
-    functionName: 'getAccounting', blockTag: 'finalized' });
   const actors = [];
   for (const role of ['owner-a', 'owner-b', 'submitter']) {
     const keyPath = args[`${role}-key`];
@@ -217,7 +218,8 @@ export async function runSepolia(args) {
     try { await access(path); safeError('SEPOLIA_STATE_EXISTS'); }
     catch (error) { if (error.message === 'SEPOLIA_STATE_EXISTS') throw error; if (error.code !== 'ENOENT') throw error; }
   }
-  if (await client.getBalance({ address: submitter.account.address }) === 0n)
+  const submitterBalance = await client.getBalance({ address: submitter.account.address });
+  if (submitterBalance === 0n)
     safeError('SEPOLIA_SUBMITTER_UNFUNDED');
   const started = Date.now();
   const [pnpm, foundry, commit] = await Promise.all([
@@ -233,7 +235,9 @@ export async function runSepolia(args) {
     deploymentTxHash: manifest.pool.transactionHash,
     manifestSha256: createHash('sha256').update(manifestBytes).digest('hex'),
     finalizedBlockNumber: String(point.number), finalizedBlockHash: point.hash,
-    declaredFork: manifest.hardfork, forkBasis: 'finalized-block-blob-fields-cancun-or-later' };
+    declaredFork: manifest.hardfork, forkBasis: 'finalized-block-blob-fields-cancun-or-later',
+    rpcHost: new URL(args.rpc).hostname, rpcClient: 'viem@2.56.9',
+    submitter: submitter.account.address, submitterBalanceWei: String(submitterBalance) };
   const operations = new Map();
   function results(failureReason) {
     return expectedCases.map(item => {
@@ -305,12 +309,14 @@ export async function runSepolia(args) {
   }
   async function execute(name, actor, ownerArgs, kind, amountWei, extra) {
     const { id, publicFile } = await prepare(actor, ownerArgs, kind, amountWei, extra);
+    operations.set(name, { pending: true, id });
+    await saveCheckpoint();
     const submitted = await cli(['submit', ...sender, '--public', publicFile]);
     if (!hex32.test(submitted.txHash)) safeError('SEPOLIA_SUBMISSION_UNKNOWN');
     operations.set(name, { pending: true, id, txHash: submitted.txHash });
     await saveCheckpoint();
     const receipt = await finalizedReceipt(client, submitted.txHash);
-    requireOperationEvent(receipt, verified.context.pool, id);
+    requireOperationEvent(receipt, verified.context.pool, id, kind, amountWei);
     const observed = await cli(['operation', ...sender, '--id', id]);
     if (observed.status !== 'executed') safeError('SEPOLIA_OPERATION_UNCONFIRMED');
     const row = { operationId: id, txHash: submitted.txHash, blockNumber: String(receipt.blockNumber),
@@ -370,7 +376,7 @@ export async function runSepolia(args) {
     safeError('SEPOLIA_WITHDRAW_BALANCE');
   const accounting = await client.readContract({ address: verified.context.pool, abi: poolAbi,
     functionName: 'getAccounting', blockTag: 'finalized' });
-  if (accounting[1] !== accountingBefore[1] + 10n || accounting[0] < accounting[1])
+  if (accounting[0] < accounting[1])
     safeError('SEPOLIA_ACCOUNTING');
   const aState = await readOwnerState(`${args['owner-a-store']}.inaccessible`, Buffer.from(secret));
   const bState = await readOwnerState(args['owner-b-store'], Buffer.from(secret));
@@ -412,27 +418,51 @@ export async function runSepolia(args) {
   return args.out;
 }
 
-export async function finalizeFailedSepolia(args, reason) {
+export async function finalizeFailedSepolia(args, reason, started = Date.now()) {
   const pendingPath = `${args.out}.pending.json`;
   let rows;
-  try { rows = JSON.parse(await readFile(pendingPath, 'utf8')); }
-  catch (error) { if (error.code === 'ENOENT') return false; throw error; }
   const safeReason = /^SEPOLIA_[A-Z_]+$/.test(reason) ? reason : 'SEPOLIA_FAILED';
+  try { rows = JSON.parse(await readFile(pendingPath, 'utf8')); }
+  catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+    try { await access(args.out); return false; }
+    catch (exists) { if (exists.code !== 'ENOENT') throw exists; }
+    const [pnpm, foundry, commit] = await Promise.all([
+      command('pnpm', ['--version']), command('forge', ['--version']), command('git', ['rev-parse', 'HEAD'])]);
+    if (commit.code) throw new Error('SEPOLIA_COMMIT_UNAVAILABLE');
+    let hashes = {};
+    try { hashes = await artifactHashes(); } catch { /* Build was not yet available. */ }
+    const environment = { os: process.platform, arch: process.arch, node: process.versions.node,
+      pnpm: pnpm.code ? 'unavailable' : pnpm.stdout.trim(),
+      foundry: foundry.code ? 'unavailable' : foundry.stdout.match(/\d+\.\d+\.\d+/)?.[0] ?? 'unavailable',
+      memoryBytes: String(totalmem()) };
+    const expectedCases = JSON.parse(await readFile(join(root, 'tests/integration/core/cases.json'), 'utf8'))
+      .filter(item => item.runner === 'sepolia');
+    rows = expectedCases.map(item => ({ schemaVersion: 1, caseId: item.caseId,
+      operationOutcome: 'unavailable', testOutcome: 'not-run', commit: commit.stdout.trim(),
+      artifactHashes: hashes, environment,
+      execution: { durationMs: String(Date.now() - started), timeoutMs: '900000', failureReason: safeReason },
+      evidence: { kind: 'test', source: 'scripts/core-sepolia.mjs', testName: item.caseId } }));
+    await mkdir(dirname(args.out), { recursive: true });
+    await writePublicEvidence(args.out, rows);
+    return true;
+  }
   await writePublicEvidence(args.out, rows.map(row => ({ ...row,
-    execution: { ...row.execution, failureReason: safeReason } })));
+    execution: { ...row.execution, durationMs: String(Date.now() - started), failureReason: safeReason } })));
   await unlink(pendingPath);
   return true;
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   let args;
+  const started = Date.now();
   try {
     args = parseSepoliaOptions(process.argv.slice(2));
     const out = await runSepolia(args);
     process.stdout.write(`${out}\n`);
   } catch (error) {
     const reason = error instanceof Error ? error.message : 'SEPOLIA_FAILED';
-    try { if (args) await finalizeFailedSepolia(args, reason); }
+    try { if (args) await finalizeFailedSepolia(args, reason, started); }
     catch { process.stderr.write('SEPOLIA_PENDING_RESULT_RETAINED\n'); }
     process.stderr.write(`${reason.replace(/https?:\/\/\S+/g, '[redacted RPC]')}\n${usage}\n`);
     process.exitCode = 1;

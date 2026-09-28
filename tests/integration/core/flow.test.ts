@@ -47,6 +47,17 @@ it("S-01-deposit S-03-partial-transfer S-03-independent-spend S-07-offline-recip
       expect(output.packet).toMatch(/^0x[0-9a-f]{224}$/i);
     }
     const transferReceipt = await fixture.client.getTransactionReceipt({ hash: sent.txHash });
+    const succeeded = transferReceipt.logs.flatMap(log => {
+      try {
+        const event = decodeEventLog({ abi: poolAbi, data: log.data, topics: log.topics });
+        return event.eventName === "OperationSucceeded" ? [event.args] : [];
+      } catch { return []; }
+    });
+    expect(succeeded).toHaveLength(1);
+    expect(succeeded[0]?.operationId).toBe(sent.operationId);
+    expect(succeeded[0]?.kind).toBe(1);
+    expect(succeeded[0]?.d).toBe(0n);
+    expect(succeeded[0]?.w).toBe(0n);
     const created = transferReceipt.logs.flatMap(log => {
       try {
         const event = decodeEventLog({ abi: poolAbi, data: log.data, topics: log.topics });
@@ -59,6 +70,10 @@ it("S-01-deposit S-03-partial-transfer S-03-independent-spend S-07-offline-recip
         "packet", "receiptFormat", "utxoId"]);
       expect(request.outputs.some(output => output.packet === event.packet)).toBe(true);
     }
+    const exported = JSON.parse(await readFile(`${fixture.root}/${sent.operationId}.json`, "utf8")) as Record<string, unknown>;
+    expect(Object.keys(exported).sort()).toEqual(["balanceProof", "chainId", "operationId", "pool",
+      "rangeProofs", "request", "schemaVersion", "signature"]);
+    expect(JSON.stringify(exported)).not.toMatch(/opening|blinding|passphrase|recipientPrivateKey|rpcUrl/i);
     const balanceDto = await cli.runOwnerCli(["balance", ...fixture.alice.args]);
     const utxoDto = await cli.runOwnerCli(["utxos", ...fixture.alice.args]);
     expect(balanceDto).not.toHaveProperty("amount");
@@ -69,6 +84,10 @@ it("S-01-deposit S-03-partial-transfer S-03-independent-spend S-07-offline-recip
     expect(diagnostic.code).not.toBe(0);
     expect(Object.keys(diagnostic.value).sort()).toEqual(["code", "kind", "schemaVersion"]);
     expect(JSON.stringify(diagnostic.value)).not.toMatch(/amountWei|opening|blinding|passphrase|rpcUrl/i);
+    for (const raw of [await cli.runRaw(["balance", ...fixture.alice.args]),
+      await cli.runRaw(["operation", ...fixture.alice.args, "--id", `0x${"ff".repeat(32)}`])]) {
+      expect(raw.output).not.toMatch(/amountWei|opening|blinding|passphrase=|recipientPrivateKey|rpcUrl|secret/i);
+    }
     await rename(fixture.alice.store, `${fixture.alice.store}.inaccessible`);
     await cli.runOwnerCli(["sync", ...fixture.bob.args, ...fixture.onlineArgs]);
     expect(await cli.readOwnerBalanceTTY(["balance", ...fixture.bob.args])).toBe(3n);

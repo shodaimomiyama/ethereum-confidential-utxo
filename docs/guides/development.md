@@ -148,7 +148,7 @@ set +a
 pnpm test:core:sepolia
 ```
 
-上記コマンドは利用者が明示したときだけ送信する。事前にSepolia chain ID、manifest内の配置取引・runtime・参照、配置block以降のlog/取引input、固定block状態と`finalized`照会を検証する。A入金・部分送金・2入力統合、B独立再送金・出金が確定するまで待ち、3種の拒否を同一の確定block hashで照合する。結果の`S-*-sepolia-*`行はローカル行と区別して読む。確定blockのblob fieldでCancun以降の機能があることを確認し、manifestの申告forkとともに公開結果に記録する。途中で失敗した場合も送信済みtx hashを含む`.pending.json`を更新し、通常の例外終了時は未実施行と失敗理由を付けた結果JSONへ確定する。RPCが履歴を返せない、結果が不明、確定待ちが時間切れ、保存済みの状態がある場合は停止する。RPCやoperation IDを変えて自動再試行しない。既存のjournalとチェーン上の取引hashを調査してから、人が継続・新規試行を決める。再実行には新しい鍵の資金と新しい保存領域・結果パスを用意する。
+上記コマンドは利用者が明示したときだけ送信する。事前にSepolia chain ID、manifest内の配置取引・runtime・参照、配置block以降のlog/取引input、固定block状態と`finalized`照会を検証する。A入金・部分送金・2入力統合、B独立再送金・出金が確定するまで待ち、3種の拒否を同一の確定block hashで照合する。結果の`S-*-sepolia-*`行はローカル行と区別して読む。確定blockのblob fieldでCancun以降の機能があることを確認し、manifestの申告forkとともに公開結果に記録する。事前検査が失敗した場合は9ケースを`not-run`として結果JSONに残す。送信前にはoperation IDを、送信hashが分かればそのhashを`.pending.json`へ更新し、通常の例外終了時は未実施行と失敗理由を付けた結果JSONへ確定する。共有Pool上の会計は他の利用者の取引で変わり得るため、各成功取引のOperationSucceededイベントの`d`/`w`と全体の会計不変条件を検査する。RPCが履歴を返せない、結果が不明、確定待ちが時間切れ、保存済みの状態がある場合は停止する。RPCやoperation IDを変えて自動再試行しない。既存のjournalとチェーン上の取引hashを調査してから、人が継続・新規試行を決める。再実行には新しい鍵の資金と新しい保存領域・結果パスを用意する。
 
 ## Poolと検証器の配置（Issue #27）
 

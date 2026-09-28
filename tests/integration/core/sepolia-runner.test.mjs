@@ -129,3 +129,15 @@ test('failed Sepolia run promotes pending public evidence without erasing a sent
     assert.equal(saved[0].testOutcome, 'not-run');
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
+
+test('failed preflight records every Sepolia case as not-run', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'core-sepolia-preflight-'));
+  try {
+    const out = join(dir, 'result.json');
+    assert.equal(await finalizeFailedSepolia({ out }, 'SEPOLIA_RPC_CHAIN', Date.now() - 5), true);
+    const saved = JSON.parse(await readFile(out, 'utf8'));
+    assert.equal(saved.length, 9);
+    assert.ok(saved.every(row => row.testOutcome === 'not-run' &&
+      row.execution.failureReason === 'SEPOLIA_RPC_CHAIN'));
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});

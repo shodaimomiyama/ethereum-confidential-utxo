@@ -42,5 +42,6 @@ export function createCli(fixture: CoreAnvilFixture) {
     if (!match) throw new Error("CLI balance omitted availableWei");
     return BigInt(match[1]!);
   }
-  return { runOwnerCli: runJson, runSubmitterCli: runJson, runResultCli: readJsonResult, readOwnerBalanceTTY };
+  return { runOwnerCli: runJson, runSubmitterCli: runJson, runResultCli: readJsonResult,
+    runRaw: (args: string[], json = true) => runTerminal(fixture, args, json), readOwnerBalanceTTY };
 }
