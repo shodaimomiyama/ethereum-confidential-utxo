@@ -44,6 +44,7 @@
   },
   "devDependencies": {
     "@confidential-utxo/core": "workspace:*",
+    "@confidential-utxo/crypto": "workspace:*",
     "@confidential-utxo/ethereum": "workspace:*",
     "@types/node": "24.10.1",
     "typescript": "6.0.3",
