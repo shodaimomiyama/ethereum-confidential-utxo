@@ -82,7 +82,9 @@ it("S-01-deposit S-03-partial-transfer S-03-independent-spend S-07-offline-recip
     const diagnostic = await cli.runResultCli(["operation", ...fixture.alice.args,
       "--id", `0x${"ff".repeat(32)}`]);
     expect(diagnostic.code).not.toBe(0);
-    expect(Object.keys(diagnostic.value).sort()).toEqual(["code", "kind", "schemaVersion"]);
+    expect(Object.keys(diagnostic.value).sort()).toEqual([
+      "allowedActions", "code", "kind", "reason", "schemaVersion",
+    ]);
     expect(JSON.stringify(diagnostic.value)).not.toMatch(/amountWei|opening|blinding|passphrase|rpcUrl/i);
     for (const raw of [await cli.runRaw(["balance", ...fixture.alice.args]),
       await cli.runRaw(["operation", ...fixture.alice.args, "--id", `0x${"ff".repeat(32)}`])]) {
