@@ -646,6 +646,16 @@
     "evidenceRef": "tests/integration/core/recovery.test.ts"
   },
   {
+    "caseId": "S-15-backup-restore",
+    "scenarioId": "S-15",
+    "requirements": [
+      "OPS-04"
+    ],
+    "runner": "cli",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/recovery.test.ts"
+  },
+  {
     "caseId": "S-16-calldata",
     "scenarioId": "S-16",
     "requirements": [

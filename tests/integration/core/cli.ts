@@ -17,7 +17,7 @@ async function runTerminal(fixture: CoreAnvilFixture, args: string[], json: bool
 }
 
 export function createCli(fixture: CoreAnvilFixture) {
-  async function runJson(args: string[]): Promise<Record<string, unknown>> {
+  async function readJsonResult(args: string[]): Promise<{ code: number; value: Record<string, unknown> }> {
     const started = Date.now();
     if (process.env.CORE_INTEGRATION_TRACE === "1") process.stderr.write(`core CLI start ${args[0]} ${args[1] === "add" ? "add" : ""}\n`);
     const result = await runTerminal(fixture, args, true);
@@ -27,10 +27,13 @@ export function createCli(fixture: CoreAnvilFixture) {
     const parsed: unknown = JSON.parse(lines[0]!);
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error(`CLI ${args[0]} invalid JSON`);
     const value = parsed as Record<string, unknown>;
-    if (result.code !== 0 || value.kind === "error") {
-      throw new Error(`CLI ${args[0]} failed: ${String(value.code ?? "unknown")}`);
-    }
-    return value;
+    return { code: result.code, value };
+  }
+  async function runJson(args: string[]): Promise<Record<string, unknown>> {
+    const result = await readJsonResult(args);
+    if (result.code !== 0 || result.value.kind === "error")
+      throw new Error(`CLI ${args[0]} failed: ${String(result.value.code ?? "unknown")}`);
+    return result.value;
   }
   async function readOwnerBalanceTTY(args: string[]): Promise<bigint> {
     const result = await runTerminal(fixture, args, false);
@@ -39,5 +42,5 @@ export function createCli(fixture: CoreAnvilFixture) {
     if (!match) throw new Error("CLI balance omitted availableWei");
     return BigInt(match[1]!);
   }
-  return { runOwnerCli: runJson, runSubmitterCli: runJson, readOwnerBalanceTTY };
+  return { runOwnerCli: runJson, runSubmitterCli: runJson, runResultCli: readJsonResult, readOwnerBalanceTTY };
 }
