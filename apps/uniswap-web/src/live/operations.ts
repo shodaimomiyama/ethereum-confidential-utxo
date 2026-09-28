@@ -129,11 +129,13 @@ export function projectConnectionChange(previous: ViewState, connection: WalletE
   if (!same) {
     const cleared = clearScopedData(previous, connection.scope ?? previous.scope);
     return connection.scope === undefined ? cleared : { ...cleared, connection: 'connected',
-      currentScope: connection.scope, preparation: { ...cleared.preparation, wallet: true, network: true } };
+      currentScope: connection.scope, preparation: { ...cleared.preparation, wallet: true, network: true },
+      allowedActions: [...cleared.allowedActions, 'prepare-key'] };
   }
   const stale = projectUnconfirmedSync(previous);
   return { ...stale, connection: 'connected', currentScope: previous.scope,
     preparation: { ...stale.preparation, wallet: true, network: true, key: false, authenticated: false },
+    allowedActions: [...new Set([...stale.allowedActions, 'prepare-key'])],
   };
 }
 

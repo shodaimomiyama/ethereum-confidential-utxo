@@ -13,6 +13,8 @@ it("requires an explicit RPC URL and bounded policy", () => {
   expect(() => createEthereumRpc({ url: "https://rpc.example/SECRET_TOKEN", mode: "finalized",
     policy: { ...policy, retries: -1 } })).toThrow();
   expect(() => createEthereumRpc({ url: "http://127.0.0.1:8545", mode: "local-simulated" })).not.toThrow();
+  expect(() => createEthereumRpc({ url: "https://localhost:8545/rpc", mode: "local-simulated" })).not.toThrow();
+  expect(() => createEthereumRpc({ url: "https://rpc.example/rpc", mode: "local-simulated" })).toThrow();
 });
 
 it("retries a transient read only within the finite budget", async () => {

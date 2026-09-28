@@ -111,6 +111,7 @@ it('invalidates spending choices and key readiness on a wallet event', () => {
   expect(next.connection).toBe('connected');
   expect(next.currentScope).toEqual(scope);
   expect(next.preparation.key).toBe(false);
+  expect(next.allowedActions).toContain('prepare-key');
   expect(next.allowedActions).not.toContain('start:pay');
   expect(projectConnectionChange(populated(), { epoch: 3 }).currentScope).toBeUndefined();
 });
@@ -131,7 +132,17 @@ it.each(['disconnect', 'different owner'] as const)('redacts prior owner data on
   expect(next.rewardRequests).toEqual([]);
   expect(next.operations).toEqual([]);
   expect(next.operationCards).toEqual({});
-  expect(next.allowedActions).toEqual(['switch-scope', 'connect']);
+  expect(next.allowedActions).toEqual(mode === 'disconnect'
+    ? ['switch-scope', 'connect'] : ['switch-scope', 'connect', 'prepare-key']);
+});
+
+it('allows key preparation after an external MetaMask chain switch', () => {
+  const wrong = projectConnectionChange(populated(), { epoch: 2,
+    wrongNetworkScope: scope });
+  expect(wrong.allowedActions).toContain('switch-network');
+  const connected = projectConnectionChange(wrong, { epoch: 3, scope });
+  expect(connected.preparation).toMatchObject({ wallet: true, network: true, key: false });
+  expect(connected.allowedActions).toContain('prepare-key');
 });
 
 it('edits drafts without validating amounts or carrying a previous quote or selection', () => {
