@@ -4,6 +4,11 @@ const address = /^0x[0-9a-fA-F]{40}$/;
 const hash = /^0x[0-9a-fA-F]{64}$/;
 const decimal = /^(0|[1-9][0-9]*)$/;
 const requiredContracts = ['dUSD', 'router02', 'factory', 'weth9', 'pair'];
+const sepoliaUniswap = {
+  router02: '0xeE567Fe1712Faf6149d80dA1E6934E354124CfE3',
+  factory: '0xF62c03E08ada871A0bEb309762E260a7a6a880E6',
+  weth9: '0xfff9976782d46cc05630d1f6ebab18b2324d6b14',
+};
 const knownKeys = new Set(['chainId', 'generation', 'contracts', 'assets', 'site', 'provenance', 'references']);
 
 const sha256Code = code => createHash('sha256').update(Buffer.from(code.slice(2), 'hex')).digest('hex');
@@ -105,14 +110,31 @@ export function createUniswapManifest(input) {
   return manifest;
 }
 
-export async function verifyUniswapManifest(manifest, publicClient) {
+export async function verifyUniswapManifest(manifest, publicClient, finalizedPoint) {
   validateManifest(manifest);
   if (await publicClient.getChainId() !== manifest.chainId) throw new Error('chain ID mismatch');
+  if (manifest.chainId === 11155111) {
+    for (const [name, expected] of Object.entries(sepoliaUniswap)) {
+      if (!sameAddress(manifest.contracts[name].address, expected)) {
+        throw new Error(`official Sepolia ${name} address mismatch`);
+      }
+    }
+  }
+  if (manifest.chainId !== 31337 && finalizedPoint === undefined) {
+    throw new Error('finalized checkpoint required for public chain verification');
+  }
+  if (finalizedPoint !== undefined) {
+    const block = await publicClient.getBlock({ blockNumber: finalizedPoint.number });
+    if (block.hash?.toLowerCase() !== finalizedPoint.hash.toLowerCase()) {
+      throw new Error('finalized checkpoint hash mismatch');
+    }
+  }
   for (const [name, contract] of Object.entries(manifest.contracts)) {
     if (!address.test(contract.address) || !/^[0-9a-fA-F]{64}$/.test(contract.runtimeSha256)) {
       throw new Error(`${name} deployment record invalid`);
     }
-    const code = await publicClient.getCode({ address: contract.address });
+    const code = await publicClient.getCode({ address: contract.address,
+      ...(finalizedPoint === undefined ? {} : { blockNumber: finalizedPoint.number }) });
     if (!code || sha256Code(code) !== contract.runtimeSha256.toLowerCase()) {
       throw new Error(`${name} runtime hash mismatch`);
     }
@@ -122,7 +144,7 @@ export async function verifyUniswapManifest(manifest, publicClient) {
     }
   }
   const { dUSD, router02, factory, weth9, pair } = manifest.contracts;
-  const read = (target, abi, functionName, args = [], blockNumber) =>
+  const read = (target, abi, functionName, args = [], blockNumber = finalizedPoint?.number) =>
     publicClient.readContract({ address: target.address, abi, functionName, args,
       ...(blockNumber === undefined ? {} : { blockNumber }) });
   if (!sameAddress(await read(router02, routerAbi, 'factory'), factory.address)) throw new Error('Router factory mismatch');

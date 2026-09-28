@@ -3,6 +3,7 @@ import { CoreFailure } from "@confidential-utxo/core";
 import type { Checkpoint } from "@confidential-utxo/core";
 import { EthereumFailure } from "@confidential-utxo/ethereum";
 import type { Address, Hex } from "viem";
+import { ServiceClientError } from "./service-client.js";
 
 const privateAmount = Symbol("private balance");
 export type PrivateBalance = Readonly<{ [privateAmount]: bigint }>;
@@ -31,10 +32,45 @@ export type CliResult =
   | { kind: "backup"; status: "created"; path: string }
   | { kind: "restored"; status: "needs-resync"; owner: Address }
   | { kind: "passphrase"; status: "changed" }
+  | { kind: "reward"; requestId: Hex; status: string; operationId?: Hex; outputId?: Hex }
+  | { kind: "reward-list"; entries: { requestId: Hex; status: string; operationId?: Hex; outputId?: Hex }[] }
+  | { kind: "pay-quote"; amount: PrivateBalance; quoteOut: bigint; minAmountOut: bigint;
+      deadline: bigint; blockHash: Hex }
+  | { kind: "payment"; operationId: Hex; paymentId: Hex; status: string;
+      attemptId?: Hex; txHash?: Hex; checkpoint?: Checkpoint;
+      confirmation?: { inputId: Hex; amount: PrivateBalance; token: Address;
+        minAmountOut: bigint; recipient: Address; deadline: bigint } }
   | { kind: "error"; code: "INPUT" | "CONFIG" | "STORAGE" | "LOCK" | "RPC" | "UNKNOWN" | "FAILED" | "CONFLICT" };
 
 type RenderIO = { stdout: Writable; stderr: Writable; isTTY: boolean };
 type Format = "human" | "json";
+function paymentGuidance(status: string): { reason: string; allowedActions: string[] } {
+  switch (status) {
+    case "prepared": return { reason: "AWAITING_OWNER_AUTHORIZATION", allowedActions: ["pay authorize", "pay prepare --replace-id"] };
+    case "not-submitted": case "exported": return { reason: "AWAITING_SUBMISSION", allowedActions: ["pay export", "pay submit", "pay resume"] };
+    case "pending": return { reason: "TRANSACTION_PENDING", allowedActions: ["pay status"] };
+    case "pending-receipt": return { reason: "CHANGE_RECEIPT_UNCONFIRMED", allowedActions: ["pay status", "sync"] };
+    case "unknown": case "stale": return { reason: "FINALIZED_OUTCOME_UNCERTAIN", allowedActions: ["pay status"] };
+    case "failed": return { reason: "TRANSACTION_REVERTED", allowedActions: ["pay status"] };
+    case "finalized-success": return { reason: "PAYMENT_CONFIRMED", allowedActions: ["sync"] };
+    default: return { reason: "STATUS_REQUIRES_RECHECK", allowedActions: ["pay status"] };
+  }
+}
+function errorGuidance(code: Extract<CliResult, {kind: "error"}>["code"]): { reason: string; allowedActions: string[] } {
+  switch (code) {
+    case "INPUT": return { reason: "INVALID_OR_INCOMPLETE_INPUT", allowedActions: ["help"] };
+    case "CONFIG": return { reason: "DEPLOYMENT_CONFIGURATION_INVALID", allowedActions: ["verify manifests and RPC"] };
+    case "STORAGE": case "LOCK": return { reason: "OWNER_STORE_UNAVAILABLE", allowedActions: ["inspect owner store"] };
+    case "RPC": case "UNKNOWN": return { reason: "EXTERNAL_OUTCOME_UNCERTAIN", allowedActions: ["pay status", "reward list"] };
+    case "CONFLICT": return { reason: "RESERVATION_OR_REQUEST_CONFLICT", allowedActions: ["pay status", "reward list"] };
+    case "FAILED": return { reason: "TRANSACTION_FAILED", allowedActions: ["pay status"] };
+  }
+}
+function rewardGuidance(status: string): { reason: string; allowedActions: string[] } {
+  if (status === "received") return { reason: "RECEIPT_CONFIRMED", allowedActions: [] };
+  if (status === "finalized") return { reason: "DISTRIBUTION_FINALIZED", allowedActions: ["reward received"] };
+  return { reason: "DISTRIBUTION_REQUIRES_RECHECK", allowedActions: ["reward status"] };
+}
 function checkpoint(value: Checkpoint | undefined) {
   return value ? { number: value.number.toString(), hash: value.hash, mode: value.mode } : undefined;
 }
@@ -50,6 +86,8 @@ function exitCode(result: CliResult): number {
     if (result.status === "unknown" || result.status === "inconsistent" || result.status === "stale") return 4;
   }
   if (result.kind === "sync" && result.status !== "complete") return 4;
+  if (result.kind === "payment" && ["unknown", "stale", "pending-receipt"].includes(result.status)) return 4;
+  if (result.kind === "payment" && result.status === "failed") return 5;
   if (result.kind === "balance" && result.status !== "available") return 4;
   if (result.kind === "utxos" && result.status !== "complete") return 4;
   return 0;
@@ -83,7 +121,21 @@ function publicDto(result: CliResult): Record<string, unknown> {
     case "backup": return { schemaVersion: 1, kind: "backup", status: result.status, path: result.path };
     case "restored": return { schemaVersion: 1, kind: "restored", status: result.status, owner: result.owner };
     case "passphrase": return { schemaVersion: 1, kind: "passphrase", status: result.status };
-    case "error": return { schemaVersion: 1, kind: "error", code: result.code };
+    case "reward": return { schemaVersion: 1, kind: "reward", requestId: result.requestId,
+      status: result.status, ...(result.operationId ? { operationId: result.operationId } : {}),
+      ...(result.outputId ? { outputId: result.outputId } : {}), ...rewardGuidance(result.status) };
+    case "reward-list": return { schemaVersion: 1, kind: "reward-list", entries: result.entries };
+    case "pay-quote": return { schemaVersion: 1, kind: "pay-quote", status: "quoted",
+      reason: "QUOTE_AVAILABLE", allowedActions: ["pay prepare"], blockHash: result.blockHash };
+    case "payment": return { schemaVersion: 1, kind: "payment", operationId: result.operationId,
+      paymentId: result.paymentId, status: result.status, ...paymentGuidance(result.status),
+      ...(result.confirmation ? { confirmation: { inputId: result.confirmation.inputId,
+        token: result.confirmation.token, minAmountOut: result.confirmation.minAmountOut.toString(),
+        recipient: result.confirmation.recipient, deadline: result.confirmation.deadline.toString() } } : {}),
+      ...(result.attemptId ? { attemptId: result.attemptId } : {}),
+      ...(result.txHash ? { txHash: result.txHash } : {}),
+      ...(result.checkpoint ? { checkpoint: checkpoint(result.checkpoint) } : {}) };
+    case "error": return { schemaVersion: 1, kind: "error", code: result.code, ...errorGuidance(result.code) };
   }
 }
 
@@ -104,10 +156,23 @@ export function renderResult(result: CliResult, io: RenderIO, format: Format): n
   if (result.kind === "utxos" && result.status === "complete" && io.isTTY) {
     for (const item of result.entries) if (item.amount) io.stdout.write(`${item.id} amountWei=${item.amount[privateAmount].toString()}\n`);
   }
+  if (result.kind === "pay-quote" && io.isTTY) {
+    io.stdout.write(`inputWei=${result.amount[privateAmount]} quoteOut=${result.quoteOut} minAmountOut=${result.minAmountOut} deadline=${result.deadline}\n`);
+  }
+  if (result.kind === "payment" && result.confirmation && io.isTTY) {
+    io.stdout.write(`paymentWei=${result.confirmation.amount[privateAmount]}\n`);
+  }
   return code;
 }
 
 export function classifyError(error: unknown): Extract<CliResult, {kind:"error"}> {
+  if (error instanceof ServiceClientError) {
+    if (["REVISION_CONFLICT", "RESERVATION_CONFLICT", "REQUEST_CONFLICT", "PENDING_REQUEST"].includes(error.code))
+      return { kind: "error", code: "CONFLICT" };
+    if (["SERVICE_UNAVAILABLE", "SERVICE_PROTOCOL_ERROR", "UNAUTHENTICATED", "CHALLENGE_EXPIRED"].includes(error.code))
+      return { kind: "error", code: "RPC" };
+    return { kind: "error", code: "INPUT" };
+  }
   if (error instanceof CoreFailure) {
     const code = error.code;
     if (code === "INVALID_INPUT" || code === "INSUFFICIENT" || code === "UNCONSTRUCTABLE" || code === "SIGNATURE_REJECTED" || code === "SIGNATURE_INVALID" || code === "UNSUPPORTED") return { kind: "error", code: "INPUT" };

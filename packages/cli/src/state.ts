@@ -5,6 +5,8 @@ import { operationId, outputId, receiptInfo, validateOperationShape } from "@con
 import type { Checkpoint, Context, LocalDraft, OperationRequest, OwnedUtxo, SyncResult } from "@confidential-utxo/core";
 import { hexToBytes } from "viem";
 import type { Address, Hex } from "viem";
+import type { PaymentTerms } from "@confidential-utxo/uniswap";
+import type { PayQuote } from "@confidential-utxo/uniswap";
 import { createPrivateDirectory, readPrivateFile, replacePrivateFile, withWriterLock } from "./atomic-file.js";
 import { openEnvelope, sealEnvelope } from "./envelope.js";
 import { decimalWei, hexBytes, parseExactObject } from "./strict-json.js";
@@ -23,6 +25,18 @@ export type StoredOperationV1 =
   | { phase: "proved"; fixed: FixedOperationV1; balanceProof: BalanceProof; rangeProofs: RangeProof[] }
   | { phase: "authorized"; fixed: FixedOperationV1; balanceProof: BalanceProof; rangeProofs: RangeProof[]; signature: Hex };
 export type ReceiptKeyV1 = { id: Hex; secretKey: Hex; publicKey: Hex };
+export type RewardProgressV1 = { amountWei: bigint; recipientInfo: {
+  chainId: bigint; pool: Address; owner: Address; receivePublicKey: Hex;
+  receiptFormat: 1; recipientInfoVersion: 1; signature: Hex };
+  status: "prepared" | "requested" | "distributed" | "received" | "unknown";
+  operationId?: Hex; outputId?: Hex; blockHash?: Hex };
+export type PaymentEntryV1 = { operationId: Hex; paymentId: Hex; terms: PaymentTerms;
+  privateDraft: StoredOperationV1; poolSignature?: Hex; paymentSignature?: Hex;
+  autoMinAmountOut?: boolean; autoDeadline?: boolean;
+  quote?: PayQuote;
+  attemptIds: Hex[]; txHashes: Hex[]; lastCheckpoint?: { number: bigint; hash: Hex } };
+export type PaymentProgressV1 = { revision: number; deploymentId: string; recordKey: Hex;
+  rewards: Record<Hex, RewardProgressV1>; payments: Record<Hex, PaymentEntryV1> };
 export type WalletStateV1 = {
   schemaVersion: 1;
   context: Context;
@@ -33,6 +47,7 @@ export type WalletStateV1 = {
   sync: SyncResult | null;
   restoration: "ready" | "needs-resync";
   backupCreatedAt?: string;
+  connection?: PaymentProgressV1;
 };
 
 function object(value: unknown, required: readonly string[], optional: readonly string[] = []): Record<string, unknown> {
@@ -146,6 +161,77 @@ function operation(value: unknown, expected: Context, owner: Address): StoredOpe
   return { phase: "authorized", fixed: parsedFixed, balanceProof: proof, rangeProofs: ranges,
     signature: hexBytes(input.signature, 65) };
 }
+function paymentTerms(value: unknown): PaymentTerms {
+  const row = object(value, ["operationId", "owner", "ethAmount", "token", "minAmountOut", "recipient", "deadline"]);
+  const deadline = uint(row.deadline, (1n << 64n) - 1n);
+  const ethAmount = uint(row.ethAmount);
+  const minAmountOut = uint(row.minAmountOut);
+  if (deadline === 0n || ethAmount === 0n || minAmountOut === 0n) invalid();
+  return { operationId: hash(row.operationId) as PaymentTerms["operationId"],
+    owner: address(row.owner) as PaymentTerms["owner"], ethAmount,
+    token: address(row.token) as PaymentTerms["token"], minAmountOut,
+    recipient: address(row.recipient) as PaymentTerms["recipient"], deadline };
+}
+function connection(value: unknown, expected: Context, owner: Address): PaymentProgressV1 {
+  const row = object(value, ["revision", "deploymentId", "recordKey", "rewards", "payments"]);
+  if (!Number.isSafeInteger(row.revision) || (row.revision as number) < 1 ||
+    typeof row.deploymentId !== "string" || !row.deploymentId || row.deploymentId.length > 256) invalid();
+  const entries = (value: unknown) => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) invalid();
+    const map = Object.entries(value);
+    if (map.length > 100000 || new Set(map.map(([id]) => hash(id).toLowerCase())).size !== map.length) invalid();
+    return map;
+  };
+  const rewards: Record<Hex, RewardProgressV1> = {};
+  for (const [id, value] of entries(row.rewards)) {
+    const reward = object(value, ["amountWei", "recipientInfo", "status"], ["operationId", "outputId", "blockHash"]);
+    if (!["prepared", "requested", "distributed", "received", "unknown"].includes(String(reward.status))) invalid();
+    const info = object(reward.recipientInfo, ["chainId", "pool", "owner", "receivePublicKey",
+      "receiptFormat", "recipientInfoVersion", "signature"]);
+    if (uint(info.chainId) !== expected.chainId || !same(address(info.pool), expected.pool) ||
+      !same(address(info.owner), owner) || info.receiptFormat !== 1 || info.recipientInfoVersion !== 1) invalid();
+    rewards[hash(id)] = { amountWei: uint(reward.amountWei), recipientInfo: {
+      chainId: expected.chainId, pool: expected.pool, owner, receivePublicKey: hash(info.receivePublicKey),
+      receiptFormat: 1, recipientInfoVersion: 1, signature: hexBytes(info.signature, 65) },
+    status: reward.status as RewardProgressV1["status"],
+    ...(reward.operationId === undefined ? {} : { operationId: hash(reward.operationId) }),
+    ...(reward.outputId === undefined ? {} : { outputId: hash(reward.outputId) }),
+    ...(reward.blockHash === undefined ? {} : { blockHash: hash(reward.blockHash) }) };
+  }
+  const payments: Record<Hex, PaymentEntryV1> = {};
+  for (const [id, value] of entries(row.payments)) {
+    const pay = object(value, ["operationId", "paymentId", "terms", "privateDraft", "attemptIds", "txHashes"],
+      ["poolSignature", "paymentSignature", "lastCheckpoint", "autoMinAmountOut", "autoDeadline", "quote"]);
+    const terms = paymentTerms(pay.terms);
+    const operationId = hash(pay.operationId);
+    if (!same(terms.operationId, operationId) || !same(terms.owner, owner)) invalid();
+    const privateDraft = operation(pay.privateDraft, expected, owner);
+    if (!same(privateDraft.fixed.operationId, operationId) ||
+      privateDraft.fixed.request.kind !== 2) invalid();
+    const lastCheckpoint = pay.lastCheckpoint === undefined ? undefined : object(pay.lastCheckpoint, ["number", "hash"]);
+    if (pay.autoMinAmountOut !== undefined && typeof pay.autoMinAmountOut !== "boolean" ||
+      pay.autoDeadline !== undefined && typeof pay.autoDeadline !== "boolean") invalid();
+    let quote: PayQuote | undefined;
+    if (pay.quote !== undefined) {
+      const item = object(pay.quote, ["startedAtMs", "blockHash", "blockNumber", "inputWei", "quoteOut"]);
+      if (!Number.isSafeInteger(item.startedAtMs) || (item.startedAtMs as number) < 0) invalid();
+      quote = { startedAtMs: item.startedAtMs as number, blockHash: hash(item.blockHash) as never,
+        blockNumber: uint(item.blockNumber), inputWei: uint(item.inputWei), quoteOut: uint(item.quoteOut) };
+      if (quote.inputWei !== terms.ethAmount || quote.quoteOut === 0n) invalid();
+    }
+    payments[hash(id)] = { operationId, paymentId: hash(pay.paymentId), terms, privateDraft,
+      ...(quote === undefined ? {} : { quote }),
+      ...(pay.autoMinAmountOut === undefined ? {} : { autoMinAmountOut: pay.autoMinAmountOut as boolean }),
+      ...(pay.autoDeadline === undefined ? {} : { autoDeadline: pay.autoDeadline as boolean }),
+      ...(pay.poolSignature === undefined ? {} : { poolSignature: hexBytes(pay.poolSignature, 65) }),
+      ...(pay.paymentSignature === undefined ? {} : { paymentSignature: hexBytes(pay.paymentSignature, 65) }),
+      attemptIds: array(pay.attemptIds).map(hash), txHashes: array(pay.txHashes).map(hash),
+      ...(lastCheckpoint === undefined ? {} : { lastCheckpoint: {
+        number: uint(lastCheckpoint.number), hash: hash(lastCheckpoint.hash) } }) };
+  }
+  return { revision: row.revision as number, deploymentId: row.deploymentId as string,
+    recordKey: hash(row.recordKey), rewards, payments };
+}
 function key(value: unknown): ReceiptKeyV1 {
   const input = object(value, ["id", "secretKey", "publicKey"]);
   const secretKey = hexBytes(input.secretKey, 32);
@@ -203,8 +289,8 @@ function sync(value: unknown, expected: Context, owner: Address): SyncResult | n
       utxos: array(previous.utxos).map(item => utxo(item, expected, owner)) } } : {}) };
 }
 function decodeState(bytes: Uint8Array): WalletStateV1 {
-  const root = parseExactObject(bytes, ["schemaVersion", "context", "owner", "receiptKeys", "activeReceiptKeyId", "operations", "sync", "restoration", "backupCreatedAt"]);
-  const input = object(root, ["schemaVersion", "context", "owner", "receiptKeys", "activeReceiptKeyId", "operations", "sync", "restoration"], ["backupCreatedAt"]);
+  const root = parseExactObject(bytes, ["schemaVersion", "context", "owner", "receiptKeys", "activeReceiptKeyId", "operations", "sync", "restoration", "backupCreatedAt", "connection"]);
+  const input = object(root, ["schemaVersion", "context", "owner", "receiptKeys", "activeReceiptKeyId", "operations", "sync", "restoration"], ["backupCreatedAt", "connection"]);
   if (input.schemaVersion !== 1 || (input.restoration !== "ready" && input.restoration !== "needs-resync")) invalid();
   const ctx = context(input.context);
   const owner = address(input.owner);
@@ -227,6 +313,7 @@ function decodeState(bytes: Uint8Array): WalletStateV1 {
   }
   const result: WalletStateV1 = { schemaVersion: 1, context: ctx, owner, receiptKeys, activeReceiptKeyId,
     operations, sync: sync(input.sync, ctx, owner), restoration: input.restoration };
+  if (input.connection !== undefined) result.connection = connection(input.connection, ctx, owner);
   if (input.backupCreatedAt !== undefined) {
     if (typeof input.backupCreatedAt !== "string" || !Number.isFinite(Date.parse(input.backupCreatedAt))) invalid();
     result.backupCreatedAt = input.backupCreatedAt;

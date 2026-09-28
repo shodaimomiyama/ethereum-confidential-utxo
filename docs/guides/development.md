@@ -331,3 +331,70 @@ pnpm dlx wrangler@4.116.0 deploy --config apps/uniswap-web/wrangler.jsonc
 更新時もモック用環境変数で再ビルドしてからdeployする。`dist` の配置だけでは再ビルドされない。同じアカウント、Worker名、workers.devサブドメインを維持する。API統合時には同じoriginへのroutingとDO設定を別途確認する。
 
 2026-09-27の先行公開先は https://dim.mmymshd52.workers.dev 。配置versionは `8dffe4f3-54d3-4f75-98c6-b7dcc4dd8a81`。ソースは `dfa88f767fceaf2ba4cc3e788da2c1dc862d89b1` に、モック説明の追加と静的配信設定を適用した作業ツリー。型検査・Webテスト86件・Viteビルドが成功した。公開はモックUIに限り、実資産移動、API/DO、実テストネットの受入を示さない。
+
+## Issue #61: 報酬受領からUniswap支払い、残額送金までのCLI追試
+
+B・C・別提出者が順に操作する手順は[Uniswap接続CLIの操作ガイド](uniswap-cli.md)を参照する。この節はローカル実証の環境、検証コマンド、受入証拠を記録する。
+
+Node 24.21.0、pnpm 10.34.5、Foundry 1.8.3、`expect` を使う。ローカルの自動追試はAnvilへ別の本体PoolとデモPool、dUSD、WETH、Uniswap v2、Adapterを配置し、SQLite Durable Objectを起動する。B、C、配布元、提出者のCLI保存先と試験鍵を分ける。`expect` はテスト専用の疑似TTYでパスフレーズを入力し、通常CLIに非TTY解除経路を追加しない。実行前に次を使う。
+
+```sh
+pnpm install --frozen-lockfile
+pnpm build
+pnpm test:integration:uniswap-cli
+pnpm check
+pnpm test
+pnpm check:service
+pnpm test:service
+```
+
+統合テストは [`cli-replay.test.ts`](../../tests/integration/uniswap/cli-replay.test.ts) に配置した。ローカルの環境世代とSQLite保存を一時領域に作り、Bの報酬要求と受領、Bの部分Pay、別提出者によるAdapter提出、Bの残額をCへ機密送金してC自身が受領するまでを独立CLIプロセスで検査する。テスト鍵と報酬Secretは破棄可能なローカルfixtureであり、通常運用鍵として使わない。公開JSONと通常ログに鍵、パスフレーズ、要求額、受領開示値を含めない。
+
+独自の環境で手動追試する場合は、同テストの配置処理と[本体CLI手順](#issue-31-cliの操作復旧)に従い、`POOL_MANIFEST`、`CONNECTION_MANIFEST`、`POOL_RPC`、`DEPLOYMENT_ID`、`API_ORIGIN`、`API_URL` を同一配置世代へ設定する。`API_ORIGIN` はSIWEのHTTPS origin、`API_URL` はCLIから到達するサービス入口であり、ローカル試験ではHTTP proxyを介してもSIWEのoriginを変えない。報酬APIの配布元には機密UTXO資金、公開gas、署名鍵、受領鍵、状態暗号化鍵を別々に用意し、Pool manifestとRPCをサービス側にも固定する。B/Cのstoreと提出者journalは別ディレクトリとし、鍵ファイル・額ファイル・条件ファイルは0700の親ディレクトリ内に0600で置く。秘密鍵やパスフレーズをCLI引数、環境変数、Issueやログへ記載しない。
+
+次はBashで共通引数を配列として設定した手順である。`REQUEST_ID` は32 byteのランダムID、`REWARD_AMOUNT_FILE` と `PAY_AMOUNT_FILE` は上記の秘密額ファイル、`PAYMENT_ID` は `pay prepare` が返す公開値を使う。JSON出力は秘密額を示さないため、額と条件の確認は本人が解除した対話端末の通常表示で行う。
+
+```bash
+BASE=(--manifest "$POOL_MANIFEST" --connection-manifest "$CONNECTION_MANIFEST" --rpc "$POOL_RPC" --deployment-id "$DEPLOYMENT_ID")
+B_ARGS=(--store "$B_STORE" --owner "$B")
+API_ARGS=(--api-origin "$API_ORIGIN" --api-url "$API_URL" --signer "$B_SIGNER")
+node packages/cli/dist/bin.js reward request "${BASE[@]}" "${B_ARGS[@]}" "${API_ARGS[@]}" --amount-file "$REWARD_AMOUNT_FILE" --request-id "$REQUEST_ID" --json
+node packages/cli/dist/bin.js reward status "${BASE[@]}" "${B_ARGS[@]}" "${API_ARGS[@]}" --request-id "$REQUEST_ID" --json
+node packages/cli/dist/bin.js reward received "${BASE[@]}" "${B_ARGS[@]}" "${API_ARGS[@]}" --request-id "$REQUEST_ID" --json
+node packages/cli/dist/bin.js pay quote "${BASE[@]}" "${B_ARGS[@]}" --amount-file "$PAY_AMOUNT_FILE"
+node packages/cli/dist/bin.js pay prepare "${BASE[@]}" "${B_ARGS[@]}" "${API_ARGS[@]}" --amount-file "$PAY_AMOUNT_FILE" --recipient "$TOKEN_RECIPIENT" --json
+node packages/cli/dist/bin.js pay authorize "${BASE[@]}" "${B_ARGS[@]}" "${API_ARGS[@]}" --id "$PAY_OPERATION_ID" --confirmed-content-hash "$PAYMENT_ID" --json
+node packages/cli/dist/bin.js pay export "${BASE[@]}" "${B_ARGS[@]}" --id "$PAY_OPERATION_ID" --out "$PAY_PUBLIC_FILE"
+node packages/cli/dist/bin.js pay submit "${BASE[@]}" --journal "$PAY_JOURNAL" --signer "$SUBMITTER_SIGNER" --submitter "$SUBMITTER" --public "$PAY_PUBLIC_FILE" --json
+node packages/cli/dist/bin.js pay status "${BASE[@]}" "${B_ARGS[@]}" "${API_ARGS[@]}" --id "$PAY_OPERATION_ID" --json
+node packages/cli/dist/bin.js sync "${B_ARGS[@]}" --manifest "$POOL_MANIFEST" --rpc "$POOL_RPC"
+```
+
+`reward request` は同じrequestIdと同じ額・受取情報で再照会する。CLIがIDを発行する場合もAPI送信より先に暗号化保存する。応答を失った場合は `reward list` でローカルに保存した未完了IDを確認し、そのIDと同じ額ファイルで `reward request` を再実行する。`reward received` はBの同期で対象outputを確認してからAPIへ通知する。`pay prepare` の結果の `paymentId` を本人が確認し、その値を `--confirmed-content-hash` に渡す。条件を手動で指定する場合は0600の `--terms-file` に `{"minAmountOut":"...","deadline":"..."}` を保存する。見積りから30秒を超えたとき、既定条件が変化していれば新しい確認が必要となる。未認可の旧準備は `pay prepare --replace-id "$PAY_OPERATION_ID"` に新しい額・受取人・条件を指定して破棄・再準備する。共有予約が存在する場合は破棄を拒否する。`pay authorize` は共有予約のACK後に署名し、取引を送らない。`pay export` の公開ファイルと提出者のgas鍵だけで `pay submit` を実行する。
+
+提出応答を失った場合は同じ環境・IDで `pay status` を実行する。所有者は `pay resume` または `pay retry` を明示して復旧判定後に送信する。条件変更は旧認可の期限超過と同一確定履歴での未実行・入力未使用を確認できた場合に限り、`node packages/cli/dist/bin.js pay change-terms "${BASE[@]}" "${B_ARGS[@]}" "${API_ARGS[@]}" --id "$PAY_OPERATION_ID" --terms-file "$TERMS_FILE"` を実行する。旧認可を即時失効したものとして扱わない。提出者側の `pay status` は `--journal "$PAY_JOURNAL" --submitter "$SUBMITTER" --id "$PAY_OPERATION_ID"` を使う。Cへの残額送金には[本体CLI手順](#issue-31-cliの操作復旧)の `create --kind transfer`、`prove`、`authorize`、`export`、`submit` を使い、C自身の `sync` で受領する。
+
+Sepoliaでは本体と接続の両manifestを公開RPCで照合してから同じCLIコマンドを用いる。接続manifestのRouter02、Factory、WETH、dUSD、Pair、Pool、Verifier、Adapterとreserve checkpointを固定し、読取はfinalized blockへ固定する。`verifyConnection` は配置を検査する入口であり、公開配置自体は[#60](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/60)が担う。Sepoliaでの資金付き実行証拠は[#45](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/45)・[#50](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/50)へ引き渡す。ローカルのAnvil確定は `local-simulated`、Sepoliaは `finalized` として区別する。失敗receipt、gas、予約、秘密漏えいの個別評価はそれぞれ[#45](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/45)、[#48](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/48)、[#49](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/49)へ、第三者手順は[#19](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/19)へ渡す。
+
+### Issue #61 の公開出力と終了コード
+
+`--json` は1行の公開JSONを返す。Payと報酬の結果には `status`、固定語彙の `reason`、その状態で確認できる `allowedActions` を含める。エラーは `code`、`reason`、`allowedActions` を返す。`reason` は秘密を含む例外文ではなく固定コードである。終了コードは成功0、入力・配置不備2、保存・ロック3、RPC/状態不明4、取引失敗・競合5。`unknown`、`stale`、`pending-receipt` は完了として扱わず、まず `pay status` で確定履歴と予約を再照合する。`allowedActions` は状態確認の案内であり、旧認可の失効や再送許可を意味しない。
+
+### Issue #61 の受入条件と実証入口
+
+実装前の基準HEADは `2e11fab178c5e64ae8b4e80460fb679850dd895d`。追試では現在のcheckoutとlockfileを固定し、そのcommitを記録する。`CLI_REPLAY_EVIDENCE` と `payment-client-evidence` は公開ID、取引hash、確定点、検査成否を出し、秘密fixtureは一時ディレクトリに分離して終了時に削除する。
+
+| 条件 | 実行入口と確認内容 |
+| --- | --- |
+| AC-01/02 | `pnpm test:integration:uniswap-cli` の `normal`。実API報酬からBのPay、別提出者、残額送金、C受領まで。認可直後の未送信、全量dUSD着金を確認。 |
+| AC-03/04 | `pnpm test:integration:uniswap`。実Adapterの最低額超過と期限切れの失敗取引、入力・残額・着金の巻戻し、gas消費を確認。五条件改変は正常な `eth_call` を基準に各一項目を変更し、拒否を確認。 |
+| AC-05/06 | `pnpm test:integration:uniswap-cli` の `faults`。期限内の条件変更拒否、期限後の後継操作、失敗試行からの同条件再試行、送信受理後の応答喪失と別プロセス照合を確認。 |
+| AC-07/08/09 | 同じ `faults`。実DOのACK喪失、同一ID再照会、予約競合、サービス停止時の新規認可停止、配布後の独立受領、復旧後通知を確認。 |
+| AC-10 | `pnpm test` のCLI/共通処理試験と `pnpm test:integration:uniswap-cli`。疑似TTY、保存互換、秘密非出力、JSONの理由・許可操作・終了コードを確認。 |
+| AC-11 | `pnpm check` と `node --test tests/environment/uniswap-integration.test.mjs tests/environment/uniswap-manifest.test.mjs`、上記のSepolia手順。公開RPCでの資金付き実行は#45/#50へ引き渡す。 |
+
+`normal` と `faults` はそれぞれ新しいAnvil、SQLite DO、配置manifest、鍵、CLI保存先を作る。前のシナリオのchainだけを巻き戻してDBや保存先を流用しない。ローカル確定は `local-simulated` であり、Sepoliaの `finalized` 証拠とは区別する。
+
+`pay prepare` と `pay change-terms` は固定した `inputId`、token、`minAmountOut`、recipient、deadline、paymentIdを確認用に返す。実際の支払ETH額は本人のTTY通常表示に `paymentWei` として出し、JSONには含めない。別プロセスの `pay authorize` は見積りを取り直し、固定した自動最低額が変わった場合や期限を過ぎた場合は停止する。再確認が必要なら未認可の準備を `--replace-id` で更新する。
+
+提出者の `pay status --journal` は公開要求・Adapterイベントとreceiptに加え、同じ確定点のPool成功、入力消費、残額出力、dUSDの受取人へのTransferを照合してから `finalized-success` を返す。同じ公開要求を再び `pay submit` に渡しても送信せず、`pay status` で元の試行を調べる。所有者による明示再試行は共有予約と確定履歴の復旧判定を通す。

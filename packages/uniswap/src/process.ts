@@ -78,6 +78,7 @@ export interface PaymentClient {
   preparePay(input: unknown): Promise<PreparedPay>;
   prepareFullWithdraw(input: unknown): Promise<PreparedFullWithdraw>;
   authorizePay(prepared: PreparedPay, confirmedContentHash: Bytes32): Promise<OperationRef>;
+  authorizePayForExport(prepared: PreparedPay, confirmedContentHash: Bytes32): Promise<OperationRef>;
   authorizeFullWithdraw(prepared: PreparedFullWithdraw, confirmedContentHash: Bytes32): Promise<OperationRef>;
   resumeOriginal(recordId: Bytes32): Promise<SubmissionOutcome>;
   retryAttempt(recordId: Bytes32): Promise<SubmissionOutcome>;
@@ -180,7 +181,8 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
     assertSaved(updated, record, revision);
   }
 
-  async function authorize(preparedInput: PreparedBase, confirmedContentHash: Bytes32, isPay: boolean): Promise<OperationRef> {
+  async function authorize(preparedInput: PreparedBase, confirmedContentHash: Bytes32, isPay: boolean,
+    exportOnly = false): Promise<OperationRef> {
     let prepared = preparedInput;
     const initialScope = prepared.record.scope;
     assertScope(initialScope);
@@ -236,6 +238,17 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
       () => ports.reservations.update(signedRecord, 2, 3));
     assertScope(initialScope);
     assertSaved(signed, signedRecord, 3);
+    if (exportOnly) {
+      return {
+        scope: initialScope,
+        operationId: prepared.record.operationId,
+        ...(prepared.record.kind === 'pay' ? { paymentId: prepared.record.paymentId } : {}),
+        attemptIds: [],
+        txHashes: [],
+        chainOutcome: 'not-submitted',
+        receiptState: 'none',
+      };
+    }
 
     const attemptId = ports.createAttempt(prepared, signatures);
     const attemptBytes = ports.sealContent(prepared, signatures, attemptId);
@@ -292,7 +305,11 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
       || latest.record.attemptIds.join('\u0000') !== saved.record.attemptIds.join('\u0000')) {
       throw new PaymentProcessError('RECOVERY_BLOCKED');
     }
-    if (inspectOperation(saved, evidence, currentInput).action !== action) {
+    // A released Pay may have crashed before its successor was prepared. Apply
+    // the same finalized expiry/input/attempt checks without releasing it twice.
+    const checked = action === 'change-terms' && saved.reservationState === 'released'
+      ? { ...saved, reservationState: 'active' as const } : saved;
+    if (inspectOperation(checked, evidence, currentInput).action !== action) {
       throw new PaymentProcessError('RECOVERY_BLOCKED');
     }
     if (action === 'retry-attempt' && !saved.record.signatureStarted) {
@@ -420,18 +437,20 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
     evidence: RecoveryEvidence,
     input: unknown,
   ): Promise<PreparedPay> {
-    let released: SavedReservation | undefined;
-    try {
-      released = await recovery.releaseOriginal(saved, evidence);
-    } catch {
-      released = await ports.reservations.get(saved.record.scope, saved.record.recordId);
+    let released: SavedReservation | undefined = saved.reservationState === 'released' ? saved : undefined;
+    if (released === undefined) {
+      try {
+        released = await recovery.releaseOriginal(saved, evidence);
+      } catch {
+        released = await ports.reservations.get(saved.record.scope, saved.record.recordId);
+      }
     }
     assertScope(saved.record.scope);
     const listed = await ports.reservations.list(saved.record.scope);
     const current = await ports.reservations.get(saved.record.scope, saved.record.recordId);
     assertScope(saved.record.scope);
     if (listed.availability !== 'healthy' || released === undefined || current === undefined
-      || released.revision !== saved.revision + 1
+      || released.revision !== saved.revision + (saved.reservationState === 'released' ? 0 : 1)
       || !sameReleased(released, current)
       || !sameReleased(released, listed.records.find(({ record }) => sameHash(record.recordId, saved.record.recordId)) ?? saved)
       || !sameScope(saved.record.scope, released.record.scope)
@@ -494,6 +513,7 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
     preparePay: (input) => ports.preparePay(input),
     prepareFullWithdraw: (input) => ports.prepareFullWithdraw(input),
     authorizePay: (prepared, confirmation) => authorize(prepared, confirmation, true),
+    authorizePayForExport: (prepared, confirmation) => authorize(prepared, confirmation, true, true),
     authorizeFullWithdraw: (prepared, confirmation) => authorize(prepared, confirmation, false),
     resumeOriginal: (recordId) => recover(recordId, 'resume-original',
       async (recovery, saved, evidence) => resumeOriginal(saved, await recovery.restoreOriginal(saved, evidence))),

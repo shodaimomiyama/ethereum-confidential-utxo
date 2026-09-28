@@ -62,6 +62,7 @@ export function coreReceiptResult(result: ReceivedUtxo | ReceiptFailure): CoreRe
 }
 
 export interface ReconciledPayment {
+  readonly checkpoint: Checkpoint;
   readonly operation: OperationRef;
   readonly changeUsable: boolean;
 }
@@ -102,6 +103,7 @@ export function reconcilePayment(
 
   if (!matched) {
     return {
+      checkpoint: history.checkpoint,
       operation: { ...ref, chainOutcome: 'unknown', receiptState: 'pending' },
       changeUsable: false,
     };
@@ -114,6 +116,7 @@ export function reconcilePayment(
       || receipt.observationCheckpoint?.number !== history.checkpoint.number
       || receipt.observationCheckpoint?.mode !== history.checkpoint.mode)) {
     return {
+      checkpoint: history.checkpoint,
       operation: { ...ref, chainOutcome: 'unknown', receiptState: 'pending' },
       changeUsable: false,
     };
@@ -123,6 +126,7 @@ export function reconcilePayment(
     : receipt.state === 'invalid' ? 'invalid'
       : sameHex(receipt.outputId, history.change?.outputId) ? 'confirmed' : 'invalid';
   return {
+    checkpoint: history.checkpoint,
     operation: { ...ref, chainOutcome: 'finalized-success', receiptState },
     changeUsable: receiptState === 'confirmed' && receipt.currentlyUnspent,
   };
