@@ -663,7 +663,7 @@
     ],
     "runner": "api",
     "expectedOperation": "success",
-    "evidenceRef": "tests/integration/core/evidence.test.mjs"
+    "evidenceRef": "tests/integration/core/flow.test.ts"
   },
   {
     "caseId": "S-16-events",
@@ -673,7 +673,7 @@
     ],
     "runner": "api",
     "expectedOperation": "success",
-    "evidenceRef": "tests/integration/core/evidence.test.mjs"
+    "evidenceRef": "tests/integration/core/flow.test.ts"
   },
   {
     "caseId": "S-16-cli-json",
@@ -683,7 +683,7 @@
     ],
     "runner": "cli",
     "expectedOperation": "success",
-    "evidenceRef": "tests/integration/core/evidence.test.mjs"
+    "evidenceRef": "tests/integration/core/flow.test.ts"
   },
   {
     "caseId": "S-16-public-results",
@@ -739,39 +739,103 @@
     "evidenceRef": "tests/integration/core/rejection.test.ts"
   },
   {
-    "caseId": "S-01-sepolia-deposit", "scenarioId": "S-01", "requirements": ["FR-01", "OPS-03"],
-    "runner": "sepolia", "expectedOperation": "success", "evidenceRef": "scripts/core-sepolia.mjs"
+    "caseId": "S-01-sepolia-deposit",
+    "scenarioId": "S-01",
+    "requirements": [
+      "FR-01",
+      "OPS-03"
+    ],
+    "runner": "sepolia",
+    "expectedOperation": "success",
+    "evidenceRef": "scripts/core-sepolia.mjs"
   },
   {
-    "caseId": "S-01-sepolia-second-deposit", "scenarioId": "S-01", "requirements": ["FR-01", "OPS-03"],
-    "runner": "sepolia", "expectedOperation": "success", "evidenceRef": "scripts/core-sepolia.mjs"
+    "caseId": "S-01-sepolia-second-deposit",
+    "scenarioId": "S-01",
+    "requirements": [
+      "FR-01",
+      "OPS-03"
+    ],
+    "runner": "sepolia",
+    "expectedOperation": "success",
+    "evidenceRef": "scripts/core-sepolia.mjs"
   },
   {
-    "caseId": "S-03-sepolia-partial-transfer", "scenarioId": "S-03", "requirements": ["FR-02", "OPS-03"],
-    "runner": "sepolia", "expectedOperation": "success", "evidenceRef": "scripts/core-sepolia.mjs"
+    "caseId": "S-03-sepolia-partial-transfer",
+    "scenarioId": "S-03",
+    "requirements": [
+      "FR-02",
+      "OPS-03"
+    ],
+    "runner": "sepolia",
+    "expectedOperation": "success",
+    "evidenceRef": "scripts/core-sepolia.mjs"
   },
   {
-    "caseId": "S-04-sepolia-two-input-merge", "scenarioId": "S-04", "requirements": ["FR-03", "OPS-03"],
-    "runner": "sepolia", "expectedOperation": "success", "evidenceRef": "scripts/core-sepolia.mjs"
+    "caseId": "S-04-sepolia-two-input-merge",
+    "scenarioId": "S-04",
+    "requirements": [
+      "FR-03",
+      "OPS-03"
+    ],
+    "runner": "sepolia",
+    "expectedOperation": "success",
+    "evidenceRef": "scripts/core-sepolia.mjs"
   },
   {
-    "caseId": "S-03-sepolia-independent-spend", "scenarioId": "S-03", "requirements": ["FR-02", "FR-05", "OPS-03"],
-    "runner": "sepolia", "expectedOperation": "success", "evidenceRef": "scripts/core-sepolia.mjs"
+    "caseId": "S-03-sepolia-independent-spend",
+    "scenarioId": "S-03",
+    "requirements": [
+      "FR-02",
+      "FR-05",
+      "OPS-03"
+    ],
+    "runner": "sepolia",
+    "expectedOperation": "success",
+    "evidenceRef": "scripts/core-sepolia.mjs"
   },
   {
-    "caseId": "S-06-sepolia-withdraw", "scenarioId": "S-06", "requirements": ["FR-04", "OPS-03"],
-    "runner": "sepolia", "expectedOperation": "success", "evidenceRef": "scripts/core-sepolia.mjs"
+    "caseId": "S-06-sepolia-withdraw",
+    "scenarioId": "S-06",
+    "requirements": [
+      "FR-04",
+      "OPS-03"
+    ],
+    "runner": "sepolia",
+    "expectedOperation": "success",
+    "evidenceRef": "scripts/core-sepolia.mjs"
   },
   {
-    "caseId": "S-09-sepolia-unauthorized", "scenarioId": "S-09", "requirements": ["SEC-02", "OPS-03"],
-    "runner": "sepolia", "expectedOperation": "rejected", "evidenceRef": "scripts/core-sepolia.mjs"
+    "caseId": "S-09-sepolia-unauthorized",
+    "scenarioId": "S-09",
+    "requirements": [
+      "SEC-02",
+      "OPS-03"
+    ],
+    "runner": "sepolia",
+    "expectedOperation": "rejected",
+    "evidenceRef": "scripts/core-sepolia.mjs"
   },
   {
-    "caseId": "S-04-sepolia-spent-input", "scenarioId": "S-04", "requirements": ["SEC-03", "OPS-03"],
-    "runner": "sepolia", "expectedOperation": "rejected", "evidenceRef": "scripts/core-sepolia.mjs"
+    "caseId": "S-04-sepolia-spent-input",
+    "scenarioId": "S-04",
+    "requirements": [
+      "SEC-03",
+      "OPS-03"
+    ],
+    "runner": "sepolia",
+    "expectedOperation": "rejected",
+    "evidenceRef": "scripts/core-sepolia.mjs"
   },
   {
-    "caseId": "S-17-sepolia-deposit-reuse", "scenarioId": "S-17", "requirements": ["SEC-04", "OPS-03"],
-    "runner": "sepolia", "expectedOperation": "rejected", "evidenceRef": "scripts/core-sepolia.mjs"
+    "caseId": "S-17-sepolia-deposit-reuse",
+    "scenarioId": "S-17",
+    "requirements": [
+      "SEC-04",
+      "OPS-03"
+    ],
+    "runner": "sepolia",
+    "expectedOperation": "rejected",
+    "evidenceRef": "scripts/core-sepolia.mjs"
   }
 ]

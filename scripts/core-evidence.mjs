@@ -76,7 +76,7 @@ function publicEvidence(value) {
 }
 function publicResult(value, requirePass = false) {
   exactKeys(value, new Set(["schemaVersion", "caseId", "operationOutcome", "testOutcome", "commit",
-    "artifactHashes", "environment", "evidence"]),
+    "artifactHashes", "environment", "evidence", "execution", "network"]),
   ["schemaVersion", "caseId", "operationOutcome", "testOutcome", "commit", "artifactHashes", "environment", "evidence"], "result");
   requireShape(value.schemaVersion === 1 && /^S-\d{2}-[a-z0-9-]+$/.test(value.caseId), "result.caseId");
   requireShape(outcomes.has(value.operationOutcome) && testOutcomes.has(value.testOutcome), "result.outcome");
@@ -96,9 +96,33 @@ function publicResult(value, requirePass = false) {
     requireShape(decimal.test(value.environment.memoryBytes), "environment.memoryBytes");
     environment.memoryBytes = value.environment.memoryBytes;
   }
+  let execution;
+  if (value.execution !== undefined) {
+    exactKeys(value.execution, new Set(["durationMs", "timeoutMs", "failureReason"]),
+      ["durationMs", "timeoutMs"], "result.execution");
+    requireShape(decimal.test(value.execution.durationMs) && decimal.test(value.execution.timeoutMs),
+      "result.execution.duration");
+    execution = { durationMs: value.execution.durationMs, timeoutMs: value.execution.timeoutMs };
+    if (value.execution.failureReason !== undefined)
+      execution.failureReason = cleanText(value.execution.failureReason, "result.execution.failureReason");
+  }
+  let network;
+  if (value.network !== undefined) {
+    exactKeys(value.network, new Set(["chainId", "pool", "deploymentTxHash", "manifestSha256",
+      "finalizedBlockNumber", "finalizedBlockHash", "declaredFork", "forkBasis"]),
+    ["chainId", "pool", "deploymentTxHash", "manifestSha256", "finalizedBlockNumber",
+      "finalizedBlockHash", "declaredFork", "forkBasis"], "result.network");
+    requireShape(decimal.test(value.network.chainId) && decimal.test(value.network.finalizedBlockNumber) &&
+      /^0x[0-9a-f]{40}$/i.test(value.network.pool) && hex32.test(value.network.deploymentTxHash) &&
+      /^[0-9a-f]{64}$/i.test(value.network.manifestSha256) &&
+      hex32.test(value.network.finalizedBlockHash), "result.network.values");
+    network = { ...value.network, declaredFork: cleanText(value.network.declaredFork, "result.network.declaredFork"),
+      forkBasis: cleanText(value.network.forkBasis, "result.network.forkBasis") };
+  }
   const safe = { schemaVersion: 1, caseId: value.caseId, operationOutcome: value.operationOutcome,
     testOutcome: value.testOutcome, commit: value.commit, artifactHashes: hashes,
-    environment, evidence: publicEvidence(value.evidence) };
+    environment, evidence: publicEvidence(value.evidence),
+    ...(execution ? { execution } : {}), ...(network ? { network } : {}) };
   const encoded = JSON.stringify(safe);
   requireShape(!unsafeText.test(encoded), "result.secret");
   for (const key of knownKeys) requireShape(!encoded.toLowerCase().includes(key), "result.known-key");

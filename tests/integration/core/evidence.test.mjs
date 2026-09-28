@@ -41,7 +41,20 @@ test("permits only typed public Sepolia call metadata", () => {
     evidence: { ...row.evidence, calldataSha256: "0x1234" } }]));
 });
 
-test("S-16-calldata rejects private fields and naked RPC credentials", () => {
+test("validates run timing and public finalized network metadata", () => {
+  const row = { ...safe(), execution: { durationMs: "124", timeoutMs: "900000" },
+    network: { chainId: "11155111", pool: `0x${"44".repeat(20)}`,
+      deploymentTxHash: `0x${"55".repeat(32)}`, manifestSha256: "ab".repeat(32),
+      finalizedBlockNumber: "42", finalizedBlockHash: `0x${"66".repeat(32)}`,
+      declaredFork: "cancun", forkBasis: "finalized-block-blob-fields-cancun-or-later" } };
+  validateCaseResults(expected, [row]);
+  assert.throws(() => validateCaseResults(expected, [{ ...row,
+    execution: { ...row.execution, durationMs: "-1" } }]));
+  assert.throws(() => validateCaseResults(expected, [{ ...row,
+    network: { ...row.network, rpcUrl: "https://secret.example" } }]));
+});
+
+test("public evidence rejects private fields and naked RPC credentials", () => {
   for (const evidence of [
     { ...safe().evidence, rawCalldata: "0x1234" },
     { ...safe().evidence, packet: "0x1234" },
@@ -49,12 +62,12 @@ test("S-16-calldata rejects private fields and naked RPC credentials", () => {
   ]) assert.throws(() => validateCaseResults(expected, [{ ...safe(), evidence }]));
 });
 
-test("S-16-events rejects plaintext openings in public event metadata", () => {
+test("public evidence rejects plaintext openings in event metadata", () => {
   const event = { ...safe().evidence, eventName: "OutputCreated", opening: { amount: "123" } };
   assert.throws(() => validateCaseResults(expected, [{ ...safe(), evidence: event }]));
 });
 
-test("S-16-cli-json rejects private CLI amount and passphrase", () => {
+test("public evidence rejects private CLI amount and passphrase", () => {
   for (const evidence of [
     { ...safe().evidence, availableWei: "123" },
     { ...safe().evidence, testName: "passphrase=secret" },

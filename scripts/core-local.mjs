@@ -95,6 +95,7 @@ async function artifactHashes() {
 }
 
 export async function runLocalAcceptance() {
+  const started = Date.now();
   const scratch = await mkdtemp(join(tmpdir(), "cutxo-core-results-"));
   let out;
   try {
@@ -161,6 +162,8 @@ export async function runLocalAcceptance() {
       return { schemaVersion: 1, caseId: item.caseId,
         operationOutcome: pass ? item.expectedOperation : "unavailable", testOutcome,
         commit, artifactHashes: hashes, environment: environmentData,
+        execution: { durationMs: String(Date.now() - started), timeoutMs: "2700000",
+          ...(pass ? {} : { failureReason: testOutcome === "fail" ? "TEST_FAILED" : "TEST_NOT_RUN" }) },
         evidence: { kind: observed?.foundryGas ? "foundry" : txs?.length ? "transaction" : "test",
           source: item.evidenceRef, testName: observed?.testName ?? item.caseId,
           ...(observed?.foundryGas ? { foundryGas: observed.foundryGas } : {}),
