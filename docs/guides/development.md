@@ -133,6 +133,23 @@ pnpm uniswap:sepolia:probe
 
 実行結果は `pnpm build`、`pnpm test`（Foundry 102/102、環境・暗号テスト成功）、`pnpm check`、`pnpm check:uniswap-payment`、`pnpm check:uniswap`、`pnpm check:pool`、`forge test --root contracts`、`node tests/vectors/tools/oracle-uniswap-payment.mjs`、`POOL_VECTOR_PYTHON=<venvのPython> node scripts/generate-pool-fixtures.mjs --uniswap` が成功。`Real` は5/5で、正常支払い、1 wei残額、最低額未達のPool/Pair/recipient/Adapter取消、Pool出金先書換え拒否を確認した。#55へ生成ABIと独立ベクトル、#60へ6参照のconstructor/getter・artifact/manifest条件、#45へ局所harnessと未検証分岐を渡す。独立Anvil全体配置、manifestによる実Adapter runtime照合、Sepolia実取引、UI/受領・同期、形式証明、第三者の独立追試は未実施。
 
+## Issue #36: 実暗号の統合受入
+
+macOS ARM64でNode.js 24.21.0、pnpm 10.34.5、Foundry 1.8.3を使う。`expect`を追加で用意し、`command -v expect` と `command -v anvil` が両方成功することを確認する。`pnpm install --frozen-lockfile && pnpm build`の後、`pnpm test:integration:core`を実行する。ルートの`pnpm test`にも同じゲートを一度だけ含む。`pnpm check`は統合テストのTypeScriptも型検査する。対象は[ケース台帳](../../tests/integration/core/cases.json)のうち`runner`が`sepolia`以外の行であり、公開ネットワークへの送信は行わない。実行時には一時AnvilにPool/Verifierを配置し、実署名・実証明・受領・同期、拒否、原子性、再編成、RPC障害、保存領域復元を検査する。
+
+各ローカル試行は`tests/integration/core/results/local-*.json`へ結果を新規作成する。`caseId`、`operationOutcome`、`testOutcome`、実行commit、artifactのSHA-256、OS/CPU/メモリとツール版、実行時間とCI制限時間、ケースに直接紐付けた成功取引のID・hash・gasを確認する。`testOutcome`が`fail`または`not-run`、case欠落、skip、重複ならゲートは失敗する。生のVitest/Foundry/TAP出力と秘密のopening、鍵、RPC URLは結果へ保存せず、一時ファイルを終了時に削除する。Git管理されたコードをcommitした状態で実行し、結果JSONだけを別commitへ追加する。CIはmacos-15で同じゲートを実行し、結果JSONのみをartifactへ保存する。
+
+公開Sepoliaは`.env.example`をルートの`.env`へコピーし、テスト用ETHを持つ相異なるA・B・submitterの鍵ファイル（権限0600）、HTTPS RPC、Pool配置manifest、互いに異なる保存領域を指定する。RPC URLに`&`などのシェル記号があれば値を引用符で囲む。鍵・保存領域は`.sepolia-private/`に置き、`.env`とともにGitへ追加しない。既存配置は`node scripts/verify-pool-deployment.mjs --rpc "$SEPOLIA_RPC_URL" --manifest "$POOL_MANIFEST_PATH"`で確認する。新規配置が必要なときだけ`POOL_DEPLOY_PRIVATE_KEY`をローカルで設定し、`node scripts/deploy-pool.mjs --rpc "$SEPOLIA_RPC_URL" --chain-id 11155111 --hardfork cancun --out "$POOL_MANIFEST_PATH"`を別途明示実行する。fork名は配置時点の条件を確認して指定する。
+
+```sh
+set -a
+. ./.env
+set +a
+pnpm test:core:sepolia
+```
+
+上記コマンドは利用者が明示したときだけ送信する。事前にSepolia chain ID、manifest内の配置取引・runtime・参照、配置block以降のlog/取引input、固定block状態と`finalized`照会を検証する。A入金・部分送金・2入力統合、B独立再送金・出金が確定するまで待ち、3種の拒否を同一の確定block hashで照合する。結果の`S-*-sepolia-*`行はローカル行と区別して読む。確定blockのblob fieldでCancun以降の機能があることを確認し、manifestの申告forkとともに公開結果に記録する。事前検査が失敗した場合は9ケースを`not-run`として結果JSONに残す。送信前にはoperation IDを、送信hashが分かればそのhashを`.pending.json`へ更新し、通常の例外終了時は未実施行と失敗理由を付けた結果JSONへ確定する。共有Pool上の会計は他の利用者の取引で変わり得るため、各成功取引のOperationSucceededイベントの`d`/`w`と全体の会計不変条件を検査する。RPCが履歴を返せない、結果が不明、確定待ちが時間切れ、保存済みの状態がある場合は停止する。RPCやoperation IDを変えて自動再試行しない。既存のjournalとチェーン上の取引hashを調査してから、人が継続・新規試行を決める。再実行には新しい鍵の資金と新しい保存領域・結果パスを用意する。
+
 ## Poolと検証器の配置（Issue #27）
 
 `pnpm artifact:pool` は `contracts/out/Pool.sol/Pool.json` から公開ABI、bytecode、AST、storage layoutと入力hashを `packages/ethereum/generated/pool-v1.json` に出力する。`pnpm check:pool` は現在のソースとコンパイル結果に照合する。`pnpm fixture:pool` は公開seedから25件の操作、署名、実範囲証明を一時ディレクトリに再生成し、固定ケースとFoundry calldataをbyte単位で比較する。Python依存は `tests/vectors/README.md` に従って導入し、`POOL_VECTOR_PYTHON` にそのvenvのPythonを指定する。

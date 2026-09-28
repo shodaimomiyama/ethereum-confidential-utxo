@@ -34,7 +34,7 @@ it("renders only public operation fields and uses distinct exit classes", () => 
   expect(renderResult({ kind: "operation", operationId: `0x${"11".repeat(32)}`, status: "competing" }, capture(false).io, "json")).toBe(5);
 });
 it("shows public IDs for excluded undecryptable outputs without private amounts", () => {
-  const failures = [{ outputId: `0x${"aa".repeat(32)}` as Hex, status: "unknown" as const, reason: "DECRYPT" as const }];
+  const failures = [{ outputId: `0x${"aa".repeat(32)}` as Hex, status: "inconsistent" as const, reason: "DECRYPT" as const }];
   for (const result of [
     { kind: "sync" as const, status: "complete" as const, receiptFailures: failures },
     { kind: "balance" as const, status: "available" as const,
