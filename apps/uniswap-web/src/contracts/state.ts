@@ -2,6 +2,8 @@ import type { OperationId, OperationRef, RequestId, RewardStatus, Scope } from '
 
 export type Card = 'reward' | 'pay' | 'deposit' | 'withdraw';
 
+export type PreparationAction = 'connect' | 'prepare-key' | 'authenticate' | 'switch-network';
+
 export type CardPhase =
   | 'needs-preparation'
   | 'invalid-input'
@@ -79,6 +81,7 @@ export interface PreparationView {
   readonly wallet: boolean;
   readonly network: boolean;
   readonly key: boolean;
+  readonly authenticated?: boolean;
   readonly faucet: boolean;
   readonly gas: boolean;
 }

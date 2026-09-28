@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
-import { hashDomain, hashTypedData, recoverTypedDataAddress, zeroAddress } from "viem";
+import { concat, hashDomain, hashStruct, hashTypedData, keccak256, recoverTypedDataAddress, zeroAddress } from "viem";
 import type { Address, Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { recipientInfoTypedData, authorizationTypedData, authorizeOperation, CoreFailure, verifyOperationAuthorization, verifyRecipientInfo } from "../src/index.js";
@@ -30,11 +30,6 @@ const domainFields = [
   { name: "name", type: "string" }, { name: "version", type: "string" },
   { name: "chainId", type: "uint256" }, { name: "verifyingContract", type: "address" },
 ] as const;
-const recipientTypes = { RecipientInfo: [
-  { name: "owner", type: "address" }, { name: "receivePublicKey", type: "bytes32" },
-  { name: "receiptFormat", type: "uint8" }, { name: "recipientInfoVersion", type: "uint8" },
-] } as const;
-
 describe("AC-01: authorization vectors", () => {
   it.each(vectors)("enforces $id", async ({ input, expected }) => {
     const ctx = { chainId: BigInt(input.chainId), pool: input.pool };
@@ -48,6 +43,7 @@ describe("AC-01: authorization vectors", () => {
     const typed = authorizationTypedData(context, signedVectorRequest());
     expect(typed.domain).toEqual({ name: "Ethereum Confidential UTXO", version: "1", chainId: 31337n, verifyingContract: context.pool });
     expect(typed.primaryType).toBe("OperationAuthorization");
+    expect(typed.types.EIP712Domain).toEqual(domainFields);
     expect(typed.types.OperationAuthorization).toEqual([
       { name: "operationId", type: "bytes32" }, { name: "owner", type: "address" },
       { name: "authScheme", type: "uint8" }, { name: "authVersion", type: "uint8" },
@@ -55,12 +51,21 @@ describe("AC-01: authorization vectors", () => {
     expect(typed.message).toEqual({ operationId: operationVector.input.operationId, owner: operationVector.input.owner, authScheme: 1, authVersion: 1 });
     expect(hashDomain({ domain: typed.domain, types: { EIP712Domain: domainFields } })).toBe(operationVector.expected.domainSeparator.hash);
     expect(hashTypedData(typed)).toBe(operationVector.expected.digest);
+    const rpc = JSON.parse(JSON.stringify(typed, (_key, value: unknown) => typeof value === "bigint" ? value.toString() : value)) as typeof typed;
+    const rpcDomain = hashDomain({ domain: rpc.domain, types: { EIP712Domain: rpc.types.EIP712Domain } });
+    const rpcMessage = hashStruct({ data: rpc.message, primaryType: rpc.primaryType, types: { OperationAuthorization: rpc.types.OperationAuthorization } });
+    expect(keccak256(concat(["0x1901", rpcDomain, rpcMessage]))).toBe(operationVector.expected.digest);
     expect((await recoverTypedDataAddress({ ...typed, signature: operationVector.input.signature })).toLowerCase()).toBe(operationVector.expected.recoveredOwner);
   });
   it("matches the recipient domain, type, digest and recovered owner", async () => {
-    const typed = { domain: authorizationTypedData(context, request()).domain, primaryType: "RecipientInfo", types: recipientTypes, message: recipient() } as const;
+    const typed = recipientInfoTypedData(context, recipient(), recipientVector.input.owner);
+    expect(typed.types.EIP712Domain).toEqual(domainFields);
     expect(hashDomain({ domain: typed.domain, types: { EIP712Domain: domainFields } })).toBe(recipientVector.expected.domainSeparator.hash);
     expect(hashTypedData(typed)).toBe(recipientVector.expected.digest);
+    const rpc = JSON.parse(JSON.stringify(typed, (_key, value: unknown) => typeof value === "bigint" ? value.toString() : value)) as typeof typed;
+    const rpcDomain = hashDomain({ domain: rpc.domain, types: { EIP712Domain: rpc.types.EIP712Domain } });
+    const rpcMessage = hashStruct({ data: rpc.message, primaryType: rpc.primaryType, types: { RecipientInfo: rpc.types.RecipientInfo } });
+    expect(keccak256(concat(["0x1901", rpcDomain, rpcMessage]))).toBe(recipientVector.expected.digest);
     expect((await recoverTypedDataAddress({ ...typed, signature: recipient().signature })).toLowerCase()).toBe(recipientVector.expected.recoveredOwner);
   });
 });

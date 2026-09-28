@@ -5,4 +5,5 @@ export default defineConfig({
   root: fileURLToPath(new URL('.', import.meta.url)),
   esbuild: { jsx: 'automatic' },
   build: { outDir: 'dist' },
+  worker: { format: 'es' },
 });

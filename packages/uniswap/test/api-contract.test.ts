@@ -85,6 +85,9 @@ it('requires an explicit sealed revision for the shared reservation wire contrac
   expect(() => parseApiRequest('PUT', `/v1/operations/${id}`, {
     scope, expectedRevision: 0, record: payRecord,
   })).toThrowError();
+  expect(parseApiRequest('PUT', `/v1/operations/${id}`, {
+    scope, expectedRevision: 0, record: payRecord,
+  }, { allowLegacyUnsealedPut: true }).sealedRevision).toBeUndefined();
 });
 
 it('parses machine-readable error responses without reflecting secret fields', () => {
@@ -168,7 +171,24 @@ it('rejects a PUT whose sealed revision disagrees with its compare-and-swap targ
 it('parses released records and rejects unknown reservation states', () => {
   const response = { scope, record: payRecord, revision: 2, reservationState: 'released' };
   expect(parseApiResponse('POST /v1/operations/{id}/release', 200, response)).toMatchObject({ reservationState: 'released', revision: 2 });
+  expect(() => parseApiResponse('POST /v1/operations/{id}/release', 200, {
+    scope, record: payRecord, revision: 2,
+  })).toThrowError();
   expect(() => parseApiResponse('POST /v1/operations/{id}/release', 200, { ...response, reservationState: 'missing' })).toThrowError();
+});
+
+it.each([
+  ['PUT', `/v1/operations/${id}`],
+  ['POST', `/v1/operations/${id}/release`],
+])('bounds the complete %s operation request to 1 MiB', (method, path) => {
+  const body = { scope, expectedRevision: 1, sealedRevision: 2, blockHash: hash,
+    record: { ...payRecord, encryptedBundle: { ...payRecord.encryptedBundle, ciphertext: '' } } };
+  const overhead = new TextEncoder().encode(JSON.stringify(body)).length;
+  body.record.encryptedBundle.ciphertext = 'A'.repeat(1_048_576 - overhead);
+  expect(new TextEncoder().encode(JSON.stringify(body)).length).toBe(1_048_576);
+  expect(() => parseApiRequest(method!, path!, body)).not.toThrow();
+  body.record.encryptedBundle.ciphertext += 'A';
+  expect(() => parseApiRequest(method!, path!, body)).toThrowError('INVALID_FIELD');
 });
 
 it('parses operation lifecycle separately from encrypted revision', () => {
@@ -188,10 +208,10 @@ it('parses operation lifecycle separately from encrypted revision', () => {
   expect(parsed.records[0]?.revision).toBe(1);
   expect(parsed.records[0]?.stateVersion).toBe(2);
   expect(parsed.records[0]?.reservationState).toBeUndefined();
-  expect(() => parseApiResponse('GET /v1/operations/{id}', 200, {
+  expect(parseApiResponse('GET /v1/operations/{id}', 200, {
     scope, record: payRecord, revision: 1, stateVersion: 2, status: 'released',
     checkpoint: { blockNumber: '12', blockHash: id, blockTimestamp: '601' },
-  })).toThrowError();
+  })).toMatchObject({ status: 'released', stateVersion: 2 });
 });
 
 it('accepts a record ID cursor for the next operations page', () => {
@@ -202,4 +222,38 @@ it('accepts a record ID cursor for the next operations page', () => {
   });
   if ('error' in response) throw new Error('unexpected error response');
   expect(response.nextCursor).toBe(id);
+});
+
+it.each([
+  { status: 'reserved' },
+  { stateVersion: 2 },
+  { checkpoint: { blockNumber: '12', blockHash: id, blockTimestamp: '601' } },
+  { status: 'released', stateVersion: 2 },
+  { status: 'invalid', stateVersion: 2 },
+  { status: undefined, stateVersion: undefined },
+])('rejects incomplete service lifecycle fields without falling back to legacy: %j', (fields) => {
+  const record = { scope, record: payRecord, revision: 1, ...fields };
+  expect(() => parseApiResponse('PUT /v1/operations/{id}', 200, record)).toThrowError();
+  expect(() => parseApiResponse('GET /v1/operations/{id}', 200, record)).toThrowError();
+  expect(() => parseApiResponse('GET /v1/operations', 200, {
+    availability: 'healthy', records: [record],
+  })).toThrowError();
+});
+
+it('preserves complete service lifecycle and legacy reservation fields without inventing state', () => {
+  const legacy = { scope, record: payRecord, revision: 3, reservationState: 'active' };
+  const parsedLegacy = parseApiResponse('PUT /v1/operations/{id}', 200, legacy);
+  expect(parsedLegacy).toMatchObject({ revision: 3, reservationState: 'active' });
+  expect(parseApiResponse('GET /v1/operations/{id}', 200, legacy)).toEqual(parsedLegacy);
+  expect(parsedLegacy).not.toHaveProperty('status');
+  expect(parsedLegacy).not.toHaveProperty('stateVersion');
+  const rich = {
+    ...legacy, reservationState: 'released', status: 'released', stateVersion: 7,
+    checkpoint: { blockNumber: '12', blockHash: id, blockTimestamp: '601' },
+  };
+  const parsed = parseApiResponse('PUT /v1/operations/{id}', 200, rich);
+  expect(parsed).toMatchObject({
+    revision: 3, status: 'released', stateVersion: 7,
+    checkpoint: rich.checkpoint, reservationState: 'released',
+  });
 });

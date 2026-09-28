@@ -230,6 +230,7 @@ Node.js 24.21.0、pnpm 10.34.5、Vitest 4.1.11、TypeScript 6.0.3と固定lockfi
 公開配置前に環境単位の `REWARD_SECRETS_JSON`（状態暗号化鍵・配布元署名鍵・受領鍵）、内部操作用 `REWARD_OPERATOR_TOKEN`、RPC、Pool配置情報、DB外の復旧ゲートと同世代バックアップを設定する。鍵の平文をSQLite、通常ログ、成果物へ保存しない。初回DB初期化は明示的に実行し、通常運用では初期化許可を外す。配布元の機密UTXO資金と公開gas残高は別に確認する。受領通知は資金・gas不足による配布停止中でもfinalized履歴を照合し、共通復旧ゲート停止中は保留する。
 
 引継ぎ: [#47](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/47) は実Cloudflare Freeでの暗号・SQL・alarm・CPU/メモリ・Secrets欠落と枠超過を測定する。[#48](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/48) は実Pool取引でACK喪失、raw再送、finalized前後の再編成、取消、バックアップ復元後の旧試行照合を確認する。[#49](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/49) は本人向け回答、公開履歴、運営者に見える要求額と能動照会を分けて漏えいを評価する。[#50](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/50) は実サイトの自由入力、本人再訪・受領・追加要求、待機・停止理由表示と一連の操作を検証する。
+
 ## Issue #31: CLIの操作・復旧
 
 Node 24.21.0、pnpm 10.34.5、Foundry 1.8.3を使い、リポジトリのルートで `pnpm install --frozen-lockfile && pnpm build` を実行する。操作入口は `node packages/cli/dist/bin.js help`。`--json` は公開状態を1個のJSON objectとして標準出力へ返し、非公開残高・UTXO額を含めない。非公開額は本人が解除した対話端末の通常表示だけに出る。解除は標準入力と標準エラーの双方がTTYである場合だけ許可し、リダイレクト入力や引数のパスフレーズは受け付けない。戻り値は0が完了・既知の成功、2が入力/設定、3が保存/ロック、4がRPC/結果不明、5が既知の失敗/競合である。

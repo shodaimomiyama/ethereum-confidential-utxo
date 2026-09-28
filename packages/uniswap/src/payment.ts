@@ -33,6 +33,12 @@ export interface PaymentDeployment {
 export type WithdrawalBindingInput = Pick<LocalDraft, 'context' | 'request' | 'operationId' | 'rangeProofs'>;
 
 const paymentTypes = {
+  EIP712Domain: [
+    { name: 'name', type: 'string' },
+    { name: 'version', type: 'string' },
+    { name: 'chainId', type: 'uint256' },
+    { name: 'verifyingContract', type: 'address' },
+  ],
   PaymentAuthorization: [
     { name: 'operationId', type: 'bytes32' },
     { name: 'owner', type: 'address' },
@@ -63,9 +69,9 @@ function checkTerms(terms: PaymentTerms, chainId: bigint, adapter: Address): voi
   }
 }
 
-export function paymentDigest(terms: PaymentTerms, chainId: bigint, adapter: Address): PaymentId {
+export function paymentAuthorizationTypedData(terms: PaymentTerms, chainId: bigint, adapter: Address) {
   checkTerms(terms, chainId, adapter);
-  return hashTypedData({
+  return {
     domain: {
       name: 'Ethereum Confidential UTXO Uniswap Payment',
       version: '1',
@@ -74,8 +80,20 @@ export function paymentDigest(terms: PaymentTerms, chainId: bigint, adapter: Add
     },
     types: paymentTypes,
     primaryType: 'PaymentAuthorization',
-    message: terms,
-  }) as PaymentId;
+    message: {
+      operationId: terms.operationId,
+      owner: terms.owner,
+      ethAmount: terms.ethAmount,
+      token: terms.token,
+      minAmountOut: terms.minAmountOut,
+      recipient: terms.recipient,
+      deadline: terms.deadline,
+    },
+  } as const;
+}
+
+export function paymentDigest(terms: PaymentTerms, chainId: bigint, adapter: Address): PaymentId {
+  return hashTypedData(paymentAuthorizationTypedData(terms, chainId, adapter)) as PaymentId;
 }
 
 export function assertWithdrawalBinding(

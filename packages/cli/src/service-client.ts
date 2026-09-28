@@ -4,6 +4,7 @@ import { parseApiResponse } from "@confidential-utxo/uniswap";
 import type { ApiRoute, ApiSuccessResponseMap, ApiTransport, Bytes32, ReservationPort,
   RewardRecord, RewardRequest, Scope, SavedReservation } from "@confidential-utxo/uniswap";
 import type { OperationRecord } from "@confidential-utxo/uniswap";
+import type { OperationResponse } from "@confidential-utxo/uniswap";
 
 export class ServiceClientError extends Error {
   constructor(readonly code: string) { super(code); this.name = "ServiceClientError"; }
@@ -26,6 +27,21 @@ function cleanUrl(value: string): URL {
 function wireRecord(record: OperationRecord): Record<string, unknown> {
   const { scope: _scope, ...rest } = record;
   return { ...rest, ...(rest.kind === "pay" ? { deadline: rest.deadline.toString() } : {}) };
+}
+
+function confirmedReservation(response: OperationResponse, scope: Scope, recordId?: Bytes32): SavedReservation {
+  const sameScope = (observed: Scope) => observed.deploymentId === scope.deploymentId
+    && observed.owner.toLowerCase() === scope.owner.toLowerCase();
+  const active = response.status === "reserved" && response.reservationState === "active";
+  const released = (response.status === "released" || response.status === "consumed"
+    || response.status === "finalized-success")
+    && response.reservationState === "released" && response.checkpoint !== undefined;
+  if (!sameScope(response.scope) || !sameScope(response.record.scope)
+    || (recordId !== undefined && response.record.recordId.toLowerCase() !== recordId.toLowerCase())
+    || (!active && !released)) {
+    throw new ServiceClientError("SERVICE_PROTOCOL_ERROR");
+  }
+  return response as SavedReservation;
 }
 
 export function createServiceClient(options: ServiceClientOptions): ServiceClient {
@@ -103,8 +119,8 @@ export function createServiceClient(options: ServiceClientOptions): ServiceClien
         scope.owner.toLowerCase() !== options.scope.owner.toLowerCase()) {
         throw new ServiceClientError("SERVICE_SCOPE_INVALID");
       }
-      try { return await request("GET /v1/operations/{id}", "GET",
-        `/v1/operations/${recordId}?${scopeQuery()}`); }
+      try { return confirmedReservation(await request("GET /v1/operations/{id}", "GET",
+        `/v1/operations/${recordId}?${scopeQuery()}`), scope, recordId); }
       catch (error) { if (error instanceof ServiceClientError && error.code === "NOT_FOUND") return undefined; throw error; }
     },
     async list(scope) {
@@ -119,12 +135,7 @@ export function createServiceClient(options: ServiceClientOptions): ServiceClien
         const result = await request("GET /v1/operations", "GET",
           `/v1/operations?${scopeQuery()}${cursor ? `&cursor=${cursor}` : ""}`);
         availability = result.availability;
-        for (const item of result.records) {
-          if (item.reservationState !== "active" && item.reservationState !== "released") {
-            throw new ServiceClientError("SERVICE_PROTOCOL_ERROR");
-          }
-          records.push(item as SavedReservation);
-        }
+        for (const item of result.records) records.push(confirmedReservation(item, scope));
         cursor = result.nextCursor;
       } while (cursor && availability === "healthy");
       return { availability, records };
