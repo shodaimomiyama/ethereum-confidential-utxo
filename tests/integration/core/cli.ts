@@ -18,7 +18,10 @@ async function runTerminal(fixture: CoreAnvilFixture, args: string[], json: bool
 
 export function createCli(fixture: CoreAnvilFixture) {
   async function runJson(args: string[]): Promise<Record<string, unknown>> {
+    const started = Date.now();
+    if (process.env.CORE_INTEGRATION_TRACE === "1") process.stderr.write(`core CLI start ${args[0]} ${args[1] === "add" ? "add" : ""}\n`);
     const result = await runTerminal(fixture, args, true);
+    if (process.env.CORE_INTEGRATION_TRACE === "1") process.stderr.write(`core CLI end ${args[0]} ${Date.now() - started}ms exit=${result.code}\n`);
     const lines = result.output.split(/\r?\n/).filter(line => line.startsWith("{"));
     if (lines.length !== 1) throw new Error(`CLI ${args[0]} returned ${lines.length} JSON records`);
     const parsed: unknown = JSON.parse(lines[0]!);

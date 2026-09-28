@@ -5,6 +5,20 @@ import type { Hex } from "viem";
 import type { CoreAnvilFixture } from "./anvil.js";
 import { createCli } from "./cli.js";
 
+export async function prepareRecipients(fixture: CoreAnvilFixture): Promise<{ alice: string; bob: string }> {
+  const cli = createCli(fixture);
+  for (const actor of [fixture.alice, fixture.bob]) {
+    await cli.runOwnerCli(["init", ...actor.args, ...fixture.onlineArgs]);
+    await cli.runOwnerCli(["key", "add", ...actor.args]);
+    await cli.runOwnerCli(["sync", ...actor.args, ...fixture.onlineArgs]);
+  }
+  const alice = join(fixture.root, "alice-recipient.json");
+  const bob = join(fixture.root, "bob-recipient.json");
+  await cli.runOwnerCli(["recipient", ...fixture.alice.args, "--signer", fixture.alice.signer, "--out", alice]);
+  await cli.runOwnerCli(["recipient", ...fixture.bob.args, "--signer", fixture.bob.signer, "--out", bob]);
+  return { alice, bob };
+}
+
 export type CliOperationInput = {
   ownerArgs: string[];
   signer: string;
