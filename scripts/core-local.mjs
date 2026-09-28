@@ -102,7 +102,8 @@ export async function runLocalAcceptance() {
     if (status.code || status.stdout.split(/\r?\n/).some(line => line &&
       !line.slice(3).startsWith("tests/integration/core/results/")))
       throw new Error("commit core test and runner changes before recording acceptance");
-    const cases = JSON.parse(await readFile(join(root, "tests/integration/core/cases.json"), "utf8"));
+    const cases = JSON.parse(await readFile(join(root, "tests/integration/core/cases.json"), "utf8"))
+      .filter(item => item.runner !== "sepolia");
     const reportPath = join(scratch, "vitest.json");
     const transactionsDir = join(scratch, "transactions");
     await mkdir(transactionsDir);

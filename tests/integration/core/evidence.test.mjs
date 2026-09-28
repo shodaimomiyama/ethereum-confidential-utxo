@@ -31,6 +31,16 @@ test("rejects incomplete transaction and rejection evidence", () => {
   assert.throws(() => validateCaseResults(expected, [rejected]));
 });
 
+test("permits only typed public Sepolia call metadata", () => {
+  const row = { ...safe(), evidence: { kind: "rejection", source: "scripts/core-sepolia.mjs",
+    testName: "S-01-deposit", errorSelector: "0x12345678", blockNumber: "42",
+    blockHash: `0x${"33".repeat(32)}`, calldataSha256: "ab".repeat(32),
+    from: `0x${"44".repeat(20)}`, valueWei: "10" } };
+  validateCaseResults(expected, [row]);
+  assert.throws(() => validateCaseResults(expected, [{ ...row,
+    evidence: { ...row.evidence, calldataSha256: "0x1234" } }]));
+});
+
 test("S-16-calldata rejects private fields and naked RPC credentials", () => {
   for (const evidence of [
     { ...safe().evidence, rawCalldata: "0x1234" },

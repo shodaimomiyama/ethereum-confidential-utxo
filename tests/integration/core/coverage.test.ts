@@ -23,7 +23,7 @@ it("tracks every mandatory scenario with unique case IDs and evidence routes", (
     expect(["cli", "api", "foundry", "sepolia"]).toContain(item.runner);
     expect(["success", "rejected", "rolled-back", "unconfirmed", "unavailable"])
       .toContain(item.expectedOperation);
-    expect(item.evidenceRef).toMatch(/^(tests\/integration\/core\/|contracts\/test\/|packages\/)/);
+    expect(item.evidenceRef).toMatch(/^(tests\/integration\/core\/|contracts\/test\/|packages\/|scripts\/core-sepolia\.mjs$)/);
     expect(item.evidenceRef).not.toContain("..");
   }
 });

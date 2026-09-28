@@ -5,12 +5,13 @@ import { writeFile } from "node:fs/promises";
 const hex32 = /^0x[0-9a-f]{64}$/i;
 const hex4 = /^0x[0-9a-f]{8}$/i;
 const decimal = /^(0|[1-9]\d*)$/;
-const sourcePath = /^(?:tests\/integration\/core\/|contracts\/test\/)[a-zA-Z0-9/_-]+\.(?:test\.ts|test\.mjs|t\.sol)$/;
+const sourcePath = /^(?:(?:tests\/integration\/core\/|contracts\/test\/)[a-zA-Z0-9/_-]+\.(?:test\.ts|test\.mjs|t\.sol)|scripts\/core-sepolia\.mjs)$/;
 const outcomes = new Set(["success", "rejected", "rolled-back", "unconfirmed", "unavailable"]);
 const testOutcomes = new Set(["pass", "fail", "not-run"]);
 const evidenceKinds = new Set(["test", "foundry", "transaction", "rejection"]);
 const evidenceKeys = new Set(["kind", "source", "testName", "transactions", "errorSelector", "blockNumber",
-  "blockHash", "txHash", "operationId", "gasUsed", "status", "foundryGas", "eventName"]);
+  "blockHash", "txHash", "operationId", "gasUsed", "status", "foundryGas", "eventName",
+  "calldataSha256", "from", "valueWei"]);
 const unsafeText = /https?:\/\/|(?:passphrase|private.?key|recipientPrivateKey|opening|blinding|amountWei|rpcUrl|rawCalldata|secret)\s*[:=]/i;
 const knownKeys = [
   "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
@@ -58,6 +59,9 @@ function publicEvidence(value) {
     requireShape(hex4.test(value.errorSelector) && decimal.test(value.blockNumber) &&
       hex32.test(value.blockHash), "evidence.rejection");
   }
+  if (value.calldataSha256 !== undefined) requireShape(/^[0-9a-f]{64}$/i.test(value.calldataSha256), "evidence.calldataSha256");
+  if (value.from !== undefined) requireShape(/^0x[0-9a-f]{40}$/i.test(value.from), "evidence.from");
+  if (value.valueWei !== undefined) requireShape(decimal.test(value.valueWei), "evidence.valueWei");
   if (value.kind === "rejection") requireShape(value.errorSelector !== undefined, "evidence.rejection");
   if (value.kind === "transaction") requireShape(transactions?.length > 0, "evidence.transaction");
   if (value.kind === "foundry") requireShape(value.foundryGas !== undefined, "evidence.foundry");
@@ -65,7 +69,8 @@ function publicEvidence(value) {
   if (value.status !== undefined) requireShape(["success", "reverted", "pending", "unknown"].includes(value.status), "evidence.status");
   const safe = { kind: value.kind, source: value.source, testName: value.testName };
   for (const field of ["errorSelector", "blockNumber", "blockHash", "txHash", "operationId", "gasUsed",
-    "status", "foundryGas", "eventName"]) if (value[field] !== undefined) safe[field] = value[field];
+    "status", "foundryGas", "eventName", "calldataSha256", "from", "valueWei"])
+    if (value[field] !== undefined) safe[field] = value[field];
   if (transactions) safe.transactions = transactions;
   return safe;
 }

@@ -40,7 +40,8 @@
     "artifact:uniswap-client-abi": "node scripts/export-uniswap-client-abi.mjs",
     "check:uniswap-payment": "node scripts/verify-uniswap-payment-artifact.mjs",
     "deploy:pool": "node scripts/deploy-pool.mjs",
-    "verify:pool": "node scripts/verify-pool-deployment.mjs"
+    "verify:pool": "node scripts/verify-pool-deployment.mjs",
+    "test:core:sepolia": "node scripts/core-sepolia.mjs"
   },
   "devDependencies": {
     "@confidential-utxo/core": "workspace:*",
