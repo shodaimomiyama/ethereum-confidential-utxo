@@ -171,7 +171,8 @@ export async function runLocalAcceptance() {
     });
     const outputDir = join(root, "tests/integration/core/results");
     await mkdir(outputDir, { recursive: true });
-    out = join(outputDir, `local-${commit.slice(0, 12)}-${Date.now()}-${randomUUID()}.json`);
+    const prefix = process.env.GITHUB_ACTIONS === "true" ? "ci" : "local";
+    out = join(outputDir, `${prefix}-${commit.slice(0, 12)}-${Date.now()}-${randomUUID()}.json`);
     await writePublicEvidence(out, results);
     if (vitest.code || forge.code || tap.code || conversionFailed) throw new Error("one or more core test runners failed");
     validateCaseResults(cases, results);

@@ -49,7 +49,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: core-integration-results
-          path: tests/integration/core/results/local-*.json
+          path: tests/integration/core/results/ci-*.json
           if-no-files-found: warn
       - name: Deploy and verify local assets
         shell: bash
