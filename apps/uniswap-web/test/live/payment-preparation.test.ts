@@ -43,6 +43,7 @@ it.each(['pay', 'withdraw'] as const)('builds and validates exact %s binding fro
   const prepared = buildPreparedPayment(draft, decision);
   expect(() => validatePreparedPayment(prepared, decision)).not.toThrow();
   const plain = decodePaymentPrivateRecord(prepared.privateBytes);
+  if (kind === 'pay' && 'quote' in prepared) expect(plain.quote).toEqual(prepared.quote);
   expect(plain.creationInputs.operationId).toBe(draft.operationId);
   expect(plain.binding.inputId).toBe(hash('d'));
   expect(plain.signatures).toBeUndefined();

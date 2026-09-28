@@ -98,7 +98,7 @@ export function createDeploymentResolver(input: {
     || !validAddress(adapterRecord.pool) || !validAddress(references.corePoolAddress)
     || !validAddress(verified.pool) || !validAddress(verified.adapter)
     || !sameAddress(poolRecord.address, adapterRecord.pool)
-    || !sameAddress(poolRecord.address, references.corePoolAddress)
+    || sameAddress(poolRecord.address, references.corePoolAddress)
     || !sameAddress(poolRecord.address, verified.pool)
     || !sameAddress(adapterRecord.address, verified.adapter)
     || site.deploymentId !== verified.deploymentId) invalid();

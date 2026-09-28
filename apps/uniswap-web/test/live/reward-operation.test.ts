@@ -45,6 +45,16 @@ function fixture() {
     publish: (next: ViewState) => { snapshot = next; }, advance: () => { epoch++; } };
 }
 
+it('projects a reload list onto the newly verified view, retaining terminal reward status', async () => {
+  const f = fixture();
+  f.client.list.mockResolvedValueOnce([record('received')]);
+  f.publish({ ...state(), isStale: true });
+  const ready = state();
+  const listed = await f.adapter.listFrom(scope, ready, f.context);
+  expect(listed.view.rewardRequests).toEqual([{ requestId, status: 'received', operationId }]);
+  expect(listed.view.isStale).toBe(false);
+});
+
 it('starts one fixed request, exposes only public references, and does not infer success from a hash', async () => {
   const f = fixture();
   const result = await f.adapter.start(scope, { amount: '0.000000000000000007' }, f.context);
@@ -54,6 +64,10 @@ it('starts one fixed request, exposes only public references, and does not infer
   expect(f.marker.reserve.mock.invocationCallOrder[0]).toBeLessThan(f.client.request.mock.invocationCallOrder[0]!);
   expect(result.view.cards.reward.phase).toBe('pending');
   expect(result.view.rewardRequests).toEqual([{ requestId, status: 'accepted', operationId }]);
+  expect(result.view.operations).toContainEqual(expect.objectContaining({ operationId,
+    chainOutcome: 'unknown', receiptState: 'none' }));
+  expect(result.view.operationCards[operationId!]).toBe('reward');
+  expect(result.view.operationActions[operationId!]).toEqual(['recheck']);
   expect(result.view.allowedActions).toContain('recheck-reward');
   expect(result.view.allowedActions).not.toContain('start:reward');
   expect(JSON.stringify(result.view, (_key, value) => typeof value === 'bigint' ? value.toString() : value)).not.toContain('eeee');

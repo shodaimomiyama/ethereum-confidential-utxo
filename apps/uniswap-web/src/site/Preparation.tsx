@@ -7,10 +7,14 @@ export function Preparation({ view, controller, config }: {
   readonly view: ViewState; readonly controller: UiController; readonly config: SiteConfig;
 }) {
   const prep = view.preparation;
+  const needsPublicEth = config.mode === 'live' ? !prep.gas : !prep.faucet || !prep.gas;
   const action = !prep.wallet ? { type: 'connect-wallet' as const, label: config.mode === 'mock' ? 'Connect simulated wallet' : 'Connect wallet', detail: 'Connect a wallet to begin.' }
-    : !prep.network ? { type: 'switch-network' as const, label: 'Switch to Sepolia', detail: 'Select the supported test network.' }
+    : !prep.network ? { type: 'switch-network' as const,
+      label: config.mode === 'mock' ? 'Switch to Sepolia' : 'Switch network',
+      detail: 'Select the configured test network.' }
       : !prep.key ? { type: 'prepare-recipient-key' as const, label: 'Prepare privacy key', detail: 'A dedicated wallet approval will prepare your private receipt key.' }
-        : !prep.faucet || !prep.gas ? { type: 'refresh-balances' as const, label: 'Recheck public balance', detail: 'Get test ETH and keep some public ETH for gas.' }
+        : config.mode === 'live' && !prep.authenticated ? { type: 'authenticate' as const, label: 'Connect service', detail: 'Sign in to access your saved operations.' }
+        : needsPublicEth ? { type: 'refresh-balances' as const, label: 'Recheck public balance', detail: 'Get test ETH and keep some public ETH for gas.' }
           : undefined;
 
   return <section className="preparation surface" aria-label="Preparation">
@@ -19,9 +23,9 @@ export function Preparation({ view, controller, config }: {
       ? 'Your wallet, network, key and test ETH are ready in this simulation.'
       : 'Your wallet, network, key and test ETH are ready.')}</p>
     {view.currentScope && <p className="address-line">Wallet: <span title={view.currentScope.owner}>{view.currentScope.owner}</span></p>}
-    <p>Network: {prep.network ? 'Ethereum Sepolia' : 'Not selected'}</p>
+    <p>Network: {prep.network ? config.mode === 'mock' ? 'Ethereum Sepolia' : `Deployment ${view.scope.deploymentId}` : 'Not selected'}</p>
     {action && <button type="button" className="button primary" onClick={() => void controller.dispatch({ type: action.type })}>{action.label}</button>}
-    {prep.wallet && prep.network && prep.key && (!prep.faucet || !prep.gas) && config.faucetUrl && <p><a href={config.faucetUrl} target="_blank" rel="noreferrer">Get test ETH</a> from an external faucet. Keep ETH for transaction gas.</p>}
+    {prep.wallet && prep.network && prep.key && needsPublicEth && config.faucetUrl && <p><a href={config.faucetUrl} target="_blank" rel="noreferrer">Get test ETH</a> from an external faucet. Keep ETH for transaction gas.</p>}
     {view.checkedAt !== undefined && <p className="muted">Last checked: {formatUtc(view.checkedAt / 1000)}</p>}
     {view.isStale && <p role="status">Balance information may be out of date. Recheck before starting another operation.</p>}
     <button type="button" className="text-button" onClick={() => void controller.dispatch({ type: 'resync' })}>Resync private balance</button>

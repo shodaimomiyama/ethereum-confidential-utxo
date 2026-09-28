@@ -35,6 +35,8 @@ export interface ScopedResult<T> {
 export interface WalletEvent {
   readonly epoch: number;
   readonly scope?: Scope;
+  /** An authorized account exists, but the selected chain is not the deployment chain. */
+  readonly wrongNetworkScope?: Scope;
 }
 
 export interface WalletPort {
@@ -93,7 +95,9 @@ export function createMetaMaskWallet(
   };
   const emit = (): void => {
     const current = connectedScope();
-    const event: WalletEvent = { epoch: epochs.current(), ...(current ? { scope: current } : {}) };
+    const account = scope();
+    const event: WalletEvent = { epoch: epochs.current(), ...(current ? { scope: current }
+      : account && resolveDeployment(deploymentId) ? { wrongNetworkScope: account } : {}) };
     for (const listener of listeners) listener(event);
   };
   const changed = (): void => { epochs.advance(); emit(); };

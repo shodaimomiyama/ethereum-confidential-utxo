@@ -15,7 +15,7 @@ export interface LiveControllerDependencies {
   readonly worker: Pick<CryptoWorkerClient, 'run' | 'setContext' | 'cancel' | 'dispose'>;
   readonly operations: OperationPort;
   readonly auth: AuthSession;
-  readonly recovery?: Pick<Recovery, 'load'>;
+  readonly createRecovery?: (context: OperationContext) => Pick<Recovery, 'load'>;
   readonly resolveDeployment: ResolveDeployment;
   connection(): WalletEvent;
   createKeySession(connection: { readonly scope: Scope; readonly epoch: number }): KeySession;
@@ -144,7 +144,8 @@ export function createLiveController(deps: LiveControllerDependencies): UiContro
     } else if (action.type === 'authenticate') {
       await deps.auth.authenticate(scope); ctx.check();
     } else if (action.type === 'resync') {
-      const recovered = deps.recovery && keys && deps.auth.isAuthenticated(scope) ? await deps.recovery.load(scope, ctx.recordKey()) : undefined;
+      const recovered = deps.createRecovery && keys && deps.auth.isAuthenticated(scope)
+        ? await deps.createRecovery(ctx).load(scope, ctx.recordKey()) : undefined;
       ctx.check(); return deps.operations.syncFinalized(scope, ctx, recovered);
     } else if (action.type === 'start') {
       if (action.card !== 'reward') return prepare(action.card, ctx);
@@ -173,6 +174,7 @@ export function createLiveController(deps: LiveControllerDependencies): UiContro
       const captured = generation;
       const capturedScopeGeneration = scopeGeneration;
       const scope = immutable(state.scope);
+      const wasDisconnected = state.connection === 'disconnected';
       const task = async (): Promise<DispatchResult> => {
         if (disposed || captured !== generation || !sameScope(scope, state.scope)) return blocked('SCOPE_CHANGED');
         if (!allowed(action)) return { kind: 'blocked', reason: state.reasons[actionKey(action)] ?? 'NOT_ALLOWED' };
@@ -183,13 +185,19 @@ export function createLiveController(deps: LiveControllerDependencies): UiContro
             if (!location) return blocked('SERVICE_UNAVAILABLE');
             const reply = action.type === 'connect' ? await deps.wallet.connect() : await deps.wallet.switchChain(location.chainId);
             const current = deps.connection();
-            if (disposed || scopeGeneration !== capturedScopeGeneration || !current.scope || current.epoch !== reply.epoch || !sameScope(current.scope, reply.scope) || !sameScope(scope, state.scope)) return blocked('SCOPE_CHANGED');
-            connection = immutable(current); ctx = context(scope, generation);
+            const connectedScope = immutable(state.scope);
+            if (disposed || scopeGeneration !== capturedScopeGeneration || !current.scope || current.epoch !== reply.epoch
+              || !sameScope(current.scope, reply.scope) || !sameScope(current.scope, connectedScope)
+              || connectedScope.deploymentId !== scope.deploymentId
+              || (!wasDisconnected && !sameScope(scope, connectedScope))) return blocked('SCOPE_CHANGED');
+            connection = immutable(current); ctx = context(connectedScope, generation);
           }
           ctx.check(); const result = await run(action, ctx); ctx.check();
           if ('operationId' in action && result.operation && result.operation.operationId !== action.operationId) throw new Error('SCOPE_CHANGED');
           const next = mapDecisionToView(state, result);
-          publish(next); return { kind: 'accepted' };
+          publish({ ...next, preparation: { ...next.preparation,
+            authenticated: deps.auth.isAuthenticated(next.scope) } });
+          return { kind: 'accepted' };
         } catch (error) {
           try { ctx.check(); } catch { return blocked('SCOPE_CHANGED'); }
           if (error instanceof Error && error.message === 'SCOPE_CHANGED') return blocked('SCOPE_CHANGED');

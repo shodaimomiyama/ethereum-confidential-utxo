@@ -73,6 +73,7 @@ export interface OperationPort {
 const cards = ['reward', 'pay', 'deposit', 'withdraw'] as const;
 const safeWhileStale = (action: string): boolean => action === 'switch-scope' || action === 'resync'
   || action === 'connect' || action === 'connect-wallet' || action === 'switch-network'
+  || action === 'prepare-key' || action === 'authenticate'
   || action.startsWith('edit:') || action.startsWith('new-operation:')
   || action === 'recheck' || action === 'recheck-reward';
 
@@ -80,7 +81,7 @@ const safeWhileStale = (action: string): boolean => action === 'switch-scope' ||
 export function projectUnconfirmedSync(previous: ViewState, availability: ViewState['storageAvailability'] = previous.storageAvailability): ViewState {
   const reason = availability === 'healthy' ? 'RESULT_UNKNOWN' : 'SERVICE_UNAVAILABLE';
   return { ...previous, isStale: true, storageAvailability: availability,
-    preparation: { ...previous.preparation, key: false },
+    preparation: previous.preparation,
     selectedInput: {},
     utxos: previous.utxos.map(utxo => ({ ...utxo, available: false })),
     operations: previous.operations.map(operation => ({ ...operation,
@@ -103,7 +104,7 @@ export function projectUnconfirmedSync(previous: ViewState, availability: ViewSt
 
 function clearScopedData(previous: ViewState, scope: Scope): ViewState {
   return { ...previous, scope, connection: 'disconnected', currentScope: undefined,
-    preparation: { wallet: false, network: false, key: false, faucet: false, gas: false },
+    preparation: { wallet: false, network: false, key: false, authenticated: false, faucet: false, gas: false },
     utxos: [], selectedInput: {}, operationCards: {}, operationActions: {},
     publicEthWei: 0n, availablePrivateWei: 0n, pendingPrivateWei: 0n, checkedAt: undefined,
     isStale: true, cards: Object.fromEntries(cards.map(card => [card, { phase: 'needs-preparation', input: {} }])) as ViewState['cards'],
@@ -118,6 +119,12 @@ export function projectScopeChange(previous: ViewState, scope: Scope): ViewState
 
 /** Wallet events invalidate key material and all previously calculated spending choices. */
 export function projectConnectionChange(previous: ViewState, connection: WalletEvent): ViewState {
+  if (connection.wrongNetworkScope) {
+    const cleared = clearScopedData(previous, connection.wrongNetworkScope);
+    return { ...cleared, connection: 'connected', currentScope: connection.wrongNetworkScope,
+      preparation: { ...cleared.preparation, wallet: true, network: false },
+      allowedActions: ['switch-scope', 'connect', 'switch-network'] };
+  }
   const same = connection.scope !== undefined && sameScope(previous.scope, connection.scope);
   if (!same) {
     const cleared = clearScopedData(previous, connection.scope ?? previous.scope);
@@ -126,7 +133,7 @@ export function projectConnectionChange(previous: ViewState, connection: WalletE
   }
   const stale = projectUnconfirmedSync(previous);
   return { ...stale, connection: 'connected', currentScope: previous.scope,
-    preparation: { ...stale.preparation, wallet: true, network: true, key: false },
+    preparation: { ...stale.preparation, wallet: true, network: true, key: false, authenticated: false },
   };
 }
 
@@ -165,7 +172,10 @@ export function mapDecisionToView(previous: ViewState, result: OperationResult):
     if (operation) operations.set(operation.operationId, operation);
     const rewards = new Map(previous.rewardRequests.map(item => [item.requestId, item]));
     for (const item of view.rewardRequests) rewards.set(item.requestId, item);
-    const scoped = { ...previous, operations: [...operations.values()], rewardRequests: [...rewards.values()],
+    const scoped = { ...previous, connection: view.connection, currentScope: view.currentScope,
+      preparation: view.preparation, cards: view.cards,
+      allowedActions: view.allowedActions, reasons: view.reasons,
+      operations: [...operations.values()], rewardRequests: [...rewards.values()],
       operationCards: { ...previous.operationCards, ...view.operationCards,
         ...(operation && card ? { [operation.operationId]: card } : {}) } };
     return projectUnconfirmedSync(scoped, view.storageAvailability);

@@ -30,6 +30,10 @@ interface PreparedHandle {
   readonly input: string;
   readonly deployment: string;
 }
+type ReadyDecision = Pick<ViewState, 'cards' | 'allowedActions' | 'reasons' | 'selectedInput'> & {
+  readonly publicEthWei?: bigint;
+  readonly gas?: boolean;
+};
 
 export interface OperationPortDependencies {
   snapshot(): ViewState;
@@ -49,7 +53,12 @@ export interface OperationPortDependencies {
     readonly core: Extract<CoreSyncResult, { readonly status: 'complete' }>;
     readonly recovered: RecoveryResult;
     readonly view: ViewState;
-  }): Promise<Pick<ViewState, 'cards' | 'allowedActions' | 'reasons' | 'selectedInput'>>;
+  }): Promise<ReadyDecision>;
+  /** Re-evaluate one edited draft from current scoped evidence; absence keeps its start disabled. */
+  evaluateDraft?(evidence: {
+    readonly scope: Scope; readonly context: OperationContext;
+    readonly view: ViewState; readonly card: Card;
+  }): Promise<ReadyDecision>;
   recheck(scope: Scope, operationId: OperationId, context: OperationContext, previous: ViewState): Promise<OperationResult>;
   resumeOriginal(scope: Scope, operationId: OperationId, context: OperationContext, previous: ViewState): Promise<OperationResult>;
   retryAttempt(scope: Scope, operationId: OperationId, context: OperationContext, previous: ViewState): Promise<OperationResult>;
@@ -67,6 +76,45 @@ const paymentQuote = (prepared: PreparedPay, binding: PaymentBinding) => {
   return { startedAt: prepared.quote.startedAtMs, quoteOut: prepared.quote.quoteOut,
     minAmountOut: terms.minAmountOut, deadline: terms.deadline };
 };
+function applyReady(view: ViewState, ready: ReadyDecision): ViewState {
+  if ((ready.publicEthWei !== undefined && (typeof ready.publicEthWei !== 'bigint' || ready.publicEthWei < 0n))
+    || (ready.gas !== undefined && typeof ready.gas !== 'boolean')) throw new Error('INVALID_READY_EVIDENCE');
+  return { ...view, cards: ready.cards, allowedActions: ready.allowedActions,
+    reasons: ready.reasons, selectedInput: ready.selectedInput,
+    publicEthWei: ready.publicEthWei ?? view.publicEthWei,
+    preparation: { ...view.preparation, gas: ready.gas ?? view.preparation.gas } };
+}
+
+function hydrateRecovered(view: ViewState, recovered: RecoveryResult): ViewState {
+  if (recovered.availability !== 'healthy') return view;
+  const byOperation = new Map<string, typeof recovered.records>();
+  for (const row of recovered.records) {
+    const id = row.saved.record.operationId.toLowerCase();
+    byOperation.set(id, [...(byOperation.get(id) ?? []), row]);
+  }
+  const operations = new Map(view.operations.map(item => [item.operationId.toLowerCase(), item]));
+  const operationCards = { ...view.operationCards };
+  const operationActions = { ...view.operationActions };
+  const cards = { ...view.cards };
+  for (const [id, records] of byOperation) {
+    const active = records.filter(item => item.saved.reservationState === 'active'
+      || ('status' in item.saved && item.saved.status === 'reserved'));
+    const selected = records.length === 1 ? records[0] : active.length === 1 ? active[0] : undefined;
+    if (!selected || !sameScope(selected.saved.scope, view.scope)
+      || !sameScope(selected.saved.record.scope, view.scope)) throw new Error('AMBIGUOUS_RECOVERED_OPERATION');
+    const record = selected.saved.record;
+    const previous = operations.get(id);
+    const reference: OperationRef = { scope: view.scope, operationId: record.operationId,
+      ...(record.kind === 'pay' ? { paymentId: record.paymentId } : {}),
+      attemptIds: record.attemptIds,
+      txHashes: previous?.txHashes ?? [], chainOutcome: 'unknown', receiptState: 'none' };
+    operations.set(id, reference);
+    operationCards[record.operationId] = record.kind;
+    operationActions[record.operationId] = ['recheck'];
+    cards[record.kind] = { ...cards[record.kind], phase: 'unknown', reason: 'RESULT_UNKNOWN' };
+  }
+  return { ...view, operations: [...operations.values()], operationCards, operationActions, cards };
+}
 
 /** Compose the published payment client with the card boundary. Secret prepared values stay in a WeakMap. */
 export function createOperationPort(deps: OperationPortDependencies): OperationPort {
@@ -167,12 +215,19 @@ export function createOperationPort(deps: OperationPortDependencies): OperationP
       }
       if (action.type === 'authenticate') {
         return result(scope, { ...previous,
-          allowedActions: [...new Set([...previous.allowedActions.filter(item => !item.startsWith('start:')), 'resync'])],
+          preparation: { ...previous.preparation, authenticated: true },
+          allowedActions: [...new Set([...previous.allowedActions.filter(item => !item.startsWith('start:') && item !== 'authenticate'), 'resync'])],
         });
       }
       if (action.type === 'edit' || action.type === 'new-operation') {
         if (action.card === 'pay') pending = undefined;
-        return result(scope, projectDraft(previous, action));
+        const draft = projectDraft(previous, action);
+        if (!deps.evaluateDraft || draft.isStale || draft.storageAvailability !== 'healthy') {
+          return result(scope, draft);
+        }
+        const ready = await deps.evaluateDraft({ scope, context, view: draft, card: action.card });
+        check(scope, context);
+        return result(scope, applyReady(draft, ready));
       }
       if (action.type === 'confirm-terms' && pending) {
         const candidate = pending;
@@ -259,7 +314,15 @@ export function createOperationPort(deps: OperationPortDependencies): OperationP
         storageAvailability: availability });
       check(scope, context);
       if (fingerprint(resolved(scope)) !== expected) throw new Error('SCOPE_CHANGED');
-      let view = projected.view;
+      let view = recovered ? hydrateRecovered(projected.view, recovered) : projected.view;
+      if (recovered?.availability === 'healthy' && typeof deps.reward.listFrom === 'function') {
+        const listed = await deps.reward.listFrom(scope, view, context);
+        check(scope, context);
+        if (!sameScope(listed.scope, scope) || !sameScope(listed.view.scope, scope)) throw new Error('SCOPE_CHANGED');
+        view = { ...view, rewardRequests: listed.view.rewardRequests,
+          operations: listed.view.operations, operationCards: listed.view.operationCards,
+          operationActions: listed.view.operationActions };
+      }
       let keyReady = false;
       try { context.recordKey(); context.check(); keyReady = true; } catch { context.check(); }
       view = { ...view, preparation: { ...view.preparation, key: keyReady } };
@@ -268,7 +331,7 @@ export function createOperationPort(deps: OperationPortDependencies): OperationP
         const ready = await deps.recomputeReady({ scope, context, core: projected.core, recovered, view });
         check(scope, context);
         if (fingerprint(resolved(scope)) !== expected) throw new Error('SCOPE_CHANGED');
-        view = { ...view, ...ready };
+        view = applyReady(view, ready);
       }
       return result(scope, view);
     },

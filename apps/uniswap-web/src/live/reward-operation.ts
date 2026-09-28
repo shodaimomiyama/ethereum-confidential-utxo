@@ -1,5 +1,5 @@
 import type { ReceivedUtxo } from '@confidential-utxo/core';
-import type { RequestId, RewardRecord, RewardStatus, Scope } from '@confidential-utxo/uniswap';
+import type { OperationRef, RequestId, RewardRecord, RewardStatus, Scope } from '@confidential-utxo/uniswap';
 import type { ViewState } from '../contracts/index.js';
 import { HttpFailure, sameScope } from './http.js';
 import type { OperationContext, OperationResult } from './operations.js';
@@ -29,6 +29,7 @@ export interface RewardOperation {
   start(scope: Scope, input: Readonly<Record<string, string>>, context: OperationContext): Promise<OperationResult>;
   recheck(scope: Scope, requestId: RequestId, context: OperationContext): Promise<OperationResult>;
   list(scope: Scope, context: OperationContext): Promise<OperationResult>;
+  listFrom(scope: Scope, view: ViewState, context: OperationContext): Promise<OperationResult>;
   /** Only a successful core inspectReceipt result may be supplied here. */
   receive(scope: Scope, requestId: RequestId, receipt: ReceivedUtxo, context: OperationContext): Promise<OperationResult>;
 }
@@ -81,9 +82,25 @@ function project(snapshot: ViewState, scope: Scope, records: readonly RewardReco
   if (records.some(record => !sameScope(record.scope, scope))) throw new Error('SCOPE_CHANGED');
   // A missing list entry cannot prove an uncertain POST was never accepted.
   const refs = new Map(snapshot.rewardRequests.map(item => [item.requestId, item]));
+  const operations = new Map(snapshot.operations.map(item => [item.operationId.toLowerCase(), item]));
+  const operationCards = { ...snapshot.operationCards };
+  const operationActions = { ...snapshot.operationActions };
   for (const record of records) refs.set(record.requestId, {
     requestId: record.requestId, status: record.status, operationId: record.operationId,
   });
+  for (const record of records) {
+    if (!record.operationId) continue;
+    const id = record.operationId.toLowerCase();
+    if (operationCards[record.operationId] && operationCards[record.operationId] !== 'reward') throw new Error('OPERATION_CARD_MISMATCH');
+    const prior = operations.get(id);
+    if (prior && !sameScope(prior.scope, scope)) throw new Error('SCOPE_CHANGED');
+    const reference: OperationRef = prior ?? { scope, operationId: record.operationId,
+      attemptIds: record.attemptIds, txHashes: record.txHashes,
+      chainOutcome: 'unknown', receiptState: 'none' };
+    operations.set(id, reference);
+    operationCards[record.operationId] = 'reward';
+    operationActions[record.operationId] ??= ['recheck'];
+  }
   const requests = [...refs.values()];
   const latest = requests.at(-1);
   const nextPhase = latest ? phase(latest.status) : snapshot.cards.reward.phase;
@@ -99,6 +116,7 @@ function project(snapshot: ViewState, scope: Scope, records: readonly RewardReco
     delete reasons['start:reward'];
   }
   const view: ViewState = { ...snapshot, rewardRequests: requests,
+    operations: [...operations.values()], operationCards, operationActions,
     cards: { ...snapshot.cards, reward: { ...snapshot.cards.reward, phase: nextPhase,
       reason: latest?.status === 'unknown' ? 'RESULT_UNKNOWN' : undefined } },
     allowedActions: [...allowed], reasons };
@@ -231,6 +249,12 @@ export function createRewardOperation(deps: RewardOperationDependencies): Reward
       const records = await client.list();
       check(scope, context, deps.snapshot());
       return project(snapshot, scope, records);
+    },
+    async listFrom(scope, view, context) {
+      check(scope, context, view);
+      const records = await deps.client(context).list();
+      check(scope, context, deps.snapshot());
+      return project(view, scope, records);
     },
     async receive(scope, requestId, receipt, context) {
       const { snapshot, client } = captured(scope, context);

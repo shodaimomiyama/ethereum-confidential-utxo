@@ -12,7 +12,7 @@ function fixture() {
   let manifest: unknown = {
     schemaVersion: 1, chainId: 11155111, generation: 'sepolia-1',
     contracts: { pool: { address: pool }, adapter: { address: adapter, pool } },
-    references: { corePoolAddress: pool },
+    references: { corePoolAddress: `0x${'33'.repeat(20)}` },
     site: { deploymentId: 'sepolia-1', origin, siweUri },
   };
   const catalogue = { 'sepolia-1': { origin, siweUri, chainId: 11155111, pool, finalityMode: 'finalized' as const } };

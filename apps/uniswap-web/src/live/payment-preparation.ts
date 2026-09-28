@@ -81,6 +81,7 @@ export function buildPreparedPayment(draft: LocalDraft, decision: PreparationDec
   const { encryptedBundle: _, signatureStarted: __, attemptIds: ___, ...binding } = record;
   const privateBytes = encodePaymentPrivateRecord({ version: 1, creationInputs: structuredClone(draft), binding,
     operationId: record.operationId, ...(record.kind === 'pay' ? { paymentId: record.paymentId } : {}),
+    ...(decision.kind === 'pay' ? { quote: structuredClone(decision.quote) } : {}),
     intendedAuthorization, attempts: [], recoveryMarkers: {} });
   const base = { record, poolAuthorization: pool, privateBytes };
   return decision.kind === 'pay' ? { ...base, quote: structuredClone(decision.quote) } as PreparedPay

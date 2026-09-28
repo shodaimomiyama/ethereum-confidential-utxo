@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { OperationId, Scope } from '@confidential-utxo/uniswap';
 import type { UiAction, ViewState } from '../../src/contracts/index.js';
 import { createLiveController, type LiveControllerDependencies, type OperationPort, type OperationResult, type PreparedOperation } from '../../src/live/index.js';
+import { projectConnectionChange } from '../../src/live/operations.js';
 import type { CryptoJob } from '../../src/live/worker-protocol.js';
 import type { WalletEvent, WalletPort } from '../../src/live/wallet.js';
 
@@ -59,6 +60,23 @@ function setup() {
 }
 
 describe('live coordinator', () => {
+  it('adopts the first connected owner without retaining the disconnected placeholder scope', async () => {
+    const f = setup();
+    f.change();
+    f.deps.initialState = { ...view(), connection: 'disconnected', currentScope: undefined,
+      preparation: { wallet: false, network: false, key: false, faucet: false, gas: false },
+      isStale: true, storageAvailability: 'unavailable', allowedActions: ['connect'] };
+    f.operations.connectionChanged = projectConnectionChange;
+    f.operations.transition = async (connectedScope, _action, previous) => ({ scope: connectedScope, view: previous });
+    f.deps.wallet.connect = async () => {
+      f.change(other);
+      return { scope: other, epoch: f.deps.connection().epoch, value: other };
+    };
+    const controller = createLiveController(f.deps);
+    expect(await controller.dispatch({ type: 'connect' })).toEqual({ kind: 'accepted' });
+    expect(controller.snapshot().scope).toEqual(other);
+    expect(controller.snapshot().preparation.key).toBe(false);
+  });
   it.each(['pay', 'withdraw', 'deposit'] as const)('prepares and proves %s before entering published authorization', async card => {
     const f = setup(); const controller = createLiveController(f.deps);
     expect(await controller.dispatch({ type: 'start', card })).toEqual({ kind: 'accepted' });
@@ -141,6 +159,21 @@ describe('live coordinator', () => {
     const f = setup(); const controller = createLiveController(f.deps);
     await controller.dispatch({ type: 'connect-wallet' }); await controller.dispatch({ type: 'prepare-recipient-key' }); expect(f.calls).not.toContain('authenticate');
     await controller.dispatch({ type: 'authenticate' }); expect(f.calls.filter(x => x === 'authenticate')).toHaveLength(2); // auth session plus view transition
+  });
+  it('creates recovery with the captured resync context after key preparation and authentication', async () => {
+    const f = setup();
+    const recovered = { records: [], finalized: { outputs: [] }, availability: 'healthy' as const, allowedActions: [] };
+    let captured: unknown;
+    f.deps.createRecovery = context => { captured = context; return { load: async () => recovered }; };
+    f.operations.syncFinalized = async (_scope, context, result) => {
+      expect(context).toBe(captured);
+      expect(result).toBe(recovered);
+      return f.decision();
+    };
+    const controller = createLiveController(f.deps);
+    expect(await controller.dispatch({ type: 'prepare-key' })).toEqual({ kind: 'accepted' });
+    expect(await controller.dispatch({ type: 'resync' })).toEqual({ kind: 'accepted' });
+    expect(captured).toBeDefined();
   });
   it('requires operation-scoped permissions and a matching scoped operation', async () => {
     const f = setup(); f.deps.initialState = { ...view(), allowedActions: ['recheck'], operationActions: {} };

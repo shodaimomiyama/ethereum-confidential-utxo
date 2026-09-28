@@ -81,6 +81,7 @@ export interface PreparationView {
   readonly wallet: boolean;
   readonly network: boolean;
   readonly key: boolean;
+  readonly authenticated?: boolean;
   readonly faucet: boolean;
   readonly gas: boolean;
 }

@@ -1,5 +1,5 @@
 import { operationId as coreOperationId, outputId, validateOperationShape, type LocalDraft } from '@confidential-utxo/core';
-import type { AttemptId, AuthorizationSignatures, Bytes32, OperationRecord, PaymentPorts, TxHash } from '@confidential-utxo/uniswap';
+import type { AttemptId, AuthorizationSignatures, Bytes32, OperationRecord, PayQuote, PaymentPorts, TxHash } from '@confidential-utxo/uniswap';
 import { openRecord, sealRecord, type RecordContext } from './record-crypto.js';
 
 const encoder = new TextEncoder();
@@ -21,6 +21,8 @@ export interface PaymentPrivateRecord {
   readonly binding: Binding;
   readonly operationId: Bytes32 | OperationRecord['operationId'];
   readonly paymentId?: Bytes32 | Extract<OperationRecord, { kind: 'pay' }>['paymentId'];
+  /** Original quote is required to reconstruct the exact prepared Pay after reload. */
+  readonly quote?: PayQuote;
   readonly intendedAuthorization: { readonly pool: Readonly<Record<string, unknown>>; readonly payment?: Readonly<Record<string, unknown>> };
   readonly signatures?: AuthorizationSignatures;
   readonly attempts: readonly { readonly attemptId: AttemptId; readonly txHash?: TxHash }[];
@@ -133,7 +135,7 @@ function validateDraft(value: unknown): asserts value is LocalDraft {
 }
 function validate(value: unknown): PaymentPrivateRecord {
   const data = object(value);
-  keys(data, ['version', 'creationInputs', 'binding', 'operationId', 'intendedAuthorization', 'attempts', 'recoveryMarkers'], ['paymentId', 'signatures']);
+  keys(data, ['version', 'creationInputs', 'binding', 'operationId', 'intendedAuthorization', 'attempts', 'recoveryMarkers'], ['paymentId', 'quote', 'signatures']);
   if (data.version !== 1) invalid();
   validateDraft(data.creationInputs);
   const binding = object(data.binding);
@@ -149,7 +151,17 @@ function validate(value: unknown): PaymentPrivateRecord {
     hex(binding.paymentId, 32); hex(data.paymentId, 32);
     if (data.paymentId !== binding.paymentId || typeof binding.deadline !== 'bigint' || binding.deadline <= 0n) invalid();
     object(auth.payment);
-  } else if (data.paymentId !== undefined || auth.payment !== undefined) invalid();
+    if (data.quote !== undefined) {
+      const quote = object(data.quote);
+      keys(quote, ['startedAtMs', 'blockHash', 'blockNumber', 'inputWei', 'quoteOut']);
+      if (!Number.isSafeInteger(quote.startedAtMs) || Number(quote.startedAtMs) < 0
+        || typeof quote.blockNumber !== 'bigint' || quote.blockNumber < 0n
+        || typeof quote.inputWei !== 'bigint' || quote.inputWei <= 0n
+        || typeof quote.quoteOut !== 'bigint' || quote.quoteOut <= 0n
+        || quote.inputWei !== data.creationInputs.request.w) invalid();
+      hex(quote.blockHash, 32);
+    }
+  } else if (data.paymentId !== undefined || data.quote !== undefined || auth.payment !== undefined) invalid();
   if (data.operationId !== binding.operationId || data.creationInputs.operationId !== binding.operationId
     || data.creationInputs.request.owner.toLowerCase() !== scope.owner.toLowerCase() || data.creationInputs.request.inputIds.length !== 1
     || data.creationInputs.request.inputIds[0] !== binding.inputId || data.creationInputs.request.kind !== 2) invalid();
