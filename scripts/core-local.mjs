@@ -98,6 +98,10 @@ export async function runLocalAcceptance() {
   const scratch = await mkdtemp(join(tmpdir(), "cutxo-core-results-"));
   let out;
   try {
+    for (const tool of ["expect", "anvil"]) {
+      const available = await command("which", [tool]);
+      if (available.code) throw new Error(`missing core test prerequisite: ${tool}`);
+    }
     const status = await command("git", ["status", "--porcelain", "--untracked-files=all"]);
     if (status.code || status.stdout.split(/\r?\n/).some(line => line &&
       !line.slice(3).startsWith("tests/integration/core/results/")))
@@ -112,7 +116,7 @@ export async function runLocalAcceptance() {
     { env: { ...process.env, CORE_PUBLIC_TX_DIR: transactionsDir } });
     const forge = await command("forge", ["test", "--root", "contracts", "--json"]);
     const tap = await command(process.execPath, ["--test", "--test-reporter=tap",
-      "tests/integration/core/evidence.test.mjs"]);
+      "tests/integration/core/evidence.test.mjs", "tests/integration/core/sepolia-runner.test.mjs"]);
     let report;
     try { report = JSON.parse(await readFile(reportPath, "utf8")); }
     catch { report = { testResults: [] }; }

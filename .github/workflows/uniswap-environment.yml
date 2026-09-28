@@ -28,7 +28,10 @@ jobs:
         with:
           version: v1.8.3
       - name: Check tool profile
-        run: node scripts/check-tools.mjs --profile github-macos-arm64
+        run: |
+          command -v expect
+          command -v anvil
+          node scripts/check-tools.mjs --profile github-macos-arm64
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Build and verify pinned Uniswap contracts
@@ -41,6 +44,13 @@ jobs:
           pnpm test
           pnpm check
           node --test --test-concurrency=1 tests/environment/uniswap-*.test.mjs
+      - name: Upload public core results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-integration-results
+          path: tests/integration/core/results/local-*.json
+          if-no-files-found: warn
       - name: Deploy and verify local assets
         shell: bash
         run: |

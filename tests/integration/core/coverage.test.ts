@@ -12,6 +12,22 @@ type Case = {
 
 const cases = JSON.parse(readFileSync(new URL("./cases.json", import.meta.url), "utf8")) as Case[];
 const scenarios = Array.from({ length: 18 }, (_, index) => `S-${String(index + 1).padStart(2, "0")}`);
+const root = new URL("../../../", import.meta.url);
+
+it("binds every case to a present test or explicit Sepolia runner", () => {
+  for (const item of cases) {
+    const source = readFileSync(new URL(item.evidenceRef, root), "utf8");
+    expect(source).toContain(item.runner === "foundry" ? (item as Case & { testName: string }).testName : item.caseId);
+  }
+});
+
+it("runs the local core gate exactly once from root test", () => {
+  const manifest = JSON.parse(readFileSync(new URL("package.json", root), "utf8")) as {
+    scripts: Record<string, string>;
+  };
+  expect(manifest.scripts["test:integration:core"]).toBe("node scripts/core-local.mjs");
+  expect(manifest.scripts.test?.match(/pnpm test:integration:core/g)).toHaveLength(1);
+});
 
 it("tracks every mandatory scenario with unique case IDs and evidence routes", () => {
   expect(new Set(cases.map(item => item.scenarioId))).toEqual(new Set(scenarios));
