@@ -4,7 +4,7 @@
     "caseId": "S-01-deposit",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -23,17 +23,17 @@
       "testName": "S-01-deposit S-03-partial-transfer S-03-independent-spend S-07-offline-recipient S-14-separate-submitter S-16-calldata S-16-events S-16-cli-json",
       "transactions": [
         {
-          "operationId": "0xc05217ec798d1f30adbd2a986f5f66e4bb6726d161466bc9cb4c0a5f755141ed",
-          "txHash": "0x838619a6ac614c6635752c40cd28683e626d94f202eeec64eb205d44281acfd1",
+          "operationId": "0x4bf9ff1c5126b6e21afc01023bc53e28904d6c483dffe491e22898334bd59660",
+          "txHash": "0x140d9d50d776d7f76aa677e995d2d18ab68db4b4b5000abe36667801fe55eaf9",
           "blockNumber": "4",
-          "blockHash": "0xde0bddadac939f3eaba142395808440ed92d54aec77d675c50c6b64e3266e4a0",
-          "gasUsed": "240237",
+          "blockHash": "0x7aa0cd69cc0fadf6c7d17b249b9462cec5181b9fb89f1bf958ebe3de33723d9c",
+          "gasUsed": "233840",
           "status": "success"
         }
       ]
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -42,7 +42,7 @@
     "caseId": "S-01-unauthorized",
     "operationOutcome": "rejected",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -62,7 +62,7 @@
       "foundryGas": "2580174"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -71,7 +71,7 @@
     "caseId": "S-01-value-mismatch",
     "operationOutcome": "rejected",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -91,7 +91,7 @@
       "foundryGas": "1470433"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -100,7 +100,7 @@
     "caseId": "S-01-zero",
     "operationOutcome": "rejected",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -119,7 +119,7 @@
       "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -128,7 +128,7 @@
     "caseId": "S-01-over-limit",
     "operationOutcome": "rejected",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -148,7 +148,7 @@
       "foundryGas": "1470433"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -157,7 +157,7 @@
     "caseId": "S-02-full-transfer",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -176,17 +176,17 @@
       "testName": "S-02-full-transfer S-04-two-input-merge S-05-self-merge S-05-self-split S-05-recreate S-17-fresh-salt-deposit",
       "transactions": [
         {
-          "operationId": "0xe22c89dcac3d232bbc3d0553c93088fe70fe4124390dfc6c701bbc0118fd924c",
-          "txHash": "0xce6c78c445f1bd7c7ef5436c35995e1edaa089f68325421ac55d95ae34d06edc",
+          "operationId": "0xe93c0367b1c97397bd8ee4301ffd58b7dc55edfb089b95989a52ccd1d877790e",
+          "txHash": "0x95f2577532c5598654e23ba2831997e541c722a40f7f81c9aa55002e31be74e9",
           "blockNumber": "5",
-          "blockHash": "0x4937c2fdaeeec6bf48efbdfb4ab6234945c9ed6f45b0143dff8e3ab03544de15",
-          "gasUsed": "4728915",
+          "blockHash": "0xb51f365900210fc4d07d738b9b89f4df9576e1029019d9fdd171777d65a04aba",
+          "gasUsed": "4666434",
           "status": "success"
         }
       ]
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -195,7 +195,7 @@
     "caseId": "S-03-partial-transfer",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -214,17 +214,17 @@
       "testName": "S-01-deposit S-03-partial-transfer S-03-independent-spend S-07-offline-recipient S-14-separate-submitter S-16-calldata S-16-events S-16-cli-json",
       "transactions": [
         {
-          "operationId": "0x2bb1583ffe8919fdc6972cf6c4ea5c9b6e593d93f9fcb082a0e2bd0b138002aa",
-          "txHash": "0x214ff0db342a4dc70ae5eee738f4b11595608d2ef228c0e8052afc26984c1443",
+          "operationId": "0xfbfd7b1c69cb73a32235c529476112f52ff8c8a377a3cf102bc876e8e94c1fea",
+          "txHash": "0x7ba42ccb5edba857883d00f20ed090ec9932ab054eb81f5d79e2d57b960ef4aa",
           "blockNumber": "5",
-          "blockHash": "0x30feafbeb6a98412901d051c10de7de852261d7e104562fb7f0e1d4289850e29",
-          "gasUsed": "8670135",
+          "blockHash": "0xefe5c48b5f21c9aa59e87a3a2697cdb9af969a15fab41bb58e34ff0ae5857d85",
+          "gasUsed": "8780116",
           "status": "success"
         }
       ]
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -233,7 +233,7 @@
     "caseId": "S-03-independent-spend",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -252,17 +252,17 @@
       "testName": "S-01-deposit S-03-partial-transfer S-03-independent-spend S-07-offline-recipient S-14-separate-submitter S-16-calldata S-16-events S-16-cli-json",
       "transactions": [
         {
-          "operationId": "0xc75393e34cc9b16e531cc3ce253da1f404fbc3f252895725ea05c79a2c2cb606",
-          "txHash": "0x23ce88070b9e4192bc607438d5959a346629769b11fc4b5db2832003a37924ae",
+          "operationId": "0x9c1cbf955b57b15197877b4b3652d8cef93a130288409a6e4f5ab330567dadfa",
+          "txHash": "0xb63cb10c8d106078c05c859274f7ad4e5a129b82c586bb271096704304c0e53a",
           "blockNumber": "6",
-          "blockHash": "0x88223854e575af848b50fc97cb45c1b7acafe4348b7a4a39b6fef02e99418806",
-          "gasUsed": "8926894",
+          "blockHash": "0x44b59b5d328db5d1228a28380967e81469c0fadf3be494ea8bf296673eadb7f7",
+          "gasUsed": "8914469",
           "status": "success"
         }
       ]
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -271,7 +271,7 @@
     "caseId": "S-04-two-input-merge",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -290,17 +290,17 @@
       "testName": "S-02-full-transfer S-04-two-input-merge S-05-self-merge S-05-self-split S-05-recreate S-17-fresh-salt-deposit",
       "transactions": [
         {
-          "operationId": "0x9042d1b61ad77f9be97359a6bb54c651e188c9324ff96ec8c718bced8173f48b",
-          "txHash": "0x4625125b7f5de56c1210c1b147981769cd35014b52a180e92459255366f8f6c9",
+          "operationId": "0x686063651b786b7b803e404c3fbebd6b48f4d566859f758f3e696c991c184222",
+          "txHash": "0xd5dceef3f44142786545d0f6ccd83931f362f003990ae66f06a7969f6a676295",
           "blockNumber": "8",
-          "blockHash": "0xb76bd569814d52d6254a69444a235e30e72d312c09e65b4427746eb02916afc6",
-          "gasUsed": "4768581",
+          "blockHash": "0x5f95269723a6c8266f950e581dc6c934159c409125e948c52ca26b4bb78b1731",
+          "gasUsed": "4691358",
           "status": "success"
         }
       ]
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -309,7 +309,7 @@
     "caseId": "S-04-duplicate-input",
     "operationOutcome": "rejected",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -329,7 +329,7 @@
       "foundryGas": "2449457"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -338,7 +338,7 @@
     "caseId": "S-04-spent-input",
     "operationOutcome": "rejected",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -357,7 +357,7 @@
       "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -366,7 +366,7 @@
     "caseId": "S-04-absent-input",
     "operationOutcome": "rejected",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -386,7 +386,7 @@
       "foundryGas": "2596088"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -395,7 +395,7 @@
     "caseId": "S-04-foreign-input",
     "operationOutcome": "rejected",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -415,7 +415,7 @@
       "foundryGas": "2596088"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -424,7 +424,7 @@
     "caseId": "S-05-self-merge",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -443,17 +443,17 @@
       "testName": "S-02-full-transfer S-04-two-input-merge S-05-self-merge S-05-self-split S-05-recreate S-17-fresh-salt-deposit",
       "transactions": [
         {
-          "operationId": "0x9042d1b61ad77f9be97359a6bb54c651e188c9324ff96ec8c718bced8173f48b",
-          "txHash": "0x4625125b7f5de56c1210c1b147981769cd35014b52a180e92459255366f8f6c9",
+          "operationId": "0x686063651b786b7b803e404c3fbebd6b48f4d566859f758f3e696c991c184222",
+          "txHash": "0xd5dceef3f44142786545d0f6ccd83931f362f003990ae66f06a7969f6a676295",
           "blockNumber": "8",
-          "blockHash": "0xb76bd569814d52d6254a69444a235e30e72d312c09e65b4427746eb02916afc6",
-          "gasUsed": "4768581",
+          "blockHash": "0x5f95269723a6c8266f950e581dc6c934159c409125e948c52ca26b4bb78b1731",
+          "gasUsed": "4691358",
           "status": "success"
         }
       ]
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -462,7 +462,7 @@
     "caseId": "S-05-self-split",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -481,17 +481,17 @@
       "testName": "S-02-full-transfer S-04-two-input-merge S-05-self-merge S-05-self-split S-05-recreate S-17-fresh-salt-deposit",
       "transactions": [
         {
-          "operationId": "0x17ea065070ccf1cd5a2d0ad0ff1fda49426b112a538ca603b550f4301da0303b",
-          "txHash": "0x7d84fdf2d2b7a23643d2812b96553771c740daff9568463d8b825af96948385b",
+          "operationId": "0x8c4ec2c886125afa77a4a6a4ed912d215e09d085ce08d9521e50de51501afdf3",
+          "txHash": "0x88b664772fe31d2e88b7e32264a5d81f43a6580178b9c6e3ba25e12891f101af",
           "blockNumber": "9",
-          "blockHash": "0x12b498131cd526f11920de7b6af555be5a6ba819e9f5db36e8532d963c0d87ee",
-          "gasUsed": "8714993",
+          "blockHash": "0x25e7f9fffdb2751d5b108fe01cbb2d52d9da6bf4f97c182ff9a859716936287f",
+          "gasUsed": "8757282",
           "status": "success"
         }
       ]
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -500,7 +500,7 @@
     "caseId": "S-05-recreate",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -519,17 +519,17 @@
       "testName": "S-02-full-transfer S-04-two-input-merge S-05-self-merge S-05-self-split S-05-recreate S-17-fresh-salt-deposit",
       "transactions": [
         {
-          "operationId": "0xc66c2a7148b3d847c0f69ad4669f1851ca83746d9167c9470ec0b6c1ffadff89",
-          "txHash": "0x8d1cb8fd0f3ab7e900da6099bebc016978ce09f3f693a769582abe5c6634f688",
+          "operationId": "0x87032852eaf2616936357944c208116591ba7d584437f3cc02d14771ef8ac084",
+          "txHash": "0x561b1814bdd242c7eb381b4203fa2910f8e0d8016396551ebeaebf2278db18d0",
           "blockNumber": "10",
-          "blockHash": "0xf9ef414b4e9d8405441d2a5fb33d36204e874934b54971f8b2e2bb03536d370b",
-          "gasUsed": "4812240",
+          "blockHash": "0xa768d033a76bcbe6a89df18fd78e6a25bfd9a9d308b3ee6a24924e2ca95f0631",
+          "gasUsed": "4771120",
           "status": "success"
         }
       ]
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -538,7 +538,7 @@
     "caseId": "S-06-self-full-withdraw",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -557,17 +557,17 @@
       "testName": "S-06-self-full-withdraw S-06-self-partial-withdraw S-06-third-party-full-withdraw S-06-third-party-partial-withdraw S-06-contract-full-withdraw S-06-contract-partial-withdraw",
       "transactions": [
         {
-          "operationId": "0x8e019a8688a11525c0faf27ac81b9d27002b6d58f1d5dbc7072291eb6eca92b5",
-          "txHash": "0x617fe091ad6e141ad3438af7d1b8e49ab1346f64fc69480abc4db6b8b3f141e3",
+          "operationId": "0x2fcb3e47f3c023ab1a8a03f88e086a382d769b34030b17c5c7ab0ef947aa48b8",
+          "txHash": "0x100375569f72ebd4ce0961399bd813c738ef6587bb1e9271951b4181330382e8",
           "blockNumber": "6",
-          "blockHash": "0x68aea053e5aa823d3a3649f57886ece5eed6062c19ca56f763231f9670e90b21",
-          "gasUsed": "158756",
+          "blockHash": "0x44e8b6ed0e183f571c02864310e77ebc402ea8be60381f07f7af5166df42e236",
+          "gasUsed": "161312",
           "status": "success"
         }
       ]
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -576,7 +576,7 @@
     "caseId": "S-06-self-partial-withdraw",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -595,17 +595,17 @@
       "testName": "S-06-self-full-withdraw S-06-self-partial-withdraw S-06-third-party-full-withdraw S-06-third-party-partial-withdraw S-06-contract-full-withdraw S-06-contract-partial-withdraw",
       "transactions": [
         {
-          "operationId": "0xaa9d3e015848bab5133742ece6a98db26741a17575cbde910f8f1d64e2c225e2",
-          "txHash": "0xd2aef6757dd42d1cc631c5c4d7010543b97a7cd7516bbd59b0c34037374893f3",
+          "operationId": "0x385117a37d8e3b83c9c3fdc729c5f8bd86a745ab22a2e83498eb518150a5a5bf",
+          "txHash": "0x9a245caaa9c8d0ee5934d3c7062df66bc97f8085f8fdb7a43f5bc3da06c49be8",
           "blockNumber": "8",
-          "blockHash": "0x9926574e780d9ec6e383cd10692ae3b0ad27c2e5e64ca23626635ee94b619c67",
-          "gasUsed": "4699755",
+          "blockHash": "0xe6de7a58781b4fb5f5036930e95f9880c7455856d3a15abd02d7c690869763e6",
+          "gasUsed": "4897646",
           "status": "success"
         }
       ]
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -614,7 +614,7 @@
     "caseId": "S-06-third-party-full-withdraw",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -633,17 +633,17 @@
       "testName": "S-06-self-full-withdraw S-06-self-partial-withdraw S-06-third-party-full-withdraw S-06-third-party-partial-withdraw S-06-contract-full-withdraw S-06-contract-partial-withdraw",
       "transactions": [
         {
-          "operationId": "0x16244bc3585e55f66fc28a8fde091cd036292bc44176c4872ae1f4b6543b521e",
-          "txHash": "0xfe4187fc147f497d23d877218d5764f5ba6062b13a10bd6778acd17922012c4b",
+          "operationId": "0xdd464a0d1915be1632dfe61af147ea1cd9e57e4ffc21b03934c0a4b83c369916",
+          "txHash": "0xfa758f6437a7a331025a866956ef598c95974f2692f2c56b49f18a80febb7c4f",
           "blockNumber": "10",
-          "blockHash": "0x1e083d5fe2b8b74bd69a99377178ef0b4d0465cc95c3dae5510e60a584a8e76a",
-          "gasUsed": "169966",
+          "blockHash": "0x7e9fbc7446c5199ac920bfdc2b8ccfcb7ff47d5d1f1216cda8945307d2bcc485",
+          "gasUsed": "164825",
           "status": "success"
         }
       ]
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -652,7 +652,7 @@
     "caseId": "S-06-third-party-partial-withdraw",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -671,17 +671,17 @@
       "testName": "S-06-self-full-withdraw S-06-self-partial-withdraw S-06-third-party-full-withdraw S-06-third-party-partial-withdraw S-06-contract-full-withdraw S-06-contract-partial-withdraw",
       "transactions": [
         {
-          "operationId": "0x5568eb729de479719d16f7d0753f17fb8121ce925181b63ac59555ebb0491fc8",
-          "txHash": "0xdac8faca9ca9793ebfd5993e834a6f9840e26527fe168197f9c66fc9efa3634d",
+          "operationId": "0x98ad94f7990f720a12923ee1bfd0e747d869bee3722d63386619dedcfb4f3089",
+          "txHash": "0x141824f165fa29ab53177326e89eea4a23614d6ec401058fe4e10795d1de2993",
           "blockNumber": "12",
-          "blockHash": "0x4e5ad21d195c06a60b5c4499364ad6bd62cafe41ac81d391ad7f25f94f929d32",
-          "gasUsed": "4721380",
+          "blockHash": "0xf6ad21cf70bad60cdf61d3c886772cf7efcea947440f5b5b74d505f72cc98e9b",
+          "gasUsed": "4821831",
           "status": "success"
         }
       ]
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -690,7 +690,7 @@
     "caseId": "S-06-contract-full-withdraw",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -709,17 +709,17 @@
       "testName": "S-06-self-full-withdraw S-06-self-partial-withdraw S-06-third-party-full-withdraw S-06-third-party-partial-withdraw S-06-contract-full-withdraw S-06-contract-partial-withdraw",
       "transactions": [
         {
-          "operationId": "0xc9350ea7f6e5719f8c4567ccba1d01de9569326e91dc4af6b02cdd18fd721ef2",
-          "txHash": "0x213f03fa91cd93d863437902bbda16650b0753f7996c2ea87a7983afe89f7fc4",
+          "operationId": "0x842c8612725fc47a93bd69354c2920ccbdaf8fccd9a1781767545905364e159c",
+          "txHash": "0x75c49d4d38ea801470e0e8b2fea1543bb2ce691e6018c629ff9610da3ba8e6f6",
           "blockNumber": "14",
-          "blockHash": "0x84e82e47c6d8c0f1a55cc4b3c8c2f19984e804c94ad0bb25c75c384f7d81c0ee",
-          "gasUsed": "142390",
+          "blockHash": "0x190bff162eaa453bfe761fec5f0290356ecaeec6aeea16a3bab529c2a0523216",
+          "gasUsed": "142402",
           "status": "success"
         }
       ]
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -728,7 +728,7 @@
     "caseId": "S-06-contract-partial-withdraw",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -747,17 +747,17 @@
       "testName": "S-06-self-full-withdraw S-06-self-partial-withdraw S-06-third-party-full-withdraw S-06-third-party-partial-withdraw S-06-contract-full-withdraw S-06-contract-partial-withdraw",
       "transactions": [
         {
-          "operationId": "0x7280b6e2566740aeee8eb2499a1efe887c75e71a175da229bc346e932092d1e1",
-          "txHash": "0x63ae939f333cb3f33989cf2efcaf2ae83e687ef2c477a20dd1d01d6d6f097740",
+          "operationId": "0x300fb7b0603ad6ca652c82d43c685fac0f5156057a92369214dc2afa107375eb",
+          "txHash": "0x60874513fe08e7093ac775a4010a3c8ebe7debdd8c496e4f8eac86ba571875ab",
           "blockNumber": "16",
-          "blockHash": "0x8fff59ef5acbc9f2e7165b886b4f31dd7e59eea461a796e9ec069cf037bed288",
-          "gasUsed": "4736486",
+          "blockHash": "0x8a6fb19b8ac612f5773378c2c4403aabf9348d10a9c0660cc57fba4bd56f9340",
+          "gasUsed": "4707845",
           "status": "success"
         }
       ]
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -766,7 +766,7 @@
     "caseId": "S-07-offline-recipient",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -785,17 +785,17 @@
       "testName": "S-01-deposit S-03-partial-transfer S-03-independent-spend S-07-offline-recipient S-14-separate-submitter S-16-calldata S-16-events S-16-cli-json",
       "transactions": [
         {
-          "operationId": "0x2bb1583ffe8919fdc6972cf6c4ea5c9b6e593d93f9fcb082a0e2bd0b138002aa",
-          "txHash": "0x214ff0db342a4dc70ae5eee738f4b11595608d2ef228c0e8052afc26984c1443",
+          "operationId": "0xfbfd7b1c69cb73a32235c529476112f52ff8c8a377a3cf102bc876e8e94c1fea",
+          "txHash": "0x7ba42ccb5edba857883d00f20ed090ec9932ab054eb81f5d79e2d57b960ef4aa",
           "blockNumber": "5",
-          "blockHash": "0x30feafbeb6a98412901d051c10de7de852261d7e104562fb7f0e1d4289850e29",
-          "gasUsed": "8670135",
+          "blockHash": "0xefe5c48b5f21c9aa59e87a3a2697cdb9af969a15fab41bb58e34ff0ae5857d85",
+          "gasUsed": "8780116",
           "status": "success"
         }
       ]
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -804,7 +804,7 @@
     "caseId": "S-08-decrypt-failure",
     "operationOutcome": "unavailable",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -823,7 +823,7 @@
       "testName": "S-08-decrypt-failure S-08-commitment-mismatch S-08-history-replay S-08-missing-output-log S-08-unconfirmed"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -832,7 +832,7 @@
     "caseId": "S-08-commitment-mismatch",
     "operationOutcome": "unavailable",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -851,7 +851,7 @@
       "testName": "S-08-decrypt-failure S-08-commitment-mismatch S-08-history-replay S-08-missing-output-log S-08-unconfirmed"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -860,7 +860,7 @@
     "caseId": "S-08-unconfirmed",
     "operationOutcome": "unconfirmed",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -879,7 +879,7 @@
       "testName": "S-08-decrypt-failure S-08-commitment-mismatch S-08-history-replay S-08-missing-output-log S-08-unconfirmed"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -888,7 +888,7 @@
     "caseId": "S-08-history-replay",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -907,7 +907,7 @@
       "testName": "S-08-decrypt-failure S-08-commitment-mismatch S-08-history-replay S-08-missing-output-log S-08-unconfirmed"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -916,7 +916,7 @@
     "caseId": "S-08-missing-output-log",
     "operationOutcome": "unconfirmed",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -935,7 +935,7 @@
       "testName": "S-08-decrypt-failure S-08-commitment-mismatch S-08-history-replay S-08-missing-output-log S-08-unconfirmed"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -944,7 +944,7 @@
     "caseId": "S-09-other-owner",
     "operationOutcome": "rejected",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -964,7 +964,7 @@
       "foundryGas": "2580174"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -973,7 +973,7 @@
     "caseId": "S-09-prior-sender",
     "operationOutcome": "rejected",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -992,7 +992,7 @@
       "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1001,7 +1001,7 @@
     "caseId": "S-09-false-authorization",
     "operationOutcome": "rejected",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1021,7 +1021,7 @@
       "foundryGas": "2580174"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1030,7 +1030,7 @@
     "caseId": "S-09-intent-mutation",
     "operationOutcome": "rejected",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1050,7 +1050,7 @@
       "foundryGas": "15410026"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1059,7 +1059,7 @@
     "caseId": "S-09-other-chain",
     "operationOutcome": "rejected",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1078,7 +1078,7 @@
       "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1087,7 +1087,7 @@
     "caseId": "S-09-other-pool",
     "operationOutcome": "rejected",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1106,7 +1106,7 @@
       "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1115,7 +1115,7 @@
     "caseId": "S-09-unknown-version",
     "operationOutcome": "rejected",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1134,7 +1134,7 @@
       "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1143,7 +1143,7 @@
     "caseId": "S-10-competing-operations",
     "operationOutcome": "rejected",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1162,7 +1162,7 @@
       "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1171,7 +1171,7 @@
     "caseId": "S-10-successful-id-reuse",
     "operationOutcome": "rejected",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1190,7 +1190,7 @@
       "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1199,7 +1199,7 @@
     "caseId": "S-10-copy-vs-competition",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1218,7 +1218,7 @@
       "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1227,7 +1227,7 @@
     "caseId": "S-11-receiver-refusal",
     "operationOutcome": "rolled-back",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1247,7 +1247,7 @@
       "foundryGas": "7898848"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1256,7 +1256,7 @@
     "caseId": "S-11-caught-reentry",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1276,7 +1276,7 @@
       "foundryGas": "3090254"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1285,7 +1285,7 @@
     "caseId": "S-11-propagated-reentry",
     "operationOutcome": "rolled-back",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1305,7 +1305,7 @@
       "foundryGas": "7898848"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1314,7 +1314,7 @@
     "caseId": "S-11-outer-revert",
     "operationOutcome": "rolled-back",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1333,7 +1333,7 @@
       "testName": "S-11-outer-revert rolls back inner acceptance"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1342,7 +1342,7 @@
     "caseId": "S-12-donation",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1362,7 +1362,7 @@
       "foundryGas": "1100248"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1371,7 +1371,7 @@
     "caseId": "S-12-forced-eth",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1391,7 +1391,7 @@
       "foundryGas": "3172849"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1400,7 +1400,7 @@
     "caseId": "S-12-returned-eth",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1420,7 +1420,7 @@
       "foundryGas": "2996845"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1429,7 +1429,7 @@
     "caseId": "S-13-one",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1448,7 +1448,7 @@
       "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1457,7 +1457,7 @@
     "caseId": "S-13-at-m",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1477,7 +1477,7 @@
       "foundryGas": "13896025"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1486,7 +1486,7 @@
     "caseId": "S-13-above-m",
     "operationOutcome": "rejected",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1505,7 +1505,7 @@
       "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1514,7 +1514,7 @@
     "caseId": "S-13-negative-encoding",
     "operationOutcome": "rejected",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1533,7 +1533,7 @@
       "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1542,7 +1542,7 @@
     "caseId": "S-13-noncanonical-scalar",
     "operationOutcome": "rejected",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1562,7 +1562,7 @@
       "foundryGas": "5683823"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1571,7 +1571,7 @@
     "caseId": "S-13-two-inputs",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1591,7 +1591,7 @@
       "foundryGas": "34841026"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1600,7 +1600,7 @@
     "caseId": "S-13-three-inputs",
     "operationOutcome": "rejected",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1620,7 +1620,7 @@
       "foundryGas": "5307796"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1629,7 +1629,7 @@
     "caseId": "S-13-two-max-inputs",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1649,7 +1649,7 @@
       "foundryGas": "13896025"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1658,7 +1658,7 @@
     "caseId": "S-14-separate-submitter",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1677,17 +1677,17 @@
       "testName": "S-01-deposit S-03-partial-transfer S-03-independent-spend S-07-offline-recipient S-14-separate-submitter S-16-calldata S-16-events S-16-cli-json",
       "transactions": [
         {
-          "operationId": "0xc75393e34cc9b16e531cc3ce253da1f404fbc3f252895725ea05c79a2c2cb606",
-          "txHash": "0x23ce88070b9e4192bc607438d5959a346629769b11fc4b5db2832003a37924ae",
+          "operationId": "0x9c1cbf955b57b15197877b4b3652d8cef93a130288409a6e4f5ab330567dadfa",
+          "txHash": "0xb63cb10c8d106078c05c859274f7ad4e5a129b82c586bb271096704304c0e53a",
           "blockNumber": "6",
-          "blockHash": "0x88223854e575af848b50fc97cb45c1b7acafe4348b7a4a39b6fef02e99418806",
-          "gasUsed": "8926894",
+          "blockHash": "0x44b59b5d328db5d1228a28380967e81469c0fadf3be494ea8bf296673eadb7f7",
+          "gasUsed": "8914469",
           "status": "success"
         }
       ]
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1696,7 +1696,7 @@
     "caseId": "S-15-rpc-failure",
     "operationOutcome": "unconfirmed",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1715,7 +1715,7 @@
       "testName": "S-15-rpc-failure S-15-duplicate-history S-15-missing-history"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1724,7 +1724,7 @@
     "caseId": "S-15-pending",
     "operationOutcome": "unconfirmed",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1743,7 +1743,7 @@
       "testName": "S-15-pending S-15-lost-ack S-15-backup-restore"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1752,7 +1752,7 @@
     "caseId": "S-15-reorg",
     "operationOutcome": "unconfirmed",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1771,7 +1771,7 @@
       "testName": "S-15-reorg discards an adopted receipt when a block hash changes"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1780,7 +1780,7 @@
     "caseId": "S-15-lost-ack",
     "operationOutcome": "unconfirmed",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1799,7 +1799,7 @@
       "testName": "S-15-pending S-15-lost-ack S-15-backup-restore"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1808,7 +1808,7 @@
     "caseId": "S-15-duplicate-history",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1827,7 +1827,7 @@
       "testName": "S-15-rpc-failure S-15-duplicate-history S-15-missing-history"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1836,7 +1836,7 @@
     "caseId": "S-15-missing-history",
     "operationOutcome": "unconfirmed",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1855,7 +1855,7 @@
       "testName": "S-15-rpc-failure S-15-duplicate-history S-15-missing-history"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1864,7 +1864,7 @@
     "caseId": "S-15-backup-restore",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1883,7 +1883,7 @@
       "testName": "S-15-pending S-15-lost-ack S-15-backup-restore"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1892,7 +1892,7 @@
     "caseId": "S-16-calldata",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1911,17 +1911,17 @@
       "testName": "S-01-deposit S-03-partial-transfer S-03-independent-spend S-07-offline-recipient S-14-separate-submitter S-16-calldata S-16-events S-16-cli-json",
       "transactions": [
         {
-          "operationId": "0x2bb1583ffe8919fdc6972cf6c4ea5c9b6e593d93f9fcb082a0e2bd0b138002aa",
-          "txHash": "0x214ff0db342a4dc70ae5eee738f4b11595608d2ef228c0e8052afc26984c1443",
+          "operationId": "0xfbfd7b1c69cb73a32235c529476112f52ff8c8a377a3cf102bc876e8e94c1fea",
+          "txHash": "0x7ba42ccb5edba857883d00f20ed090ec9932ab054eb81f5d79e2d57b960ef4aa",
           "blockNumber": "5",
-          "blockHash": "0x30feafbeb6a98412901d051c10de7de852261d7e104562fb7f0e1d4289850e29",
-          "gasUsed": "8670135",
+          "blockHash": "0xefe5c48b5f21c9aa59e87a3a2697cdb9af969a15fab41bb58e34ff0ae5857d85",
+          "gasUsed": "8780116",
           "status": "success"
         }
       ]
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1930,7 +1930,7 @@
     "caseId": "S-16-events",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1949,17 +1949,17 @@
       "testName": "S-01-deposit S-03-partial-transfer S-03-independent-spend S-07-offline-recipient S-14-separate-submitter S-16-calldata S-16-events S-16-cli-json",
       "transactions": [
         {
-          "operationId": "0x2bb1583ffe8919fdc6972cf6c4ea5c9b6e593d93f9fcb082a0e2bd0b138002aa",
-          "txHash": "0x214ff0db342a4dc70ae5eee738f4b11595608d2ef228c0e8052afc26984c1443",
+          "operationId": "0xfbfd7b1c69cb73a32235c529476112f52ff8c8a377a3cf102bc876e8e94c1fea",
+          "txHash": "0x7ba42ccb5edba857883d00f20ed090ec9932ab054eb81f5d79e2d57b960ef4aa",
           "blockNumber": "5",
-          "blockHash": "0x30feafbeb6a98412901d051c10de7de852261d7e104562fb7f0e1d4289850e29",
-          "gasUsed": "8670135",
+          "blockHash": "0xefe5c48b5f21c9aa59e87a3a2697cdb9af969a15fab41bb58e34ff0ae5857d85",
+          "gasUsed": "8780116",
           "status": "success"
         }
       ]
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -1968,7 +1968,7 @@
     "caseId": "S-16-cli-json",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -1987,17 +1987,17 @@
       "testName": "S-01-deposit S-03-partial-transfer S-03-independent-spend S-07-offline-recipient S-14-separate-submitter S-16-calldata S-16-events S-16-cli-json",
       "transactions": [
         {
-          "operationId": "0x2bb1583ffe8919fdc6972cf6c4ea5c9b6e593d93f9fcb082a0e2bd0b138002aa",
-          "txHash": "0x214ff0db342a4dc70ae5eee738f4b11595608d2ef228c0e8052afc26984c1443",
+          "operationId": "0xfbfd7b1c69cb73a32235c529476112f52ff8c8a377a3cf102bc876e8e94c1fea",
+          "txHash": "0x7ba42ccb5edba857883d00f20ed090ec9932ab054eb81f5d79e2d57b960ef4aa",
           "blockNumber": "5",
-          "blockHash": "0x30feafbeb6a98412901d051c10de7de852261d7e104562fb7f0e1d4289850e29",
-          "gasUsed": "8670135",
+          "blockHash": "0xefe5c48b5f21c9aa59e87a3a2697cdb9af969a15fab41bb58e34ff0ae5857d85",
+          "gasUsed": "8780116",
           "status": "success"
         }
       ]
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -2006,7 +2006,7 @@
     "caseId": "S-16-public-results",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -2025,7 +2025,7 @@
       "testName": "S-16-public-results writes a new private-mode sanitized file and refuses overwrite"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -2034,7 +2034,7 @@
     "caseId": "S-17-deposit-reuse",
     "operationOutcome": "rejected",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -2053,7 +2053,7 @@
       "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -2062,7 +2062,7 @@
     "caseId": "S-17-fresh-salt-deposit",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -2081,25 +2081,25 @@
       "testName": "S-02-full-transfer S-04-two-input-merge S-05-self-merge S-05-self-split S-05-recreate S-17-fresh-salt-deposit",
       "transactions": [
         {
-          "operationId": "0x5a781a5fb2300c964bcac12e6c1d6242b71181bc99b6e5e31522fb1c463e8581",
-          "txHash": "0xf4250a897ea32df5818671a0c902e7afb7a32ca747e05be362fad56eccca59de",
+          "operationId": "0xa82f16c99cb0ed9206db34b7a92683e127802afabfcc5a2af27664fb034f6517",
+          "txHash": "0xa7802427680353e70dbdaa898699e9c89d663a407fe44e03782aef94af7dd687",
           "blockNumber": "11",
-          "blockHash": "0xa833c941274d8d58556cfb165a65dea4ff07450e25656a9c0ca7c25974eed07c",
-          "gasUsed": "216748",
+          "blockHash": "0x5c72387d9a7758a8334018e2fcdefa12e80209516fa7722d52551ed180dc85c3",
+          "gasUsed": "216080",
           "status": "success"
         },
         {
-          "operationId": "0xce55795447b813175d0fdc97bce2fe9e5b7fcfb16107833c41061b63975ccf8a",
-          "txHash": "0x5fb7bd11c73ad0c0c7855b7773f95ea93149f5948ae62a9d0bce9a1c0623eea1",
+          "operationId": "0x0dafe486f32698b8695b94c724d24af9f380cd302d00318347c7c02932f09ae4",
+          "txHash": "0xab7f599c3f69532c0456433ac05640686f631f06e5c7b307e55c81a39499a627",
           "blockNumber": "12",
-          "blockHash": "0xfb65d7ae50dd1c3e4b741c7844b28426ea112139fbac32dcd3e74eb2913b456d",
-          "gasUsed": "216092",
+          "blockHash": "0x66a0580b89bdf80d34cf1f86d3488ed70dc3658e76ceae21a47f62a9ad8657f4",
+          "gasUsed": "216728",
           "status": "success"
         }
       ]
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -2108,7 +2108,7 @@
     "caseId": "S-18-late-input-spend",
     "operationOutcome": "rejected",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -2127,7 +2127,7 @@
       "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   },
@@ -2136,7 +2136,7 @@
     "caseId": "S-18-successful-competitor-kept",
     "operationOutcome": "success",
     "testOutcome": "pass",
-    "commit": "3dd075f29631d254039eb6ab59105abff19854c7",
+    "commit": "14494745834119b5af2c92e2ed4a0ff4fdfee9f7",
     "artifactHashes": {
       "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
       "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
@@ -2155,7 +2155,7 @@
       "testName": "S-01-zero S-09-prior-sender S-09-other-chain S-09-other-pool S-09-unknown-version S-10-competing-operations S-10-successful-id-reuse S-10-copy-vs-competition S-13-one S-13-above-m S-13-negative-encoding S-17-deposit-reuse S-18-late-input-spend S-18-successful-competitor-kept S-04-spent-input"
     },
     "execution": {
-      "durationMs": "256535",
+      "durationMs": "259002",
       "timeoutMs": "2700000"
     }
   }
