@@ -150,11 +150,11 @@ async function cliRunner(passphrase, scriptPath) {
       if (result.kind === 'error') safeError(`SEPOLIA_CLI_${String(result.code ?? 'ERROR')}`);
       return result;
     };
-    return args[0] === 'operation' ? retrySepoliaRead(runOnce) : runOnce();
+    return ['operation', 'sync'].includes(args[0]) ? retrySepoliaIdempotent(runOnce) : runOnce();
   };
 }
 
-export async function retrySepoliaRead(read, pause = () => new Promise(done => setTimeout(done, 2_000))) {
+export async function retrySepoliaIdempotent(read, pause = () => new Promise(done => setTimeout(done, 2_000))) {
   for (let attempt = 0; attempt < 3; attempt++) {
     try { return await read(); }
     catch (error) {
