@@ -1,0 +1,82 @@
+#Top
+[Warning] Compiler: Variable 'Recipient' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-01.k)
+	Location(38,60,38,69)
+	38 |	                  validatedTransfer(9, Owner, ListItem(1), Recipient:Int,
+	   .	                                                           ^~~~~~~~~
+[Warning] Compiler: Variable 'Destination' defined but not used. Prefix
+variable name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-01.k)
+	Location(52,37,52,48)
+	52 |	                                    Destination:Int, 3), execContext(1,
+1))
+	   .	                                    ^~~~~~~~~~~
+[Warning] Compiler: Variable 'Recipient' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-01.k)
+	Location(64,60,64,69)
+	64 |	                  validatedTransfer(9, Owner, ListItem(1), Recipient:Int,
+	   .	                                                           ^~~~~~~~~
+[Warning] Compiler: Variable 'Recipient' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-01.k)
+	Location(76,60,76,69)
+	76 |	                  validatedTransfer(9, Owner, ListItem(1), Recipient:Int,
+	   .	                                                           ^~~~~~~~~
+[Warning] Compiler: Variable 'Destination' defined but not used. Prefix
+variable name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-01.k)
+	Location(87,37,87,48)
+	87 |	                                    Destination:Int, 3), execContext(1,
+1))
+	   .	                                    ^~~~~~~~~~~
+[Warning] Compiler: Variable 'Destination' defined but not used. Prefix
+variable name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-01.k)
+	Location(99,37,99,48)
+	99 |	                                    Destination:Int, 3), execContext(1,
+1))
+	   .	                                    ^~~~~~~~~~~
+[Warning] Compiler: Variable 'Recipient' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-01.k)
+	Location(110,37,110,46)
+	110 |	                                    Recipient:Int, T:Int, 3, 4),
+execContext(1, 1))
+	    .	                                    ^~~~~~~~~
+[Warning] Compiler: Variable 'Destination' defined but not used. Prefix
+variable name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-01.k)
+	Location(125,44,125,55)
+	125 |	                                    W:Int, Destination:Int, 3),
+execContext(1, 1))
+	    .	                                           ^~~~~~~~~~~
+[Warning] Compiler: Variable 'Recipient' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-01.k)
+	Location(140,37,140,46)
+	140 |	                                    Recipient:Int, T:Int, 3, 4),
+execContext(1, 1))
+	    .	                                    ^~~~~~~~~
+[Warning] Compiler: Variable 'Recipient' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-01.k)
+	Location(156,37,156,46)
+	156 |	                                    Recipient:Int, V1 +Int V2, 3, 4),
+execContext(1, 1))
+	    .	                                    ^~~~~~~~~
+[Warning] Compiler: Variable 'Destination' defined but not used. Prefix
+variable name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-01.k)
+	Location(169,44,169,55)
+	169 |	                                    W:Int, Destination:Int, 3),
+execContext(1, 1))
+	    .	                                           ^~~~~~~~~~~
+[Warning] Compiler: Variable 'Destination' defined but not used. Prefix
+variable name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-01.k)
+	Location(185,49,185,60)
+	185 |	                                    V1 +Int V2, Destination:Int, 3),
+execContext(1, 1))
+	    .	                                                ^~~~~~~~~~~

@@ -1,0 +1,89 @@
+#Top
+[Warning] Compiler: Variable 'Id' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-04.k)
+	Location(6,36,6,38)
+	6 |	                  validatedDeposit(Id:Int, Owner:Int, D:Int, D, Op),
+execContext(1, 1))
+	  .	                                   ^~
+[Warning] Compiler: Variable 'Owner' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-04.k)
+	Location(6,44,6,49)
+	6 |	                  validatedDeposit(Id:Int, Owner:Int, D:Int, D, Op),
+execContext(1, 1))
+	  .	                                           ^~~~~
+[Warning] Compiler: Variable 'Owner' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-04.k)
+	Location(13,41,13,46)
+	13 |	                  validatedTransfer(Op, Owner:Int, Inputs:List,
+Recipient:Int,
+	   .	                                        ^~~~~
+[Warning] Compiler: Variable 'Inputs' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-04.k)
+	Location(13,52,13,58)
+	13 |	                  validatedTransfer(Op, Owner:Int, Inputs:List,
+Recipient:Int,
+	   .	                                                   ^~~~~~
+[Warning] Compiler: Variable 'Recipient' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-04.k)
+	Location(13,65,13,74)
+	13 |	                  validatedTransfer(Op, Owner:Int, Inputs:List,
+Recipient:Int,
+	   .	                                                                ^~~~~~~~~
+[Warning] Compiler: Variable 'T' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-04.k)
+	Location(14,37,14,38)
+	14 |	                                    T:Int, NewId:Int, ChangeId:Int),
+execContext(1, 1))
+	   .	                                    ^
+[Warning] Compiler: Variable 'NewId' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-04.k)
+	Location(14,44,14,49)
+	14 |	                                    T:Int, NewId:Int, ChangeId:Int),
+execContext(1, 1))
+	   .	                                           ^~~~~
+[Warning] Compiler: Variable 'ChangeId' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-04.k)
+	Location(14,55,14,63)
+	14 |	                                    T:Int, NewId:Int, ChangeId:Int),
+execContext(1, 1))
+	   .	                                                      ^~~~~~~~
+[Warning] Compiler: Variable 'Owner' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-04.k)
+	Location(20,41,20,46)
+	20 |	                  validatedWithdraw(Op, Owner:Int, Inputs:List, W:Int,
+	   .	                                        ^~~~~
+[Warning] Compiler: Variable 'Inputs' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-04.k)
+	Location(20,52,20,58)
+	20 |	                  validatedWithdraw(Op, Owner:Int, Inputs:List, W:Int,
+	   .	                                                   ^~~~~~
+[Warning] Compiler: Variable 'W' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-04.k)
+	Location(20,65,20,66)
+	20 |	                  validatedWithdraw(Op, Owner:Int, Inputs:List, W:Int,
+	   .	                                                                ^
+[Warning] Compiler: Variable 'Destination' defined but not used. Prefix
+variable name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-04.k)
+	Location(21,37,21,48)
+	21 |	                                    Destination:Int, ChangeId:Int),
+execContext(1, 1))
+	   .	                                    ^~~~~~~~~~~
+[Warning] Compiler: Variable 'ChangeId' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-04.k)
+	Location(21,54,21,62)
+	21 |	                                    Destination:Int, ChangeId:Int),
+execContext(1, 1))
+	   .	                                                     ^~~~~~~~

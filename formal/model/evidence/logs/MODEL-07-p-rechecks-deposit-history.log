@@ -1,0 +1,160 @@
+#Top
+[Warning] Compiler: Variable 'Submitter' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-07.k)
+	Location(7,28,7,37)
+	7 |	                           Submitter:Int, Nonce:Int),
+	  .	                           ^~~~~~~~~
+[Warning] Compiler: Variable 'Nonce' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-07.k)
+	Location(7,43,7,48)
+	7 |	                           Submitter:Int, Nonce:Int),
+	  .	                                          ^~~~~
+[Warning] Compiler: Variable 'Claimed' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-07.k)
+	Location(14,62,14,69)
+	14 |	                  qRequest(Intent:AuthIntent, Cert:AuthCert,
+Claimed:Bool,
+	   .	                                                             ^~~~~~~
+[Warning] Compiler: Variable 'Submitter' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-07.k)
+	Location(15,28,15,37)
+	15 |	                           Submitter:Int, Nonce:Int),
+	   .	                           ^~~~~~~~~
+[Warning] Compiler: Variable 'Nonce' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-07.k)
+	Location(15,43,15,48)
+	15 |	                           Submitter:Int, Nonce:Int),
+	   .	                                          ^~~~~
+[Warning] Compiler: Variable 'Submitter' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-07.k)
+	Location(26,28,26,37)
+	26 |	                           Submitter:Int, Nonce:Int),
+	   .	                           ^~~~~~~~~
+[Warning] Compiler: Variable 'Nonce' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-07.k)
+	Location(26,43,26,48)
+	26 |	                           Submitter:Int, Nonce:Int),
+	   .	                                          ^~~~~
+[Warning] Compiler: Variable 'Ctx' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-07.k)
+	Location(27,37,27,40)
+	27 |	                  LiveCtx:PContext, Ctx:Context)
+	   .	                                    ^~~
+[Warning] Compiler: Variable 'Intent' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-07.k)
+	Location(33,28,33,34)
+	33 |	                  qRequest(Intent:AuthIntent, Cert:AuthCert,
+Claimed:Bool,
+	   .	                           ^~~~~~
+[Warning] Compiler: Variable 'Claimed' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-07.k)
+	Location(33,62,33,69)
+	33 |	                  qRequest(Intent:AuthIntent, Cert:AuthCert,
+Claimed:Bool,
+	   .	                                                             ^~~~~~~
+[Warning] Compiler: Variable 'Submitter' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-07.k)
+	Location(34,28,34,37)
+	34 |	                           Submitter:Int, Nonce:Int),
+	   .	                           ^~~~~~~~~
+[Warning] Compiler: Variable 'Nonce' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-07.k)
+	Location(34,43,34,48)
+	34 |	                           Submitter:Int, Nonce:Int),
+	   .	                                          ^~~~~
+[Warning] Compiler: Variable 'Chain' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-07.k)
+	Location(35,31,35,36)
+	35 |	                  authContext(Chain:Int, Pool:Int, Rule:Int, Version:Int,
+	   .	                              ^~~~~
+[Warning] Compiler: Variable 'Pool' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-07.k)
+	Location(35,42,35,46)
+	35 |	                  authContext(Chain:Int, Pool:Int, Rule:Int, Version:Int,
+	   .	                                         ^~~~
+[Warning] Compiler: Variable 'Rule' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-07.k)
+	Location(35,52,35,56)
+	35 |	                  authContext(Chain:Int, Pool:Int, Rule:Int, Version:Int,
+	   .	                                                   ^~~~
+[Warning] Compiler: Variable 'Version' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-07.k)
+	Location(35,62,35,69)
+	35 |	                  authContext(Chain:Int, Pool:Int, Rule:Int, Version:Int,
+	   .	                                                             ^~~~~~~
+[Warning] Compiler: Variable 'Now' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-07.k)
+	Location(36,31,36,34)
+	36 |	                              Now:Int, Issuer:Int, Registry:List),
+Ctx:Context)
+	   .	                              ^~~
+[Warning] Compiler: Variable 'Issuer' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-07.k)
+	Location(36,40,36,46)
+	36 |	                              Now:Int, Issuer:Int, Registry:List),
+Ctx:Context)
+	   .	                                       ^~~~~~
+[Warning] Compiler: Variable 'Ctx' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-07.k)
+	Location(36,68,36,71)
+	36 |	                              Now:Int, Issuer:Int, Registry:List),
+Ctx:Context)
+	   .	                                                                   ^~~
+[Warning] Compiler: Variable 'Submitter' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-07.k)
+	Location(46,49,46,58)
+	46 |	                           Cert:AuthCert, true, Submitter:Int,
+Nonce:Int),
+	   .	                                                ^~~~~~~~~
+[Warning] Compiler: Variable 'Nonce' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-07.k)
+	Location(46,64,46,69)
+	46 |	                           Cert:AuthCert, true, Submitter:Int,
+Nonce:Int),
+	   .	                                                               ^~~~~
+[Warning] Compiler: Variable 'Ctx' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-07.k)
+	Location(48,68,48,71)
+	48 |	                              Now:Int, Issuer:Int, Registry:List),
+Ctx:Context)
+	   .	                                                                   ^~~
+[Warning] Compiler: Variable 'Submitter' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-07.k)
+	Location(61,43,61,52)
+	61 |	                           Cert:AuthCert, Submitter:Int, Nonce:Int),
+	   .	                                          ^~~~~~~~~
+[Warning] Compiler: Variable 'Nonce' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-07.k)
+	Location(61,58,61,63)
+	61 |	                           Cert:AuthCert, Submitter:Int, Nonce:Int),
+	   .	                                                         ^~~~~
+[Warning] Compiler: Variable 'Ctx' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-07.k)
+	Location(62,37,62,40)
+	62 |	                  LiveCtx:PContext, Ctx:Context)
+	   .	                                    ^~~

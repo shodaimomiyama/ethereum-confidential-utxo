@@ -1,0 +1,222 @@
+#Top
+[Warning] Compiler: Variable 'Pending' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(33,67,33,74)
+	33 |	  claim <k> withdrawFrame(frame(execution(St:State, Events:List),
+Pending:State,
+	   .	                                                                  ^~~~~~~
+[Warning] Compiler: Variable 'Op' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(34,28,34,30)
+	34 |	                           Op:ValidatedOperation, propagateReentry,
+Ctx:Context))
+	   .	                           ^~
+[Warning] Compiler: Variable 'Ctx' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(34,69,34,72)
+	34 |	                           Op:ValidatedOperation, propagateReentry,
+Ctx:Context))
+	   .	                                                                    ^~~
+[Warning] Compiler: Variable 'Pending' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(38,67,38,74)
+	38 |	  claim <k> withdrawFrame(frame(execution(St:State, Events:List),
+Pending:State,
+	   .	                                                                  ^~~~~~~
+[Warning] Compiler: Variable 'Op' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(39,28,39,30)
+	39 |	                           Op:ValidatedOperation, rejectReceive,
+Ctx:Context))
+	   .	                           ^~
+[Warning] Compiler: Variable 'Ctx' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(39,66,39,69)
+	39 |	                           Op:ValidatedOperation, rejectReceive,
+Ctx:Context))
+	   .	                                                                 ^~~
+[Warning] Compiler: Variable 'Pending' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(43,67,43,74)
+	43 |	  claim <k> withdrawFrame(frame(execution(St:State, Events:List),
+Pending:State,
+	   .	                                                                  ^~~~~~~
+[Warning] Compiler: Variable 'Op' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(44,28,44,30)
+	44 |	                           Op:ValidatedOperation, outerRevert,
+Ctx:Context))
+	   .	                           ^~
+[Warning] Compiler: Variable 'Ctx' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(44,64,44,67)
+	44 |	                           Op:ValidatedOperation, outerRevert,
+Ctx:Context))
+	   .	                                                               ^~~
+[Warning] Compiler: Variable 'Op' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(48,38,48,40)
+	48 |	  claim <k> attemptReentry(St:State, Op:ValidatedOperation,
+	   .	                                     ^~
+[Warning] Compiler: Variable 'Chain' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(49,46,49,51)
+	49 |	                           execContextLocked(Chain:Int, Pool:Int))
+	   .	                                             ^~~~~
+[Warning] Compiler: Variable 'Pool' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(49,57,49,61)
+	49 |	                           execContextLocked(Chain:Int, Pool:Int))
+	   .	                                                        ^~~~
+[Warning] Compiler: Variable 'Req' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(53,29,53,32)
+	53 |	  claim <k> execP(St:State, Req:PRequest, LiveCtx:PContext,
+	   .	                            ^~~
+[Warning] Compiler: Variable 'LiveCtx' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(53,43,53,50)
+	53 |	  claim <k> execP(St:State, Req:PRequest, LiveCtx:PContext,
+	   .	                                          ^~~~~~~
+[Warning] Compiler: Variable 'Chain' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(54,37,54,42)
+	54 |	                  execContextLocked(Chain:Int, Pool:Int))
+	   .	                                    ^~~~~
+[Warning] Compiler: Variable 'Pool' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(54,48,54,52)
+	54 |	                  execContextLocked(Chain:Int, Pool:Int))
+	   .	                                               ^~~~
+[Warning] Compiler: Variable 'Req' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(58,29,58,32)
+	58 |	  claim <k> execQ(St:State, Req:QRequest, AuthCtx:AuthContext,
+	   .	                            ^~~
+[Warning] Compiler: Variable 'AuthCtx' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(58,43,58,50)
+	58 |	  claim <k> execQ(St:State, Req:QRequest, AuthCtx:AuthContext,
+	   .	                                          ^~~~~~~
+[Warning] Compiler: Variable 'Chain' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(59,37,59,42)
+	59 |	                  execContextLocked(Chain:Int, Pool:Int))
+	   .	                                    ^~~~~
+[Warning] Compiler: Variable 'Pool' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(59,48,59,52)
+	59 |	                  execContextLocked(Chain:Int, Pool:Int))
+	   .	                                               ^~~~
+[Warning] Compiler: Variable 'Events' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(65,37,65,43)
+	65 |	                                    Events:List),
+	   .	                                    ^~~~~~
+[Warning] Compiler: Variable 'Pending' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(79,67,79,74)
+	79 |	  claim <k> withdrawFrame(frame(execution(St:State, Events:List),
+Pending:State,
+	   .	                                                                  ^~~~~~~
+[Warning] Compiler: Variable 'Op' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(80,28,80,30)
+	80 |	                           Op:ValidatedOperation,
+returnThenOuterRevert(R:Int),
+	   .	                           ^~
+[Warning] Compiler: Variable 'Ctx' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(81,28,81,31)
+	81 |	                           Ctx:Context))
+	   .	                           ^~~
+[Warning] Compiler: Variable 'Events' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(88,37,88,43)
+	88 |	                                    Events:List),
+	   .	                                    ^~~~~~
+[Warning] Compiler: Variable 'Req' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(101,37,101,40)
+	101 |	  claim <k> settleP(Exec:Execution, Req:PRequest, LiveCtx:PContext,
+	    .	                                    ^~~
+[Warning] Compiler: Variable 'LiveCtx' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(101,51,101,58)
+	101 |	  claim <k> settleP(Exec:Execution, Req:PRequest, LiveCtx:PContext,
+	    .	                                                  ^~~~~~~
+[Warning] Compiler: Variable 'Behavior' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(102,21,102,29)
+	102 |	                    Behavior:RecipientBehavior,
+	    .	                    ^~~~~~~~
+[Warning] Compiler: Variable 'Chain' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(103,39,103,44)
+	103 |	                    execContextLocked(Chain:Int, Pool:Int))
+	    .	                                      ^~~~~
+[Warning] Compiler: Variable 'Pool' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(103,50,103,54)
+	103 |	                    execContextLocked(Chain:Int, Pool:Int))
+	    .	                                                 ^~~~
+[Warning] Compiler: Variable 'Req' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(107,37,107,40)
+	107 |	  claim <k> settleQ(Exec:Execution, Req:QRequest, AuthCtx:AuthContext,
+	    .	                                    ^~~
+[Warning] Compiler: Variable 'AuthCtx' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(107,51,107,58)
+	107 |	  claim <k> settleQ(Exec:Execution, Req:QRequest, AuthCtx:AuthContext,
+	    .	                                                  ^~~~~~~
+[Warning] Compiler: Variable 'Behavior' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(108,21,108,29)
+	108 |	                    Behavior:RecipientBehavior,
+	    .	                    ^~~~~~~~
+[Warning] Compiler: Variable 'Chain' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(109,39,109,44)
+	109 |	                    execContextLocked(Chain:Int, Pool:Int))
+	    .	                                      ^~~~~
+[Warning] Compiler: Variable 'Pool' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-05.k)
+	Location(109,50,109,54)
+	109 |	                    execContextLocked(Chain:Int, Pool:Int))
+	    .	                                                 ^~~~

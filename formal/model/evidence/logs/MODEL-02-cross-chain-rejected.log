@@ -1,0 +1,43 @@
+#Top
+[Warning] Compiler: Variable 'Intent' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-02.k)
+	Location(71,32,71,38)
+	71 |	  claim <k> validate(St:State, Intent:AuthIntent, Cert:AuthCert,
+	   .	                               ^~~~~~
+[Warning] Compiler: Variable 'Chain' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-02.k)
+	Location(72,23,72,28)
+	72 |	          authContext(Chain:Int, Pool:Int, Rule:Int, Version:Int,
+	   .	                      ^~~~~
+[Warning] Compiler: Variable 'Pool' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-02.k)
+	Location(72,34,72,38)
+	72 |	          authContext(Chain:Int, Pool:Int, Rule:Int, Version:Int,
+	   .	                                 ^~~~
+[Warning] Compiler: Variable 'Rule' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-02.k)
+	Location(72,44,72,48)
+	72 |	          authContext(Chain:Int, Pool:Int, Rule:Int, Version:Int,
+	   .	                                           ^~~~
+[Warning] Compiler: Variable 'Version' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-02.k)
+	Location(72,54,72,61)
+	72 |	          authContext(Chain:Int, Pool:Int, Rule:Int, Version:Int,
+	   .	                                                     ^~~~~~~
+[Warning] Compiler: Variable 'Now' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-02.k)
+	Location(73,23,73,26)
+	73 |	                      Now:Int, Issuer:Int, .List))
+	   .	                      ^~~
+[Warning] Compiler: Variable 'Issuer' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-02.k)
+	Location(73,32,73,38)
+	73 |	                      Now:Int, Issuer:Int, .List))
+	   .	                               ^~~~~~

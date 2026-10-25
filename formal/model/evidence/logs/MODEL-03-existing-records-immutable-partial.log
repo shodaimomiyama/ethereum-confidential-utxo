@@ -1,0 +1,241 @@
+#Top
+[Warning] Compiler: Variable 'Op' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(6,37,6,39)
+	6 |	                  validatedTransfer(Op:Int, Owner:Int, ListItem(I:Int)
+ListItem(I),
+	  .	                                    ^~
+[Warning] Compiler: Variable 'Owner' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(6,45,6,50)
+	6 |	                  validatedTransfer(Op:Int, Owner:Int, ListItem(I:Int)
+ListItem(I),
+	  .	                                            ^~~~~
+[Warning] Compiler: Variable 'Recipient' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(7,37,7,46)
+	7 |	                                    Recipient:Int, T:Int, NewId:Int,
+ChangeId:Int),
+	  .	                                    ^~~~~~~~~
+[Warning] Compiler: Variable 'T' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(7,52,7,53)
+	7 |	                                    Recipient:Int, T:Int, NewId:Int,
+ChangeId:Int),
+	  .	                                                   ^
+[Warning] Compiler: Variable 'NewId' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(7,59,7,64)
+	7 |	                                    Recipient:Int, T:Int, NewId:Int,
+ChangeId:Int),
+	  .	                                                          ^~~~~
+[Warning] Compiler: Variable 'ChangeId' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(7,70,7,78)
+	7 |	                                    Recipient:Int, T:Int, NewId:Int,
+ChangeId:Int),
+	  .	                                                                    
+^~~~~~~~
+[Warning] Compiler: Variable 'Op' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(13,37,13,39)
+	13 |	                  validatedTransfer(Op:Int, Owner:Int, ListItem(I:Int),
+	   .	                                    ^~
+[Warning] Compiler: Variable 'Owner' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(13,45,13,50)
+	13 |	                  validatedTransfer(Op:Int, Owner:Int, ListItem(I:Int),
+	   .	                                            ^~~~~
+[Warning] Compiler: Variable 'Recipient' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(14,37,14,46)
+	14 |	                                    Recipient:Int, T:Int, I,
+ChangeId:Int),
+	   .	                                    ^~~~~~~~~
+[Warning] Compiler: Variable 'T' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(14,52,14,53)
+	14 |	                                    Recipient:Int, T:Int, I,
+ChangeId:Int),
+	   .	                                                   ^
+[Warning] Compiler: Variable 'ChangeId' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(14,62,14,70)
+	14 |	                                    Recipient:Int, T:Int, I,
+ChangeId:Int),
+	   .	                                                             ^~~~~~~~
+[Warning] Compiler: Variable 'Op' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(21,37,21,39)
+	21 |	                  validatedTransfer(Op:Int, Owner:Int, ListItem(I:Int),
+	   .	                                    ^~
+[Warning] Compiler: Variable 'Owner' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(21,45,21,50)
+	21 |	                  validatedTransfer(Op:Int, Owner:Int, ListItem(I:Int),
+	   .	                                            ^~~~~
+[Warning] Compiler: Variable 'Recipient' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(22,37,22,46)
+	22 |	                                    Recipient:Int, T:Int, NewId:Int,
+ChangeId:Int),
+	   .	                                    ^~~~~~~~~
+[Warning] Compiler: Variable 'T' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(22,52,22,53)
+	22 |	                                    Recipient:Int, T:Int, NewId:Int,
+ChangeId:Int),
+	   .	                                                   ^
+[Warning] Compiler: Variable 'NewId' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(22,59,22,64)
+	22 |	                                    Recipient:Int, T:Int, NewId:Int,
+ChangeId:Int),
+	   .	                                                          ^~~~~
+[Warning] Compiler: Variable 'ChangeId' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(22,70,22,78)
+	22 |	                                    Recipient:Int, T:Int, NewId:Int,
+ChangeId:Int),
+	   .	                                                                    
+^~~~~~~~
+[Warning] Compiler: Variable 'Op' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(29,37,29,39)
+	29 |	                  validatedWithdraw(Op:Int, Owner:Int, ListItem(I:Int),
+	   .	                                    ^~
+[Warning] Compiler: Variable 'Owner' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(29,45,29,50)
+	29 |	                  validatedWithdraw(Op:Int, Owner:Int, ListItem(I:Int),
+	   .	                                            ^~~~~
+[Warning] Compiler: Variable 'W' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(30,37,30,38)
+	30 |	                                    W:Int, Destination:Int,
+ChangeId:Int),
+	   .	                                    ^
+[Warning] Compiler: Variable 'Destination' defined but not used. Prefix
+variable name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(30,44,30,55)
+	30 |	                                    W:Int, Destination:Int,
+ChangeId:Int),
+	   .	                                           ^~~~~~~~~~~
+[Warning] Compiler: Variable 'ChangeId' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(30,61,30,69)
+	30 |	                                    W:Int, Destination:Int,
+ChangeId:Int),
+	   .	                                                            ^~~~~~~~
+[Warning] Compiler: Variable 'Op' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(37,37,37,39)
+	37 |	                  validatedWithdraw(Op:Int, Owner:Int, ListItem(I:Int)
+ListItem(I),
+	   .	                                    ^~
+[Warning] Compiler: Variable 'Owner' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(37,45,37,50)
+	37 |	                  validatedWithdraw(Op:Int, Owner:Int, ListItem(I:Int)
+ListItem(I),
+	   .	                                            ^~~~~
+[Warning] Compiler: Variable 'W' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(38,37,38,38)
+	38 |	                                    W:Int, Destination:Int,
+ChangeId:Int),
+	   .	                                    ^
+[Warning] Compiler: Variable 'Destination' defined but not used. Prefix
+variable name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(38,44,38,55)
+	38 |	                                    W:Int, Destination:Int,
+ChangeId:Int),
+	   .	                                           ^~~~~~~~~~~
+[Warning] Compiler: Variable 'ChangeId' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(38,61,38,69)
+	38 |	                                    W:Int, Destination:Int,
+ChangeId:Int),
+	   .	                                                            ^~~~~~~~
+[Warning] Compiler: Variable 'B' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(45,27,45,28)
+	45 |	                          B:Int, V +Int OV, E:Int),
+	   .	                          ^
+[Warning] Compiler: Variable 'E' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(45,45,45,46)
+	45 |	                          B:Int, V +Int OV, E:Int),
+	   .	                                            ^
+[Warning] Compiler: Variable 'Recipient' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(46,60,46,69)
+	46 |	                  validatedTransfer(8, Owner, ListItem(1), Recipient:Int,
+	   .	                                                           ^~~~~~~~~
+[Warning] Compiler: Variable 'B' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(65,27,65,28)
+	65 |	                          B:Int, V +Int OV, E:Int),
+	   .	                          ^
+[Warning] Compiler: Variable 'E' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(65,45,65,46)
+	65 |	                          B:Int, V +Int OV, E:Int),
+	   .	                                            ^
+[Warning] Compiler: Variable 'Recipient' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(66,60,66,69)
+	66 |	                  validatedTransfer(8, Owner, ListItem(1), Recipient:Int,
+	   .	                                                           ^~~~~~~~~
+[Warning] Compiler: Variable 'B' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(82,27,82,28)
+	82 |	                          B:Int, V1 +Int V2 +Int OV, E:Int),
+	   .	                          ^
+[Warning] Compiler: Variable 'E' defined but not used. Prefix variable name
+with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(82,54,82,55)
+	82 |	                          B:Int, V1 +Int V2 +Int OV, E:Int),
+	   .	                                                     ^
+[Warning] Compiler: Variable 'Recipient' defined but not used. Prefix variable
+name with underscore if this is intentional.
+	Source(/work/formal/model/claims/model-03.k)
+	Location(84,37,84,46)
+	84 |	                                    Recipient:Int, T:Int, 3, 4),
+execContext(1, 1))
+	   .	                                    ^~~~~~~~~

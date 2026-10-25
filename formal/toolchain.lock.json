@@ -1,0 +1,7 @@
+{
+  "source_branch": "origin/chore/4-project-setup",
+  "source_commit": "9a61cfb08b6249f7eb5a64f7570377a7f7c996f0",
+  "source_path": "formal/environment/run-smoke.sh",
+  "image": "runtimeverificationinc/kontrol@sha256:858f004144d61b005997f56bb8b7cd15673850286c96e0e5ec0502d9c9a9e204",
+  "k_version": "v7.1.337"
+}
