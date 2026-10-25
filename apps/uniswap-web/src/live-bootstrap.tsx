@@ -13,9 +13,11 @@ export async function bootstrapLiveSite({ container, config, createController }:
   let controller: UiController | undefined;
   try {
     controller = await createController(config);
-  } catch {
+  } catch (error) {
     // A failed deployment or runtime check must not expose transaction actions.
-    const root = bootstrapSite({ container, config });
+    const unavailableReason = error instanceof Error && error.message === 'METAMASK_UNAVAILABLE'
+      ? 'metamask' : undefined;
+    const root = bootstrapSite({ container, config, unavailableReason });
     return { dispose: () => root.unmount() };
   }
   const root = bootstrapSite({ container, config, controller });

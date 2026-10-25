@@ -44,3 +44,21 @@ it('shows an unavailable live app when controller construction fails', async () 
   container.remove();
   history.replaceState(null, '', '/');
 });
+
+it('explains when MetaMask is unavailable during live startup', async () => {
+  history.replaceState(null, '', '/app');
+  const container = document.createElement('div');
+  document.body.append(container);
+  let session: Awaited<ReturnType<typeof bootstrapLiveSite>>;
+
+  await act(async () => {
+    session = await bootstrapLiveSite({ container, config,
+      createController: () => { throw new Error('METAMASK_UNAVAILABLE'); } });
+  });
+  expect(screen.getByRole('heading', { name: 'MetaMask is required' })).toBeVisible();
+  expect(container).toHaveTextContent('Install or enable MetaMask in this Chrome profile');
+
+  await act(async () => { session.dispose(); });
+  container.remove();
+  history.replaceState(null, '', '/');
+});
