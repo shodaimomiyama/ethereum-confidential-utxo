@@ -17,6 +17,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const hex32 = /^0x[0-9a-f]{64}$/i;
 const hex4 = /^0x[0-9a-f]{8}$/i;
 const usage = 'core-sepolia --rpc HTTPS_URL --manifest FILE --owner-a-key FILE --owner-b-key FILE --submitter-key FILE --owner-a-store DIR --owner-b-store DIR --journal DIR --out FILE';
+const finalityTimeoutMs = 45 * 60_000;
 const same = (a, b) => a.toLowerCase() === b.toLowerCase();
 function safeError(code) { throw new Error(code); }
 
@@ -144,7 +145,7 @@ async function cliRunner(passphrase, scriptPath) {
 async function finalizedReceipt(client, txHash) {
   const receipt = await client.waitForTransactionReceipt({ hash: txHash, timeout: 600_000 });
   if (receipt.status !== 'success') safeError('SEPOLIA_TRANSACTION_REVERTED');
-  const deadline = Date.now() + 900_000;
+  const deadline = Date.now() + finalityTimeoutMs;
   for (;;) {
     const point = await client.getBlock({ blockTag: 'finalized' });
     if (point.number >= receipt.blockNumber) {
@@ -248,7 +249,7 @@ export async function runSepolia(args) {
           observed?.pending ? 'unconfirmed' : 'unavailable',
         testOutcome: pass ? 'pass' : 'not-run', commit: commit.stdout.trim(),
         artifactHashes: hashes, environment, network,
-        execution: { durationMs: String(Date.now() - started), timeoutMs: '900000',
+        execution: { durationMs: String(Date.now() - started), timeoutMs: String(finalityTimeoutMs),
           ...(failureReason ? { failureReason } : {}) },
         evidence: observed?.rejection ?? (observed?.row ? { kind: 'transaction',
           source: 'scripts/core-sepolia.mjs', testName: item.caseId, transactions: [observed.row] } :
@@ -441,7 +442,7 @@ export async function finalizeFailedSepolia(args, reason, started = Date.now()) 
     rows = expectedCases.map(item => ({ schemaVersion: 1, caseId: item.caseId,
       operationOutcome: 'unavailable', testOutcome: 'not-run', commit: commit.stdout.trim(),
       artifactHashes: hashes, environment,
-      execution: { durationMs: String(Date.now() - started), timeoutMs: '900000', failureReason: safeReason },
+      execution: { durationMs: String(Date.now() - started), timeoutMs: String(finalityTimeoutMs), failureReason: safeReason },
       evidence: { kind: 'test', source: 'scripts/core-sepolia.mjs', testName: item.caseId } }));
     await mkdir(dirname(args.out), { recursive: true });
     await writePublicEvidence(args.out, rows);
