@@ -140,15 +140,28 @@ async function terminalSecret() {
 async function cliRunner(passphrase, scriptPath) {
   const bin = join(root, 'packages/cli/dist/bin.js');
   return async args => {
-    const run = await command('expect', [scriptPath, process.execPath, bin, ...args, '--json'], `${passphrase}\n`);
-    const lines = run.stdout.split(/\r?\n/).filter(line => line.startsWith('{'));
-    if (run.code || lines.length !== 1) safeError(`SEPOLIA_CLI_${args[0].toUpperCase()}_FAILED`);
-    let result;
-    try { result = JSON.parse(lines[0]); }
-    catch { safeError('SEPOLIA_CLI_JSON_INVALID'); }
-    if (result.kind === 'error') safeError(`SEPOLIA_CLI_${String(result.code ?? 'ERROR')}`);
-    return result;
+    const runOnce = async () => {
+      const run = await command('expect', [scriptPath, process.execPath, bin, ...args, '--json'], `${passphrase}\n`);
+      const lines = run.stdout.split(/\r?\n/).filter(line => line.startsWith('{'));
+      if (run.code || lines.length !== 1) safeError(`SEPOLIA_CLI_${args[0].toUpperCase()}_FAILED`);
+      let result;
+      try { result = JSON.parse(lines[0]); }
+      catch { safeError('SEPOLIA_CLI_JSON_INVALID'); }
+      if (result.kind === 'error') safeError(`SEPOLIA_CLI_${String(result.code ?? 'ERROR')}`);
+      return result;
+    };
+    return args[0] === 'operation' ? retrySepoliaRead(runOnce) : runOnce();
   };
+}
+
+export async function retrySepoliaRead(read, pause = () => new Promise(done => setTimeout(done, 2_000))) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try { return await read(); }
+    catch (error) {
+      if (attempt === 2) throw error;
+      await pause();
+    }
+  }
 }
 
 async function finalizedReceipt(client, txHash) {

@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { callAtBlockHash, finalizeFailedSepolia, parseSepoliaOptions, preflightSepolia, validateSepoliaStatePaths,
+import { callAtBlockHash, finalizeFailedSepolia, parseSepoliaOptions, preflightSepolia, retrySepoliaRead, validateSepoliaStatePaths,
   runSepolia } from '../../../scripts/core-sepolia.mjs';
 
 const hash = `0x${'ab'.repeat(32)}`;
@@ -30,6 +30,19 @@ test('Sepolia state paths accept distinct paths and reject aliases before creati
     await assert.rejects(validateSepoliaStatePaths({ ...args, out: args.journal }),
       /SEPOLIA_DISTINCT_PATHS_REQUIRED/);
   } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test('Sepolia read-only retry tolerates transient operation lookup failures', async () => {
+  let calls = 0;
+  const recovered = await retrySepoliaRead(async () => {
+    calls++;
+    if (calls < 3) throw Error('RPC temporarily unavailable');
+    return { status: 'executed' };
+  }, async () => {});
+  assert.equal(recovered.status, 'executed');
+  assert.equal(calls, 3);
+  await assert.rejects(retrySepoliaRead(async () => { throw Error('still unavailable'); },
+    async () => {}), /still unavailable/);
 });
 function fakeClient({ chainId = 11155111, finalized = block, callError } = {}) {
   let sends = 0;
