@@ -169,6 +169,19 @@ test('Sepolia preflight requires a finalized Cancun-or-later block field basis',
     verify: async () => ({ context: { pool: manifest.pool.address } }) }), /FORK_UNVERIFIED/);
 });
 
+test('Sepolia Amsterdam declaration requires a finalized block after official activation', async () => {
+  const amsterdam = { ...manifest, hardfork: 'amsterdam' };
+  const verify = async () => ({ context: { pool: manifest.pool.address } });
+  const before = fakeClient({ finalized: { ...block, timestamp: 1791294815n,
+    blobGasUsed: 0n, excessBlobGas: 0n } });
+  await assert.rejects(preflightSepolia({ rpc: 'https://rpc.example', manifest: amsterdam,
+    client: before.client, verify }), /FORK_UNVERIFIED/);
+  const after = fakeClient({ finalized: { ...block, timestamp: 1791294816n,
+    blobGasUsed: 0n, excessBlobGas: 0n } });
+  await preflightSepolia({ rpc: 'https://rpc.example', manifest: amsterdam,
+    client: after.client, verify });
+});
+
 test('pinned rejection extracts only revert selector and checks canonical hash twice', async () => {
   let reads = 0;
   const client = {
