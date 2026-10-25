@@ -5,7 +5,7 @@ import { access, mkdir, readFile, readdir, rename, stat, unlink, writeFile } fro
 import { totalmem } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createPublicClient, decodeEventLog, http, keccak256, toFunctionSelector } from 'viem';
+import { createPublicClient, decodeEventLog, http, keccak256, toFunctionSelector, toFunctionSignature } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia } from 'viem/chains';
 import { authorizationTypedData, authorizeOperation, fixOperation, proveFixedOperation,
@@ -20,6 +20,12 @@ const usage = 'core-sepolia --rpc HTTPS_URL --manifest FILE --owner-a-key FILE -
 const finalityTimeoutMs = 45 * 60_000;
 const same = (a, b) => a.toLowerCase() === b.toLowerCase();
 function safeError(code) { throw new Error(code); }
+
+export function poolErrorSelector(name) {
+  const item = poolAbi.find(entry => entry.type === 'error' && entry.name === name);
+  if (!item) safeError('SEPOLIA_UNKNOWN_POOL_ERROR');
+  return toFunctionSelector(toFunctionSignature(item).replace(/^error /, ''));
+}
 
 export async function preflightSepolia({ rpc, manifest, client, verify = verifyEthereumDeployment }) {
   if (!rpc || !/^https:\/\//i.test(rpc)) safeError('SEPOLIA_HTTPS_REQUIRED');
@@ -541,7 +547,7 @@ export async function runSepolia(args) {
   ];
   let probeFailed = false;
   for (const [name, data, value, errorName] of probes) {
-    const expected = toFunctionSelector(poolAbi.find(item => item.type === 'error' && item.name === errorName));
+    const expected = poolErrorSelector(errorName);
     try {
       const observed = await callAtBlockHash(client, { to: verified.context.pool, data,
         account: submitter.account.address, value }, checkpoint.hash, checkpoint.number);

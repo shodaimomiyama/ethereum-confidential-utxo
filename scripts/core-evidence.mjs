@@ -5,7 +5,7 @@ import { writeFile } from "node:fs/promises";
 const hex32 = /^0x[0-9a-f]{64}$/i;
 const hex4 = /^0x[0-9a-f]{8}$/i;
 const decimal = /^(0|[1-9]\d*)$/;
-const sourcePath = /^(?:(?:tests\/integration\/core\/|contracts\/test\/)[a-zA-Z0-9/_-]+\.(?:test\.ts|test\.mjs|t\.sol)|scripts\/core-sepolia\.mjs)$/;
+const sourcePath = /^(?:(?:tests\/integration\/core\/|contracts\/test\/)[a-zA-Z0-9/_-]+\.(?:test\.ts|test\.mjs|t\.sol)|scripts\/core-sepolia(?:-recheck)?\.mjs)$/;
 const outcomes = new Set(["success", "rejected", "rolled-back", "unconfirmed", "unavailable"]);
 const testOutcomes = new Set(["pass", "fail", "not-run"]);
 const evidenceKinds = new Set(["test", "foundry", "transaction", "rejection"]);

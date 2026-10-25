@@ -152,6 +152,17 @@ pnpm test:core:sepolia
 
 各成功取引の`finalized`待ちは最大45分とする。2026-10-25にPublicNodeで最新と`finalized`の時刻差を約19分と観測したため、公開ネットワークでの全件実行には時間がかかる。
 
+6件の取引が成功し、最後の3件の固定ブロック拒否照会だけがRPC障害などで未実行になった場合は、失敗結果JSON、実行時の暗号化されたAlice保存領域、生成されたAlice/Bob受領情報ファイルを保持する。`OWNER_STORE_PASSPHRASE_FILE`、`ALICE_RECIPIENT_EXPORT`、`BOB_RECIPIENT_EXPORT`には当該実行のファイルを指定し、次のコマンドで同じ確定ブロックを再照会する。スクリプトは6件のreceiptとmanifest、確定ブロックhashを再照合し、3件すべてで期待するPoolエラーを得たときだけ公開結果を更新する。拒否ケースの`commit`には再照会コードのcommitを記録する。保存領域の`.inaccessible`接尾辞は、BobがAliceの保存領域を使わずに実行したことを確認するためランナーが付けたもの。
+
+```sh
+node scripts/core-sepolia-recheck.mjs \
+  --rpc "$SEPOLIA_RPC_URL" --manifest "$POOL_MANIFEST_PATH" \
+  --result "$PUBLIC_RESULT_PATH" --alice-key "$ALICE_KEY_PATH" --bob-key "$BOB_KEY_PATH" \
+  --alice-store "${ALICE_STORE_PATH}.inaccessible" \
+  --passphrase-file "$OWNER_STORE_PASSPHRASE_FILE" \
+  --alice-recipient "$ALICE_RECIPIENT_EXPORT" --bob-recipient "$BOB_RECIPIENT_EXPORT"
+```
+
 ## Poolと検証器の配置（Issue #27）
 
 `pnpm artifact:pool` は `contracts/out/Pool.sol/Pool.json` から公開ABI、bytecode、AST、storage layoutと入力hashを `packages/ethereum/generated/pool-v1.json` に出力する。`pnpm check:pool` は現在のソースとコンパイル結果に照合する。`pnpm fixture:pool` は公開seedから25件の操作、署名、実範囲証明を一時ディレクトリに再生成し、固定ケースとFoundry calldataをbyte単位で比較する。Python依存は `tests/vectors/README.md` に従って導入し、`POOL_VECTOR_PYTHON` にそのvenvのPythonを指定する。

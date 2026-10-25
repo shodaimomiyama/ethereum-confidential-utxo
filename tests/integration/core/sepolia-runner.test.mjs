@@ -5,13 +5,19 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { keccak256 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { callAtBlockHash, finalizeFailedSepolia, finalizedReceipt, parseSepoliaCliOutcome,
+import { callAtBlockHash, finalizeFailedSepolia, finalizedReceipt, parseSepoliaCliOutcome, poolErrorSelector,
   parseSepoliaOptions, preflightSepolia, rebroadcastUnknownSepolia, retrySepoliaIdempotent, signSepoliaJournalAttempt,
   validateSepoliaStatePaths, validateFirstDepositResume, runSepolia } from '../../../scripts/core-sepolia.mjs';
 
 const hash = `0x${'ab'.repeat(32)}`;
 const block = { number: 42n, hash };
 const manifest = { chainId: 11155111, pool: { address: `0x${'12'.repeat(20)}` } };
+
+test('Pool custom error selectors hash the ABI signature without the error prefix', () => {
+  assert.equal(poolErrorSelector('OperationAlreadyExecuted'), '0x1f1289ea');
+  assert.equal(poolErrorSelector('InputAlreadySpent'), '0x9872c435');
+  assert.throws(() => poolErrorSelector('MissingError'), /SEPOLIA_UNKNOWN_POOL_ERROR/);
+});
 
 test('Sepolia options support sourced env without echoing RPC or a pnpm separator', () => {
   const env = { SEPOLIA_RPC_URL: 'https://private.example', POOL_MANIFEST_PATH: 'manifest.json',
