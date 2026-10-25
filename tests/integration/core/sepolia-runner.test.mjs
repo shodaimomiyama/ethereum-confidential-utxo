@@ -1,10 +1,13 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { callAtBlockHash, finalizeFailedSepolia, finalizedReceipt, parseSepoliaOptions, preflightSepolia, retrySepoliaIdempotent, validateSepoliaStatePaths,
-  runSepolia } from '../../../scripts/core-sepolia.mjs';
+import { keccak256 } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { callAtBlockHash, finalizeFailedSepolia, finalizedReceipt, parseSepoliaCliOutcome,
+  parseSepoliaOptions, preflightSepolia, rebroadcastUnknownSepolia, retrySepoliaIdempotent, signSepoliaJournalAttempt,
+  validateSepoliaStatePaths, validateFirstDepositResume, runSepolia } from '../../../scripts/core-sepolia.mjs';
 
 const hash = `0x${'ab'.repeat(32)}`;
 const block = { number: 42n, hash };
@@ -30,6 +33,59 @@ test('Sepolia state paths accept distinct paths and reject aliases before creati
     await assert.rejects(validateSepoliaStatePaths({ ...args, out: args.journal }),
       /SEPOLIA_DISTINCT_PATHS_REQUIRED/);
   } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test('Sepolia resume requires existing state and an explicit prior result and transaction hash', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'core-sepolia-resume-'));
+  try {
+    const args = { 'owner-a-store': join(dir, 'alice'), 'owner-b-store': join(dir, 'bob'),
+      journal: join(dir, 'journal'), out: join(dir, 'result.json') };
+    await assert.rejects(validateSepoliaStatePaths(args, { resume: true }), /SEPOLIA_STATE_MISSING/);
+    for (const name of ['alice', 'bob', 'journal']) await mkdir(join(dir, name));
+    await validateSepoliaStatePaths(args, { resume: true });
+    assert.throws(() => parseSepoliaOptions([], { SEPOLIA_RESUME_FROM: 'prior.json' }),
+      /SEPOLIA_RESUME_ARGUMENTS/);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test('Sepolia resume binds a confirmed transaction hash to the saved journal intent', async () => {
+  const account = privateKeyToAccount(`0x${'11'.repeat(32)}`);
+  const pool = `0x${'22'.repeat(20)}`;
+  const id = `0x${'33'.repeat(32)}`;
+  const attempt = { state: 'unknown', account: account.address, calldata: '0x1234', value: '10', nonce: 2,
+    gas: '100000', maxFeePerGas: '100', maxPriorityFeePerGas: '1' };
+  const journal = { chainId: '11155111', pool, submitter: account.address, intents: { [id]: [attempt] } };
+  const prior = [{ caseId: 'S-01-sepolia-deposit', testOutcome: 'not-run',
+    operationOutcome: 'unconfirmed', network: { pool }, evidence: { kind: 'test', operationId: id } }];
+  const raw = await account.signTransaction({ type: 'eip1559', chainId: 11155111, to: pool,
+    data: attempt.calldata, value: 10n, nonce: 2, gas: 100000n,
+    maxFeePerGas: 100n, maxPriorityFeePerGas: 1n });
+  const txHash = keccak256(raw);
+  const signed = await signSepoliaJournalAttempt({ journal, account, pool, id });
+  assert.equal(signed.txHash, txHash);
+  let broadcasts = 0;
+  const client = { request: async ({ method, params }) => {
+    broadcasts++;
+    assert.equal(method, 'eth_sendRawTransaction');
+    assert.equal(keccak256(params[0]), txHash);
+    return txHash;
+  } };
+  assert.equal(await rebroadcastUnknownSepolia({ client, journal, account, pool, id }), txHash);
+  assert.equal(broadcasts, 1);
+  assert.deepEqual(await validateFirstDepositResume({ prior, journal, account, pool, txHash }), { id, txHash });
+  await assert.rejects(validateFirstDepositResume({ prior, journal, account, pool,
+    txHash: `0x${'44'.repeat(32)}` }), /SEPOLIA_RESUME_TX_MISMATCH/);
+  await assert.rejects(validateFirstDepositResume({ prior, journal, account,
+    pool: `0x${'55'.repeat(20)}`, txHash }), /SEPOLIA_RESUME_BINDING/);
+});
+
+test('Sepolia submit surfaces an unknown durable attempt for exact transaction recovery', () => {
+  const unknown = { kind: 'submission', status: 'unknown', attemptId: hash };
+  assert.deepEqual(parseSepoliaCliOutcome({ code: 4, stdout: `${JSON.stringify(unknown)}\n` }, 'submit'), unknown);
+  assert.throws(() => parseSepoliaCliOutcome({ code: 4, stdout: `${JSON.stringify(unknown)}\n` }, 'operation'),
+    /SEPOLIA_CLI_OPERATION_FAILED/);
+  assert.throws(() => parseSepoliaCliOutcome({ code: 4, stdout: '{"kind":"error","code":"RPC"}\n' }, 'submit'),
+    /SEPOLIA_CLI_RPC/);
 });
 
 test('Sepolia idempotent lookup and sync retry tolerates transient RPC failures', async () => {

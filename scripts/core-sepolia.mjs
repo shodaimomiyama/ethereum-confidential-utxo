@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { access, mkdir, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, readdir, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import { totalmem } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createPublicClient, decodeEventLog, http, toFunctionSelector } from 'viem';
+import { createPublicClient, decodeEventLog, http, keccak256, toFunctionSelector } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia } from 'viem/chains';
 import { authorizationTypedData, authorizeOperation, fixOperation, proveFixedOperation,
@@ -73,13 +73,18 @@ export function parseSepoliaOptions(argv, environment = process.env) {
   const names = ['rpc', 'manifest', 'owner-a-key', 'owner-b-key', 'submitter-key',
     'owner-a-store', 'owner-b-store', 'journal', 'out'];
   if (argv[0] === '--') argv = argv.slice(1);
+  const resumeFrom = environment.SEPOLIA_RESUME_FROM;
+  const resumeTxHash = environment.SEPOLIA_RESUME_TX_HASH;
+  if (Boolean(resumeFrom) !== Boolean(resumeTxHash) || (resumeTxHash && !hex32.test(resumeTxHash)))
+    safeError('SEPOLIA_RESUME_ARGUMENTS');
+  const resume = resumeFrom ? { resumeFrom, resumeTxHash } : {};
   if (argv.length === 0) {
     const vars = ['SEPOLIA_RPC_URL', 'POOL_MANIFEST_PATH', 'ALICE_KEY_PATH', 'BOB_KEY_PATH',
       'SUBMITTER_KEY_PATH', 'ALICE_STORE_PATH', 'BOB_STORE_PATH', 'SUBMITTER_JOURNAL_PATH',
       'PUBLIC_RESULT_PATH'];
     const found = Object.fromEntries(names.map((name, at) => [name, environment[vars[at]]]));
     if (names.some(name => !found[name])) safeError('SEPOLIA_ENV_MISSING');
-    return found;
+    return { ...found, ...resume };
   }
   const found = {};
   for (let i = 0; i < argv.length; i += 2) {
@@ -88,7 +93,7 @@ export function parseSepoliaOptions(argv, environment = process.env) {
     found[name] = argv[i + 1];
   }
   if (names.some(name => !found[name]) || argv.length !== names.length * 2) safeError('SEPOLIA_ARGUMENTS');
-  return found;
+  return { ...found, ...resume };
 }
 
 function command(executable, args, input) {
@@ -104,13 +109,68 @@ function command(executable, args, input) {
   });
 }
 
-export async function validateSepoliaStatePaths(args) {
+export async function validateSepoliaStatePaths(args, { resume = false } = {}) {
   const paths = [args['owner-a-store'], args['owner-b-store'], args.journal, args.out].map(path => resolve(path));
   if (new Set(paths).size !== paths.length) safeError('SEPOLIA_DISTINCT_PATHS_REQUIRED');
-  for (const path of [...paths.slice(0, 3), `${args['owner-a-store']}.inaccessible`]) {
-    try { await access(path); safeError('SEPOLIA_STATE_EXISTS'); }
-    catch (error) { if (error.message === 'SEPOLIA_STATE_EXISTS') throw error; if (error.code !== 'ENOENT') throw error; }
+  for (const statePath of paths.slice(0, 3)) {
+    try { await access(statePath); if (!resume) safeError('SEPOLIA_STATE_EXISTS'); }
+    catch (error) {
+      if (error.message === 'SEPOLIA_STATE_EXISTS') throw error;
+      if (error.code !== 'ENOENT') throw error;
+      if (resume) safeError('SEPOLIA_STATE_MISSING');
+    }
   }
+  try { await access(`${args['owner-a-store']}.inaccessible`); safeError('SEPOLIA_STATE_EXISTS'); }
+  catch (error) { if (error.message === 'SEPOLIA_STATE_EXISTS') throw error; if (error.code !== 'ENOENT') throw error; }
+}
+
+export async function signSepoliaJournalAttempt({ journal, account, pool, id, attemptId }) {
+  if (journal.chainId !== String(sepolia.id) || !same(journal.pool ?? '', pool) ||
+      !same(journal.submitter ?? '', account.address)) safeError('SEPOLIA_JOURNAL_BINDING');
+  const attempts = journal.intents?.[id];
+  const matched = Array.isArray(attempts) ? attempts.filter(row =>
+    !attemptId || same(row.attemptId ?? '', attemptId)) : [];
+  if (matched.length !== 1 || !['unknown', 'pending'].includes(matched[0].state) ||
+      !same(matched[0].account ?? '', account.address)) safeError('SEPOLIA_JOURNAL_ATTEMPT');
+  const attempt = matched[0];
+  let raw;
+  try {
+    raw = await account.signTransaction({ type: 'eip1559', chainId: sepolia.id, to: pool,
+      data: attempt.calldata, value: BigInt(attempt.value), nonce: attempt.nonce,
+      gas: BigInt(attempt.gas), maxFeePerGas: BigInt(attempt.maxFeePerGas),
+      maxPriorityFeePerGas: BigInt(attempt.maxPriorityFeePerGas) });
+  } catch { safeError('SEPOLIA_JOURNAL_ATTEMPT'); }
+  return { raw, txHash: keccak256(raw) };
+}
+
+export async function rebroadcastUnknownSepolia({ client, journal, account, pool, id, attemptId, onSigned }) {
+  const { raw, txHash } = await signSepoliaJournalAttempt({ journal, account, pool, id, attemptId });
+  await onSigned?.(txHash);
+  let returned;
+  try { returned = await client.request({ method: 'eth_sendRawTransaction', params: [raw] }); }
+  catch { /* A lost response cannot distinguish rejected from accepted. The receipt check follows. */ }
+  if (returned && !same(returned, txHash)) safeError('SEPOLIA_SUBMISSION_HASH_MISMATCH');
+  return txHash;
+}
+
+export async function validateFirstDepositResume({ prior, journal, account, pool, txHash }) {
+  const first = Array.isArray(prior) ? prior[0] : undefined;
+  const id = first?.evidence?.operationId;
+  if (!hex32.test(txHash) || !hex32.test(id) || first.caseId !== 'S-01-sepolia-deposit' ||
+      first.testOutcome !== 'not-run' || first.operationOutcome !== 'unconfirmed' ||
+      prior.some(row => row.testOutcome !== 'not-run') ||
+      prior.slice(1).some(row => row.evidence?.txHash || row.evidence?.operationId) ||
+      !same(first.network?.pool ?? '', pool) ||
+      !same(journal.pool ?? '', pool) || journal.chainId !== String(sepolia.id) ||
+      !same(journal.submitter ?? '', account.address)) safeError('SEPOLIA_RESUME_BINDING');
+  const attempts = journal.intents?.[id];
+  if (Object.keys(journal.intents ?? {}).length !== 1 || !Array.isArray(attempts) || attempts.length !== 1 ||
+      !['unknown', 'pending'].includes(attempts[0].state) ||
+      (first.evidence.txHash && !same(first.evidence.txHash, txHash)) ||
+      (attempts[0].txHash && !same(attempts[0].txHash, txHash))) safeError('SEPOLIA_RESUME_BINDING');
+  const signed = await signSepoliaJournalAttempt({ journal, account, pool, id });
+  if (!same(signed.txHash, txHash)) safeError('SEPOLIA_RESUME_TX_MISMATCH');
+  return { id, txHash };
 }
 
 async function terminalSecret() {
@@ -142,16 +202,22 @@ async function cliRunner(passphrase, scriptPath) {
   return async args => {
     const runOnce = async () => {
       const run = await command('expect', [scriptPath, process.execPath, bin, ...args, '--json'], `${passphrase}\n`);
-      const lines = run.stdout.split(/\r?\n/).filter(line => line.startsWith('{'));
-      if (run.code || lines.length !== 1) safeError(`SEPOLIA_CLI_${args[0].toUpperCase()}_FAILED`);
-      let result;
-      try { result = JSON.parse(lines[0]); }
-      catch { safeError('SEPOLIA_CLI_JSON_INVALID'); }
-      if (result.kind === 'error') safeError(`SEPOLIA_CLI_${String(result.code ?? 'ERROR')}`);
-      return result;
+      return parseSepoliaCliOutcome(run, args[0]);
     };
     return ['operation', 'sync'].includes(args[0]) ? retrySepoliaIdempotent(runOnce) : runOnce();
   };
+}
+
+export function parseSepoliaCliOutcome(run, commandName) {
+  const lines = run.stdout.split(/\r?\n/).filter(line => line.startsWith('{'));
+  if (lines.length !== 1) safeError(`SEPOLIA_CLI_${commandName.toUpperCase()}_FAILED`);
+  let result;
+  try { result = JSON.parse(lines[0]); }
+  catch { safeError('SEPOLIA_CLI_JSON_INVALID'); }
+  if (result.kind === 'error') safeError(`SEPOLIA_CLI_${String(result.code ?? 'ERROR')}`);
+  if (run.code && !(commandName === 'submit' && result.kind === 'submission' && result.status === 'unknown'))
+    safeError(`SEPOLIA_CLI_${commandName.toUpperCase()}_FAILED`);
+  return result;
 }
 
 export async function retrySepoliaIdempotent(read, pause = () => new Promise(done => setTimeout(done, 2_000))) {
@@ -222,6 +288,10 @@ async function artifactHashes() {
 
 export async function runSepolia(args) {
   if (!/^https:\/\//i.test(args.rpc)) safeError('SEPOLIA_HTTPS_REQUIRED');
+  const resuming = Boolean(args.resumeFrom && args.resumeTxHash);
+  if (Boolean(args.resumeFrom) !== Boolean(args.resumeTxHash) ||
+      (resuming && (resolve(args.resumeFrom) === resolve(args.out) || !hex32.test(args.resumeTxHash))))
+    safeError('SEPOLIA_RESUME_ARGUMENTS');
   await access(args.manifest);
   try { await access(args.out); safeError('SEPOLIA_RESULT_EXISTS'); }
   catch (error) { if (error.message === 'SEPOLIA_RESULT_EXISTS') throw error; if (error.code !== 'ENOENT') throw error; }
@@ -243,7 +313,12 @@ export async function runSepolia(args) {
   }
   const [alice, bob, submitter] = actors;
   if (new Set(actors.map(item => item.account.address.toLowerCase())).size !== 3) safeError('SEPOLIA_DISTINCT_KEYS_REQUIRED');
-  await validateSepoliaStatePaths(args);
+  await validateSepoliaStatePaths(args, { resume: resuming });
+  const resumeDeposit = resuming ? await validateFirstDepositResume({
+    prior: JSON.parse(await readFile(args.resumeFrom, 'utf8')),
+    journal: JSON.parse(await readFile(join(args.journal, 'journal.json'), 'utf8')),
+    account: submitter.account, pool: verified.context.pool, txHash: args.resumeTxHash,
+  }) : undefined;
   const submitterBalance = await client.getBalance({ address: submitter.account.address });
   if (submitterBalance === 0n)
     safeError('SEPOLIA_SUBMITTER_UNFUNDED');
@@ -265,6 +340,7 @@ export async function runSepolia(args) {
     rpcHost: new URL(args.rpc).hostname, rpcClient: 'viem@2.56.9',
     submitter: submitter.account.address, submitterBalanceWei: String(submitterBalance) };
   const operations = new Map();
+  if (resumeDeposit) operations.set('S-01-sepolia-deposit', { pending: true, ...resumeDeposit });
   function results(failureReason) {
     return expectedCases.map(item => {
       const observed = operations.get(item.caseId);
@@ -290,6 +366,7 @@ export async function runSepolia(args) {
   }
   await saveCheckpoint();
   const secret = await terminalSecret();
+  const { readOwnerState } = await import('../packages/cli/dist/state.js');
   const scriptPath = join(dirname(resolve(args['owner-a-store'])), `terminal-${randomUUID()}.exp`);
   await mkdir(dirname(scriptPath), { recursive: true, mode: 0o700 });
   await writeFile(scriptPath, 'set timeout 600\ngets stdin pass\nspawn {*}$argv\nexpect {\n  -re {(Passphrase|passphrase): } { send -- "$pass\\r"; exp_continue }\n  eof {}\n}\nexit [lindex [wait] 3]\n', { mode: 0o600 });
@@ -302,13 +379,34 @@ export async function runSepolia(args) {
     '--submitter', submitter.account.address];
   const privateDir = dirname(scriptPath);
   const recipient = {};
-  for (const [name, actor, ownerArgs] of [['a', alice, a], ['b', bob, b]]) {
-    await cli(['init', ...ownerArgs, ...online]);
-    await cli(['key', 'add', ...ownerArgs]);
-    await cli(['sync', ...ownerArgs, ...online]);
-    recipient[name] = join(privateDir, `${name}-recipient-${randomUUID()}.json`);
-    await cli(['recipient', ...ownerArgs, '--signer', actor.keyPath, '--out', recipient[name]]);
-    if ((await ids(ownerArgs)).length !== 0) safeError('SEPOLIA_OWNER_NOT_FRESH');
+  if (resumeDeposit) {
+    const filenames = await readdir(privateDir);
+    for (const [name, actor, ownerArgs] of [['a', alice, a], ['b', bob, b]]) {
+      const state = await readOwnerState(args[name === 'a' ? 'owner-a-store' : 'owner-b-store'],
+        Buffer.from(secret), undefined, actor.account.address);
+      if (!same(state.context.pool, verified.context.pool) || state.context.chainId !== BigInt(sepolia.id) ||
+          state.sync?.status !== 'complete' || state.sync.availableWei !== 0n ||
+          state.receiptKeys.length === 0) safeError('SEPOLIA_RESUME_OWNER_STATE');
+      const matches = [];
+      for (const filename of filenames.filter(value => value.startsWith(`${name}-recipient-`) && value.endsWith('.json'))) {
+        const candidate = join(privateDir, filename);
+        const value = JSON.parse(await readFile(candidate, 'utf8'));
+        if (same(value.pool ?? '', verified.context.pool) && same(value.owner ?? '', actor.account.address))
+          matches.push(candidate);
+      }
+      if (matches.length !== 1) safeError('SEPOLIA_RESUME_RECIPIENT');
+      recipient[name] = matches[0];
+      if ((await ids(ownerArgs)).length !== 0) safeError('SEPOLIA_RESUME_OWNER_STATE');
+    }
+  } else {
+    for (const [name, actor, ownerArgs] of [['a', alice, a], ['b', bob, b]]) {
+      await cli(['init', ...ownerArgs, ...online]);
+      await cli(['key', 'add', ...ownerArgs]);
+      await cli(['sync', ...ownerArgs, ...online]);
+      recipient[name] = join(privateDir, `${name}-recipient-${randomUUID()}.json`);
+      await cli(['recipient', ...ownerArgs, '--signer', actor.keyPath, '--out', recipient[name]]);
+      if ((await ids(ownerArgs)).length !== 0) safeError('SEPOLIA_OWNER_NOT_FRESH');
+    }
   }
   async function sync(ownerArgs) {
     const result = await cli(['sync', ...ownerArgs, ...online]);
@@ -338,22 +436,45 @@ export async function runSepolia(args) {
     operations.set(name, { pending: true, id });
     await saveCheckpoint();
     const submitted = await cli(['submit', ...sender, '--public', publicFile]);
-    if (!hex32.test(submitted.txHash)) safeError('SEPOLIA_SUBMISSION_UNKNOWN');
-    operations.set(name, { pending: true, id, txHash: submitted.txHash });
+    let txHash = submitted.txHash;
+    if (!hex32.test(txHash) && submitted.kind === 'submission' && submitted.status === 'unknown' &&
+        hex32.test(submitted.attemptId)) {
+      const journal = JSON.parse(await readFile(join(args.journal, 'journal.json'), 'utf8'));
+      txHash = await rebroadcastUnknownSepolia({ client, journal, account: submitter.account,
+        pool: verified.context.pool, id, attemptId: submitted.attemptId, onSigned: async signedHash => {
+          operations.set(name, { pending: true, id, txHash: signedHash });
+          await saveCheckpoint();
+        } });
+    }
+    if (!hex32.test(txHash)) safeError('SEPOLIA_SUBMISSION_UNKNOWN');
+    operations.set(name, { pending: true, id, txHash });
     await saveCheckpoint();
-    const receipt = await finalizedReceipt(client, submitted.txHash);
+    const receipt = await finalizedReceipt(client, txHash);
     requireOperationEvent(receipt, verified.context.pool, id, kind, amountWei);
     const observed = await cli(['operation', ...sender, '--id', id]);
     if (observed.status !== 'executed') safeError('SEPOLIA_OPERATION_UNCONFIRMED');
-    const row = { operationId: id, txHash: submitted.txHash, blockNumber: String(receipt.blockNumber),
+    const row = { operationId: id, txHash, blockNumber: String(receipt.blockNumber),
       blockHash: receipt.blockHash, gasUsed: String(receipt.gasUsed), status: 'success' };
     operations.set(name, { row });
     await saveCheckpoint();
     return { id, publicFile, row };
   }
-  const deposit = await execute('S-01-sepolia-deposit', alice, a, 'deposit', '10', ['--recipient', recipient.a]);
+  let deposit;
+  if (resumeDeposit) {
+    const receipt = await finalizedReceipt(client, resumeDeposit.txHash);
+    requireOperationEvent(receipt, verified.context.pool, resumeDeposit.id, 'deposit', '10');
+    const observed = await cli(['operation', ...sender, '--id', resumeDeposit.id]);
+    if (observed.status !== 'executed') safeError('SEPOLIA_RESUME_OPERATION_UNCONFIRMED');
+    const row = { operationId: resumeDeposit.id, txHash: resumeDeposit.txHash,
+      blockNumber: String(receipt.blockNumber), blockHash: receipt.blockHash,
+      gasUsed: String(receipt.gasUsed), status: 'success' };
+    operations.set('S-01-sepolia-deposit', { row });
+    await saveCheckpoint();
+    deposit = { id: resumeDeposit.id, row };
+  } else {
+    deposit = await execute('S-01-sepolia-deposit', alice, a, 'deposit', '10', ['--recipient', recipient.a]);
+  }
   await sync(a);
-  const { readOwnerState } = await import('../packages/cli/dist/state.js');
   const originalState = await readOwnerState(args['owner-a-store'], Buffer.from(secret));
   if (originalState.sync?.status !== 'complete') safeError('SEPOLIA_OWNER_STATE_UNAVAILABLE');
   const recipientInfo = async path => {
