@@ -1,0 +1,391 @@
+[
+  {
+    "schemaVersion": 1,
+    "caseId": "S-01-sepolia-deposit",
+    "operationOutcome": "unconfirmed",
+    "testOutcome": "not-run",
+    "commit": "dc1229640b671b62ee1ba7ab909076ad61237347",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "scripts/core-sepolia.mjs",
+      "testName": "S-01-sepolia-deposit",
+      "operationId": "0x335625bb0dbc0ac551ab679e776eed78b4a493e48151f54814e9267d3d13c46a",
+      "status": "pending"
+    },
+    "execution": {
+      "durationMs": "52158",
+      "timeoutMs": "2700000",
+      "failureReason": "SEPOLIA_CLI_SUBMIT_FAILED"
+    },
+    "network": {
+      "chainId": "11155111",
+      "pool": "0x2181cb2d6b8976e0f71e33d7185213ee28aa0e01",
+      "deploymentTxHash": "0x6a06601bc9c0cc0777b6239ebb43be8fe7cc534a6e741eff488000b91e66f75a",
+      "manifestSha256": "0e8e8c7b559c3335b9aca313a9bf490f66f81db8b04ec297fe640573a53258b3",
+      "finalizedBlockNumber": "11991381",
+      "finalizedBlockHash": "0x6bd4b2cbeca64b89a8c3a60e35993f9c382c8c371d56965cd33c857b9c8e9a9c",
+      "declaredFork": "amsterdam",
+      "forkBasis": "finalized-block-blob-fields-cancun-or-later",
+      "rpcHost": "sepolia.gateway.tenderly.co",
+      "rpcClient": "viem@2.56.9",
+      "submitter": "0x928e8b25Aa642Cbc7f04011649FD84776dB173E9",
+      "submitterBalanceWei": "99975069752064121"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-01-sepolia-second-deposit",
+    "operationOutcome": "unavailable",
+    "testOutcome": "not-run",
+    "commit": "dc1229640b671b62ee1ba7ab909076ad61237347",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "scripts/core-sepolia.mjs",
+      "testName": "S-01-sepolia-second-deposit"
+    },
+    "execution": {
+      "durationMs": "52158",
+      "timeoutMs": "2700000",
+      "failureReason": "SEPOLIA_CLI_SUBMIT_FAILED"
+    },
+    "network": {
+      "chainId": "11155111",
+      "pool": "0x2181cb2d6b8976e0f71e33d7185213ee28aa0e01",
+      "deploymentTxHash": "0x6a06601bc9c0cc0777b6239ebb43be8fe7cc534a6e741eff488000b91e66f75a",
+      "manifestSha256": "0e8e8c7b559c3335b9aca313a9bf490f66f81db8b04ec297fe640573a53258b3",
+      "finalizedBlockNumber": "11991381",
+      "finalizedBlockHash": "0x6bd4b2cbeca64b89a8c3a60e35993f9c382c8c371d56965cd33c857b9c8e9a9c",
+      "declaredFork": "amsterdam",
+      "forkBasis": "finalized-block-blob-fields-cancun-or-later",
+      "rpcHost": "sepolia.gateway.tenderly.co",
+      "rpcClient": "viem@2.56.9",
+      "submitter": "0x928e8b25Aa642Cbc7f04011649FD84776dB173E9",
+      "submitterBalanceWei": "99975069752064121"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-03-sepolia-partial-transfer",
+    "operationOutcome": "unavailable",
+    "testOutcome": "not-run",
+    "commit": "dc1229640b671b62ee1ba7ab909076ad61237347",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "scripts/core-sepolia.mjs",
+      "testName": "S-03-sepolia-partial-transfer"
+    },
+    "execution": {
+      "durationMs": "52158",
+      "timeoutMs": "2700000",
+      "failureReason": "SEPOLIA_CLI_SUBMIT_FAILED"
+    },
+    "network": {
+      "chainId": "11155111",
+      "pool": "0x2181cb2d6b8976e0f71e33d7185213ee28aa0e01",
+      "deploymentTxHash": "0x6a06601bc9c0cc0777b6239ebb43be8fe7cc534a6e741eff488000b91e66f75a",
+      "manifestSha256": "0e8e8c7b559c3335b9aca313a9bf490f66f81db8b04ec297fe640573a53258b3",
+      "finalizedBlockNumber": "11991381",
+      "finalizedBlockHash": "0x6bd4b2cbeca64b89a8c3a60e35993f9c382c8c371d56965cd33c857b9c8e9a9c",
+      "declaredFork": "amsterdam",
+      "forkBasis": "finalized-block-blob-fields-cancun-or-later",
+      "rpcHost": "sepolia.gateway.tenderly.co",
+      "rpcClient": "viem@2.56.9",
+      "submitter": "0x928e8b25Aa642Cbc7f04011649FD84776dB173E9",
+      "submitterBalanceWei": "99975069752064121"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-04-sepolia-two-input-merge",
+    "operationOutcome": "unavailable",
+    "testOutcome": "not-run",
+    "commit": "dc1229640b671b62ee1ba7ab909076ad61237347",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "scripts/core-sepolia.mjs",
+      "testName": "S-04-sepolia-two-input-merge"
+    },
+    "execution": {
+      "durationMs": "52158",
+      "timeoutMs": "2700000",
+      "failureReason": "SEPOLIA_CLI_SUBMIT_FAILED"
+    },
+    "network": {
+      "chainId": "11155111",
+      "pool": "0x2181cb2d6b8976e0f71e33d7185213ee28aa0e01",
+      "deploymentTxHash": "0x6a06601bc9c0cc0777b6239ebb43be8fe7cc534a6e741eff488000b91e66f75a",
+      "manifestSha256": "0e8e8c7b559c3335b9aca313a9bf490f66f81db8b04ec297fe640573a53258b3",
+      "finalizedBlockNumber": "11991381",
+      "finalizedBlockHash": "0x6bd4b2cbeca64b89a8c3a60e35993f9c382c8c371d56965cd33c857b9c8e9a9c",
+      "declaredFork": "amsterdam",
+      "forkBasis": "finalized-block-blob-fields-cancun-or-later",
+      "rpcHost": "sepolia.gateway.tenderly.co",
+      "rpcClient": "viem@2.56.9",
+      "submitter": "0x928e8b25Aa642Cbc7f04011649FD84776dB173E9",
+      "submitterBalanceWei": "99975069752064121"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-03-sepolia-independent-spend",
+    "operationOutcome": "unavailable",
+    "testOutcome": "not-run",
+    "commit": "dc1229640b671b62ee1ba7ab909076ad61237347",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "scripts/core-sepolia.mjs",
+      "testName": "S-03-sepolia-independent-spend"
+    },
+    "execution": {
+      "durationMs": "52158",
+      "timeoutMs": "2700000",
+      "failureReason": "SEPOLIA_CLI_SUBMIT_FAILED"
+    },
+    "network": {
+      "chainId": "11155111",
+      "pool": "0x2181cb2d6b8976e0f71e33d7185213ee28aa0e01",
+      "deploymentTxHash": "0x6a06601bc9c0cc0777b6239ebb43be8fe7cc534a6e741eff488000b91e66f75a",
+      "manifestSha256": "0e8e8c7b559c3335b9aca313a9bf490f66f81db8b04ec297fe640573a53258b3",
+      "finalizedBlockNumber": "11991381",
+      "finalizedBlockHash": "0x6bd4b2cbeca64b89a8c3a60e35993f9c382c8c371d56965cd33c857b9c8e9a9c",
+      "declaredFork": "amsterdam",
+      "forkBasis": "finalized-block-blob-fields-cancun-or-later",
+      "rpcHost": "sepolia.gateway.tenderly.co",
+      "rpcClient": "viem@2.56.9",
+      "submitter": "0x928e8b25Aa642Cbc7f04011649FD84776dB173E9",
+      "submitterBalanceWei": "99975069752064121"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-06-sepolia-withdraw",
+    "operationOutcome": "unavailable",
+    "testOutcome": "not-run",
+    "commit": "dc1229640b671b62ee1ba7ab909076ad61237347",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "scripts/core-sepolia.mjs",
+      "testName": "S-06-sepolia-withdraw"
+    },
+    "execution": {
+      "durationMs": "52158",
+      "timeoutMs": "2700000",
+      "failureReason": "SEPOLIA_CLI_SUBMIT_FAILED"
+    },
+    "network": {
+      "chainId": "11155111",
+      "pool": "0x2181cb2d6b8976e0f71e33d7185213ee28aa0e01",
+      "deploymentTxHash": "0x6a06601bc9c0cc0777b6239ebb43be8fe7cc534a6e741eff488000b91e66f75a",
+      "manifestSha256": "0e8e8c7b559c3335b9aca313a9bf490f66f81db8b04ec297fe640573a53258b3",
+      "finalizedBlockNumber": "11991381",
+      "finalizedBlockHash": "0x6bd4b2cbeca64b89a8c3a60e35993f9c382c8c371d56965cd33c857b9c8e9a9c",
+      "declaredFork": "amsterdam",
+      "forkBasis": "finalized-block-blob-fields-cancun-or-later",
+      "rpcHost": "sepolia.gateway.tenderly.co",
+      "rpcClient": "viem@2.56.9",
+      "submitter": "0x928e8b25Aa642Cbc7f04011649FD84776dB173E9",
+      "submitterBalanceWei": "99975069752064121"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-09-sepolia-unauthorized",
+    "operationOutcome": "unavailable",
+    "testOutcome": "not-run",
+    "commit": "dc1229640b671b62ee1ba7ab909076ad61237347",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "scripts/core-sepolia.mjs",
+      "testName": "S-09-sepolia-unauthorized"
+    },
+    "execution": {
+      "durationMs": "52158",
+      "timeoutMs": "2700000",
+      "failureReason": "SEPOLIA_CLI_SUBMIT_FAILED"
+    },
+    "network": {
+      "chainId": "11155111",
+      "pool": "0x2181cb2d6b8976e0f71e33d7185213ee28aa0e01",
+      "deploymentTxHash": "0x6a06601bc9c0cc0777b6239ebb43be8fe7cc534a6e741eff488000b91e66f75a",
+      "manifestSha256": "0e8e8c7b559c3335b9aca313a9bf490f66f81db8b04ec297fe640573a53258b3",
+      "finalizedBlockNumber": "11991381",
+      "finalizedBlockHash": "0x6bd4b2cbeca64b89a8c3a60e35993f9c382c8c371d56965cd33c857b9c8e9a9c",
+      "declaredFork": "amsterdam",
+      "forkBasis": "finalized-block-blob-fields-cancun-or-later",
+      "rpcHost": "sepolia.gateway.tenderly.co",
+      "rpcClient": "viem@2.56.9",
+      "submitter": "0x928e8b25Aa642Cbc7f04011649FD84776dB173E9",
+      "submitterBalanceWei": "99975069752064121"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-04-sepolia-spent-input",
+    "operationOutcome": "unavailable",
+    "testOutcome": "not-run",
+    "commit": "dc1229640b671b62ee1ba7ab909076ad61237347",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "scripts/core-sepolia.mjs",
+      "testName": "S-04-sepolia-spent-input"
+    },
+    "execution": {
+      "durationMs": "52158",
+      "timeoutMs": "2700000",
+      "failureReason": "SEPOLIA_CLI_SUBMIT_FAILED"
+    },
+    "network": {
+      "chainId": "11155111",
+      "pool": "0x2181cb2d6b8976e0f71e33d7185213ee28aa0e01",
+      "deploymentTxHash": "0x6a06601bc9c0cc0777b6239ebb43be8fe7cc534a6e741eff488000b91e66f75a",
+      "manifestSha256": "0e8e8c7b559c3335b9aca313a9bf490f66f81db8b04ec297fe640573a53258b3",
+      "finalizedBlockNumber": "11991381",
+      "finalizedBlockHash": "0x6bd4b2cbeca64b89a8c3a60e35993f9c382c8c371d56965cd33c857b9c8e9a9c",
+      "declaredFork": "amsterdam",
+      "forkBasis": "finalized-block-blob-fields-cancun-or-later",
+      "rpcHost": "sepolia.gateway.tenderly.co",
+      "rpcClient": "viem@2.56.9",
+      "submitter": "0x928e8b25Aa642Cbc7f04011649FD84776dB173E9",
+      "submitterBalanceWei": "99975069752064121"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "caseId": "S-17-sepolia-deposit-reuse",
+    "operationOutcome": "unavailable",
+    "testOutcome": "not-run",
+    "commit": "dc1229640b671b62ee1ba7ab909076ad61237347",
+    "artifactHashes": {
+      "pool": "d367034f02608a6bb81375941bd7ed4be79ae374b5142679a3471a1d2517bb6a",
+      "verifier": "34bc50db1dd77ad7fae7dcf2697a7210641f89bc67bcecd913b27f3f785aa758"
+    },
+    "environment": {
+      "os": "darwin",
+      "arch": "arm64",
+      "node": "24.21.0",
+      "pnpm": "10.34.5",
+      "foundry": "1.8.3",
+      "memoryBytes": "34359738368"
+    },
+    "evidence": {
+      "kind": "test",
+      "source": "scripts/core-sepolia.mjs",
+      "testName": "S-17-sepolia-deposit-reuse"
+    },
+    "execution": {
+      "durationMs": "52158",
+      "timeoutMs": "2700000",
+      "failureReason": "SEPOLIA_CLI_SUBMIT_FAILED"
+    },
+    "network": {
+      "chainId": "11155111",
+      "pool": "0x2181cb2d6b8976e0f71e33d7185213ee28aa0e01",
+      "deploymentTxHash": "0x6a06601bc9c0cc0777b6239ebb43be8fe7cc534a6e741eff488000b91e66f75a",
+      "manifestSha256": "0e8e8c7b559c3335b9aca313a9bf490f66f81db8b04ec297fe640573a53258b3",
+      "finalizedBlockNumber": "11991381",
+      "finalizedBlockHash": "0x6bd4b2cbeca64b89a8c3a60e35993f9c382c8c371d56965cd33c857b9c8e9a9c",
+      "declaredFork": "amsterdam",
+      "forkBasis": "finalized-block-blob-fields-cancun-or-later",
+      "rpcHost": "sepolia.gateway.tenderly.co",
+      "rpcClient": "viem@2.56.9",
+      "submitter": "0x928e8b25Aa642Cbc7f04011649FD84776dB173E9",
+      "submitterBalanceWei": "99975069752064121"
+    }
+  }
+]

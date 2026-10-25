@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "chainId": 11155111,
+  "hardfork": "amsterdam",
+  "signer": "0x928e8b25Aa642Cbc7f04011649FD84776dB173E9",
+  "tool": {
+    "node": "v24.21.0",
+    "forge": "forge Version: 1.8.3"
+  },
+  "artifacts": {
+    "pool": "3fe229dd1351eb85e1d409457c37032651c03248520f2b7a8b1294b3e62077f8",
+    "verifier": "9223fe531791c01d640b2e3e5fe914809395c72184ced03837880683f28e190f"
+  },
+  "parametersHash": "0x0bfd116b8ef31332d31d3350ed24fa36d1e17865a7c1dc0758331da0755f8dae",
+  "verifier": {
+    "address": "0xbf23797a4314cd4eb4dfe83a830c2fdbdc86609e",
+    "transactionHash": "0x431051793035af58bdcca4d9aac7ab1bedaa607ad3080de8cfa56bd7873d79ca",
+    "blockNumber": "11991151",
+    "gasUsed": "43202304",
+    "blockGasLimit": "200000000",
+    "runtimeSha256": "9223fe531791c01d640b2e3e5fe914809395c72184ced03837880683f28e190f",
+    "initcodeSha256": "043341d7a3fb2b34d2bb7f6c9825d8efeeabb2cbb6236c31556d28d6859d3680",
+    "constructorArgsSha256": "3a228cf1c0f45fe7943aff187b06ef50bc5092b8114a83f3eb34e310e90c49b6"
+  },
+  "pool": {
+    "address": "0x02959b7eea574be4f6d9587730c0e3fa44997e2b",
+    "transactionHash": "0xfd9c94c28b7c2c9fe028dcff2b67e467bde52ef0a13546806842fb9c7e2ed2d0",
+    "blockNumber": "11991152",
+    "gasUsed": "15960592",
+    "blockGasLimit": "200000000",
+    "runtimeSha256": "46231fb822cb3798d4dbdd2c9248e1744523c819d8df23e20222ef169c3b047d",
+    "initcodeSha256": "3faa121606cb953c0a1feb0becc9e7d702a7885e8bfcdc4489470347c71d4b0d",
+    "constructorArgsSha256": "f36bb580374dc0fabef438ef7f2d97cb473832d779436a78de0c5f21d8bd682d"
+  }
+}

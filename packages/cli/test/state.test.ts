@@ -31,6 +31,18 @@ async function fixture() {
 afterEach(async () => { for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true }); });
 
 describe("owner state transactions", () => {
+  it("persists an inconsistent decrypt failure without creating an available balance", async () => {
+    const dir = await fixture();
+    const point = { number: 2n, hash, mode: "local-simulated" as const };
+    const failure = { outputId: hash, status: "inconsistent" as const, reason: "DECRYPT" as const };
+    await updateOwnerState(dir, passphrase, current => ({ ...current,
+      sync: { status: "complete", checkpoint: point, utxos: [], receiptFailures: [failure], availableWei: 0n },
+    }));
+    expect((await readOwnerState(dir, passphrase)).sync).toEqual({
+      status: "complete", checkpoint: point, utxos: [], receiptFailures: [failure], availableWei: 0n,
+    });
+  });
+
   it("preserves a key and fixed operation when a stale caller later stores sync", async () => {
     const dir = await fixture();
     const stale = await readOwnerState(dir, passphrase);

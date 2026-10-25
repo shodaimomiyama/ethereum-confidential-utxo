@@ -17,3 +17,9 @@ formal/environment/out/
 
 # Local planning artifacts are never committed.
 docs/superpowers/
+
+# Local Sepolia credentials and mutable wallet state.
+.env
+.env.*
+!.env.example
+.sepolia-private/
