@@ -263,7 +263,7 @@ docs/                           本体の要求・要件・仕様・二つの設
 | --- | --- | --- |
 | Solidity | `0.8.37`、optimizer有効、200 runs、`viaIR=false`、`evmVersion=cancun` | 既知のcompiler不具合修正を含む版を使う。初回はIR pipelineを加えず移植差分を抑える。[公式リリース](https://www.soliditylang.org/blog/2026/09/10/solidity-0.8.37-release-announcement/) |
 | Foundry | Forge・Cast・Anvilとも `1.8.3` | stable版を共通固定する。[公式リリース](https://github.com/foundry-rs/foundry/releases/tag/v1.8.3) |
-| Node.js | `24.21.0` LTS | Current系列を避けLTSを基準とする。[公式リリース](https://github.com/nodejs/node/releases/tag/v24.21.0) |
+| Node.js | `24.22.1` LTS | Current系列を避けLTSを基準とする。[公式リリース](https://nodejs.org/en/blog/release/v24.22.1/) |
 | TypeScript | `6.0.3` | 新しいcompiler系列への移行を本体設計と同時に行わない。[公開package](https://registry.npmjs.org/typescript/6.0.3) |
 | pnpm | `10.34.5` | workspaceとlockfileの基準。Nodeの対応宣言を確認した版。[公開package](https://registry.npmjs.org/pnpm/10.34.5) |
 | Vitest・テスト用Vite | `4.1.11`・`7.3.6` | Node 24と相互の対応宣言を確認。Viteはテスト依存であり本体UIの採用を意味しない。[Vitest](https://registry.npmjs.org/vitest/4.1.11)、[Vite](https://registry.npmjs.org/vite/7.3.6) |

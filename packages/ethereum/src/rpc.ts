@@ -37,7 +37,7 @@ export function createEthereumRpc(input: { url: string; mode: Checkpoint["mode"]
   if (input.mode !== "finalized" && input.mode !== "local-simulated") throw new EthereumFailure("INVALID_CONFIG", "rpc.mode");
   if (input.mode === "finalized" && url.protocol !== "https:") throw new EthereumFailure("INVALID_CONFIG", "rpc.url");
   if (input.mode === "local-simulated" &&
-      !(url.protocol === "http:" && ["127.0.0.1", "localhost", "[::1]"].includes(url.hostname))) {
+      !(["http:", "https:"].includes(url.protocol) && ["127.0.0.1", "localhost", "[::1]"].includes(url.hostname))) {
     throw new EthereumFailure("INVALID_CONFIG", "rpc.localUrl");
   }
   return { client: createPublicClient({ transport: http(input.url, { timeout: policy.requestTimeoutMs, retryCount: 0 }) }),

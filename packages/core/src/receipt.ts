@@ -1,4 +1,4 @@
-import { decryptReceipt } from "@confidential-utxo/crypto";
+import { commit, decryptReceipt } from "@confidential-utxo/crypto";
 import { hexToBytes } from "viem";
 import type { Address, Hex } from "viem";
 import { operationId, outputId, receiptInfo, validateOperationShape } from "./encoding.js";
@@ -89,19 +89,38 @@ export async function inspectReceipt(observed: ObservedOperation, outputIndex: n
       if (!consuming.value.executed || !equal(operationId(context, consuming.value.operation), consumedBy) || !equal(consuming.value.operation.owner, expectedOwner) || !consuming.value.operation.inputIds.some(input => equal(input, receivedId))) return fail("inconsistent", "CONSUMPTION");
     } catch { return fail("inconsistent", "CONSUMPTION"); }
   }
+  const received = (opening: OwnedUtxo["opening"]): ReceivedUtxo => {
+    const status = consumedBy ? "spent" : "available";
+    return { status, operationId: id, creationCheckpoint: { number: success.blockNumber, hash: success.blockHash, mode: point.mode },
+      utxo: { id: receivedId, owner: output.owner, opening, commitment: output.commitment, checkpoint: point,
+        status, chainId: context.chainId, pool: context.pool } };
+  };
+  if (keyPort.openReceipt) {
+    try {
+      const opened = await keyPort.openReceipt(expectedOwner, {
+        info: hexToBytes(receiptInfo(context, request, outputIndex)), packet: hexToBytes(output.packet),
+        commitment: output.commitment,
+      });
+      if (opened.status === "opened") {
+        const actual = commit(opened.opening);
+        if (actual.x !== output.commitment.x || actual.y !== output.commitment.y) return fail("inconsistent", "DECRYPT");
+        return received(opened.opening);
+      }
+      return opened.status === "invalid" ? fail("inconsistent", "DECRYPT") : fail("unknown", "KEY_UNAVAILABLE");
+    } catch { return fail("unknown", "KEY_UNAVAILABLE"); }
+  }
   let keys: Uint8Array[];
   try {
-    const received = keyPort.getKeys ? await keyPort.getKeys(expectedOwner) : [await keyPort.getKey(expectedOwner)];
-    if (!Array.isArray(received) || received.length === 0 || received.some(key => !(key instanceof Uint8Array) || key.length !== 32)) return fail("unknown", "KEY_UNAVAILABLE");
-    keys = received.map(key => new Uint8Array(key));
+    const available = keyPort.getKeys ? await keyPort.getKeys(expectedOwner) : keyPort.getKey ? [await keyPort.getKey(expectedOwner)] : [];
+    if (!Array.isArray(available) || available.length === 0 || available.some(key => !(key instanceof Uint8Array) || key.length !== 32)) return fail("unknown", "KEY_UNAVAILABLE");
+    keys = available.map(key => new Uint8Array(key));
   }
   catch { return fail("unknown", "KEY_UNAVAILABLE"); }
   try {
     for (const key of keys) {
       try {
         const opening = await decryptReceipt({ recipientPrivateKey: key, info: hexToBytes(receiptInfo(context, request, outputIndex)), packet: hexToBytes(output.packet), commitment: output.commitment });
-        const status = consumedBy ? "spent" : "available";
-        return { status, operationId: id, creationCheckpoint: { number: success.blockNumber, hash: success.blockHash, mode: point.mode }, utxo: { id: receivedId, owner: output.owner, opening, commitment: output.commitment, checkpoint: point, status, chainId: context.chainId, pool: context.pool } };
+        return received(opening);
       } catch { /* Try the next retained key. */ }
     }
     return fail("inconsistent", "DECRYPT");

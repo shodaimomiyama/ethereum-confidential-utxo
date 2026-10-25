@@ -43,6 +43,29 @@ it("tries retained receipt keys and accepts one authenticated opening", async ()
   expect(await inspectReceipt(f.observed, 0, f.owner, keys, f.state, checkpoint)).toEqual({ status: "unknown", reason: "KEY_UNAVAILABLE" });
 });
 
+it("delegates receipt opening to a scoped worker without requesting a private key", async () => {
+  const f = fixture();
+  const vector = vectors[1]!;
+  let calls = 0;
+  const port = { async openReceipt(owner: Address, input: { info: Uint8Array; packet: Uint8Array }) {
+    calls++;
+    expect(owner).toBe(f.owner);
+    expect(input.info.length).toBeGreaterThan(0);
+    expect(input.packet.length).toBeGreaterThan(0);
+    return { status: 'opened' as const, opening: { amount: BigInt(vector.expected.receipts[0]!.value),
+      blinding: BigInt(vector.expected.receipts[0]!.blinding) } };
+  } };
+  const received = await inspectReceipt(f.observed, 0, f.owner, port, f.state, checkpoint);
+  expect(received.status).toBe('available');
+  expect(calls).toBe(1);
+});
+
+it("rejects a worker opening that does not match the output commitment", async () => {
+  const f = fixture();
+  const port = { async openReceipt() { return { status: "opened" as const, opening: { amount: 1n, blinding: 1n } }; } };
+  expect(await inspectReceipt(f.observed, 0, f.owner, port, f.state, checkpoint)).toEqual({ status: "inconsistent", reason: "DECRYPT" });
+});
+
 it("matches reordered RPC output arrays by outputIndex", async () => {
   const f = fixture();
   f.observed.outputLogs.reverse();

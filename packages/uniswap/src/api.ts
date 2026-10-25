@@ -115,6 +115,18 @@ export interface ApiRequestBodyMap {
   };
 }
 
+// Legacy reservation responses remain supported for the #55 reservation transport.
+// A service response carries the complete, independent lifecycle state.
+export type OperationResponse =
+  | (StoredOperation & { readonly scope: Scope; readonly reservationState?: SavedReservation['reservationState'] })
+  | (SavedOperation & {
+      readonly scope: Scope;
+      readonly reservationState?: SavedReservation['reservationState'];
+      readonly status?: never;
+      readonly stateVersion?: never;
+      readonly checkpoint?: never;
+    });
+
 export interface ApiSuccessResponseMap {
   readonly 'POST /v1/auth/challenge': {
     readonly challengeId: Bytes32;
@@ -129,20 +141,13 @@ export interface ApiSuccessResponseMap {
     readonly records: readonly OperationResponse[];
     readonly nextCursor?: Bytes32;
   };
-  readonly 'GET /v1/operations/{id}': SavedReservation & { readonly scope: Scope };
-  readonly 'POST /v1/operations/{id}/release': SavedReservation & { readonly scope: Scope };
+  readonly 'GET /v1/operations/{id}': OperationResponse;
+  readonly 'POST /v1/operations/{id}/release': OperationResponse & { readonly reservationState: SavedReservation['reservationState'] };
   readonly 'POST /v1/rewards': { readonly reward: RewardRecord };
   readonly 'GET /v1/rewards': { readonly rewards: readonly RewardRecord[] };
   readonly 'GET /v1/rewards/{id}': { readonly reward: RewardRecord };
   readonly 'POST /v1/rewards/{id}/received': { readonly reward: RewardRecord };
 }
-
-type OperationResponse = SavedOperation & { readonly scope: Scope;
-  readonly reservationState?: SavedReservation['reservationState'];
-  readonly status?: StoredOperation['status'];
-  readonly stateVersion?: number;
-  readonly checkpoint?: StoredOperation['checkpoint'];
-};
 
 export interface ParsedApiRequest {
   readonly route: ApiRoute;
@@ -274,6 +279,12 @@ export function parseRewardRequest(value: unknown): RewardRequest {
   };
 }
 
+function checkOperationRequestSize(body: unknown): void {
+  if (new TextEncoder().encode(JSON.stringify(body)).length > 1_048_576) {
+    throw new SchemaError('INVALID_FIELD', 'record.encryptedBundle');
+  }
+}
+
 export function parseApiRequest(
   method: string,
   path: string,
@@ -297,6 +308,7 @@ export function parseApiRequest(
   }
   const operationMatch = /^\/v1\/operations\/(0x[0-9a-fA-F]{64})$/.exec(pathname);
   if (method === 'PUT' && operationMatch) {
+    checkOperationRequestSize(body);
     const object = parseJsonObject(body);
     const scope = parseScope(object.scope);
     const id = parseBytes32(operationMatch[1], 'id');
@@ -319,6 +331,7 @@ export function parseApiRequest(
   }
   const releaseMatch = /^\/v1\/operations\/(0x[0-9a-fA-F]{64})\/release$/.exec(pathname);
   if (method === 'POST' && releaseMatch) {
+    checkOperationRequestSize(body);
     const object = parseJsonObject(body);
     for (const forbidden of ['paymentSucceeded', 'inputUnspent', 'inputConsumed', 'finalized', 'blockTime']) {
       if (object[forbidden] !== undefined) throw new SchemaError('INVALID_FIELD', forbidden);
@@ -454,7 +467,7 @@ function parseOperationResponse(value: unknown, requireReservationState = false)
   const scope = parseScope(object.scope);
   const status = object.status === undefined ? undefined : object.status as OperationStatus;
   if (status !== undefined && !OPERATION_STATUSES.includes(status)) throw new SchemaError('INVALID_FIELD', 'operation.status');
-  if (status === undefined && (object.stateVersion !== undefined || object.checkpoint !== undefined)) {
+  if (status === undefined && ('status' in object || 'stateVersion' in object || 'checkpoint' in object)) {
     throw new SchemaError('INVALID_FIELD', 'operation.status');
   }
   let checkpoint: StoredOperation['checkpoint'];
@@ -474,14 +487,15 @@ function parseOperationResponse(value: unknown, requireReservationState = false)
   if (requireReservationState && reservationState === undefined) {
     throw new SchemaError('INVALID_FIELD', 'reservationState');
   }
-  return {
+  const base = {
     scope,
     record: parseOperationRecord(object.record, scope),
     revision: parseRevision(object.revision, 'operation.revision'),
-    ...(status === undefined ? {} : { status, stateVersion: parseRevision(object.stateVersion, 'operation.stateVersion') }),
-    ...(checkpoint === undefined ? {} : { checkpoint }),
     ...(reservationState === undefined ? {} : { reservationState }),
   };
+  if (status === undefined) return base;
+  return { ...base, status, stateVersion: parseRevision(object.stateVersion, 'operation.stateVersion'),
+    ...(checkpoint === undefined ? {} : { checkpoint }) };
 }
 
 function parseApiResponseValue(route: ApiRoute, status: number, body: unknown): unknown {
@@ -508,7 +522,10 @@ function parseApiResponseValue(route: ApiRoute, status: number, body: unknown): 
   if (route === 'PUT /v1/operations/{id}') {
     return parseOperationResponse(object);
   }
-  if (route === 'GET /v1/operations/{id}' || route === 'POST /v1/operations/{id}/release') {
+  if (route === 'GET /v1/operations/{id}') {
+    return parseOperationResponse(object);
+  }
+  if (route === 'POST /v1/operations/{id}/release') {
     return parseOperationResponse(object, true);
   }
   if (route === 'GET /v1/operations') {

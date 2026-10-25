@@ -1,5 +1,6 @@
 {
+  "compilerOptions": { "resolveJsonModule": true },
   "extends": "./tsconfig.base.json",
-  "include": ["packages/uniswap/src/**/*.ts", "packages/uniswap/test/**/*.ts", "apps/uniswap-web/src/**/*.ts", "apps/uniswap-web/test/**/*.ts"],
+  "include": ["packages/uniswap/src/**/*.ts", "packages/uniswap/test/**/*.ts", "apps/uniswap-web/src/**/*.ts", "apps/uniswap-web/test/**/*.ts", "apps/uniswap-web/vite.worker.config.ts", "apps/uniswap-web/vitest.browser.config.ts"],
   "exclude": ["experiments", "benchmarks"]
 }

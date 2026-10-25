@@ -1,0 +1,283 @@
+import { expect, it, vi } from 'vitest';
+import type { ReceivedUtxo } from '@confidential-utxo/core';
+import type { Address, Bytes32, RequestId, RewardRecord, RewardStatus, Scope, TxHash } from '@confidential-utxo/uniswap';
+import type { ViewState } from '../../src/contracts/index.js';
+import type { OperationContext } from '../../src/live/operations.js';
+import { HttpFailure } from '../../src/live/http.js';
+import { createRewardOperation, type RewardRequestMarker } from '../../src/live/reward-operation.js';
+import { RewardRequestUncertain, type ScopedRewardClient } from '../../src/live/reward-client.js';
+
+const scope = { deploymentId: 'local-v1', owner: `0x${'11'.repeat(20)}` } as Scope;
+const requestId = `0x${'aa'.repeat(32)}` as RequestId;
+const otherId = `0x${'bb'.repeat(32)}` as RequestId;
+const operationId = `0x${'cc'.repeat(32)}` as RewardRecord['operationId'];
+const record = (status: RewardStatus, id = requestId): RewardRecord => ({ scope, requestId: id, amountWei: 7n,
+  recipientInfo: { owner: scope.owner, publicKey: `0x${'dd'.repeat(32)}` as Bytes32, signature: `0x${'ee'.repeat(65)}` as `0x${string}` },
+  status, operationId, attemptIds: [], txHashes: [`0x${'ff'.repeat(32)}` as TxHash] });
+
+function state(): ViewState {
+  return { scope, currentScope: scope, connection: 'connected', preparation: { wallet: true, network: true, key: true, faucet: true, gas: true },
+    utxos: [], selectedInput: {}, operationCards: {}, operationActions: {}, publicEthWei: 0n,
+    availablePrivateWei: 0n, pendingPrivateWei: 0n, isStale: false, storageAvailability: 'healthy',
+    cards: { reward: { phase: 'ready', input: { amount: '0.000000000000000007' } }, pay: { phase: 'ready', input: {} },
+      deposit: { phase: 'ready', input: {} }, withdraw: { phase: 'ready', input: {} } },
+    operations: [], rewardRequests: [], allowedActions: ['start:reward', 'start:pay'], reasons: {} };
+}
+
+function fixture() {
+  let snapshot = state();
+  let epoch = 1;
+  const context = { scope, epoch: 1, check: () => { if (epoch !== 1) throw new Error('SCOPE_CHANGED'); } } as OperationContext;
+  const client = { request: vi.fn(async () => record('accepted')), recheck: vi.fn(async () => record('pending')),
+    list: vi.fn(async (): Promise<RewardRecord[]> => []), markReceived: vi.fn(async () => record('received')) } satisfies ScopedRewardClient;
+  const newRequestId = vi.fn(() => requestId);
+  let saved: RequestId | undefined;
+  const marker = { read: vi.fn(async (): ReturnType<RewardRequestMarker['read']> => saved
+      ? { kind: 'saved', requestId: saved } : { kind: 'absent' }),
+    reserve: vi.fn(async (_scope: Scope, id: RequestId): Promise<'saved' | 'occupied' | 'unknown'> => {
+      if (saved) return 'occupied'; saved = id; return 'saved'; }),
+    replace: vi.fn(async (_scope: Scope, expected: RequestId, next: RequestId | undefined): Promise<'saved' | 'mismatch' | 'unknown'> => {
+      if (saved?.toLowerCase() !== expected.toLowerCase()) return 'mismatch';
+      saved = next; return 'saved'; }) } satisfies RewardRequestMarker;
+  const makeAdapter = () => createRewardOperation({ snapshot: () => snapshot, client: () => client, marker, newRequestId });
+  const adapter = makeAdapter();
+  return { adapter, makeAdapter, client, marker, context, newRequestId, get snapshot() { return snapshot; },
+    publish: (next: ViewState) => { snapshot = next; }, advance: () => { epoch++; } };
+}
+
+it('projects a reload list onto the newly verified view, retaining terminal reward status', async () => {
+  const f = fixture();
+  f.client.list.mockResolvedValueOnce([record('received')]);
+  f.publish({ ...state(), isStale: true });
+  const ready = state();
+  const listed = await f.adapter.listFrom(scope, ready, f.context);
+  expect(listed.view.rewardRequests).toEqual([{ requestId, status: 'received', operationId }]);
+  expect(listed.view.isStale).toBe(false);
+});
+
+it('starts one fixed request, exposes only public references, and does not infer success from a hash', async () => {
+  const f = fixture();
+  const result = await f.adapter.start(scope, { amount: '0.000000000000000007' }, f.context);
+  expect(f.client.request).toHaveBeenCalledWith('7', requestId);
+  expect(f.marker.reserve).toHaveBeenCalledWith(scope, requestId);
+  expect(f.client.list).toHaveBeenCalledTimes(1);
+  expect(f.marker.reserve.mock.invocationCallOrder[0]).toBeLessThan(f.client.request.mock.invocationCallOrder[0]!);
+  expect(result.view.cards.reward.phase).toBe('pending');
+  expect(result.view.rewardRequests).toEqual([{ requestId, status: 'accepted', operationId }]);
+  expect(result.view.operations).toContainEqual(expect.objectContaining({ operationId,
+    chainOutcome: 'unknown', receiptState: 'none' }));
+  expect(result.view.operationCards[operationId!]).toBe('reward');
+  expect(result.view.operationActions[operationId!]).toEqual(['recheck']);
+  expect(result.view.allowedActions).toContain('recheck-reward');
+  expect(result.view.allowedActions).not.toContain('start:reward');
+  expect(JSON.stringify(result.view, (_key, value) => typeof value === 'bigint' ? value.toString() : value)).not.toContain('eeee');
+  expect(result.view.availablePrivateWei).toBe(0n);
+});
+
+it('keeps the request ID after an uncertain POST and rechecks without another POST or new ID', async () => {
+  const f = fixture();
+  f.client.request.mockRejectedValueOnce(new RewardRequestUncertain(requestId, new Error('lost ACK')));
+  const unknown = await f.adapter.start(scope, { amount: '0.000000000000000007' }, f.context);
+  expect(unknown.view.rewardRequests).toEqual([{ requestId, status: 'unknown' }]);
+  expect(unknown.view.cards.reward.phase).toBe('unknown');
+  f.publish(unknown.view);
+  const checked = await f.adapter.start(scope, { amount: '0.000000000000000009' }, f.context);
+  expect(f.client.recheck).toHaveBeenCalledWith(requestId);
+  expect(f.client.request).toHaveBeenCalledTimes(1);
+  expect(f.newRequestId).toHaveBeenCalledTimes(1);
+  expect(f.marker.replace).not.toHaveBeenCalled();
+  expect(checked.view.rewardRequests[0]?.status).toBe('pending');
+});
+
+it('clears a refused pre-POST signature after durable ACK so a corrected start can proceed', async () => {
+  const f = fixture();
+  f.client.request.mockRejectedValueOnce(new Error('user rejected signature')).mockResolvedValueOnce(record('accepted', otherId));
+  f.newRequestId.mockReturnValueOnce(requestId).mockReturnValueOnce(otherId);
+  await expect(f.adapter.start(scope, { amount: '1' }, f.context)).rejects.toThrow('user rejected signature');
+  expect(f.marker.replace).toHaveBeenCalledWith(scope, requestId, undefined);
+  f.publish(state());
+  const corrected = await f.makeAdapter().start(scope, { amount: '2' }, f.context);
+  expect(f.client.request).toHaveBeenNthCalledWith(2, '2000000000000000000', otherId);
+  expect(corrected.view.rewardRequests[0]?.requestId).toBe(otherId);
+});
+
+it('clears an explicit pre-admission API rejection but retains ambiguous API failures', async () => {
+  const rejected = fixture();
+  rejected.client.request.mockRejectedValueOnce(new HttpFailure('api', 'INVALID_REQUEST'));
+  await expect(rejected.adapter.start(scope, { amount: '1' }, rejected.context)).rejects.toMatchObject({ code: 'INVALID_REQUEST' });
+  expect(rejected.marker.replace).toHaveBeenCalledWith(scope, requestId, undefined);
+
+  const ambiguous = fixture();
+  ambiguous.client.request.mockRejectedValueOnce(new HttpFailure('api', 'REQUEST_CONFLICT'));
+  await expect(ambiguous.adapter.start(scope, { amount: '1' }, ambiguous.context)).rejects.toMatchObject({ code: 'REQUEST_CONFLICT' });
+  expect(ambiguous.marker.replace).not.toHaveBeenCalled();
+  ambiguous.publish(state());
+  await ambiguous.makeAdapter().start(scope, { amount: '2' }, ambiguous.context);
+  expect(ambiguous.client.recheck).toHaveBeenCalledWith(requestId);
+  expect(ambiguous.client.request).toHaveBeenCalledTimes(1);
+});
+
+it('fails closed when clearing a pre-POST failure lacks a durable ACK', async () => {
+  const f = fixture();
+  f.client.request.mockRejectedValueOnce(new Error('user rejected signature'));
+  f.marker.replace.mockResolvedValueOnce('unknown');
+  await expect(f.adapter.start(scope, { amount: '1' }, f.context)).rejects.toThrow('RESULT_UNKNOWN');
+  f.publish(state());
+  await f.makeAdapter().start(scope, { amount: '2' }, f.context);
+  expect(f.client.recheck).toHaveBeenCalledWith(requestId);
+  expect(f.client.request).toHaveBeenCalledTimes(1);
+});
+
+it.each([
+  new HttpFailure('api', 'SERVICE_UNAVAILABLE'), new HttpFailure('network'), new HttpFailure('abort'),
+  new RewardRequestUncertain(requestId, new Error('malformed POST response')),
+])('retains the marker for an uncertain request failure', async error => {
+  const f = fixture();
+  f.client.request.mockRejectedValueOnce(error);
+  if (error instanceof RewardRequestUncertain) {
+    expect((await f.adapter.start(scope, { amount: '1' }, f.context)).view.rewardRequests[0]?.status).toBe('unknown');
+  } else {
+    await expect(f.adapter.start(scope, { amount: '1' }, f.context)).rejects.toBe(error);
+  }
+  expect(f.marker.replace).not.toHaveBeenCalled();
+  f.publish(state());
+  await f.makeAdapter().start(scope, { amount: '2' }, f.context);
+  expect(f.client.recheck).toHaveBeenCalledWith(requestId);
+  expect(f.client.request).toHaveBeenCalledTimes(1);
+});
+
+it('recovers an active service request after reload before allocating an ID', async () => {
+  const f = fixture();
+  f.client.list.mockResolvedValueOnce([record('queued', otherId)]);
+  f.client.recheck.mockResolvedValueOnce(record('queued', otherId));
+  const result = await f.makeAdapter().start(scope, { amount: '9' }, f.context);
+  expect(f.client.recheck).toHaveBeenCalledWith(otherId);
+  expect(f.marker.reserve).toHaveBeenCalledWith(scope, otherId);
+  expect(result.view.rewardRequests).toEqual([{ requestId: otherId, status: 'queued', operationId }]);
+  expect(f.newRequestId).not.toHaveBeenCalled();
+  expect(f.client.request).not.toHaveBeenCalled();
+  f.publish(state());
+  f.client.recheck.mockResolvedValueOnce(record('pending', otherId));
+  await f.makeAdapter().start(scope, { amount: '9' }, f.context);
+  expect(f.client.recheck).toHaveBeenLastCalledWith(otherId);
+});
+
+it('recovers the durable ID in a new adapter instance even when the service list is empty', async () => {
+  const f = fixture();
+  f.client.request.mockRejectedValueOnce(new RewardRequestUncertain(requestId, new Error('lost ACK')));
+  await f.adapter.start(scope, { amount: '0.000000000000000007' }, f.context);
+  f.publish(state());
+  const result = await f.makeAdapter().start(scope, { amount: '8' }, f.context);
+  expect(f.client.recheck).toHaveBeenCalledWith(requestId);
+  expect(result.view.rewardRequests[0]?.requestId).toBe(requestId);
+  expect(f.newRequestId).toHaveBeenCalledTimes(1);
+  expect(f.client.request).toHaveBeenCalledTimes(1);
+});
+
+it('recovers the existing service request on PENDING_REQUEST without another POST', async () => {
+  const f = fixture();
+  f.client.request.mockRejectedValueOnce(new HttpFailure('api', 'PENDING_REQUEST'));
+  f.client.list.mockResolvedValueOnce([]).mockResolvedValueOnce([record('pending', otherId)]);
+  f.client.recheck.mockResolvedValueOnce(record('pending', otherId)).mockResolvedValueOnce(record('pending', otherId));
+  const result = await f.adapter.start(scope, { amount: '0.000000000000000007' }, f.context);
+  expect(f.client.list).toHaveBeenCalledTimes(2);
+  expect(f.client.recheck).toHaveBeenCalledWith(otherId);
+  expect(result.view.rewardRequests[0]?.requestId).toBe(otherId);
+  expect(f.client.request).toHaveBeenCalledTimes(1);
+  expect(f.marker.replace).toHaveBeenCalledWith(scope, requestId, otherId);
+  f.publish(state());
+  await f.makeAdapter().start(scope, { amount: '2' }, f.context);
+  expect(f.client.recheck).toHaveBeenLastCalledWith(otherId);
+  expect(f.client.request).toHaveBeenCalledTimes(1);
+});
+
+it('fails closed when durable marker reservation loses its ACK', async () => {
+  const f = fixture();
+  f.marker.reserve.mockResolvedValueOnce('unknown');
+  await expect(f.adapter.start(scope, { amount: '1' }, f.context)).rejects.toThrow('RESULT_UNKNOWN');
+  expect(f.client.request).not.toHaveBeenCalled();
+  f.marker.read.mockResolvedValueOnce({ kind: 'unknown' });
+  await expect(f.makeAdapter().start(scope, { amount: '1' }, f.context)).rejects.toThrow('RESULT_UNKNOWN');
+  expect(f.newRequestId).toHaveBeenCalledTimes(1);
+});
+
+it.each(['received', 'ended-without-distribution'] as const)(
+  'clears a %s durable ID only after authoritative GET and durable ACK, then starts a distinct request', async status => {
+  const f = fixture();
+  await f.adapter.start(scope, { amount: '0.000000000000000007' }, f.context);
+  f.publish(state());
+  f.client.recheck.mockResolvedValueOnce(record(status));
+  f.client.request.mockResolvedValueOnce(record('accepted', otherId));
+  f.newRequestId.mockReturnValueOnce(otherId);
+  const next = await f.makeAdapter().start(scope, { amount: '0.000000000000000007' }, f.context);
+  expect(f.marker.replace).toHaveBeenCalledWith(scope, requestId, undefined);
+  expect(f.client.request).toHaveBeenCalledWith('7', otherId);
+  expect(next.view.rewardRequests.map(item => item.requestId)).toEqual([requestId, otherId]);
+});
+
+it('keeps the old marker when terminal evidence or clear ACK is missing', async () => {
+  const f = fixture();
+  await f.adapter.start(scope, { amount: '0.000000000000000007' }, f.context);
+  f.publish(state());
+  f.client.recheck.mockRejectedValueOnce(new HttpFailure('api', 'NOT_FOUND'));
+  await expect(f.makeAdapter().start(scope, { amount: '1' }, f.context)).rejects.toThrow();
+  f.client.recheck.mockResolvedValueOnce(record('ended-without-distribution'));
+  f.marker.replace.mockResolvedValueOnce('unknown');
+  await expect(f.makeAdapter().start(scope, { amount: '1' }, f.context)).rejects.toThrow('RESULT_UNKNOWN');
+  expect(f.client.request).toHaveBeenCalledTimes(1);
+  expect(f.newRequestId).toHaveBeenCalledTimes(1);
+});
+
+it.each([['accepted', 'pending'], ['queued', 'pending'], ['processing', 'pending'], ['pending', 'pending'],
+  ['finalized', 'confirmed-receipt-pending'], ['received', 'complete'], ['unknown', 'unknown'],
+  ['ended-without-distribution', 'failed']] as const)('maps %s distinctly from receipt completion', async (status, expectedPhase) => {
+  const f = fixture();
+  f.publish({ ...f.snapshot, rewardRequests: [{ requestId, status: 'pending' }] });
+  f.client.recheck.mockResolvedValueOnce(record(status));
+  const result = await f.adapter.recheck(scope, requestId, f.context);
+  expect(result.view.rewardRequests[0]?.status).toBe(status);
+  expect(result.view.cards.reward.phase).toBe(expectedPhase);
+  expect(result.view.availablePrivateWei).toBe(0n);
+});
+
+it('lists scoped records for recovery and requires core inspected receipt to mark received', async () => {
+  const f = fixture();
+  f.client.list.mockResolvedValueOnce([record('finalized', otherId)]);
+  const listed = await f.adapter.list(scope, f.context);
+  expect(listed.view.rewardRequests).toEqual([{ requestId: otherId, status: 'finalized', operationId }]);
+  f.publish(listed.view);
+  const receipt = { status: 'available' } as ReceivedUtxo;
+  f.client.markReceived.mockResolvedValueOnce(record('received', otherId));
+  const received = await f.adapter.receive(scope, otherId, receipt, f.context);
+  expect(f.client.markReceived).toHaveBeenCalledWith(otherId, receipt);
+  expect(received.view.cards.reward.phase).toBe('complete');
+  expect(received.view.availablePrivateWei).toBe(0n);
+});
+
+it('does not treat an empty service list as proof that an uncertain request was never accepted', async () => {
+  const f = fixture();
+  f.publish({ ...f.snapshot, rewardRequests: [{ requestId, status: 'unknown' }] });
+  f.client.list.mockResolvedValueOnce([]);
+  const listed = await f.adapter.list(scope, f.context);
+  expect(listed.view.rewardRequests).toEqual([{ requestId, status: 'unknown' }]);
+  expect(listed.view.allowedActions).not.toContain('start:reward');
+  expect(listed.view.allowedActions).toContain('recheck-reward');
+});
+
+it('fails closed on unavailable service, stale start, wrong scope and epoch change', async () => {
+  const f = fixture();
+  f.client.list.mockRejectedValueOnce(new Error('SERVICE_UNAVAILABLE'));
+  await expect(f.adapter.list(scope, f.context)).rejects.toThrow('SERVICE_UNAVAILABLE');
+  f.publish({ ...f.snapshot, isStale: true });
+  await expect(f.adapter.start(scope, { amount: '1' }, f.context)).rejects.toThrow('SERVICE_UNAVAILABLE');
+  expect(f.client.request).not.toHaveBeenCalled();
+  await expect(f.adapter.list({ ...scope, owner: `0x${'22'.repeat(20)}` as Address }, f.context)).rejects.toThrow('SCOPE_CHANGED');
+  f.advance();
+  await expect(f.adapter.list(scope, f.context)).rejects.toThrow('SCOPE_CHANGED');
+});
+
+it('rejects a returned record in another scope and does not publish it', async () => {
+  const f = fixture();
+  f.client.list.mockResolvedValueOnce([{ ...record('received'), scope: { ...scope, owner: `0x${'22'.repeat(20)}` as Address } }]);
+  await expect(f.adapter.list(scope, f.context)).rejects.toThrow('SCOPE_CHANGED');
+});

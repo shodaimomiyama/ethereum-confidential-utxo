@@ -1,0 +1,251 @@
+import { expect, it, vi } from 'vitest';
+import type { VerifiedDeployment } from '@confidential-utxo/ethereum';
+import type { PaymentClient, PreparedPay, Scope } from '@confidential-utxo/uniswap';
+import type { ViewState } from '../../src/contracts/index.js';
+import { createOperationPort, type OperationPortDependencies } from '../../src/live/operation-port.js';
+import type { RecoveryResult } from '../../src/live/recovery.js';
+import type { OperationContext } from '../../src/live/operations.js';
+
+const scope = { deploymentId: 'local', owner: `0x${'11'.repeat(20)}` } as Scope;
+const id = `0x${'aa'.repeat(32)}`;
+const initialHash = `0x${'bb'.repeat(32)}`;
+const changedHash = `0x${'cc'.repeat(32)}`;
+const coreContext = { chainId: 31337n, pool: `0x${'22'.repeat(20)}`, verifier: `0x${'33'.repeat(20)}`,
+  parametersHash: `0x${'44'.repeat(32)}`, deploymentBlock: 0n, finalityMode: 'finalized' };
+const verified = { context: coreContext, manifest: { chainId: 31337, pool: { address: coreContext.pool } } } as unknown as VerifiedDeployment;
+const healthyRecovery: RecoveryResult = { records: [], finalized: { outputs: [] },
+  availability: 'healthy', allowedActions: ['new-authorization-eligible'] };
+function state(): ViewState {
+  return { scope, currentScope: scope, connection: 'connected', preparation: { wallet: true, network: true, key: true, faucet: true, gas: true },
+    utxos: [{ id: 'coin', amountWei: 10n, available: true }], selectedInput: {}, operationCards: {}, operationActions: {},
+    publicEthWei: 1n, availablePrivateWei: 10n, pendingPrivateWei: 0n, isStale: false, storageAvailability: 'healthy',
+    cards: { reward: { phase: 'ready', input: {} }, pay: { phase: 'ready', input: { amount: '1' } },
+      deposit: { phase: 'ready', input: {} }, withdraw: { phase: 'ready', input: {} } },
+    operations: [], rewardRequests: [], allowedActions: ['start:pay', 'confirm-terms', 'resync'], reasons: {} };
+}
+const prepared = (hash: string): PreparedPay => ({ record: { kind: 'pay', scope, operationId: id,
+  inputId: `0x${'dd'.repeat(32)}`, recordId: `0x${'ee'.repeat(32)}`, contentHash: hash, paymentId: `0x${'ff'.repeat(32)}` },
+  privateBytes: new Uint8Array([7]), poolAuthorization: {}, quote: { startedAtMs: 0, blockHash: initialHash,
+    blockNumber: 1n, inputWei: 1n, quoteOut: hash === initialHash ? 100n : 200n } }) as unknown as PreparedPay;
+function setup() {
+  let current = state();
+  let epoch = 1;
+  let now = 31_000;
+  const signed = vi.fn(async () => ({ scope, operationId: id, paymentId: `0x${'ff'.repeat(32)}`,
+    attemptIds: ['a'], txHashes: [], chainOutcome: 'unknown', receiptState: 'none' }));
+  const client = { preparePay: vi.fn(async () => prepared(initialHash)), authorizePay: signed } as unknown as PaymentClient;
+  const refreshPay = vi.fn(async () => prepared(changedHash));
+  const context = { scope, epoch: 1, check() { if (epoch !== 1) throw new Error('SCOPE_CHANGED'); } } as OperationContext;
+  const deps = { snapshot: () => current, resolveVerified: () => ({ deploymentId: scope.deploymentId, verified }),
+    payment: () => ({ client, refreshPay, terms: () => ({ minAmountOut: 90n, deadline: 600n }), now: () => now }),
+    reward: {}, deposit: {}, coreSync: () => ({ deploymentId: scope.deploymentId, coreContext, history: {}, keys: {} }),
+    recheck: vi.fn(), resumeOriginal: vi.fn(), retryAttempt: vi.fn(), receive: vi.fn() } as unknown as OperationPortDependencies;
+  const port = createOperationPort(deps);
+  return { port, context, deps, signed, refreshPay, publish: (view: ViewState) => { current = view; },
+    invalidate: () => { epoch++; }, setNow: (value: number) => { now = value; }, client };
+}
+
+it('evaluates an edited draft and accepts scoped public balance evidence', async () => {
+  const fixture = setup();
+  const evaluateDraft = vi.fn(async ({ view }: { view: ViewState }) => ({
+    cards: { ...view.cards, pay: { ...view.cards.pay, phase: 'ready' as const } },
+    allowedActions: ['start:pay', 'edit:pay'], reasons: {},
+    selectedInput: { pay: { id: 'coin', amountWei: 10n, changeWei: 8n } },
+    publicEthWei: 999n, gas: true,
+  }));
+  const port = createOperationPort({ ...fixture.deps, evaluateDraft });
+  const result = await port.transition(scope, { type: 'edit', card: 'pay', field: 'amount', value: '2' }, state(), fixture.context);
+  expect(evaluateDraft).toHaveBeenCalledOnce();
+  expect(evaluateDraft.mock.calls[0]![0].view.cards.pay.input.amount).toBe('2');
+  expect(result.view.cards.pay.phase).toBe('ready');
+  expect(result.view.allowedActions).toContain('start:pay');
+  expect(result.view.selectedInput.pay?.changeWei).toBe(8n);
+  expect(result.view.publicEthWei).toBe(999n);
+  expect(result.view.preparation.gas).toBe(true);
+});
+
+it('keeps edited starts disabled when no draft evaluator is installed', async () => {
+  const fixture = setup();
+  const result = await fixture.port.transition(scope, { type: 'edit', card: 'pay', field: 'amount', value: '2' }, state(), fixture.context);
+  expect(result.view.cards.pay.phase).toBe('invalid-input');
+  expect(result.view.allowedActions).not.toContain('start:pay');
+});
+
+it('drops an awaited draft decision after the captured epoch changes', async () => {
+  const fixture = setup();
+  let finish!: (decision: Pick<ViewState, 'cards' | 'allowedActions' | 'reasons' | 'selectedInput'>) => void;
+  const decision = new Promise<Pick<ViewState, 'cards' | 'allowedActions' | 'reasons' | 'selectedInput'>>(resolve => { finish = resolve; });
+  const port = createOperationPort({ ...fixture.deps, evaluateDraft: () => decision });
+  const work = port.transition(scope, { type: 'edit', card: 'pay', field: 'amount', value: '2' }, state(), fixture.context);
+  await Promise.resolve();
+  fixture.invalidate();
+  finish({ cards: state().cards, allowedActions: ['start:pay'], reasons: {}, selectedInput: {} });
+  await expect(work).rejects.toThrow('SCOPE_CHANGED');
+});
+
+it('accepts setup transitions only after the controller completed the scoped key and auth work', async () => {
+  const fixture = setup();
+  const keyReady = { ...fixture.context, recordKey: () => ({}) } as OperationContext;
+  const prepared = await fixture.port.transition(scope, { type: 'prepare-key' }, state(), keyReady);
+  expect(prepared.view.preparation.key).toBe(true);
+  expect(prepared.view.allowedActions).toContain('authenticate');
+  const authenticated = await fixture.port.transition(scope, { type: 'authenticate' }, prepared.view, keyReady);
+  expect(authenticated.view.allowedActions).toContain('resync');
+  await expect(fixture.port.transition(scope, { type: 'prepare-key' }, state(), fixture.context)).rejects.toThrow();
+});
+
+it('rejects a #55 operation reference for another operation and retains the original ID', async () => {
+  const fixture = setup();
+  fixture.setNow(10);
+  fixture.signed.mockResolvedValueOnce({ scope, operationId: `0x${'99'.repeat(32)}`, paymentId: `0x${'ff'.repeat(32)}`,
+    attemptIds: [], txHashes: [], chainOutcome: 'unknown', receiptState: 'none' });
+  const first = await fixture.port.preparePay(scope, { amount: '1' }, fixture.context);
+  await expect(fixture.port.authorize(first, fixture.context)).rejects.toThrow('SCOPE_CHANGED');
+  const failed = fixture.port.failure(scope, { type: 'start', card: 'pay' }, state(), new Error('SCOPE_CHANGED'));
+  expect(failed.view.operations[0]?.operationId).toBe(id);
+});
+
+it('restores scoped key readiness after complete core sync and uses only an injected fresh action decision', async () => {
+  const fixture = setup();
+  const blockHash = `0x${'66'.repeat(32)}` as `0x${string}`;
+  const checkpoint = { number: 4n, hash: blockHash, mode: 'finalized' as const };
+  const history = {
+    getFinalizedCheckpoint: async () => checkpoint,
+    getContext: async () => ({ complete: true, blockHash, value: coreContext }),
+    getOperations: async () => ({ complete: true, blockHash, value: [] }),
+    getCanonicalHeader: async () => ({ complete: true, blockHash, value: { number: 4n, hash: blockHash } }),
+  };
+  const recomputeReady = vi.fn(async ({ view }: { view: ViewState; recovered: RecoveryResult }) => ({
+    cards: view.cards, selectedInput: view.selectedInput, reasons: view.reasons,
+    allowedActions: ['resync', 'start:reward'],
+  }));
+  const deps = { ...fixture.deps, coreSync: () => ({ deploymentId: scope.deploymentId, coreContext, history, keys: {} }),
+    recomputeReady } as unknown as OperationPortDependencies;
+  const context = { ...fixture.context, recordKey: () => ({}) } as OperationContext;
+  const synced = await createOperationPort(deps).syncFinalized(scope, context, healthyRecovery);
+  expect(synced.view.preparation.key).toBe(true);
+  expect(recomputeReady).toHaveBeenCalledOnce();
+  expect(recomputeReady.mock.calls[0]![0].view.isStale).toBe(false);
+  expect(recomputeReady.mock.calls[0]![0].recovered).toEqual(healthyRecovery);
+  expect(synced.view.allowedActions).toContain('start:reward');
+  const withoutDecision = await createOperationPort({ ...deps, recomputeReady: undefined }).syncFinalized(scope, context, healthyRecovery);
+  expect(withoutDecision.view.allowedActions).not.toContain('start:reward');
+  expect(withoutDecision.view.preparation.key).toBe(true);
+});
+
+it('blocks spending decisions when server recovery is absent, unavailable or rolled back', async () => {
+  const blockHash = `0x${'66'.repeat(32)}` as `0x${string}`;
+  const checkpoint = { number: 4n, hash: blockHash, mode: 'finalized' as const };
+  const history = { getFinalizedCheckpoint: async () => checkpoint,
+    getContext: async () => ({ complete: true, blockHash, value: coreContext }),
+    getOperations: async () => ({ complete: true, blockHash, value: [] }) };
+  const fixture = setup();
+  const recomputeReady = vi.fn(async ({ view }: { view: ViewState }) => ({ cards: view.cards,
+    selectedInput: view.selectedInput, reasons: view.reasons, allowedActions: ['start:pay'] }));
+  const deps = { ...fixture.deps, coreSync: () => ({ deploymentId: scope.deploymentId,
+    coreContext, history, keys: {} }), recomputeReady } as unknown as OperationPortDependencies;
+  const context = { ...fixture.context, recordKey: () => ({}) } as OperationContext;
+  for (const recovery of [undefined,
+    { ...healthyRecovery, availability: 'unavailable' as const },
+    { ...healthyRecovery, availability: 'rollback' as const }]) {
+    const result = await createOperationPort(deps).syncFinalized(scope, context, recovery);
+    expect(result.view.isStale).toBe(true);
+    expect(result.view.allowedActions).not.toContain('start:pay');
+    expect(result.view.storageAvailability).toBe(recovery?.availability === 'rollback' ? 'rollback' : 'unavailable');
+  }
+  expect(recomputeReady).not.toHaveBeenCalled();
+});
+
+it('restores a saved payment ID as unknown after reload so the user can recheck it', async () => {
+  const blockHash = `0x${'66'.repeat(32)}` as `0x${string}`;
+  const checkpoint = { number: 4n, hash: blockHash, mode: 'finalized' as const };
+  const history = { getFinalizedCheckpoint: async () => checkpoint,
+    getContext: async () => ({ complete: true, blockHash, value: coreContext }),
+    getOperations: async () => ({ complete: true, blockHash, value: [] }) };
+  const fixture = setup();
+  const record = { kind: 'pay' as const, scope, operationId: id, paymentId: `0x${'ff'.repeat(32)}`,
+    recordId: `0x${'ee'.repeat(32)}`, inputId: `0x${'dd'.repeat(32)}`,
+    contentHash: initialHash, deadline: 1_000n, signatureStarted: true,
+    attemptIds: ['attempt-1'], encryptedBundle: { ciphertext: '', nonce: '', tag: '' } };
+  const recovered: RecoveryResult = { ...healthyRecovery, records: [{
+    saved: { scope, record: record as never, revision: 2, status: 'reserved', stateVersion: 1 },
+    plaintext: {} as never,
+  }] };
+  const context = { ...fixture.context, recordKey: () => ({}) } as OperationContext;
+  const synced = await createOperationPort({ ...fixture.deps,
+    coreSync: () => ({ deploymentId: scope.deploymentId, coreContext, history, keys: {} }),
+  } as unknown as OperationPortDependencies).syncFinalized(scope, context, recovered);
+  expect(synced.view.operations).toContainEqual(expect.objectContaining({ operationId: id,
+    paymentId: record.paymentId, chainOutcome: 'unknown', attemptIds: ['attempt-1'] }));
+  expect(synced.view.operationActions[id]).toEqual(['recheck']);
+  expect(synced.view.cards.pay.phase).toBe('unknown');
+});
+
+it('holds refreshed terms until an explicit same-epoch confirmation and keeps the secret out of ViewState', async () => {
+  const fixture = setup();
+  const first = await fixture.port.preparePay(scope, { amount: '1' }, fixture.context);
+  const completed = await fixture.port.completePreparation(first, undefined, fixture.context);
+  expect(completed.kind).toBe('decision');
+  if (completed.kind !== 'decision') return;
+  expect(completed.result.view.cards.pay).toMatchObject({ phase: 'confirm-terms', proposedQuote: { quoteOut: 200n } });
+  expect(fixture.signed).not.toHaveBeenCalled();
+  expect(JSON.stringify(completed.result.view, (_key, value) => typeof value === 'bigint' ? value.toString() : value)).not.toContain('privateBytes');
+  fixture.publish(completed.result.view);
+  const accepted = await fixture.port.transition(scope, { type: 'confirm-terms', card: 'pay' }, completed.result.view, fixture.context);
+  expect(fixture.signed).toHaveBeenCalledOnce();
+  expect(fixture.signed).toHaveBeenCalledWith(expect.objectContaining({ record: expect.objectContaining({ contentHash: changedHash }) }), changedHash);
+  expect(accepted.operation?.chainOutcome).toBe('unknown');
+  expect(accepted.view.availablePrivateWei).toBe(10n);
+  expect(accepted.view.utxos[0]?.available).toBe(false);
+  expect(accepted.view.allowedActions).not.toContain('start:pay');
+  expect(accepted.view.operations[0]?.operationId).toBe(id);
+});
+
+it('rejects a changed epoch or edited draft before confirmation', async () => {
+  const fixture = setup();
+  const first = await fixture.port.preparePay(scope, { amount: '1' }, fixture.context);
+  const completed = await fixture.port.completePreparation(first, undefined, fixture.context);
+  if (completed.kind !== 'decision') throw new Error('fixture');
+  fixture.publish(completed.result.view);
+  fixture.invalidate();
+  await expect(fixture.port.transition(scope, { type: 'confirm-terms', card: 'pay' }, completed.result.view, fixture.context)).rejects.toThrow('SCOPE_CHANGED');
+  expect(fixture.signed).not.toHaveBeenCalled();
+});
+
+it('drops pending confirmation after the pay input is edited', async () => {
+  const fixture = setup();
+  const first = await fixture.port.preparePay(scope, { amount: '1' }, fixture.context);
+  const completed = await fixture.port.completePreparation(first, undefined, fixture.context);
+  if (completed.kind !== 'decision') throw new Error('fixture');
+  fixture.publish(completed.result.view);
+  const edited = await fixture.port.transition(scope, { type: 'edit', card: 'pay', field: 'amount', value: '2' },
+    completed.result.view, fixture.context);
+  fixture.publish(edited.view);
+  await expect(fixture.port.transition(scope, { type: 'confirm-terms', card: 'pay' }, edited.view, fixture.context)).rejects.toThrow('NOT_ALLOWED');
+  expect(fixture.signed).not.toHaveBeenCalled();
+});
+
+it('retains the operation ID as unknown after an authorization failure', async () => {
+  const fixture = setup();
+  fixture.setNow(10);
+  fixture.signed.mockRejectedValueOnce(new Error('lost ACK'));
+  const first = await fixture.port.preparePay(scope, { amount: '1' }, fixture.context);
+  const completed = await fixture.port.completePreparation(first, undefined, fixture.context);
+  if (completed.kind !== 'prepared') throw new Error('fixture');
+  await expect(fixture.port.authorize(completed.prepared, fixture.context)).rejects.toThrow('lost ACK');
+  const failed = fixture.port.failure(scope, { type: 'start', card: 'pay' }, state(), new Error('lost ACK'));
+  expect(failed.view.operations).toMatchObject([{ operationId: id, chainOutcome: 'unknown' }]);
+  expect(failed.view.operationActions[id]).toContain('recheck');
+  expect(failed.view.allowedActions).not.toContain('start:pay');
+  expect(failed.view.utxos[0]?.available).toBe(false);
+});
+
+it('rejects a sync supplier whose context belongs to another deployment', async () => {
+  const fixture = setup();
+  const wrong = { ...coreContext, pool: `0x${'99'.repeat(20)}` };
+  const deps = { snapshot: state, resolveVerified: () => ({ deploymentId: scope.deploymentId, verified }),
+    payment: () => { throw new Error('unused'); }, reward: {}, deposit: {},
+    coreSync: () => ({ deploymentId: scope.deploymentId, coreContext: wrong, history: {}, keys: {} }),
+    recheck: vi.fn(), resumeOriginal: vi.fn(), retryAttempt: vi.fn(), receive: vi.fn() } as unknown as OperationPortDependencies;
+  await expect(createOperationPort(deps).syncFinalized(scope, fixture.context)).rejects.toThrow('SCOPE_CHANGED');
+});

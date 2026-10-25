@@ -17,8 +17,8 @@ KontrolのNixパッケージを先に試したが、[上流Kontrolの固定commi
 Git、Xcode Command Line Tools、Docker Desktop、Nodeの版管理ツール（例: nvm）、`foundryup` を用意する。リポジトリをcloneしてルートで実行する。
 
 ```sh
-nvm install 24.21.0
-nvm use 24.21.0
+nvm install 24.22.1
+nvm use 24.22.1
 corepack enable pnpm
 corepack prepare pnpm@10.34.5 --activate
 foundryup -i v1.8.3
@@ -47,7 +47,7 @@ Anvilの初期アカウントと鍵はローカルテスト専用。実鍵、RPC
 
 ## Issue #60: Sepolia公開RPCの読取検査
 
-Issue #60のローカル資産単体環境は、Node 24.21.0、pnpm 10.34.5、Foundry 1.8.3で追試する。`pnpm install --frozen-lockfile` 後、`pnpm artifact:uniswap`、`pnpm check:uniswap`、`pnpm build`、`pnpm test`、`pnpm check`、`node --test tests/environment/uniswap-*.test.mjs` を実行する。Uniswapのソースは `vendor/uniswap-v2/source-lock.json` のcommit/hash、生成ABIとbytecodeは `packages/ethereum/generated/uniswap-v2.json` に固定する。
+Issue #60のローカル資産単体環境は、Node 24.22.1、pnpm 10.34.5、Foundry 1.8.3で追試する。`pnpm install --frozen-lockfile` 後、`pnpm artifact:uniswap`、`pnpm check:uniswap`、`pnpm build`、`pnpm test`、`pnpm check`、`node --test tests/environment/uniswap-*.test.mjs` を実行する。Uniswapのソースは `vendor/uniswap-v2/source-lock.json` のcommit/hash、生成ABIとbytecodeは `packages/ethereum/generated/uniswap-v2.json` に固定する。
 
 別端末で `anvil --host 127.0.0.1 --port 8545 --chain-id 31337` を起動し、この一時チェーンの管理アカウントを `--holder` と `--lp-recipient` に指定する。以下の `LOCAL_HOLDER` はAnvil上の公開アドレスのみであり、秘密鍵をファイルやコマンドに渡さない。`LOCAL_MANIFEST` と `LOCAL_SNAPSHOT` は新しい一時ファイルのパスにする。
 
@@ -169,7 +169,7 @@ manifestには両コントラクトのアドレス、デプロイ取引とブロ
 
 ## Issue #28: 暗号ライブラリの検証入口
 
-`packages/crypto` は `@confidential-utxo/crypto` として、BN254コミットメント、v3範囲証明、Schnorr収支証明、HPKE受領packetを提供する。ルートの `pnpm build`、`pnpm test`、`pnpm check` はそれぞれライブラリのビルド、Vitest、型検査も実行する。個別確認は `pnpm --filter @confidential-utxo/crypto build`、`pnpm --filter @confidential-utxo/crypto test`、`pnpm --filter @confidential-utxo/crypto check` を使う。Node.js 24.21.0とlockfileの固定依存を使い、`pnpm install --frozen-lockfile` の後に実行する。
+`packages/crypto` は `@confidential-utxo/crypto` として、BN254コミットメント、v3範囲証明、Schnorr収支証明、HPKE受領packetを提供する。ルートの `pnpm build`、`pnpm test`、`pnpm check` はそれぞれライブラリのビルド、Vitest、型検査も実行する。個別確認は `pnpm --filter @confidential-utxo/crypto build`、`pnpm --filter @confidential-utxo/crypto test`、`pnpm --filter @confidential-utxo/crypto check` を使う。Node.js 24.22.1とlockfileの固定依存を使い、`pnpm install --frozen-lockfile` の後に実行する。
 
 公開入口は `commit`、`randomBlinding`、`generateRangeProof`、`computeBalancePoint`、`balanceWitness`、`generateBalanceProof`、`encryptReceipt`、`decryptReceipt`、定数 `M/P/Q`、対応する型、`CryptoFailure` に限る。内部の乱数源と固定seedは公開しない。生成順は、出力ごとに開示値 `(v,r)` とコミットメントを作り、受信者鍵とcoreが計算した32 byteの `info` で受領packetを暗号化し、操作ID確定後に出力番号を付けて範囲証明を生成し、入出力のコミットメントと公開入出金額から `X` を計算して収支証明を生成する。操作ID・出力番号・`info`・Poolアドレス・chain IDは後から差し替えず、再生成時は対応する証明を作り直す。`RangeProof` の `coords/scalars/ls/rs` は公開ABI語列、`BalanceProof` の `Rx/Ry/s` と `X` も公開値である。開示値、blinding、受領秘密鍵、収支witnessは秘密として扱い、検証器・ログ・例外causeへ渡さない。
 
@@ -189,7 +189,7 @@ manifestには両コントラクトのアドレス、デプロイ取引とブロ
 
 `inspectReceipt` は送信者の作成状態を受け取らず、公開履歴と `ReceiptKeyPort` で受領を確認する。`synchronize` は `HistoryPort` から採用した確定点の全履歴を再構築し、本人の利用可能残高を返す。履歴・状態が整合していてもpacketを復号・検証できない出力は、出力ID付きの `receiptFailures` に残し、`utxos` と利用可能残高から除外する。他の正常な資金の同期や提出準備は続けられる。履歴に欠落や不整合がある場合は `unconfirmed` とし、以前の状態は利用可能残高を持たない `stale` として保持する。履歴adapterは範囲全体の取得、ブロックhashへの固定、正準祖先の照合を保証する必要がある。`trackAttempt` では外側transactionの結果、論理操作の成功、受領を区別する。初回は第三引数に `[]`、次回からは前回の `OperationTracking` 全体を渡す。採用済みの `successEvidence` は別試行の失敗では消さず、再編成を検出したら `historyStatus: "reorg"`、採用履歴を確認できなければ `historyStatus: "uncertain"` を明示して成功判定を撤回する。
 
-Node.js 24.21.0 / pnpm 10.34.5で、ルートから次を実行する。coreのテストと型検査は公開パッケージを検証するため、実行前に自身をビルドする。
+Node.js 24.22.1 / pnpm 10.34.5で、ルートから次を実行する。coreのテストと型検査は公開パッケージを検証するため、実行前に自身をビルドする。
 
 ```sh
 pnpm install --frozen-lockfile
@@ -223,16 +223,17 @@ rg 'from .*packages/(ethereum|cli)|node:fs|tests/vectors/tools|experiments/' pac
 
 ## Issue #58: デモ報酬APIの局所検証
 
-Node.js 24.21.0、pnpm 10.34.5、Vitest 4.1.11、TypeScript 6.0.3と固定lockfileを使う。実装開始時の依存取得commitは `dfa88f767fceaf2ba4cc3e788da2c1dc862d89b1`。ルートで `pnpm install --frozen-lockfile` の後、`pnpm check:service`、`pnpm test:service`、`pnpm test:contracts`、`pnpm exec vitest run --config packages/ethereum/vitest.config.ts packages/ethereum/test/submission.test.ts` を実行する。2026-09-27のmacOSローカル検証では順に成功し、サービス23ファイル65件、Uniswap/サイト23ファイル130件、Ethereum提出7件が成功した。秘密鍵・RPC認証値・Worker Secretを試験結果へ保存しない。
+Node.js 24.22.1、pnpm 10.34.5、Vitest 4.1.11、TypeScript 6.0.3と固定lockfileを使う。実装開始時の依存取得commitは `dfa88f767fceaf2ba4cc3e788da2c1dc862d89b1`。ルートで `pnpm install --frozen-lockfile` の後、`pnpm check:service`、`pnpm test:service`、`pnpm test:contracts`、`pnpm exec vitest run --config packages/ethereum/vitest.config.ts packages/ethereum/test/submission.test.ts` を実行する。2026-09-27のmacOSローカル検証では順に成功し、サービス23ファイル65件、Uniswap/サイト23ファイル130件、Ethereum提出7件が成功した。秘密鍵・RPC認証値・Worker Secretを試験結果へ保存しない。
 
 サービス試験は環境単位SQLite Durable Objectを使い、本人の受付と再送、資金予約、同時要求、暗号化draft、署名済みrawの保存後送信、alarmの逐次処理、finalized履歴と再編成、本人の受領通知、未署名終了と署名済み取消、停止・再開の条件を検査する。`rewards-integration.test.ts` は実 `buildOperation`、受取情報の署名検証、操作認可、Pool提出データ符号化、raw取引署名を通し、同じDOの保存済みrawだけをRPC spyへ渡す。`rewards-consolidation.test.ts` は三入力の断片化例から本体の実暗号で自己送金を作り、整理用rawの保存順序と確定待ちを検査する。履歴・RPCはfixture注入であり、実Poolの実行成功、Cloudflare Free runtimeでの資源適合、公開テストネットでの確定を示さない。
 
 公開配置前に環境単位の `REWARD_SECRETS_JSON`（状態暗号化鍵・配布元署名鍵・受領鍵）、内部操作用 `REWARD_OPERATOR_TOKEN`、RPC、Pool配置情報、DB外の復旧ゲートと同世代バックアップを設定する。鍵の平文をSQLite、通常ログ、成果物へ保存しない。初回DB初期化は明示的に実行し、通常運用では初期化許可を外す。配布元の機密UTXO資金と公開gas残高は別に確認する。受領通知は資金・gas不足による配布停止中でもfinalized履歴を照合し、共通復旧ゲート停止中は保留する。
 
 引継ぎ: [#47](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/47) は実Cloudflare Freeでの暗号・SQL・alarm・CPU/メモリ・Secrets欠落と枠超過を測定する。[#48](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/48) は実Pool取引でACK喪失、raw再送、finalized前後の再編成、取消、バックアップ復元後の旧試行照合を確認する。[#49](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/49) は本人向け回答、公開履歴、運営者に見える要求額と能動照会を分けて漏えいを評価する。[#50](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/50) は実サイトの自由入力、本人再訪・受領・追加要求、待機・停止理由表示と一連の操作を検証する。
+
 ## Issue #31: CLIの操作・復旧
 
-Node 24.21.0、pnpm 10.34.5、Foundry 1.8.3を使い、リポジトリのルートで `pnpm install --frozen-lockfile && pnpm build` を実行する。操作入口は `node packages/cli/dist/bin.js help`。`--json` は公開状態を1個のJSON objectとして標準出力へ返し、非公開残高・UTXO額を含めない。非公開額は本人が解除した対話端末の通常表示だけに出る。解除は標準入力と標準エラーの双方がTTYである場合だけ許可し、リダイレクト入力や引数のパスフレーズは受け付けない。戻り値は0が完了・既知の成功、2が入力/設定、3が保存/ロック、4がRPC/結果不明、5が既知の失敗/競合である。
+Node 24.22.1、pnpm 10.34.5、Foundry 1.8.3を使い、リポジトリのルートで `pnpm install --frozen-lockfile && pnpm build` を実行する。操作入口は `node packages/cli/dist/bin.js help`。`--json` は公開状態を1個のJSON objectとして標準出力へ返し、非公開残高・UTXO額を含めない。非公開額は本人が解除した対話端末の通常表示だけに出る。解除は標準入力と標準エラーの双方がTTYである場合だけ許可し、リダイレクト入力や引数のパスフレーズは受け付けない。戻り値は0が完了・既知の成功、2が入力/設定、3が保存/ロック、4がRPC/結果不明、5が既知の失敗/競合である。
 
 所有者の署名ファイルと提出者の署名ファイルは別々に準備する。各ファイルの内容は対応する秘密鍵の `0x` + 64桁の16進数だけとし、末尾の改行は1個まで許す。親ディレクトリを0700、ファイルを0600に設定し、所有者アドレスと鍵から導くアドレスを照合する。鍵の値をコマンドライン、環境変数、shell履歴、Issue本文へ置かない。額は同じ権限の別ファイルに `{"amountWei":"10"}` のような正規JSONで保存し、`--amount-file` にその**パス**を渡す。ファイル名にも額を含めない。`--amount` は受け付けない。
 
@@ -291,7 +292,7 @@ Ubuntu 24.04 x86_64の結果と、隔離VMの電源を強制遮断またはブ�
 
 ## Webモックの静的公開
 
-紹介ページとモックデモは `apps/uniswap-web/wrangler.jsonc` を使い、Cloudflare Workers Static Assetsへ配置する。API、DO、Sepolia資産配置には依存しない。`VITE_DIM_MODE=mock` を明示し、実取引の完了とは扱わない。Node.js 24.21.0、pnpm 10.34.5、Wrangler 4.116.0を使う。互換性日付は固定Wranglerのローカルruntimeで確認した2026-07-30。
+紹介ページとモックデモは `apps/uniswap-web/wrangler.jsonc` を使い、Cloudflare Workers Static Assetsへ配置する。API、DO、Sepolia資産配置には依存しない。`VITE_DIM_MODE=mock` を明示し、実取引の完了とは扱わない。Node.js 24.22.1、pnpm 10.34.5、Wrangler 4.116.0を使う。互換性日付は固定Wranglerのローカルruntimeで確認した2026-07-30。
 
 リポジトリルートから実行する。
 
@@ -319,7 +320,7 @@ pnpm dlx wrangler@4.116.0 deploy --config apps/uniswap-web/wrangler.jsonc
 
 B・C・別提出者が順に操作する手順は[Uniswap接続CLIの操作ガイド](uniswap-cli.md)を参照する。この節はローカル実証の環境、検証コマンド、受入証拠を記録する。
 
-Node 24.21.0、pnpm 10.34.5、Foundry 1.8.3、`expect` を使う。ローカルの自動追試はAnvilへ別の本体PoolとデモPool、dUSD、WETH、Uniswap v2、Adapterを配置し、SQLite Durable Objectを起動する。B、C、配布元、提出者のCLI保存先と試験鍵を分ける。`expect` はテスト専用の疑似TTYでパスフレーズを入力し、通常CLIに非TTY解除経路を追加しない。実行前に次を使う。
+Node 24.22.1、pnpm 10.34.5、Foundry 1.8.3、`expect` を使う。ローカルの自動追試はAnvilへ別の本体PoolとデモPool、dUSD、WETH、Uniswap v2、Adapterを配置し、SQLite Durable Objectを起動する。B、C、配布元、提出者のCLI保存先と試験鍵を分ける。`expect` はテスト専用の疑似TTYでパスフレーズを入力し、通常CLIに非TTY解除経路を追加しない。実行前に次を使う。
 
 ```sh
 pnpm install --frozen-lockfile

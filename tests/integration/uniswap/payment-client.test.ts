@@ -8,7 +8,7 @@ import { createPublicClient, createTestClient, createWalletClient, decodeFunctio
 import { privateKeyToAccount } from 'viem/accounts';
 import { foundry } from 'viem/chains';
 import { expect, it } from 'vitest';
-import { authorizeOperation, buildOperation, inspectReceipt, preflightSubmission, prepareSubmission, synchronize } from '@confidential-utxo/core';
+import { authorizeOperation, buildOperation, inspectReceipt, preflightSubmission, prepareSubmission, recipientInfoTypedData, synchronize } from '@confidential-utxo/core';
 import { createHistoryPort, createOperationSigner, createRecipientInfoSigner, defaultRpcPolicy, poolAbi, submitPublicOperation, verifyEthereumDeployment } from '@confidential-utxo/ethereum';
 import { assertWithdrawalBinding, createPaymentClient, defaultTerms, encodePayCall, fetchPayQuote, paymentDigest, parseAddress, parseBytes32, selectPayInput } from '../../../packages/uniswap/src/index.js';
 import type { AttemptId, DeploymentId, FinalizedHistory, InputId, OperationId, PaymentDeployment, PaymentId, PaymentPorts, PaymentTerms, Scope, TxHash } from '../../../packages/uniswap/src/index.js';
@@ -92,14 +92,8 @@ async function runPayment(mode: 'success' | 'minimum-failure' | 'expired') {
         receivePublicKey: receiver.recipientInfo.receivePublicKey,
         receiptFormat: 1 as const, recipientInfoVersion: 1 as const };
       const recipientSigner = createRecipientInfoSigner(owner, owner.address);
-      const info = { ...infoBase, signature: await recipientSigner.signTypedData({
-        domain: { name: 'Ethereum Confidential UTXO', version: '1', chainId: context.chainId,
-          verifyingContract: context.pool }, primaryType: 'RecipientInfo',
-        types: { RecipientInfo: [{ name: 'owner', type: 'address' }, { name: 'receivePublicKey', type: 'bytes32' },
-          { name: 'receiptFormat', type: 'uint8' }, { name: 'recipientInfoVersion', type: 'uint8' }] },
-        message: { owner: owner.address, receivePublicKey: infoBase.receivePublicKey,
-          receiptFormat: 1, recipientInfoVersion: 1 },
-      }) };
+      const info = { ...infoBase, signature: await recipientSigner.signTypedData(
+        recipientInfoTypedData(context, infoBase, owner.address)) };
       const keys = { getKey: async () => hexToBytes(receiver.recipientPrivateKey) };
       const signer = createOperationSigner(owner, owner.address);
       const deposit = await buildOperation({ kind: 0, owner: owner.address, amount: 6_000_000_000_000_000n, recipient: info },
