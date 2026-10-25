@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { callAtBlockHash, finalizeFailedSepolia, parseSepoliaOptions, preflightSepolia,
+import { callAtBlockHash, finalizeFailedSepolia, parseSepoliaOptions, preflightSepolia, validateSepoliaStatePaths,
   runSepolia } from '../../../scripts/core-sepolia.mjs';
 
 const hash = `0x${'ab'.repeat(32)}`;
@@ -19,6 +19,17 @@ test('Sepolia options support sourced env without echoing RPC or a pnpm separato
     '--owner-a-key', 'a', '--owner-b-key', 'b', '--submitter-key', 's',
     '--owner-a-store', 'as', '--owner-b-store', 'bs', '--journal', 'j', '--out', 'o']).rpc,
   'https://rpc.example');
+});
+
+test('Sepolia state paths accept distinct paths and reject aliases before creating state', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'core-sepolia-paths-'));
+  try {
+    const args = { 'owner-a-store': join(dir, 'alice'), 'owner-b-store': join(dir, 'bob'),
+      journal: join(dir, 'journal'), out: join(dir, 'result.json') };
+    await validateSepoliaStatePaths(args);
+    await assert.rejects(validateSepoliaStatePaths({ ...args, out: args.journal }),
+      /SEPOLIA_DISTINCT_PATHS_REQUIRED/);
+  } finally { await rm(dir, { recursive: true, force: true }); }
 });
 function fakeClient({ chainId = 11155111, finalized = block, callError } = {}) {
   let sends = 0;

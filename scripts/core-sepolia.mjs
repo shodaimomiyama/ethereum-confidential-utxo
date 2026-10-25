@@ -104,6 +104,15 @@ function command(executable, args, input) {
   });
 }
 
+export async function validateSepoliaStatePaths(args) {
+  const paths = [args['owner-a-store'], args['owner-b-store'], args.journal, args.out].map(path => resolve(path));
+  if (new Set(paths).size !== paths.length) safeError('SEPOLIA_DISTINCT_PATHS_REQUIRED');
+  for (const path of [...paths.slice(0, 3), `${args['owner-a-store']}.inaccessible`]) {
+    try { await access(path); safeError('SEPOLIA_STATE_EXISTS'); }
+    catch (error) { if (error.message === 'SEPOLIA_STATE_EXISTS') throw error; if (error.code !== 'ENOENT') throw error; }
+  }
+}
+
 async function terminalSecret() {
   const tty = '/dev/tty';
   const fd = await import('node:fs/promises').then(fs => fs.open(tty, 'r+'));
@@ -213,12 +222,7 @@ export async function runSepolia(args) {
   }
   const [alice, bob, submitter] = actors;
   if (new Set(actors.map(item => item.account.address.toLowerCase())).size !== 3) safeError('SEPOLIA_DISTINCT_KEYS_REQUIRED');
-  const paths = [args['owner-a-store'], args['owner-b-store'], args.journal, args.out].map(resolve);
-  if (new Set(paths).size !== paths.length) safeError('SEPOLIA_DISTINCT_PATHS_REQUIRED');
-  for (const path of [...paths.slice(0, 3), `${args['owner-a-store']}.inaccessible`]) {
-    try { await access(path); safeError('SEPOLIA_STATE_EXISTS'); }
-    catch (error) { if (error.message === 'SEPOLIA_STATE_EXISTS') throw error; if (error.code !== 'ENOENT') throw error; }
-  }
+  await validateSepoliaStatePaths(args);
   const submitterBalance = await client.getBalance({ address: submitter.account.address });
   if (submitterBalance === 0n)
     safeError('SEPOLIA_SUBMITTER_UNFUNDED');
