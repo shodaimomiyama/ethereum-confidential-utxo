@@ -11,7 +11,8 @@ import { sepolia } from 'viem/chains';
 import { authorizationTypedData, authorizeOperation, fixOperation, proveFixedOperation,
   toPublicSubmission } from '@confidential-utxo/core';
 import { createOperationSigner, encodePoolSubmission, poolAbi } from '@confidential-utxo/ethereum';
-import { callAtBlockHash, poolErrorSelector, preflightSepolia } from './core-sepolia.mjs';
+import { callAtBlockHash, poolErrorSelector, preflightSepolia,
+  requireOperationEvent } from './core-sepolia.mjs';
 import { validateCaseResults, writePublicEvidence } from './core-evidence.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -32,6 +33,7 @@ function rowById(rows, id) {
 }
 
 export async function recheckSepolia(args) {
+  const recheckStarted = Date.now();
   const required = ['rpc', 'manifest', 'result', 'alice-key', 'bob-key', 'alice-store',
     'passphrase-file', 'alice-recipient', 'bob-recipient'];
   if (required.some(name => !args[name])) fail('SEPOLIA_RECHECK_ARGUMENTS');
@@ -58,14 +60,40 @@ export async function recheckSepolia(args) {
   const { verified } = await preflightSepolia({ rpc: args.rpc, manifest, client });
   const checkpoint = await client.getBlock({ blockNumber: BigInt(network.finalizedBlockNumber) });
   if (!same(checkpoint.hash, network.finalizedBlockHash)) fail('SEPOLIA_RECHECK_CHECKPOINT_CHANGED');
+  if (manifest.hardfork !== 'amsterdam' || checkpoint.timestamp < 1791294816n)
+    fail('SEPOLIA_RECHECK_FORK_UNVERIFIED');
   const head = await client.getBlock({ blockTag: 'finalized' });
   if (head.number < checkpoint.number) fail('SEPOLIA_RECHECK_CHECKPOINT_UNFINALIZED');
+  const expectedTx = new Map([
+    ['S-01-sepolia-deposit', ['deposit', '10']],
+    ['S-01-sepolia-second-deposit', ['deposit', '2']],
+    ['S-03-sepolia-partial-transfer', ['transfer', '3']],
+    ['S-04-sepolia-two-input-merge', ['transfer', '9']],
+    ['S-03-sepolia-independent-spend', ['transfer', '1']],
+    ['S-06-sepolia-withdraw', ['withdraw', '2']],
+  ]);
+  if (new Set(successful.map(row => row.evidence.transactions[0].txHash.toLowerCase())).size !== 6)
+    fail('SEPOLIA_RECHECK_DUPLICATE_TRANSACTION');
   for (const row of successful) {
+    const [kind, amount] = expectedTx.get(row.caseId) ?? [];
+    if (!kind || row.evidence.transactions.length !== 1) fail('SEPOLIA_RECHECK_TRANSACTION_CASE');
     const tx = row.evidence.transactions[0];
-    const receipt = await client.getTransactionReceipt({ hash: tx.txHash });
+    const [receipt, chainTx] = await Promise.all([
+      client.getTransactionReceipt({ hash: tx.txHash }), client.getTransaction({ hash: tx.txHash }),
+    ]);
     if (receipt.status !== 'success' || !same(receipt.blockHash, tx.blockHash) ||
-        receipt.blockNumber !== BigInt(tx.blockNumber) || receipt.blockNumber > checkpoint.number)
+        receipt.blockNumber !== BigInt(tx.blockNumber) || receipt.blockNumber > checkpoint.number ||
+        receipt.gasUsed !== BigInt(tx.gasUsed) || !same(receipt.to, verified.context.pool) ||
+        !same(receipt.from, network.submitter) || !same(chainTx.to, verified.context.pool) ||
+        !same(chainTx.from, network.submitter) || !same(chainTx.blockHash, tx.blockHash) ||
+        chainTx.value !== (kind === 'deposit' ? BigInt(amount) : 0n))
       fail('SEPOLIA_RECHECK_RECEIPT_MISMATCH');
+    const decoded = decodeFunctionData({ abi: poolAbi, data: chainTx.input });
+    if (decoded.functionName !== kind ||
+        decoded.args[0].d !== (kind === 'deposit' ? BigInt(amount) : 0n) ||
+        decoded.args[0].w !== (kind === 'withdraw' ? BigInt(amount) : 0n))
+      fail('SEPOLIA_RECHECK_CALL_MISMATCH');
+    requireOperationEvent(receipt, verified.context.pool, tx.operationId, kind, amount);
   }
   const alice = privateKeyToAccount(await secretFile(args['alice-key']));
   const bob = privateKeyToAccount(await secretFile(args['bob-key']));
@@ -128,16 +156,25 @@ export async function recheckSepolia(args) {
       testName: id, errorSelector: observed.selector, blockNumber: String(checkpoint.number),
       blockHash: checkpoint.hash,
       calldataSha256: createHash('sha256').update(Buffer.from(data.slice(2), 'hex')).digest('hex'),
+      calldata: data,
       from: submitter, valueWei: String(value) });
   }
   const { stdout: commit } = await execFileAsync('git', ['rev-parse', 'HEAD'], { cwd: root });
   const recheckCommit = commit.trim();
+  const recheckedAt = new Date().toISOString();
+  const recheckDurationMs = String(Date.now() - recheckStarted);
+  const fork = { ...network,
+    forkBasis: 'sepolia-config-amsterdam-1791294816-and-finalized-block-timestamp',
+    forkActivationTimestamp: '1791294816', finalizedTimestamp: String(checkpoint.timestamp) };
   const completed = rows.map(row => evidence.has(row.caseId) ? {
-    ...row, operationOutcome: 'rejected', testOutcome: 'pass', commit: recheckCommit,
-    execution: { durationMs: row.execution.durationMs, timeoutMs: row.execution.timeoutMs },
+    ...row, operationOutcome: 'rejected', testOutcome: 'pass', commit: recheckCommit, network: fork,
+    execution: { durationMs: recheckDurationMs, timeoutMs: '0',
+      priorFailureReason: row.execution.failureReason,
+      priorTestOutcome: row.testOutcome, priorOperationOutcome: row.operationOutcome,
+      priorDurationMs: row.execution.durationMs, recheckedAt },
     evidence: evidence.get(row.caseId),
-  } : { ...row, execution: { durationMs: row.execution.durationMs,
-    timeoutMs: row.execution.timeoutMs } });
+  } : { ...row, network: fork, execution: { ...row.execution, priorFailureReason: row.execution.failureReason,
+    failureReason: undefined } });
   validateCaseResults(expected, completed);
   const temp = `${args.result}.${randomUUID()}`;
   await writePublicEvidence(temp, completed);

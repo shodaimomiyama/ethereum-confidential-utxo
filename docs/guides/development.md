@@ -152,7 +152,9 @@ pnpm test:core:sepolia
 
 各成功取引の`finalized`待ちは最大45分とする。2026-10-25にPublicNodeで最新と`finalized`の時刻差を約19分と観測したため、公開ネットワークでの全件実行には時間がかかる。
 
-6件の取引が成功し、最後の3件の固定ブロック拒否照会だけがRPC障害などで未実行になった場合は、失敗結果JSON、実行時の暗号化されたAlice保存領域、生成されたAlice/Bob受領情報ファイルを保持する。`OWNER_STORE_PASSPHRASE_FILE`、`ALICE_RECIPIENT_EXPORT`、`BOB_RECIPIENT_EXPORT`には当該実行のファイルを指定し、次のコマンドで同じ確定ブロックを再照会する。スクリプトは6件のreceiptとmanifest、確定ブロックhashを再照合し、3件すべてで期待するPoolエラーを得たときだけ公開結果を更新する。拒否ケースの`commit`には再照会コードのcommitを記録する。保存領域の`.inaccessible`接尾辞は、BobがAliceの保存領域を使わずに実行したことを確認するためランナーが付けたもの。
+実行forkの記録は[Sepoliaの公式ネットワーク設定](https://github.com/eth-clients/sepolia/blob/main/README.md)にあるAmsterdam有効化時刻 `1791294816` と、RPCから得た確定ブロックのtimestampを照合する。blob gas欄だけではAmsterdamを特定できないため、結果には有効化時刻・確定ブロック時刻・照合根拠を併記する。
+
+6件の取引が成功し、最後の3件の固定ブロック拒否照会だけがRPC障害などで未実行になった場合は、失敗結果JSON、実行時の暗号化されたAlice保存領域、生成されたAlice/Bob受領情報ファイルを保持する。`OWNER_STORE_PASSPHRASE_FILE`、`ALICE_RECIPIENT_EXPORT`、`BOB_RECIPIENT_EXPORT`には当該実行のファイルを指定し、次のコマンドで同じ確定ブロックを再照会する。スクリプトは6件のreceipt・操作成功イベント・manifest・確定ブロックhashを再照合し、3件すべてで期待するPoolエラーを得たときだけ公開結果を更新する。結果には最初の失敗理由と未実行状態、再照会時刻・所要時間、固定ブロックで使用した公開calldataを残し、拒否ケースの`commit`には再照会コードのcommitを記録する。保存領域の`.inaccessible`接尾辞は、BobがAliceの保存領域を使わずに実行したことを確認するためランナーが付けたもの。
 
 ```sh
 node scripts/core-sepolia-recheck.mjs \

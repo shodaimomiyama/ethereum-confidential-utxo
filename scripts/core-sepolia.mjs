@@ -18,6 +18,7 @@ const hex32 = /^0x[0-9a-f]{64}$/i;
 const hex4 = /^0x[0-9a-f]{8}$/i;
 const usage = 'core-sepolia --rpc HTTPS_URL --manifest FILE --owner-a-key FILE --owner-b-key FILE --submitter-key FILE --owner-a-store DIR --owner-b-store DIR --journal DIR --out FILE';
 const finalityTimeoutMs = 45 * 60_000;
+const sepoliaAmsterdamTimestamp = 1791294816n;
 const same = (a, b) => a.toLowerCase() === b.toLowerCase();
 function safeError(code) { throw new Error(code); }
 
@@ -36,6 +37,8 @@ export async function preflightSepolia({ rpc, manifest, client, verify = verifyE
   if (!point?.hash || point.number === undefined || point.number < BigInt(manifest.pool.blockNumber ?? 0))
     safeError('SEPOLIA_FINALITY_UNAVAILABLE');
   if (point.blobGasUsed === undefined || point.excessBlobGas === undefined)
+    safeError('SEPOLIA_FORK_UNVERIFIED');
+  if (manifest.hardfork === 'amsterdam' && point.timestamp < sepoliaAmsterdamTimestamp)
     safeError('SEPOLIA_FORK_UNVERIFIED');
   return { verified, point };
 }
@@ -260,7 +263,7 @@ export async function finalizedReceipt(client, txHash) {
   }
 }
 
-function requireOperationEvent(receipt, pool, id, kind, amountWei) {
+export function requireOperationEvent(receipt, pool, id, kind, amountWei) {
   const found = receipt.logs.some(log => {
     if (!same(log.address, pool)) return false;
     try {
@@ -320,8 +323,10 @@ export async function runSepolia(args) {
   const [alice, bob, submitter] = actors;
   if (new Set(actors.map(item => item.account.address.toLowerCase())).size !== 3) safeError('SEPOLIA_DISTINCT_KEYS_REQUIRED');
   await validateSepoliaStatePaths(args, { resume: resuming });
+  const resumeBytes = resuming ? await readFile(args.resumeFrom) : undefined;
+  const resumePrior = resumeBytes ? JSON.parse(resumeBytes.toString('utf8')) : undefined;
   const resumeDeposit = resuming ? await validateFirstDepositResume({
-    prior: JSON.parse(await readFile(args.resumeFrom, 'utf8')),
+    prior: resumePrior,
     journal: JSON.parse(await readFile(join(args.journal, 'journal.json'), 'utf8')),
     account: submitter.account, pool: verified.context.pool, txHash: args.resumeTxHash,
   }) : undefined;
@@ -342,10 +347,18 @@ export async function runSepolia(args) {
     deploymentTxHash: manifest.pool.transactionHash,
     manifestSha256: createHash('sha256').update(manifestBytes).digest('hex'),
     finalizedBlockNumber: String(point.number), finalizedBlockHash: point.hash,
-    declaredFork: manifest.hardfork, forkBasis: 'finalized-block-blob-fields-cancun-or-later',
+    declaredFork: manifest.hardfork,
+    forkBasis: 'sepolia-config-amsterdam-1791294816-and-finalized-block-timestamp',
+    forkActivationTimestamp: String(sepoliaAmsterdamTimestamp), finalizedTimestamp: String(point.timestamp),
     rpcHost: new URL(args.rpc).hostname, rpcClient: 'viem@2.56.9',
     submitter: submitter.account.address, submitterBalanceWei: String(submitterBalance) };
   const operations = new Map();
+  const resumeRow = resumePrior?.find(item => item.caseId === 'S-01-sepolia-deposit');
+  const resumeProvenance = resumeRow ? {
+    resumeFromCommit: resumeRow.commit,
+    resumeFromFailureReason: resumeRow.execution?.failureReason ?? 'SEPOLIA_PRIOR_RUN_INTERRUPTED',
+    resumeFromSha256: createHash('sha256').update(resumeBytes).digest('hex'),
+  } : undefined;
   if (resumeDeposit) operations.set('S-01-sepolia-deposit', { pending: true, ...resumeDeposit });
   function results(failureReason) {
     return expectedCases.map(item => {
@@ -357,6 +370,7 @@ export async function runSepolia(args) {
         testOutcome: pass ? 'pass' : 'not-run', commit: commit.stdout.trim(),
         artifactHashes: hashes, environment, network,
         execution: { durationMs: String(Date.now() - started), timeoutMs: String(finalityTimeoutMs),
+          ...(item.caseId === 'S-01-sepolia-deposit' && resumeProvenance ? resumeProvenance : {}),
           ...(failureReason ? { failureReason } : {}) },
         evidence: observed?.rejection ?? (observed?.row ? { kind: 'transaction',
           source: 'scripts/core-sepolia.mjs', testName: item.caseId, transactions: [observed.row] } :
@@ -537,7 +551,8 @@ export async function runSepolia(args) {
       bState.sync?.status !== 'complete' || bState.sync.availableWei !== 1n)
     safeError('SEPOLIA_PRIVATE_BALANCE');
   const checkpoint = await client.getBlock({ blockTag: 'finalized' });
-  network = { ...network, finalizedBlockNumber: String(checkpoint.number), finalizedBlockHash: checkpoint.hash };
+  network = { ...network, finalizedBlockNumber: String(checkpoint.number),
+    finalizedBlockHash: checkpoint.hash, finalizedTimestamp: String(checkpoint.timestamp) };
   if (same(competitor.operationId, transfer.id)) safeError('SEPOLIA_SPENT_ID_REUSED');
   const depositTx = await client.getTransaction({ hash: deposit.row.txHash });
   const probes = [
@@ -555,6 +570,7 @@ export async function runSepolia(args) {
       operations.set(name, { rejection: { kind: 'rejection', source: 'scripts/core-sepolia.mjs',
         testName: name, errorSelector: observed.selector, blockNumber: String(checkpoint.number),
         blockHash: checkpoint.hash, calldataSha256: createHash('sha256').update(Buffer.from(data.slice(2), 'hex')).digest('hex'),
+        calldata: data,
         from: submitter.account.address, valueWei: String(value) } });
     } catch {
       probeFailed = true;

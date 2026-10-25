@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { writeFile } from "node:fs/promises";
 
 /** @typedef {{ schemaVersion: 1, caseId: string, operationOutcome: "success" | "rejected" | "rolled-back" | "unconfirmed" | "unavailable", testOutcome: "pass" | "fail" | "not-run", commit: string, artifactHashes: Record<string, string>, environment: { os: string, arch: string, node: string, pnpm: string, foundry: string, memoryBytes?: string }, evidence: Record<string, unknown> }} CaseResult */
@@ -11,7 +12,7 @@ const testOutcomes = new Set(["pass", "fail", "not-run"]);
 const evidenceKinds = new Set(["test", "foundry", "transaction", "rejection"]);
 const evidenceKeys = new Set(["kind", "source", "testName", "transactions", "errorSelector", "blockNumber",
   "blockHash", "txHash", "operationId", "gasUsed", "status", "foundryGas", "eventName",
-  "calldataSha256", "from", "valueWei"]);
+  "calldataSha256", "calldata", "from", "valueWei"]);
 const unsafeText = /https?:\/\/|(?:passphrase|private.?key|recipientPrivateKey|opening|blinding|amountWei|rpcUrl|rawCalldata|secret)\s*[:=]/i;
 const knownKeys = [
   "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
@@ -60,16 +61,22 @@ function publicEvidence(value) {
       hex32.test(value.blockHash), "evidence.rejection");
   }
   if (value.calldataSha256 !== undefined) requireShape(/^[0-9a-f]{64}$/i.test(value.calldataSha256), "evidence.calldataSha256");
+  if (value.calldata !== undefined) {
+    requireShape(/^0x(?:[0-9a-f]{2})+$/i.test(value.calldata) && value.calldataSha256 ===
+      createHash('sha256').update(Buffer.from(value.calldata.slice(2), 'hex')).digest('hex'),
+    "evidence.calldata");
+  }
   if (value.from !== undefined) requireShape(/^0x[0-9a-f]{40}$/i.test(value.from), "evidence.from");
   if (value.valueWei !== undefined) requireShape(decimal.test(value.valueWei), "evidence.valueWei");
-  if (value.kind === "rejection") requireShape(value.errorSelector !== undefined, "evidence.rejection");
+  if (value.kind === "rejection") requireShape(value.errorSelector !== undefined &&
+    (!value.source.startsWith('scripts/core-sepolia') || value.calldata !== undefined), "evidence.rejection");
   if (value.kind === "transaction") requireShape(transactions?.length > 0, "evidence.transaction");
   if (value.kind === "foundry") requireShape(value.foundryGas !== undefined, "evidence.foundry");
   if (value.eventName !== undefined) requireShape(["OutputCreated", "OperationSucceeded", "InputConsumed"].includes(value.eventName), "evidence.eventName");
   if (value.status !== undefined) requireShape(["success", "reverted", "pending", "unknown"].includes(value.status), "evidence.status");
   const safe = { kind: value.kind, source: value.source, testName: value.testName };
   for (const field of ["errorSelector", "blockNumber", "blockHash", "txHash", "operationId", "gasUsed",
-    "status", "foundryGas", "eventName", "calldataSha256", "from", "valueWei"])
+    "status", "foundryGas", "eventName", "calldataSha256", "calldata", "from", "valueWei"])
     if (value[field] !== undefined) safe[field] = value[field];
   if (transactions) safe.transactions = transactions;
   return safe;
@@ -98,19 +105,47 @@ function publicResult(value, requirePass = false) {
   }
   let execution;
   if (value.execution !== undefined) {
-    exactKeys(value.execution, new Set(["durationMs", "timeoutMs", "failureReason"]),
+    exactKeys(value.execution, new Set(["durationMs", "timeoutMs", "failureReason",
+      "priorFailureReason", "priorTestOutcome", "priorOperationOutcome", "priorDurationMs",
+      "recheckedAt", "resumeFromCommit", "resumeFromFailureReason", "resumeFromSha256"]),
       ["durationMs", "timeoutMs"], "result.execution");
     requireShape(decimal.test(value.execution.durationMs) && decimal.test(value.execution.timeoutMs),
       "result.execution.duration");
     execution = { durationMs: value.execution.durationMs, timeoutMs: value.execution.timeoutMs };
     if (value.execution.failureReason !== undefined)
       execution.failureReason = cleanText(value.execution.failureReason, "result.execution.failureReason");
+    for (const field of ["priorFailureReason", "resumeFromFailureReason"])
+      if (value.execution[field] !== undefined) execution[field] = cleanText(value.execution[field], `result.execution.${field}`);
+    if (value.execution.priorTestOutcome !== undefined) {
+      requireShape(testOutcomes.has(value.execution.priorTestOutcome), "result.execution.priorTestOutcome");
+      execution.priorTestOutcome = value.execution.priorTestOutcome;
+    }
+    if (value.execution.priorOperationOutcome !== undefined) {
+      requireShape(outcomes.has(value.execution.priorOperationOutcome), "result.execution.priorOperationOutcome");
+      execution.priorOperationOutcome = value.execution.priorOperationOutcome;
+    }
+    if (value.execution.priorDurationMs !== undefined) {
+      requireShape(decimal.test(value.execution.priorDurationMs), "result.execution.priorDurationMs");
+      execution.priorDurationMs = value.execution.priorDurationMs;
+    }
+    if (value.execution.recheckedAt !== undefined) {
+      requireShape(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value.execution.recheckedAt), "result.execution.recheckedAt");
+      execution.recheckedAt = value.execution.recheckedAt;
+    }
+    if (value.execution.resumeFromCommit !== undefined) {
+      requireShape(/^[0-9a-f]{40}$/i.test(value.execution.resumeFromCommit), "result.execution.resumeFromCommit");
+      execution.resumeFromCommit = value.execution.resumeFromCommit;
+    }
+    if (value.execution.resumeFromSha256 !== undefined) {
+      requireShape(/^[0-9a-f]{64}$/i.test(value.execution.resumeFromSha256), "result.execution.resumeFromSha256");
+      execution.resumeFromSha256 = value.execution.resumeFromSha256;
+    }
   }
   let network;
   if (value.network !== undefined) {
     exactKeys(value.network, new Set(["chainId", "pool", "deploymentTxHash", "manifestSha256",
       "finalizedBlockNumber", "finalizedBlockHash", "declaredFork", "forkBasis",
-      "rpcHost", "rpcClient", "submitter", "submitterBalanceWei"]),
+      "rpcHost", "rpcClient", "submitter", "submitterBalanceWei", "forkActivationTimestamp", "finalizedTimestamp"]),
     ["chainId", "pool", "deploymentTxHash", "manifestSha256", "finalizedBlockNumber",
       "finalizedBlockHash", "declaredFork", "forkBasis"], "result.network");
     requireShape(decimal.test(value.network.chainId) && decimal.test(value.network.finalizedBlockNumber) &&
@@ -125,6 +160,8 @@ function publicResult(value, requirePass = false) {
       requireShape(/^0x[0-9a-f]{40}$/i.test(value.network.submitter), "result.network.submitter");
     if (value.network.submitterBalanceWei !== undefined)
       requireShape(decimal.test(value.network.submitterBalanceWei), "result.network.submitterBalanceWei");
+    for (const field of ["forkActivationTimestamp", "finalizedTimestamp"])
+      if (value.network[field] !== undefined) requireShape(decimal.test(value.network[field]), `result.network.${field}`);
     network = { ...value.network, declaredFork: cleanText(value.network.declaredFork, "result.network.declaredFork"),
       forkBasis: cleanText(value.network.forkBasis, "result.network.forkBasis") };
   }

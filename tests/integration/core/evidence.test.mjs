@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -34,11 +35,14 @@ test("rejects incomplete transaction and rejection evidence", () => {
 test("permits only typed public Sepolia call metadata", () => {
   const row = { ...safe(), evidence: { kind: "rejection", source: "scripts/core-sepolia.mjs",
     testName: "S-01-deposit", errorSelector: "0x12345678", blockNumber: "42",
-    blockHash: `0x${"33".repeat(32)}`, calldataSha256: "ab".repeat(32),
+    blockHash: `0x${"33".repeat(32)}`, calldata: "0x1234",
+    calldataSha256: createHash('sha256').update(Buffer.from('1234', 'hex')).digest('hex'),
     from: `0x${"44".repeat(20)}`, valueWei: "10" } };
   validateCaseResults(expected, [row]);
   assert.throws(() => validateCaseResults(expected, [{ ...row,
     evidence: { ...row.evidence, calldataSha256: "0x1234" } }]));
+  assert.throws(() => validateCaseResults(expected, [{ ...row,
+    evidence: { ...row.evidence, calldata: "0x5678" } }]));
 });
 
 test("validates run timing and public finalized network metadata", () => {
