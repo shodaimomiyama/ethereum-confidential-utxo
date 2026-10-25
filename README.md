@@ -71,13 +71,13 @@ For live recovery, return with the same wallet and deployment, prepare the recei
 | [`apps/uniswap-service`](apps/uniswap-service/) | Cloudflare Worker and Durable Object service for authentication, input reservations, saved operations, and the reward-distribution integration. It does not replace the browser's private receipt checks. |
 | [`packages/uniswap`](packages/uniswap/) | Shared payment conditions, quotes, authorization, reconciliation, and service contracts, built on the core and Ethereum packages. |
 
-Use Git, **Node.js 24.21.0**, and **pnpm 10.34.5**, with network access for dependencies. The prior-EIP benchmark's Node.js 22 environment is separate. With nvm and Corepack available, run from a fresh clone:
+Use Git, **Node.js 24.22.1**, and **pnpm 10.34.5**, with network access for dependencies. The prior-EIP benchmark's Node.js 22 environment is separate. With nvm and Corepack available, run from a fresh clone:
 
 ```bash
 git clone https://github.com/shodaimomiyama/ethereum-confidential-utxo.git
 cd ethereum-confidential-utxo
-nvm install 24.21.0
-nvm use 24.21.0
+nvm install 24.22.1
+nvm use 24.22.1
 corepack enable pnpm
 corepack prepare pnpm@10.34.5 --activate
 pnpm install --frozen-lockfile

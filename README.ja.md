@@ -71,13 +71,13 @@ Payの入力は自動選択、Withdrawの入力は手動選択です。小さな
 | [`apps/uniswap-service`](apps/uniswap-service/) | 認証、入力予約、保存済み操作、報酬配布の接続を担うCloudflare WorkerとDurable Objectのサービス。本人の機密受領照合はブラウザの責務です。 |
 | [`packages/uniswap`](packages/uniswap/) | 本体とEthereumのパッケージに依存する、共通の支払い条件、見積り、認可、照合、サービス契約。 |
 
-Git、**Node.js 24.21.0**、**pnpm 10.34.5**と、依存取得用のネットワーク接続を用意します。先行EIPベンチマークのNode.js 22環境とは別です。nvmとCorepackが利用可能な環境で、新規cloneから実行します。
+Git、**Node.js 24.22.1**、**pnpm 10.34.5**と、依存取得用のネットワーク接続を用意します。先行EIPベンチマークのNode.js 22環境とは別です。nvmとCorepackが利用可能な環境で、新規cloneから実行します。
 
 ```bash
 git clone https://github.com/shodaimomiyama/ethereum-confidential-utxo.git
 cd ethereum-confidential-utxo
-nvm install 24.21.0
-nvm use 24.21.0
+nvm install 24.22.1
+nvm use 24.22.1
 corepack enable pnpm
 corepack prepare pnpm@10.34.5 --activate
 pnpm install --frozen-lockfile

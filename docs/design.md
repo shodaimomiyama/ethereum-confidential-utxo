@@ -727,7 +727,7 @@ Poolが判別した拒否理由は、以下の[ABIエラー形式](https://docs.
 | 入力検査 | 外側・headerとも重複キー、未知フィールド、不正な型・UTF-8・base64・長さ、未知版・profileを拒否する。暗号化ファイル全体は16 MiB以下とし、KDF開始前に検査する |
 | 復号 | GCMの認証が成功するまで、復号途中の平文をparse・利用・出力しない。失敗時は保存状態を更新しない |
 
-scryptのパラメータは本プロジェクトの固定値であり、RFCの必須推奨値を意味しない。作業領域は概算128 MiBとなるため、Nodeの既定`maxmem`を使わない。外部ファイルから任意のKDFパラメータを受け取らず、上記profileだけを実行する。根拠は[Node 24.21.0の暗号API](https://github.com/nodejs/node/blob/v24.21.0/doc/api/crypto.md)と[RFC 7914](https://www.rfc-editor.org/rfc/rfc7914.html)とする。
+scryptのパラメータは本プロジェクトの固定値であり、RFCの必須推奨値を意味しない。作業領域は概算128 MiBとなるため、Nodeの既定`maxmem`を使わない。外部ファイルから任意のKDFパラメータを受け取らず、上記profileだけを実行する。根拠は[Node 24.22.1の暗号API](https://github.com/nodejs/node/blob/v24.22.1/doc/api/crypto.md)と[RFC 7914](https://www.rfc-editor.org/rfc/rfc7914.html)とする。
 
 暗号化する所有者状態には、受領秘密鍵と対応する公開鍵、チェーン・Pool・所有者の識別、秘密を含む操作作成データ、所有者側の操作追跡情報を含める。同一操作の再生成に必要な情報は[中断と再生成の規則](#証明生成の中断と再生成)に従って保持する。復号済みUTXOや同期cursorをキャッシュする場合も暗号化領域に置く。内側のデータはschemaの版を保持し、未知schemaを黙って読み替えない。公開提出用ファイルには秘密を含めず、保存上限に達した場合も未完了操作や鍵を自動削除しない。
 

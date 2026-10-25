@@ -3,7 +3,7 @@
   "private": true,
   "packageManager": "pnpm@10.34.5",
   "engines": {
-    "node": "24.21.0"
+    "node": "24.22.1"
   },
   "scripts": {
     "check:site": "pnpm --filter @confidential-utxo/uniswap build && pnpm --filter @confidential-utxo/uniswap-web check:site",
