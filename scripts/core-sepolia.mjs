@@ -164,8 +164,16 @@ export async function retrySepoliaIdempotent(read, pause = () => new Promise(don
   }
 }
 
-async function finalizedReceipt(client, txHash) {
-  const receipt = await client.waitForTransactionReceipt({ hash: txHash, timeout: 600_000 });
+export async function finalizedReceipt(client, txHash) {
+  const receiptDeadline = Date.now() + 600_000;
+  let receipt;
+  for (;;) {
+    try { receipt = await client.getTransactionReceipt({ hash: txHash }); break; }
+    catch {
+      if (Date.now() > receiptDeadline) safeError('SEPOLIA_RECEIPT_TIMEOUT');
+      await new Promise(done => setTimeout(done, 12_000));
+    }
+  }
   if (receipt.status !== 'success') safeError('SEPOLIA_TRANSACTION_REVERTED');
   const deadline = Date.now() + finalityTimeoutMs;
   for (;;) {

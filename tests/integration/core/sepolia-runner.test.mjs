@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { callAtBlockHash, finalizeFailedSepolia, parseSepoliaOptions, preflightSepolia, retrySepoliaIdempotent, validateSepoliaStatePaths,
+import { callAtBlockHash, finalizeFailedSepolia, finalizedReceipt, parseSepoliaOptions, preflightSepolia, retrySepoliaIdempotent, validateSepoliaStatePaths,
   runSepolia } from '../../../scripts/core-sepolia.mjs';
 
 const hash = `0x${'ab'.repeat(32)}`;
@@ -43,6 +43,19 @@ test('Sepolia idempotent lookup and sync retry tolerates transient RPC failures'
   assert.equal(calls, 3);
   await assert.rejects(retrySepoliaIdempotent(async () => { throw Error('still unavailable'); },
     async () => {}), /still unavailable/);
+});
+
+test('Sepolia receipt finality uses direct receipt lookup without full transaction blocks', async () => {
+  const receipt = { status: 'success', blockNumber: 42n, blockHash: hash };
+  const calls = [];
+  const client = {
+    getTransactionReceipt: async ({ hash: txHash }) => { calls.push(['receipt', txHash]); return receipt; },
+    getBlock: async args => { calls.push(['block', args]); return block; },
+    waitForTransactionReceipt: async () => { throw Error('full transaction block lookup unsupported'); },
+  };
+  assert.equal(await finalizedReceipt(client, hash), receipt);
+  assert.deepEqual(calls, [['receipt', hash], ['block', { blockTag: 'finalized' }],
+    ['block', { blockNumber: 42n }]]);
 });
 function fakeClient({ chainId = 11155111, finalized = block, callError } = {}) {
   let sends = 0;
