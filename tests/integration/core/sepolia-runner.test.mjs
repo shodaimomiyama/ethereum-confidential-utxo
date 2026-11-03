@@ -1,0 +1,255 @@
+import { strict as assert } from 'node:assert';
+import { test } from 'node:test';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { keccak256 } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { callAtBlockHash, finalizeFailedSepolia, finalizedReceipt, parseSepoliaCliOutcome, poolErrorSelector,
+  parseSepoliaOptions, preflightSepolia, rebroadcastUnknownSepolia, retrySepoliaIdempotent, signSepoliaJournalAttempt,
+  validateSepoliaStatePaths, validateFirstDepositResume, runSepolia } from '../../../scripts/core-sepolia.mjs';
+
+const hash = `0x${'ab'.repeat(32)}`;
+const block = { number: 42n, hash };
+const manifest = { chainId: 11155111, pool: { address: `0x${'12'.repeat(20)}` } };
+
+test('Pool custom error selectors hash the ABI signature without the error prefix', () => {
+  assert.equal(poolErrorSelector('OperationAlreadyExecuted'), '0x1f1289ea');
+  assert.equal(poolErrorSelector('InputAlreadySpent'), '0x9872c435');
+  assert.throws(() => poolErrorSelector('MissingError'), /SEPOLIA_UNKNOWN_POOL_ERROR/);
+});
+
+test('Sepolia options support sourced env without echoing RPC or a pnpm separator', () => {
+  const env = { SEPOLIA_RPC_URL: 'https://private.example', POOL_MANIFEST_PATH: 'manifest.json',
+    ALICE_KEY_PATH: 'a.key', BOB_KEY_PATH: 'b.key', SUBMITTER_KEY_PATH: 's.key',
+    ALICE_STORE_PATH: 'a', BOB_STORE_PATH: 'b', SUBMITTER_JOURNAL_PATH: 'j', PUBLIC_RESULT_PATH: 'out' };
+  assert.equal(parseSepoliaOptions([], env).rpc, env.SEPOLIA_RPC_URL);
+  assert.equal(parseSepoliaOptions(['--', '--rpc', 'https://rpc.example', '--manifest', 'm',
+    '--owner-a-key', 'a', '--owner-b-key', 'b', '--submitter-key', 's',
+    '--owner-a-store', 'as', '--owner-b-store', 'bs', '--journal', 'j', '--out', 'o']).rpc,
+  'https://rpc.example');
+});
+
+test('Sepolia state paths accept distinct paths and reject aliases before creating state', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'core-sepolia-paths-'));
+  try {
+    const args = { 'owner-a-store': join(dir, 'alice'), 'owner-b-store': join(dir, 'bob'),
+      journal: join(dir, 'journal'), out: join(dir, 'result.json') };
+    await validateSepoliaStatePaths(args);
+    await assert.rejects(validateSepoliaStatePaths({ ...args, out: args.journal }),
+      /SEPOLIA_DISTINCT_PATHS_REQUIRED/);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test('Sepolia resume requires existing state and an explicit prior result and transaction hash', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'core-sepolia-resume-'));
+  try {
+    const args = { 'owner-a-store': join(dir, 'alice'), 'owner-b-store': join(dir, 'bob'),
+      journal: join(dir, 'journal'), out: join(dir, 'result.json') };
+    await assert.rejects(validateSepoliaStatePaths(args, { resume: true }), /SEPOLIA_STATE_MISSING/);
+    for (const name of ['alice', 'bob', 'journal']) await mkdir(join(dir, name));
+    await validateSepoliaStatePaths(args, { resume: true });
+    assert.throws(() => parseSepoliaOptions([], { SEPOLIA_RESUME_FROM: 'prior.json' }),
+      /SEPOLIA_RESUME_ARGUMENTS/);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test('Sepolia resume binds a confirmed transaction hash to the saved journal intent', async () => {
+  const account = privateKeyToAccount(`0x${'11'.repeat(32)}`);
+  const pool = `0x${'22'.repeat(20)}`;
+  const id = `0x${'33'.repeat(32)}`;
+  const attempt = { state: 'unknown', account: account.address, calldata: '0x1234', value: '10', nonce: 2,
+    gas: '100000', maxFeePerGas: '100', maxPriorityFeePerGas: '1' };
+  const journal = { chainId: '11155111', pool, submitter: account.address, intents: { [id]: [attempt] } };
+  const prior = [{ caseId: 'S-01-sepolia-deposit', testOutcome: 'not-run',
+    operationOutcome: 'unconfirmed', network: { pool }, evidence: { kind: 'test', operationId: id } }];
+  const raw = await account.signTransaction({ type: 'eip1559', chainId: 11155111, to: pool,
+    data: attempt.calldata, value: 10n, nonce: 2, gas: 100000n,
+    maxFeePerGas: 100n, maxPriorityFeePerGas: 1n });
+  const txHash = keccak256(raw);
+  const signed = await signSepoliaJournalAttempt({ journal, account, pool, id });
+  assert.equal(signed.txHash, txHash);
+  let broadcasts = 0;
+  const client = { request: async ({ method, params }) => {
+    broadcasts++;
+    assert.equal(method, 'eth_sendRawTransaction');
+    assert.equal(keccak256(params[0]), txHash);
+    return txHash;
+  } };
+  assert.equal(await rebroadcastUnknownSepolia({ client, journal, account, pool, id }), txHash);
+  assert.equal(broadcasts, 1);
+  assert.deepEqual(await validateFirstDepositResume({ prior, journal, account, pool, txHash }), { id, txHash });
+  await assert.rejects(validateFirstDepositResume({ prior, journal, account, pool,
+    txHash: `0x${'44'.repeat(32)}` }), /SEPOLIA_RESUME_TX_MISMATCH/);
+  await assert.rejects(validateFirstDepositResume({ prior, journal, account,
+    pool: `0x${'55'.repeat(20)}`, txHash }), /SEPOLIA_RESUME_BINDING/);
+});
+
+test('Sepolia submit surfaces an unknown durable attempt for exact transaction recovery', () => {
+  const unknown = { kind: 'submission', status: 'unknown', attemptId: hash };
+  assert.deepEqual(parseSepoliaCliOutcome({ code: 4, stdout: `${JSON.stringify(unknown)}\n` }, 'submit'), unknown);
+  assert.throws(() => parseSepoliaCliOutcome({ code: 4, stdout: `${JSON.stringify(unknown)}\n` }, 'operation'),
+    /SEPOLIA_CLI_OPERATION_FAILED/);
+  assert.throws(() => parseSepoliaCliOutcome({ code: 4, stdout: '{"kind":"error","code":"RPC"}\n' }, 'submit'),
+    /SEPOLIA_CLI_RPC/);
+});
+
+test('Sepolia idempotent lookup and sync retry tolerates transient RPC failures', async () => {
+  let calls = 0;
+  const recovered = await retrySepoliaIdempotent(async () => {
+    calls++;
+    if (calls < 3) throw Error('RPC temporarily unavailable');
+    return { status: 'executed' };
+  }, async () => {});
+  assert.equal(recovered.status, 'executed');
+  assert.equal(calls, 3);
+  await assert.rejects(retrySepoliaIdempotent(async () => { throw Error('still unavailable'); },
+    async () => {}), /still unavailable/);
+});
+
+test('Sepolia receipt finality uses direct receipt lookup without full transaction blocks', async () => {
+  const receipt = { status: 'success', blockNumber: 42n, blockHash: hash };
+  const calls = [];
+  const client = {
+    getTransactionReceipt: async ({ hash: txHash }) => { calls.push(['receipt', txHash]); return receipt; },
+    getBlock: async args => { calls.push(['block', args]); return block; },
+    waitForTransactionReceipt: async () => { throw Error('full transaction block lookup unsupported'); },
+  };
+  assert.equal(await finalizedReceipt(client, hash), receipt);
+  assert.deepEqual(calls, [['receipt', hash], ['block', { blockTag: 'finalized' }],
+    ['block', { blockNumber: 42n }]]);
+});
+function fakeClient({ chainId = 11155111, finalized = block, callError } = {}) {
+  let sends = 0;
+  const client = {
+    getChainId: async () => chainId,
+    getBlock: async () => finalized,
+    request: async ({ method, params }) => {
+      if (method === 'eth_sendRawTransaction') sends++;
+      if (method === 'eth_call' && callError) throw callError;
+      return '0x';
+    },
+  };
+  return { client, get sends() { return sends; } };
+}
+
+test('Sepolia preflight rejects missing RPC and HTTP without sending', async () => {
+  const fake = fakeClient();
+  for (const rpc of [undefined, 'http://example.invalid']) {
+    await assert.rejects(preflightSepolia({ rpc, manifest, client: fake.client,
+      verify: async () => ({ context: { pool: manifest.pool.address } }) }));
+  }
+  assert.equal(fake.sends, 0);
+});
+
+test('Sepolia preflight rejects chain, manifest, finality and deployment capability failures', async () => {
+  for (const scenario of [
+    { chainId: 31337 },
+    { manifest: { ...manifest, chainId: 1 } },
+    { finalized: null },
+    { verify: async () => { throw Error('deployment.logs'); } },
+    { verify: async () => { throw Error('deployment.transactionInput'); } },
+    { verify: async () => { throw Error('deployment.pinnedState'); } },
+  ]) {
+    const fake = fakeClient(scenario);
+    await assert.rejects(preflightSepolia({ rpc: 'https://rpc.example',
+      manifest: scenario.manifest ?? manifest, client: fake.client,
+      verify: scenario.verify ?? (async () => ({ context: { pool: manifest.pool.address } })) }));
+    assert.equal(fake.sends, 0);
+  }
+});
+
+test('Sepolia preflight requires a finalized Cancun-or-later block field basis', async () => {
+  const fake = fakeClient({ finalized: { ...block, blobGasUsed: 0n, excessBlobGas: 0n } });
+  const result = await preflightSepolia({ rpc: 'https://rpc.example', manifest, client: fake.client,
+    verify: async () => ({ context: { pool: manifest.pool.address } }) });
+  assert.equal(result.point.hash, hash);
+  const missing = fakeClient();
+  await assert.rejects(preflightSepolia({ rpc: 'https://rpc.example', manifest, client: missing.client,
+    verify: async () => ({ context: { pool: manifest.pool.address } }) }), /FORK_UNVERIFIED/);
+});
+
+test('Sepolia Amsterdam declaration requires a finalized block after official activation', async () => {
+  const amsterdam = { ...manifest, hardfork: 'amsterdam' };
+  const verify = async () => ({ context: { pool: manifest.pool.address } });
+  const before = fakeClient({ finalized: { ...block, timestamp: 1791294815n,
+    blobGasUsed: 0n, excessBlobGas: 0n } });
+  await assert.rejects(preflightSepolia({ rpc: 'https://rpc.example', manifest: amsterdam,
+    client: before.client, verify }), /FORK_UNVERIFIED/);
+  const after = fakeClient({ finalized: { ...block, timestamp: 1791294816n,
+    blobGasUsed: 0n, excessBlobGas: 0n } });
+  await preflightSepolia({ rpc: 'https://rpc.example', manifest: amsterdam,
+    client: after.client, verify });
+});
+
+test('pinned rejection extracts only revert selector and checks canonical hash twice', async () => {
+  let reads = 0;
+  const client = {
+    getBlock: async () => { reads++; return block; },
+    request: async ({ params }) => {
+      assert.deepEqual(params[1], { blockHash: hash, requireCanonical: true });
+      throw { data: '0x12345678' };
+    },
+  };
+  const result = await callAtBlockHash(client, { to: manifest.pool.address, data: '0x12345678',
+    account: manifest.pool.address, value: 0n }, hash, block.number);
+  assert.equal(result.selector, '0x12345678');
+  assert.equal(reads, 2);
+});
+
+test('pinned call treats provider errors and changed hashes as unavailable', async () => {
+  const client = { getBlock: async () => block, request: async () => { throw Error('network down'); } };
+  await assert.rejects(callAtBlockHash(client, { to: manifest.pool.address, data: '0x',
+    account: manifest.pool.address, value: 0n }, hash, block.number), /RPC/);
+  const changed = { ...client, getBlock: async () => ({ ...block, hash: `0x${'cd'.repeat(32)}` }) };
+  await assert.rejects(callAtBlockHash(changed, { to: manifest.pool.address, data: '0x',
+    account: manifest.pool.address, value: 0n }, hash, block.number), /CHECKPOINT/);
+  let reads = 0;
+  const reorg = { getBlock: async () => (++reads === 1 ? block :
+    { ...block, hash: `0x${'cd'.repeat(32)}` }), request: async () => { throw { data: '0x12345678' }; } };
+  await assert.rejects(callAtBlockHash(reorg, { to: manifest.pool.address, data: '0x',
+    account: manifest.pool.address, value: 0n }, hash, block.number), /CHECKPOINT/);
+});
+
+test('Sepolia runner refuses an existing public result before connecting', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'core-sepolia-test-'));
+  try {
+    const out = join(dir, 'result.json');
+    const path = join(dir, 'manifest.json');
+    await writeFile(out, 'sentinel');
+    await writeFile(path, JSON.stringify(manifest));
+    await assert.rejects(runSepolia({ rpc: 'https://invalid.example', manifest: path, out }), /RESULT_EXISTS/);
+    assert.equal(await readFile(out, 'utf8'), 'sentinel');
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test('failed Sepolia run promotes pending public evidence without erasing a sent tx hash', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'core-sepolia-pending-'));
+  try {
+    const out = join(dir, 'result.json');
+    const row = { schemaVersion: 1, caseId: 'S-01-sepolia-deposit', operationOutcome: 'unconfirmed',
+      testOutcome: 'not-run', commit: 'a'.repeat(40), artifactHashes: { pool: 'b'.repeat(64) },
+      environment: { os: 'darwin', arch: 'arm64', node: '24.21.0', pnpm: '10.34.5', foundry: '1.8.3' },
+      execution: { durationMs: '123', timeoutMs: '900000' },
+      evidence: { kind: 'test', source: 'scripts/core-sepolia.mjs', testName: 'S-01-sepolia-deposit',
+        operationId: `0x${'11'.repeat(32)}`, txHash: `0x${'22'.repeat(32)}`, status: 'pending' } };
+    await writeFile(`${out}.pending.json`, JSON.stringify([row]));
+    assert.equal(await finalizeFailedSepolia({ out }, 'SEPOLIA_FINALITY_TIMEOUT'), true);
+    const saved = JSON.parse(await readFile(out, 'utf8'));
+    assert.equal(saved[0].evidence.txHash, row.evidence.txHash);
+    assert.equal(saved[0].execution.failureReason, 'SEPOLIA_FINALITY_TIMEOUT');
+    assert.equal(saved[0].testOutcome, 'not-run');
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test('failed preflight records every Sepolia case as not-run', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'core-sepolia-preflight-'));
+  try {
+    const out = join(dir, 'result.json');
+    assert.equal(await finalizeFailedSepolia({ out }, 'SEPOLIA_RPC_CHAIN', Date.now() - 5), true);
+    const saved = JSON.parse(await readFile(out, 'utf8'));
+    assert.equal(saved.length, 9);
+    assert.ok(saved.every(row => row.testOutcome === 'not-run' &&
+      row.execution.failureReason === 'SEPOLIA_RPC_CHAIN'));
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});

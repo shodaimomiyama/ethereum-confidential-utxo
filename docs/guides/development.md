@@ -133,6 +133,38 @@ pnpm uniswap:sepolia:probe
 
 実行結果は `pnpm build`、`pnpm test`（Foundry 102/102、環境・暗号テスト成功）、`pnpm check`、`pnpm check:uniswap-payment`、`pnpm check:uniswap`、`pnpm check:pool`、`forge test --root contracts`、`node tests/vectors/tools/oracle-uniswap-payment.mjs`、`POOL_VECTOR_PYTHON=<venvのPython> node scripts/generate-pool-fixtures.mjs --uniswap` が成功。`Real` は5/5で、正常支払い、1 wei残額、最低額未達のPool/Pair/recipient/Adapter取消、Pool出金先書換え拒否を確認した。#55へ生成ABIと独立ベクトル、#60へ6参照のconstructor/getter・artifact/manifest条件、#45へ局所harnessと未検証分岐を渡す。独立Anvil全体配置、manifestによる実Adapter runtime照合、Sepolia実取引、UI/受領・同期、形式証明、第三者の独立追試は未実施。
 
+## Issue #36: 実暗号の統合受入
+
+macOS ARM64でNode.js 24.21.0、pnpm 10.34.5、Foundry 1.8.3を使う。`expect`を追加で用意し、`command -v expect` と `command -v anvil` が両方成功することを確認する。`pnpm install --frozen-lockfile && pnpm build`の後、`pnpm test:integration:core`を実行する。ルートの`pnpm test`にも同じゲートを一度だけ含む。`pnpm check`は統合テストのTypeScriptも型検査する。対象は[ケース台帳](../../tests/integration/core/cases.json)のうち`runner`が`sepolia`以外の行であり、公開ネットワークへの送信は行わない。実行時には一時AnvilにPool/Verifierを配置し、実署名・実証明・受領・同期、拒否、原子性、再編成、RPC障害、保存領域復元を検査する。
+
+各ローカル試行は`tests/integration/core/results/local-*.json`へ結果を新規作成する。`caseId`、`operationOutcome`、`testOutcome`、実行commit、artifactのSHA-256、OS/CPU/メモリとツール版、実行時間とCI制限時間、ケースに直接紐付けた成功取引のID・hash・gasを確認する。`testOutcome`が`fail`または`not-run`、case欠落、skip、重複ならゲートは失敗する。生のVitest/Foundry/TAP出力と秘密のopening、鍵、RPC URLは結果へ保存せず、一時ファイルを終了時に削除する。Git管理されたコードをcommitした状態で実行し、結果JSONだけを別commitへ追加する。CIはmacos-15で同じゲートを実行し、結果JSONのみをartifactへ保存する。
+
+公開Sepoliaは`.env.example`をルートの`.env`へコピーし、テスト用ETHを持つ相異なるA・B・submitterの鍵ファイル（権限0600）、HTTPS RPC、Pool配置manifest、互いに異なる保存領域を指定する。実証RPCは配置ブロックへの`eth_call`（EIP-1898のblockHash指定）、過去の`eth_getLogs`、`finalized`、`eth_getTransactionReceipt`を提供するものが必要である。2026-10-25に`.env.example`のTenderly Sepolia RPCでこれらと配置検証、全取引付きブロック取得を確認した。同日、PublicNodeは配置から約300ブロック後に履歴状態を返さず、Nodies公開プランは検証途中にレート制限が発生した。RPC URLに`&`などのシェル記号があれば値を引用符で囲む。鍵・保存領域は`.sepolia-private/`に置き、`.env`とともにGitへ追加しない。既存配置は`node scripts/verify-pool-deployment.mjs --rpc "$SEPOLIA_RPC_URL" --manifest "$POOL_MANIFEST_PATH"`で確認する。新規配置が必要なときだけ`POOL_DEPLOY_PRIVATE_KEY`をローカルで設定し、`node scripts/deploy-pool.mjs --rpc "$SEPOLIA_RPC_URL" --chain-id 11155111 --hardfork amsterdam --out "$POOL_MANIFEST_PATH"`を別途明示実行する。fork名は配置時点の条件を確認して指定する。
+
+```sh
+set -a
+. ./.env
+set +a
+pnpm test:core:sepolia
+```
+
+上記コマンドは利用者が明示したときだけ送信する。事前にSepolia chain ID、manifest内の配置取引・runtime・参照、配置block以降のlog/取引input、固定block状態と`finalized`照会を検証する。A入金・部分送金・2入力統合、B独立再送金・出金が確定するまで待ち、3種の拒否を同一の確定block hashで照合する。結果の`S-*-sepolia-*`行はローカル行と区別して読む。確定blockのblob fieldでCancun以降の機能があることを確認し、manifestの申告forkとともに公開結果に記録する。事前検査が失敗した場合は9ケースを`not-run`として結果JSONに残す。送信前にはoperation IDを、送信hashが分かればそのhashを`.pending.json`へ更新し、通常の例外終了時は未実施行と失敗理由を付けた結果JSONへ確定する。共有Pool上の会計は他の利用者の取引で変わり得るため、各成功取引のOperationSucceededイベントの`d`/`w`と全体の会計不変条件を検査する。RPCが履歴を返せない、結果が不明、確定待ちが時間切れ、保存済みの状態がある場合は停止する。RPCやoperation IDを変えて自動再試行しない。既存のjournalとチェーン上の取引hashを調査してから、人が継続・新規試行を決める。最初の入金送信後の停止に限り、既存の保存領域・journal・退避した失敗結果・署名済み取引hashを保持したまま、`.env.example`の`SEPOLIA_RESUME_FROM`と`SEPOLIA_RESUME_TX_HASH`を明示設定して再開できる。再開時はjournalの署名済み内容からhashを再計算し、Poolと署名者を照合してから、確定receiptとイベントを検証する。それ以外の新規試行には新しい保存領域と結果パスを用意する。
+
+各成功取引の`finalized`待ちは最大45分とする。2026-10-25にPublicNodeで最新と`finalized`の時刻差を約19分と観測したため、公開ネットワークでの全件実行には時間がかかる。
+
+実行forkの記録は[Sepoliaの公式ネットワーク設定](https://github.com/eth-clients/sepolia/blob/main/README.md)にあるAmsterdam有効化時刻 `1791294816` と、RPCから得た確定ブロックのtimestampを照合する。blob gas欄だけではAmsterdamを特定できないため、結果には有効化時刻・確定ブロック時刻・照合根拠を併記する。
+
+6件の取引が成功し、最後の3件の固定ブロック拒否照会だけがRPC障害などで未実行になった場合は、失敗結果JSON、実行時の暗号化されたAlice保存領域、生成されたAlice/Bob受領情報ファイルを保持する。`OWNER_STORE_PASSPHRASE_FILE`、`ALICE_RECIPIENT_EXPORT`、`BOB_RECIPIENT_EXPORT`には当該実行のファイルを指定し、次のコマンドで同じ確定ブロックを再照会する。スクリプトは6件のreceipt・操作成功イベント・manifest・確定ブロックhashを再照合し、3件すべてで期待するPoolエラーを得たときだけ公開結果を更新する。結果には最初の失敗理由と未実行状態、再照会時刻・所要時間、固定ブロックで使用した公開calldataを残し、拒否ケースの`commit`には再照会コードのcommitを記録する。保存領域の`.inaccessible`接尾辞は、BobがAliceの保存領域を使わずに実行したことを確認するためランナーが付けたもの。
+
+```sh
+node scripts/core-sepolia-recheck.mjs \
+  --rpc "$SEPOLIA_RPC_URL" --manifest "$POOL_MANIFEST_PATH" \
+  --result "$PUBLIC_RESULT_PATH" --alice-key "$ALICE_KEY_PATH" --bob-key "$BOB_KEY_PATH" \
+  --alice-store "${ALICE_STORE_PATH}.inaccessible" \
+  --passphrase-file "$OWNER_STORE_PASSPHRASE_FILE" \
+  --alice-recipient "$ALICE_RECIPIENT_EXPORT" --bob-recipient "$BOB_RECIPIENT_EXPORT"
+```
+
 ## Poolと検証器の配置（Issue #27）
 
 `pnpm artifact:pool` は `contracts/out/Pool.sol/Pool.json` から公開ABI、bytecode、AST、storage layoutと入力hashを `packages/ethereum/generated/pool-v1.json` に出力する。`pnpm check:pool` は現在のソースとコンパイル結果に照合する。`pnpm fixture:pool` は公開seedから25件の操作、署名、実範囲証明を一時ディレクトリに再生成し、固定ケースとFoundry calldataをbyte単位で比較する。Python依存は `tests/vectors/README.md` に従って導入し、`POOL_VECTOR_PYTHON` にそのvenvのPythonを指定する。

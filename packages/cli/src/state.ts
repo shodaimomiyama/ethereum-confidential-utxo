@@ -271,8 +271,8 @@ function sync(value: unknown, expected: Context, owner: Address): SyncResult | n
     for (const item of utxos) { if (seen.has(item.id.toLowerCase())) invalid(); seen.add(item.id.toLowerCase()); }
     const receiptFailures = array(input.receiptFailures).map(item => {
       const failure = object(item, ["outputId", "status", "reason"]);
-      if (failure.reason !== "DECRYPT" || failure.status !== "unknown") invalid();
-      return { outputId: hash(failure.outputId), status: "unknown" as const, reason: "DECRYPT" as const };
+      if (failure.reason !== "DECRYPT" || failure.status !== "inconsistent") invalid();
+      return { outputId: hash(failure.outputId), status: "inconsistent" as const, reason: "DECRYPT" as const };
     });
     const availableWei = uint(input.availableWei);
     if (availableWei !== utxos.reduce((sum, item) => sum + (item.status === "available" ? item.opening.amount : 0n), 0n)) invalid();

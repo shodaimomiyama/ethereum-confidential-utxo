@@ -1,0 +1,841 @@
+[
+  {
+    "caseId": "S-01-deposit",
+    "scenarioId": "S-01",
+    "requirements": [
+      "FR-01",
+      "SEC-01",
+      "OPS-01"
+    ],
+    "runner": "cli",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/flow.test.ts"
+  },
+  {
+    "caseId": "S-01-unauthorized",
+    "scenarioId": "S-01",
+    "requirements": [
+      "FR-01",
+      "SEC-02"
+    ],
+    "runner": "foundry",
+    "expectedOperation": "rejected",
+    "evidenceRef": "contracts/test/PoolAuthorization.t.sol",
+    "testName": "test_invalidSignatureFormsAndWrongOwner"
+  },
+  {
+    "caseId": "S-01-value-mismatch",
+    "scenarioId": "S-01",
+    "requirements": [
+      "FR-01",
+      "SEC-01"
+    ],
+    "runner": "foundry",
+    "expectedOperation": "rejected",
+    "evidenceRef": "contracts/test/PoolAuthorization.t.sol",
+    "testName": "test_publicAmountBoundsAndMsgValue"
+  },
+  {
+    "caseId": "S-01-zero",
+    "scenarioId": "S-01",
+    "requirements": [
+      "FR-01",
+      "SEC-01"
+    ],
+    "runner": "api",
+    "expectedOperation": "rejected",
+    "evidenceRef": "tests/integration/core/rejection.test.ts"
+  },
+  {
+    "caseId": "S-01-over-limit",
+    "scenarioId": "S-01",
+    "requirements": [
+      "FR-01",
+      "SEC-01"
+    ],
+    "runner": "foundry",
+    "expectedOperation": "rejected",
+    "evidenceRef": "contracts/test/PoolAuthorization.t.sol",
+    "testName": "test_publicAmountBoundsAndMsgValue"
+  },
+  {
+    "caseId": "S-02-full-transfer",
+    "scenarioId": "S-02",
+    "requirements": [
+      "FR-02",
+      "SEC-01"
+    ],
+    "runner": "cli",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/flow.test.ts"
+  },
+  {
+    "caseId": "S-03-partial-transfer",
+    "scenarioId": "S-03",
+    "requirements": [
+      "FR-02",
+      "SEC-01"
+    ],
+    "runner": "cli",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/flow.test.ts"
+  },
+  {
+    "caseId": "S-03-independent-spend",
+    "scenarioId": "S-03",
+    "requirements": [
+      "FR-02",
+      "FR-05"
+    ],
+    "runner": "cli",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/flow.test.ts"
+  },
+  {
+    "caseId": "S-04-two-input-merge",
+    "scenarioId": "S-04",
+    "requirements": [
+      "FR-03",
+      "SEC-01"
+    ],
+    "runner": "cli",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/flow.test.ts"
+  },
+  {
+    "caseId": "S-04-duplicate-input",
+    "scenarioId": "S-04",
+    "requirements": [
+      "SEC-03"
+    ],
+    "runner": "foundry",
+    "expectedOperation": "rejected",
+    "evidenceRef": "contracts/test/PoolAuthorization.t.sol",
+    "testName": "test_zeroWithdrawalDestinationAndInputOrdering"
+  },
+  {
+    "caseId": "S-04-spent-input",
+    "scenarioId": "S-04",
+    "requirements": [
+      "SEC-03"
+    ],
+    "runner": "api",
+    "expectedOperation": "rejected",
+    "evidenceRef": "tests/integration/core/rejection.test.ts"
+  },
+  {
+    "caseId": "S-04-absent-input",
+    "scenarioId": "S-04",
+    "requirements": [
+      "SEC-03"
+    ],
+    "runner": "foundry",
+    "expectedOperation": "rejected",
+    "evidenceRef": "contracts/test/PoolAuthorization.t.sol",
+    "testName": "test_absentAndWrongOwnerInput"
+  },
+  {
+    "caseId": "S-04-foreign-input",
+    "scenarioId": "S-04",
+    "requirements": [
+      "SEC-02",
+      "SEC-03"
+    ],
+    "runner": "foundry",
+    "expectedOperation": "rejected",
+    "evidenceRef": "contracts/test/PoolAuthorization.t.sol",
+    "testName": "test_absentAndWrongOwnerInput"
+  },
+  {
+    "caseId": "S-05-self-merge",
+    "scenarioId": "S-05",
+    "requirements": [
+      "FR-03"
+    ],
+    "runner": "cli",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/flow.test.ts"
+  },
+  {
+    "caseId": "S-05-self-split",
+    "scenarioId": "S-05",
+    "requirements": [
+      "FR-02"
+    ],
+    "runner": "cli",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/flow.test.ts"
+  },
+  {
+    "caseId": "S-05-recreate",
+    "scenarioId": "S-05",
+    "requirements": [
+      "FR-02",
+      "SEC-04"
+    ],
+    "runner": "cli",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/flow.test.ts"
+  },
+  {
+    "caseId": "S-06-self-full-withdraw",
+    "scenarioId": "S-06",
+    "requirements": [
+      "FR-04"
+    ],
+    "runner": "cli",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/flow.test.ts"
+  },
+  {
+    "caseId": "S-06-self-partial-withdraw",
+    "scenarioId": "S-06",
+    "requirements": [
+      "FR-04"
+    ],
+    "runner": "cli",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/flow.test.ts"
+  },
+  {
+    "caseId": "S-06-third-party-full-withdraw",
+    "scenarioId": "S-06",
+    "requirements": [
+      "FR-04"
+    ],
+    "runner": "cli",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/flow.test.ts"
+  },
+  {
+    "caseId": "S-06-third-party-partial-withdraw",
+    "scenarioId": "S-06",
+    "requirements": [
+      "FR-04"
+    ],
+    "runner": "cli",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/flow.test.ts"
+  },
+  {
+    "caseId": "S-06-contract-full-withdraw",
+    "scenarioId": "S-06",
+    "requirements": [
+      "FR-04",
+      "SEC-05"
+    ],
+    "runner": "cli",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/flow.test.ts"
+  },
+  {
+    "caseId": "S-06-contract-partial-withdraw",
+    "scenarioId": "S-06",
+    "requirements": [
+      "FR-04",
+      "SEC-05"
+    ],
+    "runner": "cli",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/flow.test.ts"
+  },
+  {
+    "caseId": "S-07-offline-recipient",
+    "scenarioId": "S-07",
+    "requirements": [
+      "FR-05",
+      "FR-06",
+      "FR-07",
+      "OPS-04"
+    ],
+    "runner": "cli",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/flow.test.ts"
+  },
+  {
+    "caseId": "S-08-decrypt-failure",
+    "scenarioId": "S-08",
+    "requirements": [
+      "FR-07",
+      "SEC-06"
+    ],
+    "runner": "api",
+    "expectedOperation": "unavailable",
+    "evidenceRef": "tests/integration/core/receipt.test.ts"
+  },
+  {
+    "caseId": "S-08-commitment-mismatch",
+    "scenarioId": "S-08",
+    "requirements": [
+      "FR-07",
+      "SEC-01"
+    ],
+    "runner": "api",
+    "expectedOperation": "unavailable",
+    "evidenceRef": "tests/integration/core/receipt.test.ts"
+  },
+  {
+    "caseId": "S-08-unconfirmed",
+    "scenarioId": "S-08",
+    "requirements": [
+      "FR-07",
+      "OPS-04"
+    ],
+    "runner": "api",
+    "expectedOperation": "unconfirmed",
+    "evidenceRef": "tests/integration/core/receipt.test.ts"
+  },
+  {
+    "caseId": "S-08-history-replay",
+    "scenarioId": "S-08",
+    "requirements": [
+      "FR-07",
+      "SEC-03"
+    ],
+    "runner": "api",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/receipt.test.ts"
+  },
+  {
+    "caseId": "S-08-missing-output-log",
+    "scenarioId": "S-08",
+    "requirements": [
+      "FR-07",
+      "OPS-04"
+    ],
+    "runner": "api",
+    "expectedOperation": "unconfirmed",
+    "evidenceRef": "tests/integration/core/receipt.test.ts"
+  },
+  {
+    "caseId": "S-09-other-owner",
+    "scenarioId": "S-09",
+    "requirements": [
+      "SEC-02"
+    ],
+    "runner": "foundry",
+    "expectedOperation": "rejected",
+    "evidenceRef": "contracts/test/PoolAuthorization.t.sol",
+    "testName": "test_invalidSignatureFormsAndWrongOwner"
+  },
+  {
+    "caseId": "S-09-prior-sender",
+    "scenarioId": "S-09",
+    "requirements": [
+      "SEC-02"
+    ],
+    "runner": "api",
+    "expectedOperation": "rejected",
+    "evidenceRef": "tests/integration/core/rejection.test.ts"
+  },
+  {
+    "caseId": "S-09-false-authorization",
+    "scenarioId": "S-09",
+    "requirements": [
+      "SEC-04"
+    ],
+    "runner": "foundry",
+    "expectedOperation": "rejected",
+    "evidenceRef": "contracts/test/PoolAuthorization.t.sol",
+    "testName": "test_invalidSignatureFormsAndWrongOwner"
+  },
+  {
+    "caseId": "S-09-intent-mutation",
+    "scenarioId": "S-09",
+    "requirements": [
+      "SEC-04"
+    ],
+    "runner": "foundry",
+    "expectedOperation": "rejected",
+    "evidenceRef": "contracts/test/PoolAuthorization.t.sol",
+    "testName": "test_validShapeFieldMutationsFailOwnerAuthorization"
+  },
+  {
+    "caseId": "S-09-other-chain",
+    "scenarioId": "S-09",
+    "requirements": [
+      "SEC-04"
+    ],
+    "runner": "api",
+    "expectedOperation": "rejected",
+    "evidenceRef": "tests/integration/core/rejection.test.ts"
+  },
+  {
+    "caseId": "S-09-other-pool",
+    "scenarioId": "S-09",
+    "requirements": [
+      "SEC-04"
+    ],
+    "runner": "api",
+    "expectedOperation": "rejected",
+    "evidenceRef": "tests/integration/core/rejection.test.ts"
+  },
+  {
+    "caseId": "S-09-unknown-version",
+    "scenarioId": "S-09",
+    "requirements": [
+      "SEC-04"
+    ],
+    "runner": "api",
+    "expectedOperation": "rejected",
+    "evidenceRef": "tests/integration/core/rejection.test.ts"
+  },
+  {
+    "caseId": "S-10-competing-operations",
+    "scenarioId": "S-10",
+    "requirements": [
+      "SEC-03",
+      "OPS-04"
+    ],
+    "runner": "api",
+    "expectedOperation": "rejected",
+    "evidenceRef": "tests/integration/core/rejection.test.ts"
+  },
+  {
+    "caseId": "S-10-successful-id-reuse",
+    "scenarioId": "S-10",
+    "requirements": [
+      "SEC-04"
+    ],
+    "runner": "api",
+    "expectedOperation": "rejected",
+    "evidenceRef": "tests/integration/core/rejection.test.ts"
+  },
+  {
+    "caseId": "S-10-copy-vs-competition",
+    "scenarioId": "S-10",
+    "requirements": [
+      "SEC-03",
+      "OPS-04"
+    ],
+    "runner": "api",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/rejection.test.ts"
+  },
+  {
+    "caseId": "S-11-receiver-refusal",
+    "scenarioId": "S-11",
+    "requirements": [
+      "SEC-05"
+    ],
+    "runner": "foundry",
+    "expectedOperation": "rolled-back",
+    "evidenceRef": "contracts/test/PoolWithdrawal.t.sol",
+    "testName": "test_propagatedReentryAndRejectedReceiveRollback"
+  },
+  {
+    "caseId": "S-11-caught-reentry",
+    "scenarioId": "S-11",
+    "requirements": [
+      "SEC-05"
+    ],
+    "runner": "foundry",
+    "expectedOperation": "success",
+    "evidenceRef": "contracts/test/PoolWithdrawal.t.sol",
+    "testName": "test_caughtReentryPreservesOuterWithdrawal"
+  },
+  {
+    "caseId": "S-11-propagated-reentry",
+    "scenarioId": "S-11",
+    "requirements": [
+      "SEC-05"
+    ],
+    "runner": "foundry",
+    "expectedOperation": "rolled-back",
+    "evidenceRef": "contracts/test/PoolWithdrawal.t.sol",
+    "testName": "test_propagatedReentryAndRejectedReceiveRollback"
+  },
+  {
+    "caseId": "S-11-outer-revert",
+    "scenarioId": "S-11",
+    "requirements": [
+      "SEC-05"
+    ],
+    "runner": "api",
+    "expectedOperation": "rolled-back",
+    "evidenceRef": "tests/integration/core/atomicity.test.ts"
+  },
+  {
+    "caseId": "S-12-donation",
+    "scenarioId": "S-12",
+    "requirements": [
+      "SEC-01"
+    ],
+    "runner": "foundry",
+    "expectedOperation": "success",
+    "evidenceRef": "contracts/test/PoolWithdrawal.t.sol",
+    "testName": "test_ordinaryReceiveDoesNotMint"
+  },
+  {
+    "caseId": "S-12-forced-eth",
+    "scenarioId": "S-12",
+    "requirements": [
+      "SEC-01"
+    ],
+    "runner": "foundry",
+    "expectedOperation": "success",
+    "evidenceRef": "contracts/test/PoolWithdrawal.t.sol",
+    "testName": "test_forcedEthAndLargeReturnData"
+  },
+  {
+    "caseId": "S-12-returned-eth",
+    "scenarioId": "S-12",
+    "requirements": [
+      "SEC-01"
+    ],
+    "runner": "foundry",
+    "expectedOperation": "success",
+    "evidenceRef": "contracts/test/PoolWithdrawal.t.sol",
+    "testName": "test_ethReturnDuringCallback"
+  },
+  {
+    "caseId": "S-13-one",
+    "scenarioId": "S-13",
+    "requirements": [
+      "SEC-01"
+    ],
+    "runner": "api",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/rejection.test.ts"
+  },
+  {
+    "caseId": "S-13-at-m",
+    "scenarioId": "S-13",
+    "requirements": [
+      "SEC-01"
+    ],
+    "runner": "foundry",
+    "expectedOperation": "success",
+    "evidenceRef": "contracts/test/PoolFlow.t.sol",
+    "testName": "test_maxBoundaryTransfer"
+  },
+  {
+    "caseId": "S-13-above-m",
+    "scenarioId": "S-13",
+    "requirements": [
+      "SEC-01"
+    ],
+    "runner": "api",
+    "expectedOperation": "rejected",
+    "evidenceRef": "tests/integration/core/rejection.test.ts"
+  },
+  {
+    "caseId": "S-13-negative-encoding",
+    "scenarioId": "S-13",
+    "requirements": [
+      "SEC-01"
+    ],
+    "runner": "api",
+    "expectedOperation": "rejected",
+    "evidenceRef": "tests/integration/core/rejection.test.ts"
+  },
+  {
+    "caseId": "S-13-noncanonical-scalar",
+    "scenarioId": "S-13",
+    "requirements": [
+      "SEC-01"
+    ],
+    "runner": "foundry",
+    "expectedOperation": "rejected",
+    "evidenceRef": "contracts/test/PoolFlow.t.sol",
+    "testName": "test_realVerifierRejectsNoncanonicalScalarsAndZeroValueOutput"
+  },
+  {
+    "caseId": "S-13-two-inputs",
+    "scenarioId": "S-13",
+    "requirements": [
+      "SEC-01"
+    ],
+    "runner": "foundry",
+    "expectedOperation": "success",
+    "evidenceRef": "contracts/test/PoolFlow.t.sol",
+    "testName": "test_realConsolidationAndSelfOperations"
+  },
+  {
+    "caseId": "S-13-three-inputs",
+    "scenarioId": "S-13",
+    "requirements": [
+      "SEC-01"
+    ],
+    "runner": "foundry",
+    "expectedOperation": "rejected",
+    "evidenceRef": "contracts/test/PoolAuthorization.t.sol",
+    "testName": "test_rejectsThreeInputsExcessOutputsAndWrongProofCount"
+  },
+  {
+    "caseId": "S-13-two-max-inputs",
+    "scenarioId": "S-13",
+    "requirements": [
+      "SEC-01"
+    ],
+    "runner": "foundry",
+    "expectedOperation": "success",
+    "evidenceRef": "contracts/test/PoolFlow.t.sol",
+    "testName": "test_maxBoundaryTransfer"
+  },
+  {
+    "caseId": "S-14-separate-submitter",
+    "scenarioId": "S-14",
+    "requirements": [
+      "FR-08",
+      "FR-09",
+      "SEC-02"
+    ],
+    "runner": "cli",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/flow.test.ts"
+  },
+  {
+    "caseId": "S-15-rpc-failure",
+    "scenarioId": "S-15",
+    "requirements": [
+      "OPS-04"
+    ],
+    "runner": "cli",
+    "expectedOperation": "unconfirmed",
+    "evidenceRef": "tests/integration/core/recovery.test.ts"
+  },
+  {
+    "caseId": "S-15-pending",
+    "scenarioId": "S-15",
+    "requirements": [
+      "OPS-04"
+    ],
+    "runner": "cli",
+    "expectedOperation": "unconfirmed",
+    "evidenceRef": "tests/integration/core/recovery.test.ts"
+  },
+  {
+    "caseId": "S-15-reorg",
+    "scenarioId": "S-15",
+    "requirements": [
+      "OPS-04"
+    ],
+    "runner": "cli",
+    "expectedOperation": "unconfirmed",
+    "evidenceRef": "tests/integration/core/recovery.test.ts"
+  },
+  {
+    "caseId": "S-15-lost-ack",
+    "scenarioId": "S-15",
+    "requirements": [
+      "OPS-04"
+    ],
+    "runner": "cli",
+    "expectedOperation": "unconfirmed",
+    "evidenceRef": "tests/integration/core/recovery.test.ts"
+  },
+  {
+    "caseId": "S-15-duplicate-history",
+    "scenarioId": "S-15",
+    "requirements": [
+      "OPS-04"
+    ],
+    "runner": "cli",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/recovery.test.ts"
+  },
+  {
+    "caseId": "S-15-missing-history",
+    "scenarioId": "S-15",
+    "requirements": [
+      "OPS-04"
+    ],
+    "runner": "cli",
+    "expectedOperation": "unconfirmed",
+    "evidenceRef": "tests/integration/core/recovery.test.ts"
+  },
+  {
+    "caseId": "S-15-backup-restore",
+    "scenarioId": "S-15",
+    "requirements": [
+      "OPS-04"
+    ],
+    "runner": "cli",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/recovery.test.ts"
+  },
+  {
+    "caseId": "S-16-calldata",
+    "scenarioId": "S-16",
+    "requirements": [
+      "SEC-06"
+    ],
+    "runner": "api",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/flow.test.ts"
+  },
+  {
+    "caseId": "S-16-events",
+    "scenarioId": "S-16",
+    "requirements": [
+      "SEC-06"
+    ],
+    "runner": "api",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/flow.test.ts"
+  },
+  {
+    "caseId": "S-16-cli-json",
+    "scenarioId": "S-16",
+    "requirements": [
+      "SEC-06"
+    ],
+    "runner": "cli",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/flow.test.ts"
+  },
+  {
+    "caseId": "S-16-public-results",
+    "scenarioId": "S-16",
+    "requirements": [
+      "SEC-06",
+      "OPS-03"
+    ],
+    "runner": "api",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/evidence.test.mjs"
+  },
+  {
+    "caseId": "S-17-deposit-reuse",
+    "scenarioId": "S-17",
+    "requirements": [
+      "SEC-04"
+    ],
+    "runner": "api",
+    "expectedOperation": "rejected",
+    "evidenceRef": "tests/integration/core/rejection.test.ts"
+  },
+  {
+    "caseId": "S-17-fresh-salt-deposit",
+    "scenarioId": "S-17",
+    "requirements": [
+      "FR-01",
+      "SEC-04"
+    ],
+    "runner": "cli",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/flow.test.ts"
+  },
+  {
+    "caseId": "S-18-late-input-spend",
+    "scenarioId": "S-18",
+    "requirements": [
+      "SEC-03",
+      "SEC-04"
+    ],
+    "runner": "api",
+    "expectedOperation": "rejected",
+    "evidenceRef": "tests/integration/core/rejection.test.ts"
+  },
+  {
+    "caseId": "S-18-successful-competitor-kept",
+    "scenarioId": "S-18",
+    "requirements": [
+      "SEC-05"
+    ],
+    "runner": "api",
+    "expectedOperation": "success",
+    "evidenceRef": "tests/integration/core/rejection.test.ts"
+  },
+  {
+    "caseId": "S-01-sepolia-deposit",
+    "scenarioId": "S-01",
+    "requirements": [
+      "FR-01",
+      "OPS-03"
+    ],
+    "runner": "sepolia",
+    "expectedOperation": "success",
+    "evidenceRef": "scripts/core-sepolia.mjs"
+  },
+  {
+    "caseId": "S-01-sepolia-second-deposit",
+    "scenarioId": "S-01",
+    "requirements": [
+      "FR-01",
+      "OPS-03"
+    ],
+    "runner": "sepolia",
+    "expectedOperation": "success",
+    "evidenceRef": "scripts/core-sepolia.mjs"
+  },
+  {
+    "caseId": "S-03-sepolia-partial-transfer",
+    "scenarioId": "S-03",
+    "requirements": [
+      "FR-02",
+      "OPS-03"
+    ],
+    "runner": "sepolia",
+    "expectedOperation": "success",
+    "evidenceRef": "scripts/core-sepolia.mjs"
+  },
+  {
+    "caseId": "S-04-sepolia-two-input-merge",
+    "scenarioId": "S-04",
+    "requirements": [
+      "FR-03",
+      "OPS-03"
+    ],
+    "runner": "sepolia",
+    "expectedOperation": "success",
+    "evidenceRef": "scripts/core-sepolia.mjs"
+  },
+  {
+    "caseId": "S-03-sepolia-independent-spend",
+    "scenarioId": "S-03",
+    "requirements": [
+      "FR-02",
+      "FR-05",
+      "OPS-03"
+    ],
+    "runner": "sepolia",
+    "expectedOperation": "success",
+    "evidenceRef": "scripts/core-sepolia.mjs"
+  },
+  {
+    "caseId": "S-06-sepolia-withdraw",
+    "scenarioId": "S-06",
+    "requirements": [
+      "FR-04",
+      "OPS-03"
+    ],
+    "runner": "sepolia",
+    "expectedOperation": "success",
+    "evidenceRef": "scripts/core-sepolia.mjs"
+  },
+  {
+    "caseId": "S-09-sepolia-unauthorized",
+    "scenarioId": "S-09",
+    "requirements": [
+      "SEC-02",
+      "OPS-03"
+    ],
+    "runner": "sepolia",
+    "expectedOperation": "rejected",
+    "evidenceRef": "scripts/core-sepolia.mjs"
+  },
+  {
+    "caseId": "S-04-sepolia-spent-input",
+    "scenarioId": "S-04",
+    "requirements": [
+      "SEC-03",
+      "OPS-03"
+    ],
+    "runner": "sepolia",
+    "expectedOperation": "rejected",
+    "evidenceRef": "scripts/core-sepolia.mjs"
+  },
+  {
+    "caseId": "S-17-sepolia-deposit-reuse",
+    "scenarioId": "S-17",
+    "requirements": [
+      "SEC-04",
+      "OPS-03"
+    ],
+    "runner": "sepolia",
+    "expectedOperation": "rejected",
+    "evidenceRef": "scripts/core-sepolia.mjs"
+  }
+]
