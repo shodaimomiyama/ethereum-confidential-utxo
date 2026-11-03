@@ -29,7 +29,7 @@ function AppShell({ config, workbench }: { readonly config: SiteConfig; readonly
       <a href="/">About Dim</a>
     </header>
     <main className="app-layout">
-      <div className="app-intro"><p className="eyebrow">{config.mode === 'mock' ? 'Simulated demo' : 'Ethereum Sepolia'}</p><h1>Try Dim</h1><p>Start with a private demo reward, or deposit test ETH from your wallet.</p></div>
+      <div className="app-intro"><p className="eyebrow">{config.mode === 'mock' ? 'Simulated demo' : `Ethereum deployment ${view.scope.deploymentId}`}</p><h1>Try Dim</h1><p>Start with a private demo reward, or deposit test ETH from your wallet.</p></div>
       <section className="balances" aria-label="Balances">
         <div className="surface"><span>Public ETH</span><strong>{formatEth(view.publicEthWei)} ETH</strong></div>
         <div className="surface"><span>Available private ETH</span><strong>{formatEth(view.availablePrivateWei)} ETH</strong></div>

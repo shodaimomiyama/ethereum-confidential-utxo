@@ -6,7 +6,7 @@ Issue [#35](https://github.com/shodaimomiyama/ethereum-confidential-utxo/issues/
 
 ## 新規 clone での準備
 
-macOS ARM64 で Node.js 24.21.0、pnpm 10.34.5、Python 3.13.7 を使用します。Node は #4 の固定版を有効化してください。この branch では #4 の workspace 設定が未マージなので、依存を `tests/vectors/package.json` と lockfile に局所化しています。
+保存済みベクトルの生成環境は macOS ARM64、Node.js 24.21.0、pnpm 10.34.5、Python 3.13.7 です。この版は `manifest.json` に記録した生成条件として維持します。現行workspaceのNode.js固定版はルートの `.node-version` を参照してください。この branch では #4 の workspace 設定が未マージなので、依存を `tests/vectors/package.json` と lockfile に局所化しています。
 
 ```sh
 cd tests/vectors

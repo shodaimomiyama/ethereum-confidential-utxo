@@ -67,7 +67,8 @@ export interface PaymentPorts {
   clock: MonotonicClock;
   latestBlockTime(): Promise<bigint>;
   encrypt(plaintext: Uint8Array, context: { readonly scope: Scope; readonly recordId: Bytes32; readonly revision: number }): Promise<EncryptedBundle>;
-  sealContent(prepared: PreparedBase, signatures: AuthorizationSignatures, attemptId?: AttemptId, txHash?: TxHash): Uint8Array;
+  sealContent(prepared: PreparedBase, signatures: AuthorizationSignatures, attemptId?: AttemptId, txHash?: TxHash,
+    notSubmitted?: true): Uint8Array;
   signPool(payload: Readonly<Record<string, unknown>>): Promise<`0x${string}`>;
   signPayment(prepared: PreparedPay): Promise<`0x${string}`>;
   createAttempt(prepared: PreparedBase, signatures: AuthorizationSignatures): AttemptId;
@@ -165,6 +166,14 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
     assertScope(prepared.record.scope);
   }
 
+  async function expiredBeforeSubmit(prepared: PreparedPay): Promise<boolean> {
+    try { await assertPayDeadlineLive(prepared); return false; }
+    catch (error) {
+      if (error instanceof PaymentProcessError && error.code === 'TERMS_EXPIRED') return true;
+      throw error;
+    }
+  }
+
   async function persistKnownHash(
     saved: SavedReservation,
     prepared: PreparedBase,
@@ -174,6 +183,18 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
   ): Promise<void> {
     const revision = saved.revision + 1;
     const bytes = ports.sealContent(prepared, signatures, attemptId, txHash);
+    const record = await encryptRecord(saved.record, bytes, revision);
+    const updated = await recoverAck(record, revision,
+      () => ports.reservations.update(record, saved.revision, revision));
+    assertScope(saved.record.scope);
+    assertSaved(updated, record, revision);
+  }
+
+  async function persistNotSubmitted(
+    saved: SavedReservation, prepared: PreparedBase, signatures: AuthorizationSignatures, attemptId: AttemptId,
+  ): Promise<void> {
+    const revision = saved.revision + 1;
+    const bytes = ports.sealContent(prepared, signatures, attemptId, undefined, true);
     const record = await encryptRecord(saved.record, bytes, revision);
     const updated = await recoverAck(record, revision,
       () => ports.reservations.update(record, saved.revision, revision));
@@ -256,17 +277,19 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
     const attempted = await recoverAck(attemptedRecord, 4, () => ports.reservations.update(attemptedRecord, 3, 4));
     assertScope(initialScope);
     assertSaved(attempted, attemptedRecord, 4);
-    if (isPay) await assertPayDeadlineLive(prepared as PreparedPay);
-
     let outcome: Awaited<ReturnType<PaymentPorts['submit']>>;
-    try {
-      outcome = await ports.submit(prepared, signatures, attemptId);
-    } catch {
-      outcome = { kind: 'unknown' };
+    if (isPay && await expiredBeforeSubmit(prepared as PreparedPay)) {
+      outcome = { kind: 'not-submitted' };
+    } else {
+      try { outcome = await ports.submit(prepared, signatures, attemptId); }
+      catch { outcome = { kind: 'unknown' }; }
     }
     assertScope(initialScope);
     if (outcome.kind === 'submitted') {
       await persistKnownHash(attempted, prepared, signatures, attemptId, outcome.txHash);
+    } else if (outcome.kind === 'not-submitted') {
+      try { await persistNotSubmitted(attempted, prepared, signatures, attemptId); }
+      catch { outcome = { kind: 'unknown' }; }
     }
     return {
       scope: initialScope,
@@ -343,15 +366,18 @@ export function createPaymentClient(ports: PaymentPorts): PaymentClient {
       () => ports.reservations.update(attemptedRecord, saved.revision, nextRevision));
     assertScope(saved.record.scope);
     assertSaved(attempted, attemptedRecord, nextRevision);
-    if (prepared.record.kind === 'pay') await assertPayDeadlineLive(prepared as PreparedPay);
     let outcome: SubmissionOutcome;
-    try {
-      outcome = await ports.submit(prepared, signatures, attemptId);
-    } catch {
-      return { kind: 'unknown' };
+    if (prepared.record.kind === 'pay' && await expiredBeforeSubmit(prepared as PreparedPay)) {
+      outcome = { kind: 'not-submitted' };
+    } else {
+      try { outcome = await ports.submit(prepared, signatures, attemptId); }
+      catch { return { kind: 'unknown' }; }
     }
     if (outcome.kind === 'submitted') {
       await persistKnownHash(attempted, prepared, signatures, attemptId, outcome.txHash);
+    } else if (outcome.kind === 'not-submitted') {
+      try { await persistNotSubmitted(attempted, prepared, signatures, attemptId); }
+      catch { return { kind: 'unknown' }; }
     }
     return outcome;
   }

@@ -5,6 +5,7 @@ import * as testing from '@confidential-utxo/uniswap/testing';
 it('exposes production schema separately from testing controls', () => {
   expect(typeof production.parseApiRequest).toBe('function');
   expect(typeof production.parseApiResponse).toBe('function');
+  expect(typeof production.paymentAuthorizationTypedData).toBe('function');
   expect(typeof testing.createMemoryStore).toBe('function');
   expect(typeof testing.createMockHttp).toBe('function');
   expect(typeof testing.assertHttpConformance).toBe('function');

@@ -4,7 +4,7 @@
 
 ## 前提
 
-リポジトリのルートでNode 24.21.0、pnpm 10.34.5、Foundry 1.8.3を使う。ローカルで環境ごと起動して通しで試す場合は、次を実行する。試験は破棄可能な鍵と独立したAnvil・SQLite Durable Objectを作り、サービスの配布資金も用意する。
+リポジトリのルートでNode 24.22.1、pnpm 10.34.5、Foundry 1.8.3を使う。ローカルで環境ごと起動して通しで試す場合は、次を実行する。試験は破棄可能な鍵と独立したAnvil・SQLite Durable Objectを作り、サービスの配布資金も用意する。
 
 ```sh
 pnpm install --frozen-lockfile

@@ -6,7 +6,7 @@ import { expect, it } from "vitest";
 import { createPublicClient, createWalletClient, hexToBytes, http, publicActions } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { foundry } from "viem/chains";
-import { authorizeOperation, buildOperation, preflightSubmission, prepareSubmission, synchronize } from "@confidential-utxo/core";
+import { authorizeOperation, buildOperation, preflightSubmission, prepareSubmission, recipientInfoTypedData, synchronize } from "@confidential-utxo/core";
 import type { LocalDraft, RecipientInfo, SyncResult } from "@confidential-utxo/core";
 import { createHistoryPort, createOperationSigner, createRecipientInfoSigner,
   defaultRpcPolicy, encodePoolSubmission, observeAttempt, replaceSubmissionFee, submitPublicOperation,
@@ -67,12 +67,7 @@ it("AC-04/05/06/09: runs real deposit, partial transfer, full UTXO withdrawal, r
       receiptFormat: 1 as const, recipientInfoVersion: 1 as const };
     const recipientSigner = createRecipientInfoSigner(owner, owner.address);
     const recipient: RecipientInfo = { ...recipientBase,
-      signature: await recipientSigner.signTypedData({ domain: { name: "Ethereum Confidential UTXO", version: "1",
-        chainId: context.chainId, verifyingContract: context.pool }, primaryType: "RecipientInfo",
-        types: { RecipientInfo: [{ name: "owner", type: "address" }, { name: "receivePublicKey", type: "bytes32" },
-          { name: "receiptFormat", type: "uint8" }, { name: "recipientInfoVersion", type: "uint8" }] },
-        message: { owner: owner.address, receivePublicKey: recipientBase.receivePublicKey,
-          receiptFormat: 1, recipientInfoVersion: 1 } }) };
+      signature: await recipientSigner.signTypedData(recipientInfoTypedData(context, recipientBase, owner.address)) };
     const keys = { getKey: async () => hexToBytes(receiver.recipientPrivateKey) };
     const storage = { saveDraft: async (_draft: LocalDraft) => "saved" as const };
     const signer = createOperationSigner(owner, owner.address);

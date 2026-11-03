@@ -100,16 +100,16 @@ export const httpScenarios: readonly HttpScenario[] = [
   ], none),
   scenario('operation/ack-lost', [
     { kind: 'lose-ack', route: 'PUT /v1/operations/{id}' },
-    { kind: 'request', method: 'PUT', path: operationPath, body: { scope: fixtureScope, expectedRevision: 0, record: payRecord }, reject: 'ACK_LOST' },
+    { kind: 'request', method: 'PUT', path: operationPath, body: { scope: fixtureScope, expectedRevision: 0, sealedRevision: 1, record: payRecord }, reject: 'ACK_LOST' },
     { kind: 'request', method: 'GET', path: operationsQuery, status: 200, recordId: fixtureId },
   ], { ...none, reservations: 1 }, true, ['S-27']),
   scenario('operation/revision-conflict', [
-    { kind: 'request', method: 'PUT', path: operationPath, body: { scope: fixtureScope, expectedRevision: 0, record: payRecord }, status: 200 },
-    { kind: 'request', method: 'PUT', path: operationPath, body: { scope: fixtureScope, expectedRevision: 0, record: { ...payRecord, signatureStarted: true } }, status: 409, code: 'REVISION_CONFLICT' },
+    { kind: 'request', method: 'PUT', path: operationPath, body: { scope: fixtureScope, expectedRevision: 0, sealedRevision: 1, record: payRecord }, status: 200 },
+    { kind: 'request', method: 'PUT', path: operationPath, body: { scope: fixtureScope, expectedRevision: 0, sealedRevision: 1, record: { ...payRecord, signatureStarted: true } }, status: 409, code: 'REVISION_CONFLICT' },
   ], { ...none, reservations: 1 }),
   scenario('operation/pay-withdraw-conflict', [
-    { kind: 'request', method: 'PUT', path: operationPath, body: { scope: fixtureScope, expectedRevision: 0, record: payRecord }, status: 200 },
-    { kind: 'request', method: 'PUT', path: `/v1/operations/${fixtureSecondId}`, body: { scope: fixtureScope, expectedRevision: 0, record: withdrawRecord }, status: 409, code: 'RESERVATION_CONFLICT' },
+    { kind: 'request', method: 'PUT', path: operationPath, body: { scope: fixtureScope, expectedRevision: 0, sealedRevision: 1, record: payRecord }, status: 200 },
+    { kind: 'request', method: 'PUT', path: `/v1/operations/${fixtureSecondId}`, body: { scope: fixtureScope, expectedRevision: 0, sealedRevision: 1, record: withdrawRecord }, status: 409, code: 'RESERVATION_CONFLICT' },
   ], { ...none, reservations: 1 }, true, ['S-26']),
   scenario('reward/ack-lost', [
     { kind: 'lose-ack', route: 'POST /v1/rewards' },
@@ -138,13 +138,13 @@ export const httpScenarios: readonly HttpScenario[] = [
     { kind: 'request', method: 'POST', path: '/v1/rewards', body: reward, status: 503, code: 'SERVICE_UNAVAILABLE' },
   ], none),
   scenario('storage/rollback', [
-    { kind: 'request', method: 'PUT', path: operationPath, body: { scope: fixtureScope, expectedRevision: 0, record: payRecord }, status: 200 },
+    { kind: 'request', method: 'PUT', path: operationPath, body: { scope: fixtureScope, expectedRevision: 0, sealedRevision: 1, record: payRecord }, status: 200 },
     { kind: 'rollback' },
     { kind: 'request', method: 'POST', path: '/v1/rewards', body: reward, status: 503, code: 'SERVICE_UNAVAILABLE' },
     { kind: 'request', method: 'GET', path: operationsQuery, status: 200, recordId: fixtureId },
   ], { ...none, reservations: 1 }),
   scenario('storage/partial-rollback', [
-    { kind: 'request', method: 'PUT', path: operationPath, body: { scope: fixtureScope, expectedRevision: 0, record: payRecord }, status: 200 },
+    { kind: 'request', method: 'PUT', path: operationPath, body: { scope: fixtureScope, expectedRevision: 0, sealedRevision: 1, record: payRecord }, status: 200 },
     { kind: 'partial-rollback' },
     { kind: 'request', method: 'GET', path: operationsQuery, status: 200, recordsLength: 0 },
     { kind: 'request', method: 'POST', path: '/v1/rewards', body: reward, status: 503, code: 'SERVICE_UNAVAILABLE' },

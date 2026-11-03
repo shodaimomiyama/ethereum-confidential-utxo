@@ -1,11 +1,12 @@
 import { DurableObject } from 'cloudflare:workers';
 import { applyMigrations } from './schema.js';
 import type { ServiceEnv } from './index.js';
-import { parseApiRequest } from '@confidential-utxo/uniswap';
+import { parseApiRequest, type Scope, type StoredOperation } from '@confidential-utxo/uniswap';
 import { createChallenge, readSessionIdentity, verifyChallenge } from './auth.js';
 import { parseDeploymentCatalog, resolveDeployment } from './config.js';
 import { apiError, apiSuccess, BodyTooLarge, readLimitedJson } from './http.js';
-import { asReservation, getOperation, listOperations, putOperation, releaseOperation } from './store.js';
+import { getOperation, listOperations, putOperation } from './store.js';
+import { releaseOperation } from './store.js';
 import { ensureWritable, getAvailability, initializeEnvironment, resolveRecoveryGate } from './recovery.js';
 import { getServiceExtensions, makeServiceContext, registerServiceExtension } from './extensions.js';
 import { createCoreInputReader, getCoreHistoryProvider } from './core-reader.js';
@@ -26,6 +27,24 @@ import type { LocalDraft } from '@confidential-utxo/core';
 import { loadSavedDraft } from './rewards/store.js';
 
 registerServiceExtension(rewardExtension);
+
+function activeReservation(storage: DurableObjectStorage, scope: Scope, saved: StoredOperation): boolean {
+  if (saved.status !== 'reserved') return false;
+  const lock = storage.sql.exec<{ record_id: string }>(
+    'SELECT record_id FROM active_reservations WHERE deployment_id = ? AND owner = ? AND input_id = ?',
+    scope.deploymentId, scope.owner.toLowerCase(), saved.record.inputId.toLowerCase(),
+  ).toArray()[0];
+  return lock?.record_id.toLowerCase() === saved.record.recordId.toLowerCase();
+}
+
+function reservationState(storage: DurableObjectStorage, scope: Scope, saved: StoredOperation): {
+  readonly reservationState?: 'active' | 'released';
+} {
+  if (saved.status === 'reserved') return activeReservation(storage, scope, saved)
+    ? { reservationState: 'active' } : {};
+  return ['released', 'consumed', 'finalized-success'].includes(saved.status)
+    ? { reservationState: 'released' } : {};
+}
 
 export class UniswapServiceObject extends DurableObject<ServiceEnv> {
   constructor(ctx: DurableObjectState, env: ServiceEnv) {
@@ -196,15 +215,18 @@ export class UniswapServiceObject extends DurableObject<ServiceEnv> {
       if (parsed.route === 'GET /v1/operations') {
         const page = listOperations(this.ctx.storage, parsed.scope, parsed.cursor);
         return apiSuccess({ availability: getAvailability(this.ctx.storage, recoveryGate), records: page.records.map((item) => ({
-          ...asReservation(item), scope: parsed.scope,
+          ...item, scope: parsed.scope,
+          ...reservationState(this.ctx.storage, parsed.scope, item),
           record: { ...item.record, deadline: item.record.kind === 'pay' ? item.record.deadline.toString() : undefined },
         })), ...(page.nextCursor === undefined ? {} : { nextCursor: page.nextCursor }) });
       }
       if (parsed.route === 'GET /v1/operations/{id}') {
+        // A single-record reply has no availability field: never expose a rollback as a valid ACK.
+        if (getAvailability(this.ctx.storage, recoveryGate) !== 'healthy') return apiError(503, 'SERVICE_UNAVAILABLE');
         const saved = getOperation(this.ctx.storage, parsed.scope, parsed.id!);
         if (saved === undefined) return apiError(404, 'NOT_FOUND');
-        return apiSuccess({
-          ...asReservation(saved), scope: parsed.scope,
+        return apiSuccess({ ...saved, scope: parsed.scope,
+          ...reservationState(this.ctx.storage, parsed.scope, saved),
           record: { ...saved.record, deadline: saved.record.kind === 'pay' ? saved.record.deadline.toString() : undefined },
         });
       }
@@ -260,7 +282,10 @@ export class UniswapServiceObject extends DurableObject<ServiceEnv> {
         catch { return apiError(503, 'SERVICE_UNAVAILABLE'); }
         const saved = await putOperation(this.ctx.storage, parsed.scope, parsed.record!, parsed.expectedRevision!,
           createCoreInputReader(history, config), () => ensureWritable(this.ctx.storage, recoveryGate));
-        return apiSuccess({ ...asReservation(saved), scope: parsed.scope,
+        if (saved.status === 'reserved' && !activeReservation(this.ctx.storage, parsed.scope, saved)) {
+          return apiError(503, 'SERVICE_UNAVAILABLE');
+        }
+        return apiSuccess({ ...saved, ...reservationState(this.ctx.storage, parsed.scope, saved), scope: parsed.scope,
           record: { ...saved.record, deadline: saved.record.kind === 'pay' ? saved.record.deadline.toString() : undefined },
         });
       }

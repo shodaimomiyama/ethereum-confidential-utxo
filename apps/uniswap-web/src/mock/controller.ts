@@ -4,7 +4,7 @@ import type {
 import type { ManualClock, MemoryStore } from '@confidential-utxo/uniswap/testing';
 import { actionKey } from '../contracts/controller.js';
 import type { DispatchResult, UiAction, UiController } from '../contracts/controller.js';
-import type { ApprovalPurpose, Card, CardState, OperationAction, PreparationView, ReasonCode, UtxoView, ValidationReason, ViewState } from '../contracts/state.js';
+import type { ApprovalPurpose, Card, CardState, OperationAction, PreparationAction, PreparationView, ReasonCode, UtxoView, ValidationReason, ViewState } from '../contracts/state.js';
 import { initialScenario } from './scenarios.js';
 
 export type ScenarioEvent = (
@@ -23,6 +23,7 @@ export type ScenarioEvent = (
   | { readonly type: 'original-unsent'; readonly card: Card; readonly operationId: OperationId; readonly inputUnspent: boolean; readonly deadlineValid: boolean }
   | { readonly type: 'terms-changed'; readonly card: 'pay'; readonly oldAuthorizationActive: boolean }
   | { readonly type: 'validation-result'; readonly card: Card; readonly phase: 'ready' | 'invalid-input' | 'needs-preparation'; readonly reason?: ValidationReason; readonly input?: Readonly<Record<string, string>> }
+  | { readonly type: 'allow-preparation-action'; readonly action: PreparationAction }
   | { readonly type: 'preparation'; readonly wallet?: boolean; readonly network?: boolean; readonly key?: boolean; readonly faucet?: boolean; readonly gas?: boolean }
   | { readonly type: 'utxos'; readonly utxos: readonly UtxoView[] }
   | { readonly type: 'public-balance'; readonly amountWei: bigint }
@@ -57,6 +58,7 @@ interface Runtime {
   resumeEligible: Set<OperationId>;
   oldAuthorizationActive: boolean;
   countedOutputs: Map<string, { operationId: OperationId; amountWei: bigint }>;
+  allowedPreparationActions: Set<PreparationAction>;
   publicEffects: Map<OperationId, bigint>;
 }
 
@@ -73,6 +75,7 @@ function makeRuntime(scope: Scope, scenario: string): Runtime {
     resumeEligible: new Set(),
     oldAuthorizationActive: false,
     countedOutputs: new Map(),
+    allowedPreparationActions: new Set(),
     publicEffects: new Map(),
   };
   refreshInteractive(runtime);
@@ -220,6 +223,10 @@ function derive(runtime: Runtime, now: number): ViewState {
   const allowed = new Set<string>(['switch-scope', 'resync']);
   const reasons: Record<string, ValidationReason> = {};
   const state = runtime.state;
+  for (const action of ['connect', 'prepare-key', 'authenticate', 'switch-network'] as const) {
+    if (runtime.allowedPreparationActions.has(action)) allowed.add(action);
+    else reasons[action] = 'PREPARATION_MISSING';
+  }
   if (runtime.interactive) {
     if (!state.preparation.wallet) allowed.add('connect-wallet');
     else if (!state.preparation.network) allowed.add('switch-network');
@@ -498,6 +505,8 @@ export function createMockUiController({ scope, store, clock, scenario }: {
         reason: event.reason,
         input: event.input ?? state.cards[event.card].input,
       });
+    } else if (event.type === 'allow-preparation-action') {
+      runtime.allowedPreparationActions.add(event.action);
     } else if (event.type === 'preparation') {
       const preparation: PreparationView = {
         wallet: event.wallet ?? state.preparation.wallet,

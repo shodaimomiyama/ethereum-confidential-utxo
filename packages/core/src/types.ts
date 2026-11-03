@@ -107,7 +107,15 @@ export type OperationAuthorizationTypedData = {
     verifyingContract: Address;
   };
   primaryType: "OperationAuthorization";
-  types: { OperationAuthorization: readonly { name: string; type: string }[] };
+  types: {
+    EIP712Domain: readonly [
+      { readonly name: "name"; readonly type: "string" },
+      { readonly name: "version"; readonly type: "string" },
+      { readonly name: "chainId"; readonly type: "uint256" },
+      { readonly name: "verifyingContract"; readonly type: "address" },
+    ];
+    OperationAuthorization: readonly { name: string; type: string }[];
+  };
   message: { operationId: Hex; owner: Address; authScheme: 1; authVersion: 1 };
 };
 
@@ -124,8 +132,13 @@ export type LocalDraft = {
 };
 
 export interface ReceiptKeyPort {
-  getKey(owner: Address): Promise<Uint8Array>;
+  getKey?(owner: Address): Promise<Uint8Array>;
   getKeys?(owner: Address): Promise<readonly Uint8Array[]>;
+  /** Browser clients may keep receipt decryption inside a scoped Worker. */
+  openReceipt?(owner: Address, input: { readonly info: Uint8Array; readonly packet: Uint8Array;
+    readonly commitment: G1Point }): Promise<
+      { readonly status: "opened"; readonly opening: Opening } |
+      { readonly status: "invalid" | "unavailable" }>;
 }
 
 export interface SignerPort {

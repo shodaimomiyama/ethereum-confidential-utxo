@@ -27,8 +27,8 @@ if (expectedPlatform && (process.platform !== expectedPlatform[0] || process.arc
   console.error(`platform: expected ${expectedPlatform.join(' ')}, found ${process.platform} ${process.arch}`);
   failed = true;
 }
-if (process.version !== 'v24.21.0') {
-  console.error(`node: expected v24.21.0, found ${process.version}`);
+if (process.version !== 'v24.22.1') {
+  console.error(`node: expected v24.22.1, found ${process.version}`);
   failed = true;
 }
 requireVersion('pnpm', '10.34.5');

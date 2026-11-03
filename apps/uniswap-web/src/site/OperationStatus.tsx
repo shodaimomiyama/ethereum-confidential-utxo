@@ -51,6 +51,7 @@ export function OperationStatus({ view, controller, config }: {
         {allowedFor(view, { type: 'recheck', operationId: operation.operationId }) && <button type="button" className="text-button" onClick={() => void controller.dispatch({ type: 'recheck', operationId: operation.operationId })}>Recheck status</button>}
         {allowedFor(view, { type: 'retry-attempt', operationId: operation.operationId }) && <button type="button" className="text-button" onClick={() => void controller.dispatch({ type: 'retry-attempt', operationId: operation.operationId })}>Retry same attempt</button>}
         {allowedFor(view, { type: 'resume-original', operationId: operation.operationId }) && <button type="button" className="text-button" onClick={() => void controller.dispatch({ type: 'resume-original', operationId: operation.operationId })}>Resume original submission</button>}
+        {allowedFor(view, { type: 'acknowledge-receipt', operationId: operation.operationId }) && <button type="button" className="text-button" onClick={() => void controller.dispatch({ type: 'acknowledge-receipt', operationId: operation.operationId })}>Check private receipt</button>}
       </article>;
     })}
     <p className="muted">Full history: Coming soon</p>

@@ -9,7 +9,7 @@ export { inspectOperation } from './recovery.js';
 export type { AttemptEvidence, CurrentInput, RecoveryDecision, RecoveryEvidence } from './recovery.js';
 export { coreReceiptResult, reconcilePayment } from './reconcile.js';
 export type { CoreReceiptResult, FinalizedHistory, ReconciledPayment } from './reconcile.js';
-export { assertWithdrawalBinding, decodeAdapterError, encodePayCall, paymentDigest } from './payment.js';
+export { assertWithdrawalBinding, decodeAdapterError, encodePayCall, paymentAuthorizationTypedData, paymentDigest } from './payment.js';
 export { adapterAbi } from './generated/adapter-abi.js';
 export type { AdapterError, PaymentDeployment, PaymentTerms, WithdrawalBindingInput } from './payment.js';
 export { createPaymentClient, PaymentProcessError } from './process.js';
@@ -45,7 +45,7 @@ export {
 } from './api.js';
 export type {
   ApiError, ApiRequestBodyMap, ApiRoute, ApiSuccessResponseMap,
-  ApiTransport, ErrorCode, ParsedApiRequest, WireOperationRecord, WireRewardRequest,
+  ApiTransport, ErrorCode, OperationResponse, ParsedApiRequest, WireOperationRecord, WireRewardRequest,
 } from './api.js';
 export { StoreError } from './storage.js';
 export type {

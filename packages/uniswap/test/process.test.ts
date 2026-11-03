@@ -21,6 +21,7 @@ const record = parseOperationRecord({
 function setup(releaseAllowed = false) {
   const calls: string[] = [];
   const sealedHashes: string[] = [];
+  const sealedNotSubmitted: string[] = [];
   const reservations = createMemoryReservationPort({ verify: async () => ({
     finalized: releaseAllowed, blockTime: 601n,
     paymentSucceeded: false, inputUnspent: releaseAllowed, inputConsumed: false,
@@ -54,8 +55,9 @@ function setup(releaseAllowed = false) {
       calls.push(`encrypt:${context.revision}`);
       return { ciphertext: 'AQID', nonce: `0x${String(context.revision).padStart(2, '0').repeat(12)}`, tag: `0x${'01'.repeat(16)}` };
     },
-    sealContent: (_prepared, _signatures, _attemptId, txHash) => {
+    sealContent: (_prepared, _signatures, attemptId, txHash, notSubmitted) => {
       if (txHash !== undefined) sealedHashes.push(txHash);
+      if (notSubmitted) sealedNotSubmitted.push(attemptId!);
       return new Uint8Array([1, 2, 3]);
     },
     signPool: async () => { calls.push('sign-pool'); return '0x11'; },
@@ -64,7 +66,7 @@ function setup(releaseAllowed = false) {
     submit: async () => { calls.push('submit'); return { kind: 'submitted', txHash: blockHash as never }; },
   };
   return {
-    calls, sealedHashes, reservations, prepared, ports,
+    calls, sealedHashes, sealedNotSubmitted, reservations, prepared, ports,
     setNow: (value: number) => { now = value; },
     setBlockTime: (value: bigint) => { blockTime = value; },
     switchScope: () => { currentScope = { ...scope, owner: `0x${'66'.repeat(20)}` as never }; },
@@ -150,6 +152,28 @@ it('keeps an unknown submission attached to the reserved operation', async () =>
   expect((await fixture.reservations.get(scope, record.recordId))?.record.attemptIds).toEqual(['attempt-1']);
 });
 
+it('durably records a verified pre-send failure and fails closed when that update cannot be acknowledged', async () => {
+  const fixture = setup();
+  fixture.ports.submit = async () => ({ kind: 'not-submitted' });
+  const client = createPaymentClient(fixture.ports);
+  const result = await client.authorizePay(fixture.prepared, fixture.prepared.record.contentHash);
+  expect(result.chainOutcome).toBe('not-submitted');
+  expect(fixture.sealedNotSubmitted).toEqual(['attempt-1']);
+  expect((await fixture.reservations.get(scope, record.recordId))?.revision).toBe(5);
+
+  const blocked = setup();
+  blocked.ports.submit = async () => ({ kind: 'not-submitted' });
+  const update = blocked.ports.reservations.update;
+  blocked.ports.reservations.update = async (...args) => {
+    if (args[2] === 5) throw new Error('unavailable');
+    return update(...args);
+  };
+  const unknown = await createPaymentClient(blocked.ports)
+    .authorizePay(blocked.prepared, blocked.prepared.record.contentHash);
+  expect(unknown.chainOutcome).toBe('unknown');
+  expect((await blocked.reservations.get(scope, record.recordId))?.revision).toBe(4);
+});
+
 it('continues with the original record after a lost reservation ACK is recovered by lookup', async () => {
   const fixture = setup();
   fixture.reservations.control.loseNextAck();
@@ -197,9 +221,38 @@ it('does not submit when Pay expires after the attempt is durably recorded', asy
     if (saved.revision === 4) fixture.setBlockTime(600n);
     return saved;
   };
-  await expect(createPaymentClient(fixture.ports).authorizePay(fixture.prepared, fixture.prepared.record.contentHash))
-    .rejects.toMatchObject({ code: 'TERMS_EXPIRED' });
+  const result = await createPaymentClient(fixture.ports)
+    .authorizePay(fixture.prepared, fixture.prepared.record.contentHash);
+  expect(result.chainOutcome).toBe('not-submitted');
   expect(fixture.calls).not.toContain('submit');
+  expect(fixture.sealedNotSubmitted).toEqual(['attempt-1']);
+  expect((await fixture.reservations.get(scope, record.recordId))?.revision).toBe(5);
+});
+
+it('marks a recovered Pay attempt not submitted if the deadline passes after its reservation', async () => {
+  const fixture = setup();
+  await createPaymentClient(fixture.ports).authorizePay(fixture.prepared, fixture.prepared.record.contentHash);
+  fixture.calls.length = 0;
+  fixture.ports.recovery = {
+    readEvidence: async () => ({ evidence: {
+      finalized: true, blockTime: 101n, paymentSucceeded: false, submissionKnownAbsent: false,
+      attempts: [{ id: 'attempt-1', outcome: 'finalized-failure' }], storageAvailability: 'healthy',
+    }, currentInput: { state: 'unspent' } }),
+    restoreOriginal: async () => { throw new Error('unused'); },
+    restoreForRetry: async () => ({ prepared: fixture.prepared, signatures: { pool: '0x11', payment: '0x22' } }),
+    releaseOriginal: async () => { throw new Error('unused'); },
+  };
+  const update = fixture.ports.reservations.update;
+  fixture.ports.reservations.update = async (...args) => {
+    const saved = await update(...args);
+    if (saved.revision === 6) fixture.setBlockTime(600n);
+    return saved;
+  };
+  const result = await createPaymentClient(fixture.ports).retryAttempt(recordId as never);
+  expect(result).toEqual({ kind: 'not-submitted' });
+  expect(fixture.calls).not.toContain('submit');
+  expect(fixture.sealedNotSubmitted).toEqual(['attempt-2']);
+  expect((await fixture.reservations.get(scope, record.recordId))?.revision).toBe(7);
 });
 
 it('does not retry a Pay when restored work crosses its deadline', async () => {

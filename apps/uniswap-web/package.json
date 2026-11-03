@@ -3,28 +3,39 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "check:site": "tsc --noEmit -p tsconfig.site.json",
-    "test:site": "pnpm --dir ../.. exec vitest run apps/uniswap-web/test"
-  },
   "exports": {
     "./contracts": "./src/contracts/index.ts",
     "./mock": "./src/mock/index.ts",
     "./testing": "./src/mock/scenario-catalog.ts",
-    "./site": "./src/site/bootstrap.tsx"
+    "./site": "./src/site/bootstrap.tsx",
+    "./live": "./src/live/index.ts"
   },
   "dependencies": {
     "@confidential-utxo/uniswap": "workspace:*",
+    "@confidential-utxo/ethereum": "workspace:*",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "@hpke/dhkem-x25519": "1.8.0",
+    "viem": "2.56.9",
+    "@confidential-utxo/crypto": "workspace:*",
+    "@confidential-utxo/core": "workspace:*"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "jsdom": "30.1.1"
+    "jsdom": "30.1.1",
+    "@hpke/core": "1.9.0",
+    "@vitest/browser-playwright": "4.1.11",
+    "playwright": "1.58.2"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "check:site": "tsc --noEmit -p tsconfig.site.json",
+    "test:site": "pnpm --dir ../.. exec vitest run apps/uniswap-web/test --maxWorkers=2 --testTimeout=15000",
+    "build:worker": "pnpm --filter @confidential-utxo/crypto build && pnpm --filter @confidential-utxo/core build && vite build --config vite.worker.config.ts",
+    "test:browser": "pnpm build:worker && vitest run --config vitest.browser.config.ts"
   }
 }
