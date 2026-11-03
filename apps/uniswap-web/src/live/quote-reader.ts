@@ -120,8 +120,15 @@ export function createBrowserQuoteReader(deps: BrowserQuoteDependencies): {
       check();
       const deadline = Date.now() + rpc.policy.overallTimeoutMs;
       const selected = await stableBlock(deadline);
+      // Local Anvil can sit idle while its next block time advances with the
+      // clock. Use that execution time when choosing a payment deadline.
+      const pending = rpc.mode === 'local-simulated'
+        ? await read(() => rpc.client.getBlock({ blockTag: 'pending' }), deadline)
+        : undefined;
       await selected.confirm();
-      return selected.first.timestamp;
+      if (pending && (typeof pending.timestamp !== 'bigint'
+        || pending.timestamp < selected.first.timestamp)) invalid();
+      return pending?.timestamp ?? selected.first.timestamp;
     },
   };
 }

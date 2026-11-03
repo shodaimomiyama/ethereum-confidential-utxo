@@ -48,6 +48,26 @@ it('reads Router02 quote at the identified block and returns its canonical hash'
   expect(getChainId).toHaveBeenCalledTimes(4);
 });
 
+it('uses the pending block clock for local deadlines after Anvil has been idle', async () => {
+  const { deps, getBlock } = setup();
+  getBlock.mockImplementation(async (options: unknown) => ({
+    number: 12n, hash: hash('a'),
+    timestamp: (options as { blockTag?: string }).blockTag === 'pending' ? 3_000n : 1_000n,
+  }));
+  await expect(createBrowserQuoteReader(deps).latestBlockTime()).resolves.toBe(3_000n);
+  expect(getBlock).toHaveBeenCalledWith({ blockTag: 'pending' });
+});
+
+it('keeps the finalized deadline clock on the verified latest block', async () => {
+  const { deps, getBlock } = setup();
+  const finalizedVerified: VerifiedDeployment = { ...verified,
+    context: { ...verified.context, finalityMode: 'finalized' } };
+  const reader = createBrowserQuoteReader({ ...deps, verified: finalizedVerified,
+    rpc: { ...deps.rpc, mode: 'finalized' } });
+  await expect(reader.latestBlockTime()).resolves.toBe(1_000n);
+  expect(getBlock).not.toHaveBeenCalledWith({ blockTag: 'pending' });
+});
+
 it('rejects wrong path, malformed amount and malformed quote output', async () => {
   const { deps, readContract } = setup();
   const { quoteReader } = createBrowserQuoteReader(deps);

@@ -50,6 +50,20 @@ it('retains prior attempts across encode/decode and refuses replacing fixed sign
   expect(() => appendPaymentAuthorization(two, { pool: `0x${'22'.repeat(65)}` })).toThrow();
   expect(() => appendPaymentAuthorization(two, signatures, 'one' as never, hash('8') as never)).toThrow();
 });
+it('authenticates a terminal pre-send failure without allowing it to acquire a transaction hash', async () => {
+  const { plain, record, aad } = await fixture();
+  const signatures = { pool: `0x${'11'.repeat(65)}` as const };
+  const started = appendPaymentAuthorization(encodePaymentPrivateRecord(plain), signatures, 'one' as never);
+  const terminal = appendPaymentAuthorization(started, signatures, 'one' as never, undefined, true);
+  expect(decodePaymentPrivateRecord(terminal).attempts).toEqual([{ attemptId: 'one', notSubmitted: true }]);
+  const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  const encryptedBundle = await sealPaymentPrivateRecord(key, aad, terminal);
+  const saved = { ...record, encryptedBundle, signatureStarted: true, attemptIds: ['one' as AttemptId] };
+  expect((await openPaymentPrivateRecord(key, aad, saved)).attempts).toEqual([{ attemptId: 'one', notSubmitted: true }]);
+  expect(() => appendPaymentAuthorization(terminal, signatures, 'one' as never, hash('6') as never)).toThrow();
+  expect(() => encodePaymentPrivateRecord({ ...decodePaymentPrivateRecord(terminal),
+    attempts: [{ attemptId: 'one' as never, notSubmitted: true, txHash: hash('6') as never }] })).toThrow();
+});
 it('rejects unknown versions, malformed tags, noncanonical payloads and oversized data', async () => {
   const { plain } = await fixture();
   const text = new TextDecoder().decode(encodePaymentPrivateRecord(plain));

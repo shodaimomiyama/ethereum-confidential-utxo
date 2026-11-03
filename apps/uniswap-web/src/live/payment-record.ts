@@ -25,7 +25,8 @@ export interface PaymentPrivateRecord {
   readonly quote?: PayQuote;
   readonly intendedAuthorization: { readonly pool: Readonly<Record<string, unknown>>; readonly payment?: Readonly<Record<string, unknown>> };
   readonly signatures?: AuthorizationSignatures;
-  readonly attempts: readonly { readonly attemptId: AttemptId; readonly txHash?: TxHash }[];
+  readonly attempts: readonly { readonly attemptId: AttemptId; readonly txHash?: TxHash;
+    readonly notSubmitted?: true }[];
   readonly recoveryMarkers: Readonly<Record<string, unknown>>;
 }
 function invalid(): never { throw new Error('INVALID_PAYMENT_RECORD'); }
@@ -172,9 +173,10 @@ function validate(value: unknown): PaymentPrivateRecord {
   } else if (data.creationInputs.signature !== undefined) invalid();
   const ids = new Set();
   array(data.attempts).forEach(attempt => {
-    const item = object(attempt); keys(item, ['attemptId'], ['txHash']);
+    const item = object(attempt); keys(item, ['attemptId'], ['txHash', 'notSubmitted']);
     if (typeof item.attemptId !== 'string' || !item.attemptId || ids.has(item.attemptId) || data.signatures === undefined) invalid();
     ids.add(item.attemptId); if (item.txHash !== undefined) hex(item.txHash, 32);
+    if (item.notSubmitted !== undefined && (item.notSubmitted !== true || item.txHash !== undefined)) invalid();
   });
   object(data.recoveryMarkers);
   return value as PaymentPrivateRecord;
@@ -232,17 +234,23 @@ export async function openPaymentPrivateRecord(key: CryptoKey, context: RecordCo
  * repeatedly passing immutable prepared.privateBytes would discard prior attempts.
  * Each result contains the complete history and fixed signatures for persistence.
  */
-export function appendPaymentAuthorization(bytes: Uint8Array, signatures: AuthorizationSignatures, attemptId?: AttemptId, txHash?: TxHash): Uint8Array<ArrayBuffer> {
+export function appendPaymentAuthorization(bytes: Uint8Array, signatures: AuthorizationSignatures,
+  attemptId?: AttemptId, txHash?: TxHash, notSubmitted?: true): Uint8Array<ArrayBuffer> {
   const record = decodePaymentPrivateRecord(bytes);
   if (record.signatures !== undefined && !same(record.signatures, signatures)) invalid();
-  if (txHash !== undefined && attemptId === undefined) invalid();
+  if ((txHash !== undefined || notSubmitted !== undefined) && attemptId === undefined) invalid();
+  if (txHash !== undefined && notSubmitted !== undefined) invalid();
   const attempts = record.attempts.map(attempt => ({ ...attempt }));
   if (attemptId !== undefined) {
     const previous = attempts.find(attempt => attempt.attemptId === attemptId);
     if (previous) {
       if (previous.txHash !== undefined && txHash !== undefined && previous.txHash !== txHash) invalid();
+      if (previous.notSubmitted && txHash !== undefined) invalid();
+      if (previous.txHash !== undefined && notSubmitted !== undefined) invalid();
       if (txHash !== undefined) previous.txHash = txHash;
-    } else attempts.push({ attemptId, ...(txHash === undefined ? {} : { txHash }) });
+      if (notSubmitted !== undefined) previous.notSubmitted = true;
+    } else attempts.push({ attemptId, ...(txHash === undefined ? {} : { txHash }),
+      ...(notSubmitted === undefined ? {} : { notSubmitted }) });
   }
   return encodePaymentPrivateRecord({ ...record, signatures, attempts });
 }

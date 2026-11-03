@@ -63,6 +63,15 @@ it('keeps an attempt with no pinned transaction hash unknown', async () => {
   expect(result.currentInput.state).toBe('unspent');
 });
 
+it('recognizes only an authenticated pre-send marker as a not-submitted attempt', async () => {
+  const f = fixture();
+  vi.mocked(openPaymentPrivateRecord).mockResolvedValue({ ...f.plain,
+    attempts: [{ attemptId: 'attempt-1', notSubmitted: true }] } as never);
+  const result = await createBrowserPaymentRecovery(f.deps as never).readEvidence(saved as never);
+  expect(result.evidence.attempts).toEqual([{ id: 'attempt-1', outcome: 'not-submitted' }]);
+  expect(result.evidence.submissionKnownAbsent).toBe(true);
+});
+
 it('fails closed when the finalized checkpoint does not match the RPC chain', async () => {
   const f = fixture();
   f.rpc.client.getBlock.mockResolvedValue({ hash: id('b'), timestamp: 50n });

@@ -139,7 +139,8 @@ export function createScopedPaymentClient(deps: ScopedPaymentDependencies): Paym
     const previousPlain = decodePaymentPrivateRecord(previous.bytes);
     if (previousPlain.signatures) requireBinding(canonical(previousPlain.signatures) === canonical(plain.signatures));
     for (const attempt of previousPlain.attempts) requireBinding(plain.attempts.some(item => item.attemptId === attempt.attemptId
-      && (attempt.txHash === undefined || item.txHash === attempt.txHash)));
+      && (attempt.txHash === undefined || item.txHash === attempt.txHash)
+      && (attempt.notSubmitted === undefined || item.notSubmitted === true)));
     latest.set(prepared.record.operationId, { bytes: encodePaymentPrivateRecord(plain), revision: saved.revision });
     return { ...restored, prepared };
   }
@@ -183,11 +184,11 @@ export function createScopedPaymentClient(deps: ScopedPaymentDependencies): Paym
       if (previous) previous.revision = Math.max(previous.revision, aad.revision);
       return result;
     }),
-    sealContent: (prepared, signatures, attemptId, txHash) => {
+    sealContent: (prepared, signatures, attemptId, txHash, notSubmitted) => {
       check(); validate(prepared);
       const previous = latest.get(prepared.record.operationId);
       requireBinding(previous !== undefined);
-      const bytes = appendPaymentAuthorization(previous.bytes, signatures, attemptId, txHash);
+      const bytes = appendPaymentAuthorization(previous.bytes, signatures, attemptId, txHash, notSubmitted);
       latest.set(prepared.record.operationId, { ...previous, bytes });
       return bytes.slice();
     },

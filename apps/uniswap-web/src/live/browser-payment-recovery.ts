@@ -97,6 +97,7 @@ export function createBrowserPaymentRecovery(deps: BrowserPaymentRecoveryDepende
     if (result && (!result.history.finalized || !result.history.canonical
       || !same(result.history.checkpoint.hash, point.hash))) blocked();
     const attempts = await Promise.all(plain.attempts.map(async attempt => {
+      if (attempt.notSubmitted === true) return { id: attempt.attemptId, outcome: 'not-submitted' as const };
       if (!attempt.txHash) return { id: attempt.attemptId, outcome: 'unknown' as const };
       try {
         const receipt = await rpcRead(() => rpc.client.getTransactionReceipt({ hash: attempt.txHash! }));
@@ -112,7 +113,7 @@ export function createBrowserPaymentRecovery(deps: BrowserPaymentRecoveryDepende
     if (!after.hash || !same(after.hash, point.hash)) throw new Error('PAYMENT_CHECKPOINT_REORG');
     return { evidence: { finalized: true, blockTime: block.timestamp,
       paymentSucceeded: result?.history.adapter !== undefined,
-      submissionKnownAbsent: saved.record.attemptIds.length === 0,
+      submissionKnownAbsent: plain.attempts.every(attempt => attempt.notSubmitted === true),
       attempts, storageAvailability: 'healthy' as const },
     currentInput: { state: !input.exists ? 'unknown' as const : input.consumedBy ? 'spent' as const : 'unspent' as const },
     pointHash: point.hash as Bytes32 };
